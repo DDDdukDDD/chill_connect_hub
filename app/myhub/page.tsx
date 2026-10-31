@@ -79,7 +79,6 @@ import {
   X,
   AlertCircle,
   Search,
-  CalendarRange,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -191,10 +190,8 @@ function MyHubContent() {
   // 'calendar' is the member's schedule (list or month); 'categories' holds the saved places and the challenges views
   const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar' | 'hosting'>('calendar');
   const [scheduleWhen, setScheduleWhen] = useState<'upcoming' | 'past'>('upcoming');
-  // The schedule opens on the week: seven days from today, then the full list or the month
-  // The view the member picked; until then the page chooses (see `scheduleView` below)
-  const [pickedView, setScheduleView] = useState<'week' | 'list' | 'month' | null>(null);
-  const [weekDayIdx, setWeekDayIdx] = useState<number | null>(null);
+  // The schedule opens on the list; the month grid is the other way to look at it
+  const [scheduleView, setScheduleView] = useState<'list' | 'month'>('list');
   const [openedAt] = useState(() => Date.now());
   // User Created Events (Host)
   const [userCreatedEvents, setUserCreatedEvents] = useState<EventItem[]>([]);
@@ -893,38 +890,14 @@ function MyHubContent() {
   const listRows = listPool
     .filter((ev) => calendarCategoryFilter === 'all' || calGroupOf(ev) === calendarCategoryFilter)
     .sort((a, b) => (scheduleWhen === 'upcoming' ? scheduleTs(a) - scheduleTs(b) : scheduleTs(b) - scheduleTs(a)));
-  // The week: seven days from today, each with what is on it. A challenge sits on the day it shows in the schedule
-  const weekStart = new Date(openedAt);
-  weekStart.setHours(0, 0, 0, 0);
-  const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i));
-  const isOnDate = (ev: EventItem, day: Date) => {
-    const start = day.getTime();
-    const end = start + 24 * 60 * 60 * 1000 - 1;
-    if (isQuestEntry(ev)) return scheduleTs(ev) >= start && scheduleTs(ev) <= end;
-    if (!ev.date || !/[0-9]/.test(ev.date)) return false;
-    return parseEventDateToTimestamp(ev.date) <= end && parseEventEndDateToTimestamp(ev.date) >= start;
-  };
-  // A plan the member dropped is history (month view, past list), not part of this week's schedule
-  const weekItems = weekDays.map((day) => guestEvents.filter((ev) => getEventAttendanceStatus(ev) !== 'cancelled' && isOnDate(ev, day)));
-  // Opens on the week (owner, BE-092), unless the week is free and more plans come later: then on the list, which
-  // shows them, instead of a big "สัปดาห์นี้ยังว่าง" box (owner 2026-10-30, My Hub to 9.5)
-  const isWeekFree = weekItems.every((items) => items.length === 0);
-  const scheduleView = pickedView ?? (isWeekFree && upcomingTotal > 0 ? 'list' : 'week');
-  // Opens on the first day with something on it (today when the week is empty)
-  const shownWeekDay = weekDayIdx ?? Math.max(0, weekItems.findIndex((items) => items.length > 0));
-  const weekPool = weekItems[shownWeekDay];
-  // A free week with a plan later on: the empty state points at that plan instead of "find a ตี้" (E2E 2026-10-26)
-  const laterPlan = scheduleView === 'week' && isWeekFree ? nextEvent : undefined;
-  // Under the month grid and the week strip the rows run in date order, like the list
-  const scheduleRows =
-    scheduleView === 'month'
-      ? [...dailyAgendaEvents].sort((a, b) => scheduleTs(a) - scheduleTs(b))
-      : scheduleView === 'week'
-      ? weekPool.filter((ev) => calendarCategoryFilter === 'all' || calGroupOf(ev) === calendarCategoryFilter).sort((a, b) => scheduleTs(a) - scheduleTs(b))
-      : listRows;
+  // Two views, list and month (owner 2026-10-30: a week view as well made three, too many). Under the month grid
+  // the rows run in date order, like the list
+  const scheduleRows = scheduleView === 'month' ? [...dailyAgendaEvents].sort((a, b) => scheduleTs(a) - scheduleTs(b)) : listRows;
   const countIn = (pool: EventItem[], group: string) => pool.filter((ev) => calGroupOf(ev) === group).length;
   const countsOf = (pool: EventItem[]) => ({ all: pool.length, community: countIn(pool, 'community'), fairs: countIn(pool, 'fairs'), spots: countIn(pool, 'spots'), quests: countIn(pool, 'quests') });
-  const chipCounts = scheduleView === 'month' ? masterCategoryCounts : countsOf(scheduleView === 'week' ? weekPool : listPool);
+  const chipCounts = scheduleView === 'month' ? masterCategoryCounts : countsOf(listPool);
+  // The type chips show only when there is a choice: with one type ("ทั้งหมด (2)" next to "ตี้ (2)") they said it twice
+  const chipGroups = [chipCounts.community, chipCounts.fairs, chipCounts.spots].filter((n) => n > 0).length + (chipCounts.quests > 0 || hasJoinedQuests ? 1 : 0);
 
   // The host's side of My Hub: what is still to run (who is coming, check-in, team chat) and what has been run
   const renderHostingView = () => {
@@ -975,8 +948,8 @@ function MyHubContent() {
       </li>
     );
     return (
-      <div className="space-y-4">
-        <section aria-label="งานที่กำลังจะถึง" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+      <div className="space-y-5">
+        <section aria-label="งานที่กำลังจะถึง" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
           <h2 className="text-sm sm:text-base font-bold text-slate-900">
             งานที่กำลังจะถึง <span className="text-slate-500 font-bold tabular-nums">({hostedUpcoming.length})</span>
           </h2>
@@ -987,7 +960,7 @@ function MyHubContent() {
           )}
         </section>
         {pastHosted.length > 0 && (
-          <section aria-label="งานที่จัดไปแล้ว" className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+          <section aria-label="งานที่จัดไปแล้ว" className="border-t border-slate-200/70 pt-5">
             <h2 className="text-sm sm:text-base font-bold text-slate-900">
               งานที่จัดไปแล้ว <span className="text-slate-500 font-bold tabular-nums">({pastHosted.length})</span>
             </h2>
@@ -1008,27 +981,12 @@ function MyHubContent() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const allLink = 'py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
-    if (doingChallenges.length === 0) {
-      const finishedCount = myChallenges.filter((q) => q.progressPercent >= 100).length;
-      return (
-        <section aria-label="ชาเลนจ์และ XP" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-slate-600 min-w-0">
-            <span className="font-bold text-slate-900">ชาเลนจ์ &amp; XP</span>
-            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-xs font-bold tabular-nums">{userXp} XP</span>
-            {/* The way to a first challenge is the passport's line ("เริ่มชาเลนจ์แรก รับแสตมป์แรก"), not a second one here */}
-            {finishedCount > 0 && <span className="block text-xs text-slate-500 mt-1 tabular-nums">ทำครบแล้ว {finishedCount} ชาเลนจ์</span>}
-          </p>
-          <button type="button" onClick={openChallenges} className={allLink}>ดูทั้งหมด</button>
-        </section>
-      );
-    }
+    // Without a challenge under way there is nothing here: the XP and the way to the challenges are under the page title
+    if (doingChallenges.length === 0) return null;
     return (
-      <section aria-label="กำลังทำอยู่" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
+      <section aria-label="กำลังทำอยู่" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-900">
-            กำลังทำอยู่
-            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#5B21B6] text-xs font-bold tabular-nums">{userXp} XP</span>
-          </h2>
+          <h2 className="text-base font-bold text-slate-900">กำลังทำอยู่</h2>
           <button type="button" onClick={openChallenges} className={allLink}>
             {doingChallenges.length > 2 ? `ดูทั้งหมด ${doingChallenges.length}` : 'ชาเลนจ์ทั้งหมด'}
           </button>
@@ -1069,15 +1027,13 @@ function MyHubContent() {
       setActiveSubTab(tab);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-    const finishedCount = myChallenges.filter((q) => q.progressPercent >= 100).length;
-    const card = 'bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs';
     const openLink = 'py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
     return (
       // Named as the home page's "ของฉัน" link that lands here (owner 2026-10-30)
-      <section aria-label="กิจกรรมที่บันทึก" className="space-y-3">
+      <section aria-label="กิจกรรมที่บันทึก" className="border-t border-slate-200/70 pt-5 space-y-3">
         <h2 className="text-base font-bold text-slate-900">กิจกรรมที่บันทึก</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-5">
-        <section aria-label="ที่เที่ยวที่บันทึก" className={card}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5">
+        <section aria-label="ที่เที่ยวที่บันทึก">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-slate-900">ที่เที่ยว</h2>
             <button type="button" onClick={() => openView('scrapbook')} className={openLink}>ดูทั้งหมด</button>
@@ -1105,7 +1061,7 @@ function MyHubContent() {
           )}
         </section>
         {savedNotJoined.length > 0 && (
-          <section aria-label="ตี้และอีเวนต์ที่บันทึก" className={card}>
+          <section aria-label="ตี้และอีเวนต์ที่บันทึก">
             <h2 className="text-sm font-bold text-slate-900">ตี้และอีเวนต์</h2>
             <p className="text-xs font-medium text-slate-500 mt-0.5">ยังไม่ได้กดเข้าร่วม</p>
             <ul className="mt-3 space-y-3">
@@ -1138,7 +1094,7 @@ function MyHubContent() {
       { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
     ];
     return (
-      <section aria-label="เริ่มที่ไหนดี" className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/90 shadow-2xs">
+      <section aria-label="เริ่มที่ไหนดี" className={scheduleDivider}>
         <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
 
@@ -1199,58 +1155,59 @@ function MyHubContent() {
     );
   };
 
+  // Sections are open, split by a thin line like the member home (owner 2026-10-30: no white boxes); on a wide
+  // screen the first thing in the right column has no line over it
+  const scheduleDivider = `border-t border-slate-200/70 pt-5${doingChallenges.length === 0 && !nextEvent ? ' lg:border-t-0 lg:pt-0' : ''}`;
   const renderMasterCalendarView = () => {
     if (guestEvents.length === 0) return renderFirstSteps();
     const activeRing = 'ring-2 ring-slate-900 bg-slate-50/80';
 
     return (
-      <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200/90 shadow-2xs space-y-4">
+      <div className={`${scheduleDivider} space-y-4`}>
         <div className="space-y-4">
-          {/* One schedule, two ways to look at it: the list and the month show the same events through the same filters */}
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          {/* One schedule, two ways to look at it: the list and the month show the same events through the same filters.
+              One header line on every screen: the title and how to look; when (upcoming or past) sits under it as text tabs */}
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-base sm:text-lg font-bold text-slate-900">กำหนดการ</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              {scheduleView === 'list' && (
-                <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90" role="group" aria-label="ช่วงเวลา">
-                  {([
-                    { id: 'upcoming', label: 'กำลังจะมาถึง' },
-                    { id: 'past', label: 'ที่ผ่านมา' },
-                  ] as const).map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      aria-pressed={scheduleWhen === tab.id}
-                      onClick={() => setScheduleWhen(tab.id)}
-                      className={`h-8 px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleWhen === tab.id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      {tab.label} <span className="tabular-nums opacity-70">{whenCounts[tab.id]}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90" role="group" aria-label="วิธีมอง">
-                {([
-                  { id: 'week', label: 'สัปดาห์', Icon: CalendarRange },
-                  { id: 'list', label: 'รายการ', Icon: Layers },
-                  { id: 'month', label: 'เดือน', Icon: CalendarDays },
-                ] as const).map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={scheduleView === id}
-                    onClick={() => {
-                      setScheduleView(id);
-                      setSelectedCalDay(null);
-                    }}
-                    className={`flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                  >
-                    <Icon className={`w-4 h-4 ${scheduleView === id ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
-                    {label}
-                  </button>
-                ))}
-              </div>
+            <div className="inline-flex items-center p-1 bg-slate-100 rounded-full" role="group" aria-label="วิธีมอง">
+              {([
+                { id: 'list', label: 'รายการ', Icon: Layers },
+                { id: 'month', label: 'เดือน', Icon: CalendarDays },
+              ] as const).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={scheduleView === id}
+                  onClick={() => {
+                    setScheduleView(id);
+                    setSelectedCalDay(null);
+                  }}
+                  className={`flex items-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  <Icon className={`w-4 h-4 ${scheduleView === id ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
+          {scheduleView === 'list' && (
+            <div className="flex items-center gap-5 border-b border-slate-200" role="group" aria-label="ช่วงเวลา">
+              {([
+                { id: 'upcoming', label: 'กำลังจะมาถึง' },
+                { id: 'past', label: 'ที่ผ่านมา' },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={scheduleWhen === tab.id}
+                  onClick={() => setScheduleWhen(tab.id)}
+                  className={`-mb-px py-2 border-b-2 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleWhen === tab.id ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+                >
+                  {tab.label} <span className="tabular-nums">{whenCounts[tab.id]}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Header Controls: Month Navigator & Category Filter Chips */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -1326,8 +1283,8 @@ function MyHubContent() {
               )}
             </div>
 
-            {/* Category Filter Chips (Pill Toggles); nothing to filter, no row (a lone "ทั้งหมด (0)" said nothing) */}
-            <div className={`items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 ${chipCounts.all === 0 && calendarCategoryFilter === 'all' && !hasJoinedQuests ? 'hidden' : 'flex'}`}>
+            {/* Category Filter Chips (Pill Toggles); only when there are two types or more to pick between */}
+            <div className={`items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 ${chipGroups < 2 && calendarCategoryFilter === 'all' ? 'hidden' : 'flex'}`}>
               <button
                 type="button"
                 onClick={() => setCalendarCategoryFilter('all')}
@@ -1427,34 +1384,6 @@ function MyHubContent() {
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>มุมมองรวมทั้งหมด</span>
               </button>
-            </div>
-          )}
-
-          {/* The week strip: seven days from today, a dot in the pillar colour for each thing on that day */}
-          {scheduleView === 'week' && (
-            <div className="grid grid-cols-7 gap-1" role="group" aria-label="เลือกวัน">
-              {weekDays.map((day, i) => {
-                const items = weekItems[i];
-                const isOn = i === shownWeekDay;
-                return (
-                  <button
-                    key={day.getTime()}
-                    type="button"
-                    aria-pressed={isOn}
-                    aria-label={`${THAI_DAY_NAMES[day.getDay()]}ที่ ${day.getDate()} ${THAI_MONTH_SHORT[day.getMonth()]}${items.length ? ` มี ${items.length} รายการ` : ''}`}
-                    onClick={() => setWeekDayIdx(i)}
-                    className={`rounded-2xl py-2 flex flex-col items-center gap-1 border transition-colors cursor-pointer ${isOn ? 'border-[#2563EB] ring-1 ring-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-transparent text-slate-900 hover:bg-slate-50'}`}
-                  >
-                    <span className={`text-[11px] font-medium ${isOn ? 'text-[#1D4ED8]' : 'text-slate-500'}`}>{i === 0 ? 'วันนี้' : THAI_DAY_SHORT[day.getDay()]}</span>
-                    <span className="text-base font-bold tabular-nums leading-none">{day.getDate()}</span>
-                    <span className="h-2 flex items-center gap-0.5" aria-hidden="true">
-                      {items.slice(0, 4).map((ev) => (
-                        <span key={ev.id} className={`w-1.5 h-1.5 rounded-full ${getEventPillarMeta(ev).dotColor}`} />
-                      ))}
-                    </span>
-                  </button>
-                );
-              })}
             </div>
           )}
 
@@ -1656,8 +1585,6 @@ function MyHubContent() {
                   <p className="text-xs sm:text-sm font-bold text-slate-800">
                     {scheduleView === 'list'
                       ? scheduleWhen === 'past' ? 'ยังไม่มีรายการที่ผ่านมา' : calendarCategoryFilter === 'quests' && hasJoinedQuests ? 'ชาเลนจ์ที่ทำอยู่แสดงอยู่ใน "กำลังทำอยู่" ด้านบน' : nextEvent && calendarCategoryFilter === 'all' ? 'ยังไม่มีนัดอื่นหลังจากนี้' : 'ยังไม่มีนัดที่กำลังจะมาถึง'
-                      : scheduleView === 'week'
-                      ? laterPlan ? 'สัปดาห์นี้ยังว่างอยู่' : shownWeekDay === 0 ? 'วันนี้ยังว่างอยู่' : 'วันนี้ยังไม่มีนัด'
                       : selectedCalDay !== null ? 'ไม่มีกำหนดการในวันที่เลือก' : 'ยังไม่มีกำหนดการในเดือนนี้'}
                   </p>
                   <p className="text-[11px] sm:text-xs text-slate-500">
@@ -1665,23 +1592,10 @@ function MyHubContent() {
                       ? 'งานที่ไปร่วมแล้วจะมาอยู่ตรงนี้ พร้อมปุ่มแชร์โมเมนต์และรีวิว'
                       : calendarCategoryFilter === 'quests' && hasJoinedQuests
                       ? 'แต่ละชาเลนจ์จะมาอยู่ในกำหนดการในวันเริ่ม และช่วง 7 วันสุดท้ายก่อนปิด'
-                      : laterPlan
-                      ? `นัดถัดไปของคุณคือ ${laterPlan.date}`
                       : 'ลองหาตี้ที่ชอบ หรืออีเวนต์ที่อยากไป แล้วนัดจะมาอยู่ตรงนี้'}
                   </p>
                 </div>
-                {/* Only when the list has more to show; the page's one black button is "ถัดไปของคุณ" (owner 2026-10-14) */}
-                {laterPlan && upcomingTotal > 0 && calendarCategoryFilter !== 'quests' && (
-                  <button
-                    type="button"
-                    onClick={() => setScheduleView('list')}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all cursor-pointer"
-                  >
-                    <span>ดูนัดทั้งหมด</span>
-                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                )}
-                <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' || (laterPlan && upcomingTotal > 0) ? 'hidden' : ''}`}>
+                <div className={`flex items-center justify-center gap-2 pt-1 ${calendarCategoryFilter === 'quests' ? 'hidden' : ''}`}>
                   <Link
                     href="/community"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
@@ -2027,7 +1941,7 @@ function MyHubContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
+    <div className="min-h-screen bg-white text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
       <div>
         {/* Navigation Bar */}
         <Navbar
@@ -2154,13 +2068,13 @@ function MyHubContent() {
             {/* ========================================================================= */}
             {/* 1. MEMBER KEYCARD PASSPORT (Clean Minimal White Header)                   */}
             {/* ========================================================================= */}
-            <div className="w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 grid grid-cols-1 gap-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+            <div className="w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 grid grid-cols-1 gap-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-x-12 lg:items-start">
               {/* Left on a wide screen: who I am and what I keep. On a phone every piece falls into one column, in the order of the numbers */}
               <aside className="contents lg:flex lg:flex-col lg:gap-5 lg:sticky lg:top-24">
                 <div className="order-1 lg:order-none">
                 {/* Who this hub belongs to, and three real numbers from the account (levels and points return with the challenges work) */}
                 {/* Whose hub this is. A member who runs events also gets the switch to their host side; a guest sees no switch at all */}
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 text-slate-900 lg:flex-col lg:items-start">
+                <div className="space-y-3 text-slate-900">
                   <div className="flex items-center gap-3 min-w-0">
                     {hubMember?.avatarUrl ? (
                       <img src={hubMember.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
@@ -2169,11 +2083,25 @@ function MyHubContent() {
                         {nameInitial(hubName)}
                       </span>
                     )}
-                    <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
+                    <div className="min-w-0">
+                      <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
+                      {/* The XP and the way to the challenges, one line under the name like the home greeting (was a box of its own) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHubMainMode('categories');
+                          setActiveSubTab('quests_rewards');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
+                      >
+                        {userXp} XP · ชาเลนจ์ของฉัน ›
+                      </button>
+                    </div>
                   </div>
 
                   {activity.hosted.length > 0 && (
-                    <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200/90" role="group" aria-label="บทบาท">
+                    <div className="flex items-center gap-5" role="group" aria-label="บทบาท">
                       {([
                         { mode: 'calendar', label: 'ของฉัน', Icon: Users },
                         { mode: 'hosting', label: 'งานที่จัด', Icon: Crown },
@@ -2185,7 +2113,7 @@ function MyHubContent() {
                             type="button"
                             aria-pressed={isOn}
                             onClick={() => setHubMainMode(mode)}
-                            className={`flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${isOn ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                            className={`-mb-px flex items-center gap-1.5 py-2 border-b-2 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${isOn ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
                           >
                             <Icon className={`w-4 h-4 ${isOn ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
                             {label}
@@ -2199,13 +2127,13 @@ function MyHubContent() {
                 </div>
                 {/* What "Chill · Connect" on the home page opens: the month behind the numbers */}
                 {isLoggedIn && (
-                  <div className="order-4 lg:order-none empty:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+                  <div className="order-4 lg:order-none empty:hidden border-t border-slate-200/70 pt-5">
                     <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
                   </div>
                 )}
                 {/* The stamp passport: one stamp per finished challenge; the home page links here */}
                 {isLoggedIn && myRewards.isLoaded && questCatalog && (
-                  <div className="order-5 lg:order-none bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs">
+                  <div className="order-5 lg:order-none border-t border-slate-200/70 pt-5">
                     <StampPassport {...buildPassport(myRewards.finished, myRewards.quests, questCatalog)} />
                   </div>
                 )}
@@ -2231,7 +2159,7 @@ function MyHubContent() {
               </aside>
 
               {/* Right: what the member is doing. The challenges under way, the next event, then the schedule (or the host side, or a view opened from the left) */}
-              <main id="hub-content-section" className="contents lg:flex lg:flex-col lg:gap-4 lg:min-w-0">
+              <main id="hub-content-section" className="contents lg:flex lg:flex-col lg:gap-5 lg:min-w-0">
                 <div className="order-2 lg:order-none empty:hidden">
                 {/* Saved places and the challenges view open from the cards under the schedule; this is the way back */}
                 {hubMainMode === 'categories' && (
@@ -2241,14 +2169,14 @@ function MyHubContent() {
                   </button>
                 )}
 
-                    {hubMainMode === 'calendar' && <div className="mb-4">{renderDoingNow()}</div>}
+                    {hubMainMode === 'calendar' && renderDoingNow()}
                     {hubMainMode === 'calendar' && nextEvent && (() => {
                       const when = new Date(scheduleTs(nextEvent));
                       const isFair = nextEvent.eventType === 'public_venue';
                       return (
-                        <section aria-label="ถัดไปของคุณ" className="bg-white rounded-2xl px-4 py-3 border border-slate-200/90 shadow-2xs">
-                          <h2 className="text-sm font-bold text-slate-900">ถัดไปของคุณ</h2>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2.5">
+                        <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
+                          <h2 className="text-base font-bold text-slate-900">ถัดไปของคุณ</h2>
+                          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
                             <div className="w-12 shrink-0 text-center rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] py-1.5">
                               <span className="block text-lg font-bold leading-tight tabular-nums">{when.getDate()}</span>
                               <span className="block text-[11px] font-semibold text-[#1D4ED8]">{THAI_MONTH_SHORT[when.getMonth()]}</span>

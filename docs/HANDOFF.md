@@ -2262,3 +2262,11 @@ CodeQL flagged two High "DOM text reinterpreted as HTML" alerts on `StoryPhoto` 
 Admin and data only; no frontend action. Only 7 of the 27 built-in venues had a photo. 19 more now do (`public/images/venues/<id>.jpg`, about 70-160 KB each, 1000 px): IMPACT Arena, Thunder Dome, Rajamangala, Supachalasai, Lumpinee boxing stadium, RBSC, ICONSIAM, CentralWorld, UOB LIVE (EmSphere), Union Mall, Samyan Mitrtown, Thailand Cultural Centre, Chula Centenary Park, Lumpini, Vachirabenjatas, Sanam Luang, CMECC, PEACH (Royal Cliff), Chang Arena. Only "อื่นๆ" stays without one.
 - **Source:** each venue's Wikidata photo on Wikimedia Commons (open licences: CC BY / CC BY-SA, one public domain), every photo checked by eye.
 - **Credit kept:** venues gain `imageCredit` (author · licence · Commons link), set in the seed (`MASTER_VENUE_OPTIONS`) and in `data/master_data.json`; the admin venue form shows it as "เครดิตรูป". Anyone who later shows these photos on a public page should show the credit with them (CC BY needs it).
+### BE-190 · My Hub toward 9.5, round two: open layout, two schedule views (owner 2026-10-30)
+`app/myhub/page.tsx` only; no frontend action. Built from the draft "ร่างมายฮับ แบบเปิดโล่ง".
+- **No white boxes:** sections sit on a white page split by a thin line, like the member home. The month grid keeps its frame.
+- **The schedule has two views, รายการ | เดือน** (owner: three with สัปดาห์ was too many). The week strip, the smart opening view of BE-186 and the "สัปดาห์นี้ยังว่างอยู่" empty state are gone; the page opens on the list.
+- **One header line:** "กำหนดการ" and รายการ | เดือน share a line on every screen; กำลังจะมาถึง / ที่ผ่านมา are underlined text tabs under it (was a second pill switch stacked on the phone). ของฉัน | งานที่จัด are underlined tabs too.
+- **Type chips only when there is a choice:** with one type (only ตี้) the row is hidden; it shows with two types or more.
+- **XP under the name:** "50 XP · ชาเลนจ์ของฉัน ›" sits under the page title; the "ชาเลนจ์ & XP" box is gone, and "กำลังทำอยู่" (challenges under way) no longer repeats the XP.
+- **Still open:** walk a brand-new member (empty "เริ่มที่ไหนดี") and the host side on a laptop.
