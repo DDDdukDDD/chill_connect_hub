@@ -2318,3 +2318,9 @@ No frontend action; all user-facing text changed in this commit.
 - **Reward tiles are the site tile** (`app/rewards/page.tsx`): square photo, 2 / 3 / 4 a row (was one text card a row on phones), the XP on a tilted yellow ticket like the challenge stickers, name and partner below. Signed in: a yellow ring and "แลกได้เลย" on the photo when there is enough XP, "แลกแล้ว" when taken, otherwise a warm bar with "ขาด N". The reward dialog shows the photo too.
 - **The prize draw** (an item with `drawEntry`) is one big card above the tiles, its product photo blended into the card.
 - **Data:** `RewardShopItem.image` (optional; tiles without one show the category icon). SAMPLE photos from Unsplash for the 8 vouchers, `/campaign/iphone-duo.png` for the draw; on the launch checklist to swap for partners' own photos.
+
+### BE-196 · Landing, wordmark on phones, tagline, cookies in the privacy policy (owner 2026-10-31)
+- **Landing (guests):** the mid-page sign-up band "มาออกไปด้วยกันนะ เพื่อนๆ รอคุณอยู่" is gone; สมัครฟรี stays in the sticky top bar and the footer line (`app/HomeView.tsx`). The same band at the end of /about is kept.
+- **Top bar on phones:** guests see the name Chill···Waa next to the logo again from 360px up (was hidden below 430px); below 360px the logo stands alone (`components/Navbar.tsx`). Checked at 320/360/375/393: สมัครฟรี stays 16px from the edge.
+- **Tagline under the logo:** "คอมมูนิตี้คนชอบออกไปใช้ชีวิต" (was "ชวนเพื่อน ออกไปใช้ชีวิต", which shut out people who come alone) in `components/BrandWordmark.tsx`; one line on desktop, still hidden on phones. Matches the site description in `app/layout.tsx`.
+- **Privacy policy:** new section "4. คุกกี้" (rights move to 5) in `components/TermsPrivacyModal.tsx`: only needed cookies (log-in, OAuth state, invite link `cch_ref` 30 days), no ad or outside tracking. Launch checklist: a consent banner before adding analytics, Pixel or AdSense.

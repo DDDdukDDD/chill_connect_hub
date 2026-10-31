@@ -620,37 +620,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
               </section>
             </div>
 
-            {/* 5. Signed out only: the invitation to join, after the meetups and challenges its words name (owner 2026-10-23) */}
-            {isAuthReady && !isLoggedIn && (
-              <section className="mt-12 sm:mt-16 relative overflow-hidden bg-[#FFF8F1]">
-                <div className="pointer-events-none absolute -right-16 -top-24 w-64 h-64 rounded-full bg-[#FFE7D6]" aria-hidden="true" />
-                <div className={`relative ${CONTAINER} py-6 sm:py-7 grid md:grid-cols-[1fr_auto] gap-4 md:gap-10 items-center text-center md:text-left`}>
-                  <div className="flex items-center justify-center md:justify-start gap-4">
-                    <span className="hidden sm:block shrink-0">{photoFaces('w-10 h-10', 'border-[#FFF8F1]')}</span>
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">มาออกไปด้วยกันนะ เพื่อนๆ รอคุณอยู่</h2>
-                      <p className="mt-1 text-sm sm:text-[15px] text-slate-700">สมัครฟรี แล้วเริ่มออกไปใช้ชีวิต ติดตามเรื่องราวจากเพื่อนๆ และแบ่งปันเรื่องราวของคุณ</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col md:flex-row-reverse items-center gap-2 md:gap-5">
-                    <button
-                      type="button"
-                      onClick={() => openAuth('signup')}
-                      className="w-full md:w-auto h-11 px-7 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-base font-semibold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
-                    >
-                      สมัครสมาชิกฟรี
-                    </button>
-                    <p className="text-[13px] text-slate-500">
-                      มีบัญชีแล้ว?{' '}
-                      <button type="button" onClick={() => openAuth('login')} className="font-semibold text-slate-900 underline underline-offset-2 cursor-pointer">
-                        เข้าสู่ระบบ
-                      </button>
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
-
+            {/* No mid-page sign-up band: สมัครฟรี stays in the sticky top bar and the footer (owner 2026-10-31) */}
             <div className={`${CONTAINER} pt-12 sm:pt-16 space-y-12 sm:space-y-16`}>
               {/* 6. Support: provinces to explore */}
               <section className="space-y-4">
