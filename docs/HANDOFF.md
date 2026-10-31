@@ -2308,3 +2308,8 @@ No frontend action; all user-facing text changed in this commit.
 - **When it shows:** ตี้, อีเวนต์, ชาเลนจ์: only when the item is in the filtered list (it is moved up, never added to results it does not fit), card view only (the dated list views keep their date order; /challenges opens in the list view, so its sponsored card shows after switching to cards). ที่เที่ยว: the list comes a batch at a time, so the page gets the place on its own and shows it with no search, category, free-only, saved or near-me filter, and in a picked province only when the place is there. `withSponsored()` in `lib/sponsored/types.ts` does the placing.
 - **Member home on laptops:** the column with the greeting, ของฉัน, ถัดไปของคุณ and the campaign is now on the left, as in My Hub, under the logo (the page uses the top bar width, `max-w-7xl 2xl:max-w-[1600px]`), with the feed centred in the rest. ของฉัน now comes before ถัดไปของคุณ (owner 2026-10-31). Phones unchanged.
 - **CodeQL "DOM text reinterpreted as HTML" (onboarding photo, 4 alerts):** the picked photo or the account picture now goes through `safeImageSrc()` (`lib/optimizedImage.ts`: only http(s), site, `data:image/` and `blob:` links, escaped) before `<img src>`; same in `app/profile/EditProfileDialog.tsx`.
+
+### BE-194 · Small fixes from the 9.5 check (owner 2026-10-31)
+- **Log-in and sign-up:** only the social ways that work are shown (Apple "เร็วๆ นี้" was a greyed button on the first screen); the hint under the email form names only those (`components/auth/AuthPanel.tsx`).
+- **Tab titles:** /rewards "ของรางวัล", /myhub "มายฮับ" (both showed the site title).
+- **Removed test pages:** /journey-simple, /preview-hero, /preview-logo (reachable from outside; /preview-hero had two h1).

@@ -91,19 +91,18 @@ const PROVIDERS: { id: OAuthProvider; label: string; icon: React.ReactNode }[] =
 function SocialButtons({ verb, available, disabled, onPick }: { verb: string; available: Record<string, boolean>; disabled?: boolean; onPick: (p: OAuthProvider) => void }) {
   return (
     <div className="space-y-3">
-      {PROVIDERS.map((p) => {
-        const ready = available[p.id];
+      {/* Only the ways that work: a greyed "เร็วๆ นี้" button was clutter on the first screen (owner 2026-10-31) */}
+      {PROVIDERS.filter((p) => available[p.id]).map((p) => {
         return (
           <button
             key={p.id}
             type="button"
-            disabled={disabled || !ready}
+            disabled={disabled}
             onClick={() => onPick(p.id)}
             className="w-full bg-white hover:bg-slate-50 disabled:hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-slate-800 py-3.5 px-4 sm:px-6 rounded-full border border-slate-300 font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 sm:gap-3 active:scale-98 disabled:active:scale-100 transition-all cursor-pointer"
           >
             {p.icon}
             <span className="whitespace-nowrap"><span className="hidden min-[400px]:inline">{verb}ด้วย </span>{p.label}</span>
-            {!ready && <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">เร็วๆ นี้</span>}
           </button>
         );
       })}
@@ -440,7 +439,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
           </form>
           {hasSocial && (
             <p className="pt-4 text-center text-xs text-slate-500 font-medium leading-relaxed">
-              <PhraseText text="สมัครด้วย LINE, Google, Apple หรือ Facebook? ใช้ปุ่มนั้นเข้าสู่ระบบได้เลย ไม่ต้องใช้รหัสผ่าน" />
+              <PhraseText text={`สมัครด้วย ${PROVIDERS.filter((p) => session.providers[p.id]).map((p) => p.label).join(', ').replace(/, ([^,]+)$/, ' หรือ $1')}? ใช้ปุ่มนั้นเข้าสู่ระบบได้เลย ไม่ต้องใช้รหัสผ่าน`} />
             </p>
           )}
         </div>
