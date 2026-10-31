@@ -1,7 +1,9 @@
 import { connection } from 'next/server';
 import { discoverMetadata } from '@/lib/discoverMetadata';
-import { discoverStart } from '@/lib/publicContent';
+import { discoverStart, getPublicSpot } from '@/lib/publicContent';
+import { spotListItem } from '@/lib/listItems';
 import { browseParamsFrom, browseSpots } from '@/lib/spotBrowse';
+import { liveSponsoredId } from '@/lib/sponsored/store';
 import SpotsListView from './SpotsListView';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -18,9 +20,12 @@ export default async function SpotsPage({ searchParams }: Props) {
   await connection();
   const params = await searchParams;
   const get = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : undefined);
-  const [initial, initialCounts] = await Promise.all([
+  const sponsoredId = liveSponsoredId('spots');
+  const [initial, initialCounts, sponsored] = await Promise.all([
     browseSpots({ ...browseParamsFrom(get), ids: undefined, near: undefined, openedAt: undefined, limit: SERVER_SPOTS }),
     discoverStart(searchParams),
+    sponsoredId ? getPublicSpot(sponsoredId) : null,
   ]);
-  return <SpotsListView initial={initial} openedAt={initial.openedAt} initialCounts={initialCounts} />;
+  // The list comes a batch at a time, so the sponsored place travels on its own (the page puts it in its slot)
+  return <SpotsListView initial={initial} openedAt={initial.openedAt} initialCounts={initialCounts} sponsoredSpot={sponsored ? spotListItem(sponsored) : null} />;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { SponsoredBadge } from './SponsoredBadge';
 import Link from 'next/link';
 import { MapPin, Heart, Star } from 'lucide-react';
 import type { LifestyleSpotItem } from '@/data/spotsData';
@@ -25,10 +26,13 @@ export function SpotTile({
   spot,
   isSaved = false,
   onToggleSave,
+  sponsored = false,
 }: {
   spot: LifestyleSpotItem & { distanceKm?: number };
   isSaved?: boolean;
   onToggleSave?: (spotId: string) => void;
+  /** A paid-for place in a list (lib/sponsored): "สนับสนุน" on the photo */
+  sponsored?: boolean;
 }) {
   return (
     <Link href={`/spots/${encodeURIComponent(spot.id)}`} className="group block">
@@ -39,6 +43,7 @@ export function SpotTile({
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
+        {sponsored && <SponsoredBadge />}
         {/* What it costs to get in; no badge when the source does not say, rather than "ไม่ระบุ" on the photo */}
         {hasPrice(spot.price) && (
           <span className="absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm bg-[#4A7C59] text-white">

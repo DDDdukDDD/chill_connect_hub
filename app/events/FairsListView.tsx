@@ -6,6 +6,8 @@ import { Heart, X, Calendar, Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { FairTile } from '@/components/FairTile';
+import { SponsoredBadge } from '@/components/SponsoredBadge';
+import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -36,9 +38,9 @@ const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 
 // The list runs by date, soonest first: people pick an อีเวนต์ by when they are free; "favorites" narrows it to the saved ones
 type SortOption = 'soonest' | 'favorites';
 
-type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
+type ServerProps = { initialEvents?: EventItem[]; initialCounts?: { query: string; province: string; counts: DiscoverCounts }; sponsoredId?: string | null };
 
-function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
+function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: ServerProps) {
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, isOrganizer, isVenueOwner } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
@@ -292,12 +294,13 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen
-    return filteredEvents.slice(0, currentPage * itemsPerPage);
-  }, [filteredEvents, currentPage, itemsPerPage]);
+    // A sponsored อีเวนต์ that fits the filters takes the third card (lib/sponsored)
+    return withSponsored(filteredEvents, filteredEvents.find((event) => event.id === sponsoredId)).slice(0, currentPage * itemsPerPage);
+  }, [filteredEvents, sponsoredId, currentPage, itemsPerPage]);
 
   // One อีเวนต์ tile for the card grid and the list view's "กำลังจัดอยู่ตอนนี้" strip, so both views look the same
-  const tileFor = (event: EventItem) => (
-    <FairTile event={event} now={now} isSaved={isLoggedIn && favorites.includes(event.id)} onToggleSave={toggleFavorite} />
+  const tileFor = (event: EventItem, sponsored = false) => (
+    <FairTile event={event} sponsored={sponsored} now={now} isSaved={isLoggedIn && favorites.includes(event.id)} onToggleSave={toggleFavorite} />
   );
 
   const handleResetAll = () => {
@@ -498,7 +501,7 @@ function FairsPageContent({ initialEvents, initialCounts }: ServerProps) {
               // The ตี้ grid and tile shape, so switching tabs feels like one page; posters show whole (owner 2026-10-27)
               <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
                 {paginatedEvents.map((event) => (
-                  <li key={event.id}>{tileFor(event)}</li>
+                  <li key={event.id}>{tileFor(event, event.id === sponsoredId)}</li>
                 ))}
               </ul>
             )}

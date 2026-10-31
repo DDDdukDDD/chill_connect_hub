@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { SponsoredBadge } from './SponsoredBadge';
 import Link from 'next/link';
 import { MapPin, Heart, Star, Globe } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
@@ -150,6 +151,7 @@ export function MeetupTile({
   showHost = false,
   badge,
   href,
+  sponsored = false,
   className = '',
 }: {
   event: EventItem;
@@ -165,6 +167,8 @@ export function MeetupTile({
   badge?: string;
   /** Where the tile goes; null when there is no page yet (a ตี้ waiting for review). Defaults to the ตี้ page. */
   href?: string | null;
+  /** A paid-for place in a list (lib/sponsored): "สนับสนุน" on the photo */
+  sponsored?: boolean;
   className?: string;
 }) {
   const isEnded = isEventEnded(event);
@@ -197,6 +201,7 @@ export function MeetupTile({
             {seatsLine(event)}
           </span>
         )}
+        {sponsored && <SponsoredBadge />}
         {showSave && (
           <button
             type="button"

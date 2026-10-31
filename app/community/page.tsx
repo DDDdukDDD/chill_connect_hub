@@ -4,6 +4,7 @@ import { discoverStart, listPublicMeetups } from '@/lib/publicContent';
 import { isClosedToJoin, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { eventListItem } from '@/lib/listItems';
 import { jsonLdHtml, meetupCollectionJsonLd } from '@/lib/structuredData';
+import { liveSponsoredId } from '@/lib/sponsored/store';
 import CommunityListView from './CommunityListView';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -31,7 +32,7 @@ export default async function CommunityPage({ searchParams }: Props) {
           meetupCollectionJsonLd(upcoming, '/community', 'ตี้หาเพื่อนไปทำกิจกรรมด้วยกัน', 'รวมตี้ที่เปิดรับอยู่ วิ่ง คาเฟ่ บอร์ดเกม เวิร์กช็อป ฮีลใจ และอีกมาก เลือกตามสายที่ชอบ แล้วไปเจอเพื่อนใหม่ที่งานจริง')
         )}
       />
-      <CommunityListView initialEvents={live} initialCounts={initialCounts} />
+      <CommunityListView initialEvents={live} initialCounts={initialCounts} sponsoredId={liveSponsoredId('community')} />
     </>
   );
 }

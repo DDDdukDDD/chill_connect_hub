@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import { listPublicQuests } from '@/lib/publicContent';
 import { liveCampaign } from '@/lib/campaigns/store';
+import { liveSponsoredId } from '@/lib/sponsored/store';
 import { challengeCollectionJsonLd, jsonLdHtml } from '@/lib/structuredData';
 import ChallengesListView from './ChallengesListView';
 
@@ -26,7 +27,7 @@ export default async function ChallengesPage({ searchParams }: Props) {
           )
         )}
       />
-      <ChallengesListView initialQuests={quests} initialQuery={typeof q === 'string' ? q : ''} campaign={liveCampaign({ home: true })} />
+      <ChallengesListView initialQuests={quests} initialQuery={typeof q === 'string' ? q : ''} campaign={liveCampaign({ home: true })} sponsoredId={liveSponsoredId('challenges')} />
     </>
   );
 }

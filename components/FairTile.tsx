@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { SponsoredBadge } from './SponsoredBadge';
 import Link from 'next/link';
 import { MapPin, Heart } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
@@ -80,12 +81,15 @@ export function FairTile({
   now,
   isSaved = false,
   onToggleSave,
+  sponsored = false,
 }: {
   event: EventItem;
   /** The browser's clock, for "กำลังจัดอยู่"; leave it out in server HTML */
   now?: Date | null;
   isSaved?: boolean;
   onToggleSave?: (eventId: string) => void;
+  /** A paid-for place in a list (lib/sponsored): "สนับสนุน" on the photo */
+  sponsored?: boolean;
 }) {
   const isEnded = isEventEnded(event);
   const onNow = !isEnded && isOnNow(event, now);
@@ -99,6 +103,7 @@ export function FairTile({
         {/* A tall poster shows whole over a blurred copy of itself; a plain photo fills the square as on a ตี้ tile */}
         <PosterPhoto src={optimizedImage(event.image, 384)} dim={isEnded} zoom />
         {badge && <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${badge.tone}`}>{badge.text}</span>}
+        {sponsored && <SponsoredBadge />}
         {onToggleSave && !isEnded && (
           <button
             type="button"

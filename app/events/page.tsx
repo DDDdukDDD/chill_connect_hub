@@ -4,6 +4,7 @@ import { discoverStart, listPublicFairs } from '@/lib/publicContent';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { eventListItem } from '@/lib/listItems';
 import { fairCollectionJsonLd, jsonLdHtml } from '@/lib/structuredData';
+import { liveSponsoredId } from '@/lib/sponsored/store';
 import FairsListView from './FairsListView';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -31,7 +32,7 @@ export default async function FairsPage({ searchParams }: Props) {
           fairCollectionJsonLd(upcoming, '/events', 'อีเวนต์ งานแฟร์ คอนเสิร์ต งานวิ่ง ทั่วไทย', 'รวมอีเวนต์ที่กำลังจะมาถึง งานแฟร์ เอ็กซ์โป คอนเสิร์ต งานวิ่ง และกีฬา เรียงตามวัน ดูวันจัด สถานที่ และค่าเข้าชม แล้วชวนเพื่อนไปด้วยกัน')
         )}
       />
-      <FairsListView initialEvents={live} initialCounts={initialCounts} />
+      <FairsListView initialEvents={live} initialCounts={initialCounts} sponsoredId={liveSponsoredId('events')} />
     </>
   );
 }

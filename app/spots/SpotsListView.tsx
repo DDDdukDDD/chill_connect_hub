@@ -12,6 +12,8 @@ import {
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { SpotTile, SpotTileSkeleton } from '@/components/SpotTile';
+import { SponsoredBadge } from '@/components/SponsoredBadge';
+import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -19,13 +21,14 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { useAuth } from '@/lib/useAuth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
+import type { LifestyleSpotItem } from '@/data/spotsData';
 import type { SpotBrowseResult } from '@/lib/spotBrowse';
 import { NATIONWIDE_SPOT_CATEGORIES } from '@/components/SpotCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { DestinationCircles } from '@/components/discover/DestinationCircles';
 import type { EventItem } from '@/data/mockData';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
-import { type DiscoverCounts } from '@/lib/discoverMatch';
+import { ALL_PROVINCES, spotInProvince, type DiscoverCounts } from '@/lib/discoverMatch';
 import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
@@ -36,12 +39,12 @@ import { Toast } from '@/components/Toast';
 const SpotListItem = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItem));
 const SpotListItemSkeleton = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItemSkeleton));
 
-type ServerProps = { initial?: SpotBrowseResult; openedAt?: number; initialCounts?: { query: string; province: string; counts: DiscoverCounts } };
+type ServerProps = { initial?: SpotBrowseResult; openedAt?: number; initialCounts?: { query: string; province: string; counts: DiscoverCounts }; sponsoredSpot?: LifestyleSpotItem | null };
 
 // Whole rows of the 2 / 3 / 4 / 6 tile grid, as on /events and /community
 const TILE_BATCH = { mobile: 12, sm: 12, md: 16, lg: 24, xl2: 24, defaultItems: 24 };
 
-function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: ServerProps) {
+function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sponsoredSpot = null }: ServerProps) {
   const searchParams = useSearchParams();
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // The member's own categories from onboarding come first on the tabs, marked (owner 2026-10-23)
@@ -192,6 +195,11 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
   const railCategories = useMemo(() => NATIONWIDE_SPOT_CATEGORIES.filter((cat) => result.railIds.includes(cat.id)), [result.railIds]);
   const paginatedSpots = result.spots;
   const totalSpots = result.total;
+  // The sponsored place takes the third card while the list is not narrowed to something it may not fit (lib/sponsored)
+  const showSponsored =
+    sponsoredSpot !== null && !searchQuery.trim() && selectedCategory === 'all' && priceFilter === 'all' && sortBy === 'newest' && !sortByNearMe &&
+    (selectedProvince === ALL_PROVINCES || spotInProvince(sponsoredSpot, selectedProvince));
+  const gridSpots = useMemo(() => withSponsored(paginatedSpots, showSponsored ? sponsoredSpot : null), [paginatedSpots, showSponsored, sponsoredSpot]);
 
   const handleResetAll = () => {
     setSearchQuery('');
@@ -378,9 +386,9 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts }: 
             ) : (
               // The ตี้ / อีเวนต์ grid and tile, so the three tabs feel like one page
               <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
-                {paginatedSpots.map((spot) => (
+                {gridSpots.map((spot) => (
                   <li key={spot.id}>
-                    <SpotTile spot={spot} isSaved={isLoggedIn && favoriteSpots.includes(spot.id)} onToggleSave={(id) => toggleFavoriteSpot(id)} />
+                    <SpotTile spot={spot} isSaved={isLoggedIn && favoriteSpots.includes(spot.id)} onToggleSave={(id) => toggleFavoriteSpot(id)} sponsored={showSponsored && spot.id === sponsoredSpot?.id} />
                   </li>
                 ))}
               </ul>
