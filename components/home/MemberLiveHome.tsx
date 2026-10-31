@@ -82,11 +82,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   };
 
   return (
-    <div className="max-w-[1040px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
-      {/* Two columns on laptops (owner 2026-10-29): the feed, and "ของฉัน" pinned beside it. Where to go next (ตี้,
+    <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
+      {/* Two columns on laptops (owner 2026-10-29): "ของฉัน" pinned on the left under the logo as in My Hub (owner 2026-10-31), the feed centred in the rest. Where to go next (ตี้,
           ชาเลนจ์, อีเวนต์, ที่เที่ยว) comes as cards between the posts on every screen, as on phones, instead of a third column */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
-        <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto lg:mx-0 scroll-mt-24">
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14">
+        <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello with
               this month's counts, then one slim line when there is something to do next. Laptops have both beside the feed */}
           <div className="lg:hidden mb-6">
@@ -107,10 +107,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
         {/* Laptops: me, my next plans, shortcuts and the campaign, pinned beside the feed. With three plans and the
             campaign it is taller than a 768-900px screen, so it scrolls on its own instead of hiding its bottom */}
-        <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
+        <aside className="hidden lg:block lg:order-first sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
           <Greeting {...props} layout="column" />
-          <NextUp {...props} />
+          {/* ของฉัน before the plans (owner 2026-10-31): the shortcuts keep one place however many plans there are */}
           <Shortcuts {...props} />
+          <NextUp {...props} />
           {/* The campaign sits beside the feed, not above it (owner 2026-10-30): you and your plans come first.
               Loud only when there is a decision (start, enter); CampaignStrip has the states */}
           {props.campaign && props.campaignMember && (
