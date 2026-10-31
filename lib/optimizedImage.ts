@@ -24,6 +24,11 @@ function isOptimizedRemote(src: string): boolean {
 /** Only web, site-local, inline-image and blob links reach an `src`; anything else (`javascript:`, odd schemes) is dropped. */
 const SAFE_IMAGE_SRC = /^(?:https?:\/\/|\/(?!\/)|data:image\/|blob:)/i;
 
+/** A link for an `<img src>` as it is (photo previews, account pictures): unsafe schemes dropped, the rest escaped. */
+export function safeImageSrc(src: string | null | undefined): string {
+  return src && SAFE_IMAGE_SRC.test(src) ? encodeImageLink(src) : '';
+}
+
 export function optimizedImage(src: string | undefined, width: number): string {
   if (!src || !SAFE_IMAGE_SRC.test(src)) return '';
   const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');

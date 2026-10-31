@@ -40,6 +40,7 @@ import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { NEW_MEMBER_NAME, nameInitial, reservedNameProblem, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
+import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
@@ -446,7 +447,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     if (!displayName && !isPlaceholder) setDisplayName(suggested);
   }
   // A picked photo wins; otherwise show the picture the account already has (from LINE, Google or Facebook)
-  const shownPhoto = photo?.preview ?? (preview ? null : session.member?.avatarUrl ?? null);
+  const shownPhoto = safeImageSrc(photo?.preview ?? (preview ? null : session.member?.avatarUrl)) || null;
 
   // Free the preview image when it is replaced, unless a finished run still shows it
   useEffect(() => () => {
