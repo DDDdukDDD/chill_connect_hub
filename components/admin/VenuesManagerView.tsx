@@ -18,7 +18,7 @@ const VENUE_TAG_LABELS: Record<MasterVenue['venueTag'], string> = {
   park: 'สวน / พื้นที่สาธารณะอื่น',
 };
 
-type VenueForm = { id?: string; name: string; venueTag: MasterVenue['venueTag']; province: string; location: string; transitHint: string; latitude: string; longitude: string; website: string; image: string };
+type VenueForm = { id?: string; name: string; venueTag: MasterVenue['venueTag']; province: string; location: string; transitHint: string; latitude: string; longitude: string; website: string; image: string; imageCredit: string };
 
 function VenueEditor({ entry, onClose, onSave, isSaving }: { entry: MasterVenue | null; onClose: () => void; onSave: (form: VenueForm) => void; isSaving: boolean }) {
   const [form, setForm] = useState<VenueForm>({
@@ -32,6 +32,7 @@ function VenueEditor({ entry, onClose, onSave, isSaving }: { entry: MasterVenue 
     longitude: entry?.longitude !== undefined ? String(entry.longitude) : '',
     website: entry?.website ?? '',
     image: entry?.image ?? '',
+    imageCredit: entry?.imageCredit ?? '',
   });
   const set = <K extends keyof VenueForm>(key: K, value: VenueForm[K]) => setForm((current) => ({ ...current, [key]: value }));
   const hasCoordinates = form.latitude !== '' || form.longitude !== '';
@@ -90,6 +91,9 @@ function VenueEditor({ entry, onClose, onSave, isSaving }: { entry: MasterVenue 
         <div className="sm:col-span-2">
           <ImageField id="venue-image" value={form.image} onChange={(url) => set('image', url)} folder="venue" />
         </div>
+        <Field label="เครดิตรูป:" htmlFor="venue-image-credit" wide hint="ผู้ถ่าย · สัญญาอนุญาต · ที่มา (จำเป็นสำหรับรูปจาก Wikimedia Commons)">
+          <input id="venue-image-credit" value={form.imageCredit} onChange={(e) => set('imageCredit', e.target.value)} className={fieldInputClass} />
+        </Field>
       </FormSection>
     </AdminDrawer>
   );

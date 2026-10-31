@@ -222,7 +222,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
             </span>
           </button>
 
-          {/* 2. Official • Chill & Connect */}
+          {/* 2. Official • Chillwaa */}
           <button
             type="button"
             onClick={() => setFilterType(filterType === 'hub_central' ? 'all' : 'hub_central')}
@@ -232,7 +232,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200/80'
             }`}
           >
-            <span>Official • Chill & Connect</span>
+            <span>Official • Chillwaa</span>
             <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${filterType === 'hub_central' ? 'bg-white text-[#5B21B6]' : 'bg-slate-100 text-slate-600'}`}>
               {hubCount}
             </span>
@@ -350,7 +350,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 flex flex-col justify-end space-y-1.5 z-10">
                       {/* Host / Partner Tag */}
                       <div className="text-[11px] font-bold uppercase tracking-wider text-purple-300 drop-shadow-sm truncate">
-                        {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Official • Chill & Connect'}
+                        {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Official • Chillwaa'}
                       </div>
 
                       {/* Title */}
@@ -419,11 +419,11 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                     </span>
                   ) : (
                     <span
-                      title="ชาเลนจ์กิจกรรมกลางของ Chill & Connect Hub (สะสม XP แลกรางวัลอิสระ)"
+                      title="ชาเลนจ์กิจกรรมกลางของ Chillwaa (สะสม XP แลกรางวัลอิสระ)"
                       className="text-[11px] font-bold text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-full flex items-center gap-1 border border-purple-300/80 truncate max-w-[calc(100%-70px)]"
                     >
                       <Crown className="w-2.5 h-2.5 text-purple-700 fill-purple-500 shrink-0" />
-                      <span className="truncate">Official • Chill & Connect</span>
+                      <span className="truncate">Official • Chillwaa</span>
                     </span>
                   )}
 
@@ -492,7 +492,7 @@ export const CommunityChallengeBar: React.FC<CommunityChallengeBarProps> = ({
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <div className="min-w-0 flex-1 truncate" title={brandReward.type === 'brand_partner' ? `พาร์ทเนอร์ทางการ: ${brandReward.partnerName}` : 'กิจกรรมกลางของ Hub'}>
                     <span className="truncate text-slate-600 font-semibold text-[11px]">
-                      โดย {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chill & Connect Hub'}
+                      โดย {brandReward.type === 'brand_partner' ? brandReward.partnerName : 'Chillwaa'}
                     </span>
                   </div>
 

@@ -67,7 +67,7 @@ export function getQuestBrandReward(quest: Pick<ChallengeQuest, 'brandReward'> |
   return {
     type: 'hub_central',
     title: 'สะสม XP แลกของรางวัลที่ชอบ',
-    partnerName: 'Chill & Connect Hub',
+    partnerName: 'Chillwaa',
     hubRewardNote: 'ชาเลนจ์กิจกรรมกลางของระบบ รับแต้มสะสมอิสระเพื่อนำไปเลือกแลกของรางวัลในหน้า /rewards',
     terms: 'นำ XP ไปเลือกของรางวัลที่ต้องการได้ตลอดเวลา',
   };

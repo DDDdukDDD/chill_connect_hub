@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 /** The public address of the site. Set NEXT_PUBLIC_SITE_URL to override it (preview deploys). */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://chillconnecthub.com').replace(/\/$/, '');
-export const SITE_NAME = 'Chill & Connect Hub';
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chillwaa.com').replace(/\/$/, '');
+export const SITE_NAME = 'Chillwaa';
 
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 

@@ -1,5 +1,5 @@
 /**
- * Smart Search Utilities for Chill & Connect Hub
+ * Smart Search Utilities for Chillwaa
  * Supports multi-token tokenization, Thai lifestyle synonym expansion, and fuzzy keyword matching.
  */
 

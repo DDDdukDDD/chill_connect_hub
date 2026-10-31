@@ -312,7 +312,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
     if (typeof window === 'undefined' || !spot) return;
     const url = window.location.href;
     const shareData = {
-      title: `${spot.title} | Chill & Connect Hub`,
+      title: `${spot.title} | Chillwaa`,
       text: `แนะนำจุดเช็คอิน & จุดฮีลใจ: ${spot.title} (${spot.province})`,
       url: url,
     };

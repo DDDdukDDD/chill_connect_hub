@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { LEGAL_VERSION_NOTE, LegalBody, LegalTabs, type Tab } from '@/components/TermsPrivacyModal';
 
@@ -13,9 +14,9 @@ export function LegalScreen({ initialTab }: { initialTab: Tab }) {
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
       <header className="px-4 sm:px-8 py-4 flex items-center justify-between gap-3 border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2 min-w-0">
+        <Link href="/" className="group flex items-center gap-2 min-w-0">
           <BrandLogo size="sm" />
-          <span className="font-bold text-sm sm:text-base text-[#1E293B] truncate">Chill & Connect Hub</span>
+          <BrandWordmark sizeClass="text-base sm:text-lg" />
         </Link>
         <Link href="/" className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 whitespace-nowrap">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />

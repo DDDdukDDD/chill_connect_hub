@@ -272,7 +272,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
         approvalStatus: 'approved' as const,
         
         // Public Venue specifics
-        hostName: isPublic ? hostName.trim() : (hostName.trim() || 'โฮสต์ Chill & Connect'),
+        hostName: isPublic ? hostName.trim() : (hostName.trim() || 'โฮสต์ Chillwaa'),
         hostAvatar: isPublic
           ? 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=150&q=80'
           : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
@@ -392,7 +392,7 @@ export const AdminCreateEventModal: React.FC<AdminCreateEventModalProps> = ({
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>🌿 Chill & Connect Community</span>
+              <span>🌿 Chillwaa Community</span>
             </button>
           </div>
         </div>

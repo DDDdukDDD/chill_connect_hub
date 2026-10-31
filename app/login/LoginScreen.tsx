@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { useMemberSession } from '@/lib/useMemberSession';
 
@@ -25,9 +26,9 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
       <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="group flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-bold text-sm sm:text-base text-[#1E293B] leading-tight">Chill & Connect Hub</span>
+          <BrandWordmark sizeClass="text-base sm:text-lg" />
         </Link>
         <Link href={backHref} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -58,7 +59,7 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
       </main>
 
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-[#E8E2D8] bg-white/50">
-        Chill & Connect Hub © 2026
+        Chillwaa © 2026
       </footer>
     </div>
   );

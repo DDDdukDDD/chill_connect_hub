@@ -27,7 +27,7 @@ export default function PreviewLogoPage() {
     {
       id: 'minimal' as const,
       name: 'Option 4: The Pure Monogram (ระดับ Nike / Notion)',
-      desc: 'ตัว C โค้งหนา ทึบ หนักแน่น โดดเด่น มองเห็นจากระยะ 100 เมตรก็รู้ว่าเป็น Chill & Connect Hub',
+      desc: 'ตัว C โค้งหนา ทึบ หนักแน่น โดดเด่น มองเห็นจากระยะ 100 เมตรก็รู้ว่าเป็น Chillwaa',
     },
   ];
 
@@ -102,7 +102,7 @@ export default function PreviewLogoPage() {
                 <BrandLogo variant={selectedVariant} size="md" />
                 <div>
                   <span className="font-bold text-lg sm:text-[19px] tracking-tight text-slate-900 dark:text-white leading-none block">
-                    Chill & Connect Hub
+                    Chillwaa
                   </span>
                   <p className="text-[10.5px] text-slate-400 font-medium mt-1.5">
                     Lifestyle Discovery & Community Platform

@@ -1,5 +1,5 @@
 // =========================================================================
-// 🌿 Chill & Connect Hub: Master Data Hub (Single Source of Truth)
+// 🌿 Chillwaa: Master Data Hub (Single Source of Truth)
 // =========================================================================
 // This file defines the permanent, unified Master Categories and Taxonomy
 // across all 3 Discovery Pillars + Quests, used consistently in:
@@ -1038,6 +1038,8 @@ export interface MasterVenueOption {
   latitude?: number;
   longitude?: number;
   image?: string;
+  /** Who took the photo, its licence and source (Wikimedia Commons photos need it) */
+  imageCredit?: string;
 }
 
 export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
@@ -1080,6 +1082,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     province: 'นนทบุรี',
     latitude: 13.9127,
     longitude: 100.5483,
+    image: '/images/venues/impact_arena.jpg',
+    imageCredit: 'รูป Banphot Nuchleang (Octahedron80) · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=14457779',
   },
   {
     id: 'thunder_dome',
@@ -1088,6 +1092,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     transitHint: 'MRT สายสีชมพู สถานีอิมแพ็คเมืองทองธานี',
     location: 'ธันเดอร์โดม สเตเดียม เมืองทองธานี',
     province: 'นนทบุรี',
+    image: '/images/venues/thunder_dome.jpg',
+    imageCredit: 'รูป thai-fussball.com · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=11238436',
   },
   {
     id: 'rajamangala',
@@ -1097,6 +1103,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ราชมังคลากีฬาสถาน การกีฬาแห่งประเทศไทย หัวหมาก',
     latitude: 13.7556,
     longitude: 100.6224,
+    image: '/images/venues/rajamangala.jpg',
+    imageCredit: 'รูป AsianFC · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=5910431',
   },
   {
     id: 'supachalasai',
@@ -1106,6 +1114,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'สนามศุภชลาศัย ถนนพระรามที่ 1 ปทุมวัน',
     latitude: 13.7465,
     longitude: 100.5294,
+    image: '/images/venues/supachalasai.jpg',
+    imageCredit: 'รูป Rangan Datta Wiki · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=125179410',
   },
   {
     id: 'lumpinee_boxing',
@@ -1113,6 +1123,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     tag: 'park',
     transitHint: 'BTS สายสีเขียว สะพานใหม่ แล้วต่อรถไปถนนรามอินทรา',
     location: 'สนามมวยเวทีลุมพินี ถนนรามอินทรา',
+    image: '/images/venues/lumpinee_boxing.jpg',
+    imageCredit: 'รูป Mark Rauterkus · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=12173948',
   },
   {
     id: 'rbsc',
@@ -1122,6 +1134,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ราชกรีฑาสโมสร ถนนอังรีดูนังต์ ปทุมวัน',
     latitude: 13.7395,
     longitude: 100.5367,
+    image: '/images/venues/rbsc.jpg',
+    imageCredit: 'รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=53547491',
   },
   {
     id: 'iconsiam',
@@ -1131,6 +1145,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ไอคอนสยาม ถนนเจริญนคร คลองสาน',
     latitude: 13.7267,
     longitude: 100.5101,
+    image: '/images/venues/iconsiam.jpg',
+    imageCredit: 'รูป Supanut Arunoprayote · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=74307530',
   },
   {
     id: 'paragon_hall',
@@ -1150,6 +1166,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ลานหน้าศูนย์การค้าเซ็นทรัลเวิลด์ ราชประสงค์',
     latitude: 13.7466,
     longitude: 100.5393,
+    image: '/images/venues/centralworld.jpg',
+    imageCredit: 'รูป Imtaiki · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=40611053',
   },
   {
     id: 'uob_live',
@@ -1159,6 +1177,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'UOB LIVE ชั้น 6 ศูนย์การค้าเอ็มสเฟียร์ สุขุมวิท',
     latitude: 13.7312,
     longitude: 100.5684,
+    image: '/images/venues/uob_live.jpg',
+    imageCredit: 'รูป Dharmadana · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=142559572',
   },
   {
     id: 'union_hall',
@@ -1168,6 +1188,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ยูเนี่ยน ฮอลล์ ชั้น 6 ยูเนี่ยนมอลล์ ลาดพร้าว',
     latitude: 13.8136,
     longitude: 100.5614,
+    image: '/images/venues/union_hall.jpg',
+    imageCredit: 'รูป กสิณธร ราชโอรส · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=143911306',
   },
   {
     id: 'samyan_mitrtown_hall',
@@ -1177,6 +1199,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'สามย่านมิตรทาวน์ ฮอลล์ ชั้น 5 ถนนพระรามที่ 4',
     latitude: 13.7334,
     longitude: 100.5284,
+    image: '/images/venues/samyan_mitrtown_hall.jpg',
+    imageCredit: 'รูป Chainwit. · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=92524422',
   },
   {
     id: 'thailand_cultural_centre',
@@ -1186,6 +1210,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'หอประชุมใหญ่ ศูนย์วัฒนธรรมแห่งประเทศไทย ถนนรัชดาภิเษก',
     latitude: 13.7661,
     longitude: 100.5701,
+    image: '/images/venues/thailand_cultural_centre.jpg',
+    imageCredit: 'รูป Tmd · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=43897552',
   },
   {
     id: 'chulalongkorn',
@@ -1193,6 +1219,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     tag: 'park',
     transitHint: 'MRT สามย่าน / BTS สนามกีฬาแห่งชาติ',
     location: 'จุฬาลงกรณ์มหาวิทยาลัย ปทุมวัน',
+    image: '/images/venues/chulalongkorn.jpg',
+    imageCredit: 'รูป BunBn · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=68533617',
   },
   {
     id: 'benjakitti_park',
@@ -1212,6 +1240,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'สวนลุมพินี ถนนพระรามที่ 4 ปทุมวัน',
     latitude: 13.7307,
     longitude: 100.5418,
+    image: '/images/venues/lumpini_park.jpg',
+    imageCredit: 'รูป Chainwit. · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=174758961',
   },
   {
     id: 'vachirabenjatas_park',
@@ -1221,6 +1251,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'สวนวชิรเบญจทัศ จตุจักร',
     latitude: 13.8106,
     longitude: 100.553,
+    image: '/images/venues/vachirabenjatas_park.jpg',
+    imageCredit: 'รูป PEAK99 · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=73679757',
   },
   {
     id: 'sanam_luang',
@@ -1230,6 +1262,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     location: 'ท้องสนามหลวง พระนคร',
     latitude: 13.755,
     longitude: 100.4928,
+    image: '/images/venues/sanam_luang.jpg',
+    imageCredit: 'รูป Adbar · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=32666110',
   },
   {
     id: 'cmecc',
@@ -1238,6 +1272,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     transitHint: 'รถแดงหรือรถรับจ้างจากตัวเมืองเชียงใหม่',
     location: 'ศูนย์ประชุมและแสดงสินค้านานาชาติฯ ถนนคลองชลประทาน เชียงใหม่',
     province: 'เชียงใหม่',
+    image: '/images/venues/cmecc.jpg',
+    imageCredit: 'รูป Gpatama · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=18124820',
   },
   {
     id: 'kice',
@@ -1255,6 +1291,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     transitHint: 'รถสองแถวสายพัทยาใต้ / รถรับจ้าง',
     location: 'Pattaya Exhibition and Convention Hall โรงแรมรอยัล คลิฟ พัทยา',
     province: 'ชลบุรี',
+    image: '/images/venues/peach_pattaya.jpg',
+    imageCredit: 'รูป Kannaphon · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=9084226',
   },
   {
     id: 'chang_arena',
@@ -1263,6 +1301,8 @@ export const MASTER_VENUE_OPTIONS: MasterVenueOption[] = [
     transitHint: 'รถรับจ้างหรือรถส่วนตัวจากตัวเมืองบุรีรัมย์',
     location: 'ช้าง อารีนา ถนนบุรีรัมย์-ประโคนชัย บุรีรัมย์',
     province: 'บุรีรัมย์',
+    image: '/images/venues/chang_arena.jpg',
+    imageCredit: 'รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=59628613',
   },
   {
     id: 'other',

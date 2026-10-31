@@ -139,7 +139,7 @@ function CategoryEditor({
 
       <FormSection
         title="ไอคอน & สี"
-        hint={hasDrawing ? 'หน้าเว็บแสดงหมวดนี้ด้วยไอคอนวาดของชุดไอคอน Chill & Connect (ตามตัวอย่าง) ไอคอนเส้นด้านล่างใช้เมื่อไม่มีภาพวาดเท่านั้น' : undefined}
+        hint={hasDrawing ? 'หน้าเว็บแสดงหมวดนี้ด้วยไอคอนวาดของชุดไอคอน Chillwaa (ตามตัวอย่าง) ไอคอนเส้นด้านล่างใช้เมื่อไม่มีภาพวาดเท่านั้น' : undefined}
       >
         <div className="sm:col-span-2">
           <p className="mb-1.5 text-[11px] sm:text-xs font-semibold text-slate-500">{hasDrawing ? 'ไอคอนสำรอง:' : 'ไอคอน:'}</p>

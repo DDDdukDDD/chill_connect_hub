@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Category icons from the owner's Chill & Connect icon pack (2026-10-28, 37 drawings): drawn, each in its own color, on a 48 grid.
+ * Category icons from the owner's Chillwaa icon pack (2026-10-28, 37 drawings): drawn, each in its own color, on a 48 grid.
  * Generated from the pack's SVG files (one entry per file, named after it); redraw there and regenerate rather than
  * editing the paths here. The maps below tie a category id to a drawing; a category without one keeps its line icon.
  */

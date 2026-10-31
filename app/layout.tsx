@@ -26,10 +26,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
-    template: "%s | Chill & Connect Hub",
+    default: "Chillwaa | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
+    template: "%s | Chillwaa",
   },
-  description: "Chill & Connect Hub - Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ รวมงานแฟร์ เวิร์กช็อป วิ่ง บอร์ดเกม และเพื่อนใหม่",
+  description: "Chillwaa - Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ รวมงานแฟร์ เวิร์กช็อป วิ่ง บอร์ดเกม และเพื่อนใหม่",
   keywords: [
     "กิจกรรมยามว่าง",
     "หากิจกรรมทำวันหยุด",
@@ -39,30 +39,31 @@ export const metadata: Metadata = {
     "Sound Bath Meditation",
     "บอร์ดเกม อโศก",
     "เวิร์กช็อปปั้นดิน",
-    "Chill and Connect Hub",
+    "Chillwaa",
+    "Chill & Connect",
     "คอมมูนิตี้คนชอบทำกิจกรรม",
   ],
-  authors: [{ name: "Chill & Connect Hub Team" }],
-  creator: "Chill & Connect Hub",
+  authors: [{ name: "Chillwaa Team" }],
+  creator: "Chillwaa",
   openGraph: {
     type: "website",
     locale: "th_TH",
     url: SITE_URL,
-    siteName: "Chill & Connect Hub",
-    title: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
+    siteName: "Chillwaa",
+    title: "Chillwaa | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
     description: "Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ",
     images: [
       {
         url: "/hero-bg-70.png",
         width: 1200,
         height: 630,
-        alt: "Chill & Connect Hub Preview Banner",
+        alt: "Chillwaa Preview Banner",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Chill & Connect Hub | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
+    title: "Chillwaa | Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต",
     description: "Hub กิจกรรมและคอมมูนิตี้สำหรับคนชอบออกไปใช้ชีวิต ที่เปลี่ยนทุกการไปเที่ยวให้เป็นเรื่องสนุกและต่อยอดมิตรภาพ",
     images: ["/hero-bg-70.png"],
   },
@@ -83,7 +84,7 @@ export const metadata: Metadata = {
       { url: '/brand-logo.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/brand-logo.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 };
@@ -97,20 +98,22 @@ export default function RootLayout({
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Chill & Connect Hub",
+    name: "Chillwaa",
+    alternateName: "Chill & Connect",
     url: SITE_URL,
-    logo: `${SITE_URL}/hero-bg-70.png`,
+    logo: `${SITE_URL}/brand-logo.png`,
     description: "แพลตฟอร์มศูนย์รวมกิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย และคอมมูนิตี้สำหรับคนรุ่นใหม่",
     sameAs: [
-      "https://facebook.com/chillconnecthub",
-      "https://instagram.com/chillconnecthub",
+      "https://www.instagram.com/chillwaa_official",
+      "https://www.tiktok.com/@chillwaa.official",
     ],
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Chill & Connect Hub",
+    name: "Chillwaa",
+    alternateName: "Chill & Connect",
     url: SITE_URL,
     potentialAction: {
       "@type": "SearchAction",
@@ -125,10 +128,18 @@ export default function RootLayout({
     mainEntity: [
       {
         "@type": "Question",
-        name: "Chill & Connect Hub คืออะไร?",
+        name: "Chillwaa คืออะไร?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Chill & Connect Hub (chillconnecthub.com) คือแพลตฟอร์มศูนย์รวมกิจกรรม อีเวนต์ งานแฟร์ และคอมมูนิตี้ในกรุงเทพฯ ที่เชื่อมต่อคนที่อยากออกไปใช้ชีวิต หาเพื่อนใหม่ และทำกิจกรรมร่วมกันอย่างปลอดภัยและเป็นกันเอง",
+          text: "Chillwaa (chillwaa.com) คือแพลตฟอร์มศูนย์รวมกิจกรรม อีเวนต์ งานแฟร์ และคอมมูนิตี้ในกรุงเทพฯ ที่เชื่อมต่อคนที่อยากออกไปใช้ชีวิต หาเพื่อนใหม่ และทำกิจกรรมร่วมกันอย่างปลอดภัยและเป็นกันเอง",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "ชื่อ Chillwaa มีความหมายว่าอะไร?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Chill คือความสบายๆ ของการออกไปใช้ชีวิต ส่วน Waa มาจากภาษาญี่ปุ่น: 輪 (wa) วงเพื่อน, わあ (waa) เสียงว้าวตอนเจอสิ่งดีๆ และ 和 (wa) ความกลมกลืน รวมกันคือการออกไปชิลและเชื่อมต่อกับเพื่อนใหม่ (chill & connect)",
         },
       },
       {
@@ -141,7 +152,7 @@ export default function RootLayout({
       },
       {
         "@type": "Question",
-        name: "มีกิจกรรมประเภทไหนบ้างใน Chill & Connect Hub?",
+        name: "มีกิจกรรมประเภทไหนบ้างใน Chillwaa?",
         acceptedAnswer: {
           "@type": "Answer",
           text: "มีกิจกรรมครบทั้ง 4 มู้ด: 🌿 สายฮีลใจ (Sound Bath, คลาสโยคะ, บอร์ดเกม), 🏃 สายแอคทีฟ (วิ่งสวนเบญจกิติ, แบดมินตัน, ปีนผา, HYROX), ☕ สายชิลล์ (Specialty Coffee, ทัวร์คาเฟ่, มหกรรมงานแฟร์ QSNCC/BITEC), และ 🎨 สายเรียนรู้ (เวิร์กช็อปปั้นดิน, วาดรูป, ภาษาอังกฤษ)",

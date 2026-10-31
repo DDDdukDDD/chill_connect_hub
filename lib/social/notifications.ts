@@ -127,7 +127,7 @@ export async function notificationsFor(member: Member) {
           id: n.id,
           type: n.type,
           actorId: n.actorId,
-          actorName: 'Chill & Connect Hub',
+          actorName: 'Chillwaa',
           actorAvatar: '',
           momentId: n.type === 'evidence' ? n.momentId : undefined,
           href: n.type === 'evidence' ? undefined : n.type === 'rejected' ? '/myhub' : n.type === 'approved' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`,

@@ -253,7 +253,7 @@ export default function FairDetailPage({
     if (typeof window === 'undefined' || !eventData) return;
     const url = window.location.href;
     const shareData = {
-      title: `${eventData.title} | Chill & Connect Hub`,
+      title: `${eventData.title} | Chillwaa`,
       text: `ชวนไปอีเวนต์นี้: ${eventData.title} (${formatEventDateRange(eventData)} @ ${eventData.location})`,
       url: url };
 

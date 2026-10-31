@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { memberActions } from '@/lib/useMemberSession';
 
 const MIN_PASSWORD = 8;
@@ -42,9 +43,9 @@ export function ResetPasswordScreen({ token }: { token: string }) {
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
       <header className="px-4 sm:px-8 py-4 border-b border-[#E8E2D8] bg-white/80">
-        <Link href="/" className="inline-flex items-center gap-2">
+        <Link href="/" className="group inline-flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-bold text-sm sm:text-base text-[#1E293B]">Chill & Connect Hub</span>
+          <BrandWordmark sizeClass="text-base sm:text-lg" />
         </Link>
       </header>
       <main className="flex-1 w-full max-w-[480px] mx-auto px-4 py-10 flex flex-col justify-center">

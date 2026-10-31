@@ -22,7 +22,7 @@ const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'startDate', 'endDate', 'status', 'image', 'brandReward', 'rule',
 ]);
 const REWARD_TYPES = new Set(['brand_partner', 'hub_central']);
-const PLATFORM_PARTNER_NAME = 'Chill & Connect Hub';
+const PLATFORM_PARTNER_NAME = 'Chillwaa';
 
 function optionalText(value: unknown, maxLength: number): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -126,7 +126,7 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     status: 'draft',
     creatorName: typeof input.creatorName === 'string' && input.creatorName.trim()
       ? input.creatorName.trim()
-      : 'Chill & Connect Team',
+      : 'Chillwaa Team',
     participantsCount: 0,
     rewardPoints: Number.isFinite(rewardPoints) ? Math.max(0, Math.floor(rewardPoints)) : 0,
     isOfficial: true,

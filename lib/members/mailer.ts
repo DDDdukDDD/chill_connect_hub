@@ -28,7 +28,7 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.ch
 export function verifyEmailMessage(name: string, url: string, hours: number) {
   const safeName = escapeHtml(name);
   return {
-    subject: 'ยืนยันอีเมลของคุณ · Chill & Connect Hub',
+    subject: 'ยืนยันอีเมลของคุณ · Chillwaa',
     text: `สวัสดีคุณ ${name}\n\nกดลิงก์นี้เพื่อยืนยันอีเมล (ใช้ได้ ${hours} ชั่วโมง):\n${url}\n\nถ้าคุณไม่ได้สมัครสมาชิก ไม่ต้องทำอะไร`,
     html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;color:#1e293b">
 <p>สวัสดีคุณ ${safeName}</p>
@@ -42,7 +42,7 @@ export function verifyEmailMessage(name: string, url: string, hours: number) {
 export function passwordResetEmail(name: string, url: string, minutes: number) {
   const safeName = escapeHtml(name);
   return {
-    subject: 'ตั้งรหัสผ่านใหม่ · Chill & Connect Hub',
+    subject: 'ตั้งรหัสผ่านใหม่ · Chillwaa',
     text: `สวัสดีคุณ ${name}\n\nกดลิงก์นี้เพื่อตั้งรหัสผ่านใหม่ (ใช้ได้ ${minutes} นาที และใช้ได้ครั้งเดียว):\n${url}\n\nถ้าคุณไม่ได้ขอ ไม่ต้องทำอะไร รหัสผ่านเดิมยังใช้ได้`,
     html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;color:#1e293b">
 <p>สวัสดีคุณ ${safeName}</p>

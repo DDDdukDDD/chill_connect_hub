@@ -31,7 +31,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
                 แนวทางความปลอดภัยและข้อกำหนดชุมชน (Community Safety & Legal Disclaimer)
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Chill & Connect Hub ให้ความสำคัญสูงสุดกับความปลอดภัยและความเป็นส่วนตัวของสมาชิกทุกคน
+                Chillwaa ให้ความสำคัญสูงสุดกับความปลอดภัยและความเป็นส่วนตัวของสมาชิกทุกคน
               </p>
             </div>
           </div>
@@ -55,7 +55,7 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
               <span>1. ข้อจำกัดความรับผิดชอบของแพลตฟอร์ม (Platform Intermediary Notice)</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Chill & Connect Hub เป็นเพียง <strong className="font-bold text-slate-800">พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)</strong> สำหรับการแลกเปลี่ยนข้อมูลและเปิดโอกาสให้สมาชิกได้พบปะเพื่อนใหม่ที่มีความสนใจตรงกัน แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, นายหน้า, ตัวแทน, หรือนายจ้างของสมาชิกใดๆ ทั้งสิ้น การนัดหมายและการเข้าร่วมกิจกรรมถือเป็นการตัดสินใจโดยสมัครใจของผู้ใช้งานเอง
+              Chillwaa เป็นเพียง <strong className="font-bold text-slate-800">พื้นที่สื่อกลางออนไลน์ (Bulletin Board / Platform Intermediary)</strong> สำหรับการแลกเปลี่ยนข้อมูลและเปิดโอกาสให้สมาชิกได้พบปะเพื่อนใหม่ที่มีความสนใจตรงกัน แพลตฟอร์มไม่ได้เป็นผู้จัดกิจกรรม, นายหน้า, ตัวแทน, หรือนายจ้างของสมาชิกใดๆ ทั้งสิ้น การนัดหมายและการเข้าร่วมกิจกรรมถือเป็นการตัดสินใจโดยสมัครใจของผู้ใช้งานเอง
             </p>
           </div>
 

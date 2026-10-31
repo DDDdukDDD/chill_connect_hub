@@ -190,7 +190,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
             <Leaf size={16} className="text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-800 leading-tight">Chill & Connect</p>
+            <p className="text-sm font-bold text-slate-800 leading-tight">Chillwaa</p>
             <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Admin Console</p>
           </div>
         </div>

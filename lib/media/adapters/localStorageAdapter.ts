@@ -1,5 +1,5 @@
 /**
- * 💾 Chill & Connect Hub - Local File System Media Storage Driver
+ * 💾 Chillwaa - Local File System Media Storage Driver
  * Stores media assets locally in the public/uploads directory during local dev & self-hosted setups.
  */
 

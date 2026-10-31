@@ -103,7 +103,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
         <Field label="ชื่อแคมเปญ (ทีมงานเห็น):" htmlFor="campaign-name" wide>
           <input id="campaign-name" value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label="ป้ายเล็กด้านบน:" htmlFor="campaign-eyebrow" hint="เช่น กิจกรรมเปิดตัว Chill & Connect">
+        <Field label="ป้ายเล็กด้านบน:" htmlFor="campaign-eyebrow" hint="เช่น กิจกรรมเปิดตัว Chillwaa">
           <input id="campaign-eyebrow" value={form.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="คำบนปุ่ม:" htmlFor="campaign-cta">

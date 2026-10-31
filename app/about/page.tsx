@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, Camera, Flag, Flame, Heart, MapPin, QrCode, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
@@ -15,7 +16,7 @@ import { Toast } from '@/components/Toast';
 
 /**
  * About: who we are (owner 2026-10-26). A social platform for people who love going out, driven by four parts:
- * ตี้, ชาเลนจ์, โมเมนต์, and ที่เที่ยว & อีเวนต์ (docs/PRODUCT_DIRECTION.md). Open rows, no boxed grids; no numbers we cannot back.
+ * ตี้, ที่เที่ยว & อีเวนต์, ชาเลนจ์, โมเมนต์ (docs/PRODUCT_DIRECTION.md), in the order of an outing: friends first, then going out, then sharing (owner 2026-10-31). Open rows, no boxed grids; no numbers we cannot back.
  */
 const PARTS = [
   {
@@ -23,10 +24,23 @@ const PARTS = [
     label: 'ตี้',
     Icon: Users,
     tone: 'bg-[#FFF4EE] text-[#D04A1B]',
-    title: 'มีเพื่อนไปด้วย',
-    text: 'ตี้คือนัดเล็กๆ ที่สมาชิกเปิดเอง ชวนกันไปวิ่ง นั่งคาเฟ่ เล่นบอร์ดเกม หรือดูคอนเสิร์ต มาคนเดียวก็มีเพื่อนรออยู่ที่จุดนัด แล้วคนจัดเช็กอินให้ด้วยบัตรของคุณ',
+    title: 'ชวนก๊วนไปด้วยกัน',
+    text: 'เปิดตี้ชวนเพื่อนสนิทไปวิ่ง นั่งคาเฟ่ เล่นบอร์ดเกม หรือดูคอนเสิร์ตด้วยกัน หรือเข้าตี้ของคนสายเดียวกันที่เปิดไว้ อยากได้เพื่อนใหม่ก็มี อยากไปกับแก๊งเดิมก็ได้',
     image: '/event-board-games.png',
     links: [{ href: '/community', label: 'ดูตี้ที่เปิดรับ' }],
+  },
+  {
+    key: 'place',
+    label: 'ที่เที่ยว & อีเวนต์',
+    Icon: MapPin,
+    tone: 'bg-[#EBF3ED] text-[#2D5A3C]',
+    title: 'มีที่ให้ไปเสมอ',
+    text: 'ที่เที่ยวกว่า 2,000 แห่งทั่วไทย และอีเวนต์อย่างงานวิ่ง คอนเสิร์ต และเอ็กซ์โปจากผู้จัดตัวจริง เป็นจุดหมายของตี้และชาเลนจ์ หรือจะไปเองวันว่างก็ได้',
+    image: '/hero-koh-phi-phi.jpg',
+    links: [
+      { href: '/spots', label: 'ดูที่เที่ยว' },
+      { href: '/events', label: 'ดูอีเวนต์' },
+    ],
   },
   {
     key: 'challenge',
@@ -48,24 +62,11 @@ const PARTS = [
     image: '/hero-bkk-park-sunny.jpg',
     links: [{ href: '/moments', label: 'ดูโมเมนต์เพื่อนๆ' }],
   },
-  {
-    key: 'place',
-    label: 'ที่เที่ยว & อีเวนต์',
-    Icon: MapPin,
-    tone: 'bg-[#EBF3ED] text-[#2D5A3C]',
-    title: 'มีที่ให้ไปเสมอ',
-    text: 'ที่เที่ยวกว่า 2,000 แห่งทั่วไทย และอีเวนต์อย่างงานวิ่ง คอนเสิร์ต และเอ็กซ์โปจากผู้จัดตัวจริง เป็นจุดหมายของตี้และชาเลนจ์ หรือจะไปเองวันว่างก็ได้',
-    image: '/hero-koh-phi-phi.jpg',
-    links: [
-      { href: '/spots', label: 'ดูที่เที่ยว' },
-      { href: '/events', label: 'ดูอีเวนต์' },
-    ],
-  },
 ] as const;
 
 const LOOP = [
   { Icon: Flag, text: 'เจอชาเลนจ์หรือตี้ที่ใช่' },
-  { Icon: Users, text: 'ออกไปกับเพื่อนใหม่ หรือไปเองก็ได้' },
+  { Icon: Users, text: 'ไปกับก๊วน หรือเพื่อนใหม่' },
   { Icon: Camera, text: 'แชร์โมเมนต์ที่ได้ไปมา' },
   { Icon: Trophy, text: 'ได้ XP เหรียญ และของรางวัล' },
   { Icon: Heart, text: 'เพื่อนๆ เห็น แล้วออกไปต่อ' },
@@ -76,6 +77,13 @@ const CARE = [
   { Icon: Flame, text: 'คนที่จะเปิดตี้ ต้องผ่านการตรวจจากทีมงานก่อน' },
   { Icon: QrCode, text: 'นัดเจอในที่สาธารณะ และเช็กอินด้วยบัตรที่จุดนัด' },
   { Icon: Heart, text: 'รายงานหรือบล็อกได้ทันที ทีมงานดูให้ทุกเรื่อง' },
+];
+
+/** What "waa" means in Japanese (owner 2026-10-31): each reading matches one part of the platform */
+const NAME_MEANINGS = [
+  { mark: '輪', reading: 'wa', title: 'วงเพื่อน', text: 'วงกลมของคนที่มาเจอกัน อย่างคำว่า 友達の輪 ที่แปลว่าวงของเพื่อน ทุก⁠ตี้คือวงเพื่อนวงใหม่ที่พร้อมให้คุณเข้ามาร่วม', tone: 'text-[#128A64]' },
+  { mark: 'わあ', reading: 'waa', title: 'ว้าว!', text: 'เสียงตื่นเต้นตอนได้เจออะไรดีๆ ช่วงเวลาแบบนี้แหละที่อยากเก็บไว้เป็นโมเมนต์ แล้วแชร์ให้เพื่อนๆ ดู', tone: 'text-[#EA5A1A]' },
+  { mark: '和', reading: 'wa', title: 'ความกลมกลืน', text: 'อยู่ด้วยกันอย่างสบายใจ เคารพกัน และดูแลกันแบบเพื่อน ไม่ว่าจะเพิ่งรู้จักกันวันแรกก็ตาม', tone: 'text-slate-900' },
 ];
 
 const WRAP = 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8';
@@ -117,7 +125,7 @@ export default function AboutPage() {
         <section className="bg-[#FFF8F1]">
           <div className={`${WRAP} py-12 sm:py-16 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center`}>
             <div className="space-y-5 text-center lg:text-left">
-              <p className="text-sm font-semibold text-[#D04A1B]">เกี่ยวกับ Chill & Connect Hub</p>
+              <p className="text-sm font-semibold text-[#D04A1B]">เกี่ยวกับ Chillwaa</p>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
                 คอมมูนิตี้ของคน
                 <br />
@@ -149,11 +157,39 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* What the name means */}
+        <section className={`${WRAP} py-14 sm:py-20 grid gap-10 md:grid-cols-[1fr_1.2fr] md:items-start`}>
+          <div className="group space-y-4">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">ทำไมต้องชื่อ Chillwaa</h2>
+            <BrandWordmark sizeClass="text-5xl sm:text-6xl" />
+            <p className="text-slate-700 leading-relaxed">
+              &ldquo;Chill&rdquo; คือความสบายๆ ของการออกไปใช้ชีวิต ส่วน &ldquo;Waa&rdquo; มาจากภาษาญี่ปุ่น ที่มีความหมายดีๆ ซ่อนอยู่ถึงสามแบบ
+            </p>
+            <p className="text-slate-600 leading-relaxed">
+              จุดสามจุดตรงกลางคือเพื่อนที่เดินเข้าหากัน จากสีเขียวที่สบายๆ ไปสู่สีส้มที่ตื่นเต้น เหมือนสองเส้นโค้งในโลโก้ของเราที่มาบรรจบกัน
+              นี่แหละ <span className="whitespace-nowrap font-semibold text-slate-900">chill &amp; connect</span>
+            </p>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {NAME_MEANINGS.map((item) => (
+              <li key={item.title} className="flex items-start gap-5 py-5 first:pt-0">
+                <span lang="ja" className={`w-16 sm:w-20 shrink-0 text-center text-3xl sm:text-4xl font-bold leading-none whitespace-nowrap ${item.tone}`}>{item.mark}</span>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold">
+                    {item.title} <span className="text-sm font-medium text-slate-500">({item.reading})</span>
+                  </h3>
+                  <p className="text-slate-700 leading-relaxed text-pretty">{item.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* 2. The four parts that take people out */}
         <section className={`${WRAP} py-14 sm:py-20`}>
           <div className="max-w-2xl space-y-2 mb-10 sm:mb-14">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">สี่อย่างที่พาเราออกไปด้วยกัน</h2>
-            <p className="text-slate-600 leading-relaxed">ตี้ ชาเลนจ์ และโมเมนต์ คือหัวใจของคอมมูนิตี้ ส่วนที่เที่ยวและอีเวนต์คือที่ที่เราออกไปเจอกัน</p>
+            <p className="text-slate-600 leading-relaxed">เริ่มจากเพื่อน ออกไปใช้ชีวิตด้วยกัน แล้วกลับมาแชร์เรื่องราวให้กันฟัง</p>
           </div>
           <div className="space-y-14 sm:space-y-20">
             {PARTS.map((part, i) => (
@@ -167,7 +203,7 @@ export default function AboutPage() {
                     {part.label}
                   </span>
                   <h3 className="text-xl sm:text-2xl font-bold tracking-tight">{part.title}</h3>
-                  <p className="text-slate-700 leading-relaxed">{part.text}</p>
+                  <p className="text-slate-700 leading-relaxed text-pretty">{part.text}</p>
                   <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
                     {part.links.map((link) => (
                       <Link key={link.href} href={link.href} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-900 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-900">
@@ -193,7 +229,7 @@ export default function AboutPage() {
                     <step.Icon className="w-5 h-5" aria-hidden="true" />
                     <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center">{i + 1}</span>
                   </span>
-                  <span className="text-slate-800 font-medium leading-snug">{step.text}</span>
+                  <span className="text-slate-800 font-medium leading-snug text-pretty">{step.text}</span>
                 </li>
               ))}
             </ol>
@@ -204,7 +240,7 @@ export default function AboutPage() {
         <section className={`${WRAP} py-14 sm:py-20 grid gap-8 md:grid-cols-[1fr_1.2fr] md:items-start`}>
           <div className="space-y-3">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">ดูแลกันแบบเพื่อน</h2>
-            <p className="text-slate-600 leading-relaxed">ออกไปเจอคนใหม่ต้องสนุกและสบายใจ นี่คือสิ่งที่ทุกคนในคอมมูนิตี้ทำร่วมกัน</p>
+            <p className="text-slate-600 leading-relaxed text-pretty">ออกไปด้วยกันอย่างสนุกและสบายใจ นี่คือสิ่งที่เราทำร่วมกัน</p>
             <Link href="/safety" className="inline-flex items-center gap-1 text-sm font-semibold text-slate-900 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-900">
               อ่านคู่มือความปลอดภัย
               <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

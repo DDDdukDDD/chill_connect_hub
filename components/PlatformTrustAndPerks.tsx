@@ -20,7 +20,7 @@ export const PlatformTrustAndPerks: React.FC<PlatformTrustAndPerksProps> = () =>
       {/* Header */}
       <div className="space-y-1.5 text-left">
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-          ทำไมต้อง Chill & Connect Hub?
+          ทำไมต้อง Chillwaa?
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-none lg:whitespace-nowrap">
           เราคัดสรรค์ รวบรวมทุกมิติของการออกไปใช้ชีวิต ตั้งแต่ค้นหาพิกัดใจฟู ชวนเพื่อนรู้ใจ ชาเลนจ์สนุกๆ ไปจนถึงรับรางวัลพิเศษ ให้ทุกการพักผ่อนมีความหมาย
