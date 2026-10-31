@@ -355,7 +355,7 @@ export default function HeroComparisonLabPage() {
                     🌿
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-[#1E293B] leading-none">Chill & Connect Hub</h2>
+                    <h2 className="text-sm font-bold text-[#1E293B] leading-none">Chillwaa</h2>
                     <p className="text-[11px] font-medium text-slate-500">460+ พิกัดเที่ยว & อีเวนต์ทั่วไทย</p>
                   </div>
                 </div>

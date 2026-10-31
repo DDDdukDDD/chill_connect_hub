@@ -1,5 +1,5 @@
 /**
- * 🏭 Chill & Connect Hub - Media Storage Factory
+ * 🏭 Chillwaa - Media Storage Factory
  * Provides unified singleton access to current media storage adapter.
  * - Vercel Blob (required on Vercel: its disk does not keep uploads), authenticated either by
  *   BLOB_READ_WRITE_TOKEN, or by BLOB_STORE_ID + Vercel OIDC (automatic on Vercel; locally VERCEL_OIDC_TOKEN

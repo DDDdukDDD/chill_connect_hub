@@ -367,7 +367,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     <>
       {view === 'login' && (
         <div>
-          {header('เข้าสู่ระบบ', 'ยินดีต้อนรับกลับสู่ Chill & Connect Hub')}
+          {header('เข้าสู่ระบบ', 'ยินดีต้อนรับกลับสู่ Chillwaa')}
           {/* PROTOTYPE ONLY: shown while the server has DEMO_LOGIN=on (lib/members/demoLogin.ts) */}
           {session.demoLogin && (
             <div className="mb-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-3 text-center">

@@ -178,7 +178,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         { label: 'สิ่งที่นับ', text: rules.scope },
         { label: 'การยืนยัน', text: rules.proof },
         { label: 'การนับ', text: rules.onceEach },
-        { label: 'ผู้มีสิทธิ์ร่วม', text: rules.eligible ?? 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
+        { label: 'ผู้มีสิทธิ์ร่วม', text: rules.eligible ?? 'สมาชิก Chillwaa ทุกคน ไม่มีค่าใช้จ่าย' },
         { label: 'การรับรางวัล', text: `ต้องกดร่วมชาเลนจ์ก่อนหมดเขต การไปก่อนกดร่วมที่อยู่ในช่วงเวลานับให้ด้วย${isPartner ? ' รับสิทธิ์ได้ 1 ครั้งต่อ 1 บัญชี' : ''}` },
         { label: 'ผู้จัด', text: reward.partnerName },
       ]
@@ -186,7 +186,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         { label: 'ระยะเวลา', text: period },
         { label: 'การบันทึก', text: 'บันทึกด้วยตนเองในหน้านี้ ระบบไม่ได้ตรวจสอบให้' },
         { label: 'รางวัล', text: 'ยังไม่มี XP หรือของรางวัลสำหรับชาเลนจ์นี้' },
-        { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chill & Connect Hub ทุกคน ไม่มีค่าใช้จ่าย' },
+        { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chillwaa ทุกคน ไม่มีค่าใช้จ่าย' },
         { label: 'ผู้จัด', text: reward.partnerName },
       ];
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);

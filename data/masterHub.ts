@@ -1,5 +1,5 @@
 // =========================================================================
-// 🌿 Chill & Connect Hub: Master Data Hub (Single Source of Truth)
+// 🌿 Chillwaa: Master Data Hub (Single Source of Truth)
 // =========================================================================
 // This file defines the permanent, unified Master Categories and Taxonomy
 // across all 3 Discovery Pillars + Quests, used consistently in:

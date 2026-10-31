@@ -1,5 +1,5 @@
 /**
- * ⚡ Chill & Connect Hub - Caching Layer Types
+ * ⚡ Chillwaa - Caching Layer Types
  * Enterprise in-memory cache definitions with TTL and tag-based invalidation.
  */
 

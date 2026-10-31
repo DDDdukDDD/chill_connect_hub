@@ -7,7 +7,7 @@ export interface Campaign {
   id: string;
   /** Staff-facing name in the admin list */
   name: string;
-  /** Small line above the headline, e.g. "กิจกรรมเปิดตัว Chill & Connect" */
+  /** Small line above the headline, e.g. "กิจกรรมเปิดตัว Chillwaa" */
   eyebrow: string;
   /** A draw says ลุ้น, never รับ: not every member gets the prize */
   headline: string;

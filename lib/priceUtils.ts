@@ -1,6 +1,6 @@
 /**
  * Price Formatting & Parsing Utilities
- * Chill & Connect Hub - Luxury Editorial Design System
+ * Chillwaa - Luxury Editorial Design System
  * 
  * Provides unified, bulletproof price formatting for:
  * 1. Card Views (clean single-line badge: price range or clean free badge)

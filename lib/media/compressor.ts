@@ -1,5 +1,5 @@
 /**
- * ⚡ Chill & Connect Hub - Client-Side Image Pre-Compressor
+ * ⚡ Chillwaa - Client-Side Image Pre-Compressor
  * Scales down large camera photos and converts to WebP before upload.
  * Reduces 5-12MB camera captures down to 100-250KB, saving 80-95% bandwidth & storage.
  */

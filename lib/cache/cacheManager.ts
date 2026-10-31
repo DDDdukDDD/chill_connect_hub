@@ -1,5 +1,5 @@
 /**
- * ⚡ Chill & Connect Hub - Memory Cache Manager
+ * ⚡ Chillwaa - Memory Cache Manager
  * High-performance in-memory cache with TTL, LRU-style cleanup, and Tag-based Invalidation.
  * Reduces repeated database queries and file reads by 80-90%.
  */

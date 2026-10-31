@@ -292,7 +292,7 @@ export const MomentsStoriesRail: React.FC<MomentsStoriesRailProps> = ({
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `${activeStory.title} บน Chill & Connect Hub`,
+            title: `${activeStory.title} บน Chillwaa`,
             text: currentSlide.caption,
             url: shareUrl,
           });

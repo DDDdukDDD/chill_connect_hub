@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/lib/useAuth';
 import { AuthModal } from './AuthModal';
 import { BrandLogo } from './BrandLogo';
+import { BrandWordmark } from './BrandWordmark';
 import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
 import { useActivitySync } from '@/lib/useMyActivity';
@@ -138,16 +139,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('home')}
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group py-1 min-w-0"
           >
-            <BrandLogo size="md" className="group-hover:scale-105 group-hover:shadow-md transition-all duration-300" />
+            <BrandLogo size="md" className="group-hover:scale-105 transition-transform duration-300" />
             {/* Guests on small phones need the room for เข้าสู่ระบบ and สมัครฟรี: the logo stands alone, the name stays for screen readers */}
-            <div className={`flex flex-col justify-center min-w-0 ${isLoggedIn ? '' : 'max-[429px]:sr-only'}`}>
-              <span className="font-bold text-sm min-[400px]:text-lg sm:text-[19px] tracking-tight text-[#0F172A] font-sans leading-none truncate">
-                Chill & Connect Hub
-              </span>
-              <p className="hidden sm:block text-[11px] text-slate-500 font-medium tracking-normal leading-none mt-1.5">
-                Curated Lifestyle & Meaningful Activities
-              </p>
-            </div>
+            <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" className={isLoggedIn ? '' : 'max-[429px]:sr-only'} />
           </Link>
 
           {/* Search: the same box in the same place on every page. The ค้นพบ pages bring theirs (it filters while typing);
@@ -436,7 +430,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {' · '}
                 <Link href="/legal?tab=privacy" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">นโยบายความเป็นส่วนตัว</Link>
               </p>
-              <p className="text-[11px] text-slate-400 font-medium">© 2026 Chill & Connect Hub</p>
+              <p className="text-[11px] text-slate-400 font-medium">© 2026 Chillwaa</p>
             </div>
 
           </div>

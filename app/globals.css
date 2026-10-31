@@ -45,6 +45,12 @@
     0% { transform: translateY(-6px); opacity: 0; }
     100% { transform: translateY(0); opacity: 1; }
   }
+  /* The three dots of the Chill···Waa wordmark hop one after another, like a friend typing (components/BrandWordmark.tsx) */
+  --animate-dot-hop: dot-hop 560ms ease-in-out both;
+  @keyframes dot-hop {
+    0%, 100% { transform: translateY(0); }
+    45% { transform: translateY(-0.28em); }
+  }
 }
 
 :root {

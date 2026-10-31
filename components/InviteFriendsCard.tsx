@@ -27,7 +27,7 @@ export function InviteFriendsCard({ questHref = '/challenges/friend-ticket', cla
   }, []);
 
   if (!data) return null;
-  const message = 'มาออกไปใช้ชีวิตด้วยกัน สมัคร Chill & Connect ผ่านลิงก์นี้ แล้วไปตี้แรกด้วยกันนะ';
+  const message = 'มาออกไปใช้ชีวิตด้วยกัน สมัคร Chillwaa ผ่านลิงก์นี้ แล้วไปตี้แรกด้วยกันนะ';
 
   const copy = async () => {
     try {
@@ -41,7 +41,7 @@ export function InviteFriendsCard({ questHref = '/challenges/friend-ticket', cla
   const share = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'ชวนเพื่อนมา Chill & Connect', text: message, url: data.url });
+        await navigator.share({ title: 'ชวนเพื่อนมา Chillwaa', text: message, url: data.url });
         return;
       } catch {
         return;

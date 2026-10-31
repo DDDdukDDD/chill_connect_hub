@@ -32,7 +32,7 @@ const TERMS: Section[] = [
   {
     title: '1. บริการของเรา',
     items: [
-      'Chill & Connect Hub เป็นพื้นที่กลางสำหรับค้นหากิจกรรม ที่เที่ยว อีเวนต์ และนัดพบกัน',
+      'Chillwaa เป็นพื้นที่กลางสำหรับค้นหากิจกรรม ที่เที่ยว อีเวนต์ และนัดพบกัน',
       'ตี้สร้างโดยสมาชิก เราไม่ใช่ผู้จัดตี้เหล่านั้น และไม่ใช่ผู้ขายบัตร',
       'ข้อมูลสถานที่และงานบางส่วนมาจากแหล่งข้อมูลทางการ และอาจเปลี่ยนแปลงได้ ควรตรวจสอบกับผู้จัดอีกครั้งก่อนเดินทาง',
     ],
@@ -142,7 +142,7 @@ const PRIVACY: Section[] = [
   },
 ];
 
-const CONTACT_EMAIL = 'privacy@chillandconnecthub.com';
+const CONTACT_EMAIL = 'privacy@chillwaa.com';
 
 function SectionList({ sections }: { sections: Section[] }) {
   return (
@@ -256,7 +256,7 @@ export function LegalBody({ tab }: { tab: Tab }) {
   return tab === 'terms' ? (
     <>
       <p className="text-sm font-medium text-slate-600 leading-relaxed">
-        ข้อตกลงนี้มีไว้เพื่อให้ทุกคนใช้ Chill & Connect Hub ได้อย่างสบายใจและปลอดภัย การสมัครสมาชิกถือว่าคุณยอมรับข้อตกลงนี้
+        ข้อตกลงนี้มีไว้เพื่อให้ทุกคนใช้ Chillwaa ได้อย่างสบายใจและปลอดภัย การสมัครสมาชิกถือว่าคุณยอมรับข้อตกลงนี้
       </p>
       <SectionList sections={TERMS} />
     </>

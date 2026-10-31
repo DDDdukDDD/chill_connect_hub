@@ -53,7 +53,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
       <div className="min-w-0 flex-1 basis-[150px] sm:basis-48">
         <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-600 min-w-0">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isEnded ? 'bg-slate-400' : isPartner ? 'bg-amber-500' : 'bg-[#7C3AED]'}`} aria-hidden="true" />
-          <span className="truncate">{isPartner ? reward.partnerName : 'Chill & Connect Hub'}</span>
+          <span className="truncate">{isPartner ? reward.partnerName : 'Chillwaa'}</span>
         </p>
         <h3 className="mt-0.5 text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 sm:line-clamp-1 group-hover:underline" title={quest.title}>{quest.title}</h3>
         <p className="text-xs text-slate-600 truncate" title={quest.targetGoal}>{quest.targetGoal}</p>

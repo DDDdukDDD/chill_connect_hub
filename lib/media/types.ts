@@ -1,5 +1,5 @@
 /**
- * 📷 Chill & Connect Hub - Media Storage Types
+ * 📷 Chillwaa - Media Storage Types
  * Interfaces for Pluggable Media Storage Drivers (Local Disk / S3 / Supabase / Cloudinary).
  */
 

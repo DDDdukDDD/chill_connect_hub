@@ -30,6 +30,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/BrandLogo';
+import { BrandWordmark } from '@/components/BrandWordmark';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { DialogShell } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
@@ -865,12 +866,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" aria-hidden="true" />
         <div className="relative h-full flex flex-col justify-between p-4 sm:p-6 lg:p-10">
           {/* Same size and subtitle as the landing top bar (components/Navbar.tsx), in white on the photo */}
-          <Link href="/" className="inline-flex items-center gap-2 sm:gap-3 self-start min-w-0">
+          <Link href="/" className="group inline-flex items-center gap-2 sm:gap-3 self-start min-w-0">
             <BrandLogo size="md" />
-            <span className="flex flex-col justify-center min-w-0">
-              <span className="font-bold text-sm min-[400px]:text-lg sm:text-[19px] tracking-tight leading-none truncate">Chill & Connect Hub</span>
-              <span className="hidden sm:block text-[11px] text-white/80 font-medium tracking-normal leading-none mt-1.5">Curated Lifestyle & Meaningful Activities</span>
-            </span>
+            <BrandWordmark sizeClass="text-base min-[400px]:text-xl sm:text-[22px]" tagline taglineClass="hidden sm:block" onDark />
           </Link>
           <div className={done && !pledgeOnly ? 'lg:my-auto' : undefined}>
             {/* The landing hero's words, one line per screen; the accent in the landing orange */}
@@ -910,7 +908,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     </span>
                     <span className="min-w-0">
                       <span className="block text-xl font-bold leading-tight truncate">{firstName || 'สมาชิกใหม่'}</span>
-                      <span className="block mt-0.5 text-xs font-semibold text-slate-500">สมาชิก Chill & Connect Hub</span>
+                      <span className="block mt-0.5 text-xs font-semibold text-slate-500">สมาชิก Chillwaa</span>
                       <span className="block mt-0.5 text-xs text-slate-500 truncate">{[provinceName, joinedMonth].filter(Boolean).join(' · ')}</span>
                     </span>
                   </div>
