@@ -109,8 +109,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     // ค้นพบ = meetups, fairs and places (/community, /events, /spots); the logo goes home
     { id: 'explore', label: 'กิจกรรม', href: '/community', icon: Compass },
-    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
+    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     // About sits in the footer of this menu
     { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
   ];
@@ -118,13 +118,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Wide screens: the three public sections sit in the top bar for everyone (the drawer keeps them too).
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
-  // Members get หน้าแรก first: their home is a live feed they come back to, and the phone bar has it too (owner 2026-10-29).
-  // A visitor's home is the landing, reached by the logo
+  // หน้าแรก first for everyone: a member's live feed (owner 2026-10-29), and for a visitor the landing, not only via the logo
+  // (owner 2026-11-01). Shown before the session is known too, so the bar does not shift when it loads.
   const topLinks = [
-    ...(isAuthReady && isLoggedIn ? [{ label: 'หน้าแรก', href: '/', match: ['/'] }] : []),
+    { label: 'หน้าแรก', href: '/', match: ['/'] },
     { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
-    { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
+    // ชาเลนจ์ before โมเมนต์ (owner 2026-11-01)
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
+    { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
   ];
   const isOn = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 

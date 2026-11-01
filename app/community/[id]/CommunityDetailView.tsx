@@ -542,7 +542,7 @@ export default function CommunityDetailPage({
       />
 
       {/* Main Container */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
         <Link href="/community" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ตี้ทั้งหมด
@@ -734,7 +734,7 @@ export default function CommunityDetailPage({
             </section>
 
             {/* The schedule the host filled in (ตั้งตี้ form, "กำหนดการ"): what happens, hour by hour */}
-            <ItineraryList items={eventData.itinerary} />
+            <ItineraryList items={eventData.itinerary} meetingPoint={isOnline ? undefined : cleanText(eventData.meetingPoint || eventData.location)} />
 
             <DetailTable
               title="สิ่งที่ควรทราบ"
@@ -784,10 +784,10 @@ export default function CommunityDetailPage({
               ]}
             />
 
-            {/* Where to meet, or how to join online */}
+            {/* How to get there (the meeting point sits with the schedule above), or how to join online */}
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isOnline ? 'เข้าร่วมออนไลน์' : 'จุดนัดพบ & การเดินทาง'}</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isOnline ? 'เข้าร่วมออนไลน์' : 'การเดินทาง'}</h2>
                 {!isOnline && (
                   <a
                     href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}
@@ -819,17 +819,12 @@ export default function CommunityDetailPage({
                 </div>
               ) : (
                 <>
-                  {eventData.meetingPoint && cleanText(eventData.meetingPoint) !== cleanText(eventData.location) && (
-                    <p className="text-sm font-medium text-slate-700">
-                      <span className="text-slate-500">จุดนัด </span>
-                      {cleanText(eventData.meetingPoint)}
-                    </p>
-                  )}
                   {(publicTransitText || parkingText) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {publicTransitText && (
                         <div className="space-y-1">
-                          <p className="text-xs sm:text-sm font-medium text-slate-500">{isSample && !eventData.transportation ? 'รถสาธารณะ & รถไฟฟ้า' : 'การเดินทาง'}</p>
+                          {/* Under the heading "การเดินทาง" a label only helps beside the parking note */}
+                          {parkingText && <p className="text-xs sm:text-sm font-medium text-slate-500">{isSample && !eventData.transportation ? 'รถสาธารณะ & รถไฟฟ้า' : 'รถสาธารณะ'}</p>}
                           <p className="text-sm font-medium text-slate-800 leading-relaxed">{cleanText(publicTransitText)}</p>
                         </div>
                       )}

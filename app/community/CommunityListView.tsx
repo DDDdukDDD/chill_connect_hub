@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useOwnProvinceDefault } from '@/lib/useOwnProvince';
 import { Heart, X, Calendar, Plus } from 'lucide-react';
 import { isClosedToJoin, isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
@@ -50,6 +51,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
+  useOwnProvinceDefault(searchParams.get('province'), selectedProvince, setSelectedProvince);
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>('upcoming');
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   // "มีที่ว่าง": only meetups with seats left (the home page links here with seats=open)

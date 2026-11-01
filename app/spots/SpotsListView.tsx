@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useOwnProvinceDefault } from '@/lib/useOwnProvince';
 import dynamic from 'next/dynamic';
 import {
   Heart,
@@ -55,6 +56,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
+  useOwnProvinceDefault(searchParams.get('province'), selectedProvince, setSelectedProvince);
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, price: priceFilter });

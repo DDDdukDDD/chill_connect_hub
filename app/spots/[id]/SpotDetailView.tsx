@@ -417,7 +417,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
         onOpenCreateEvent={() => { setTeeItinerary(undefined); setIsCreateEventModalOpen(true); }}
       />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 lg:pb-16">
         <Link href="/spots" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ที่เที่ยวทั้งหมด
