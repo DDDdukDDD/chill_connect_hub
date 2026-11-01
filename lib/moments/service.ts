@@ -260,11 +260,13 @@ export async function editMoment(member: Member, id: string, input: Record<strin
   return momentRepository.mutate(id, (m) => ({ ...m, caption, location, updatedAt: new Date().toISOString() }));
 }
 
-export async function deleteOwnMoment(member: Member, id: string): Promise<void> {
+/** Removes the member's own moment and answers its photo links, so the caller can delete the files too */
+export async function deleteOwnMoment(member: Member, id: string): Promise<string[]> {
   const moment = await momentRepository.findById(id);
   if (!moment || moment.status === 'removed') throw new MomentError('ไม่พบโมเมนต์', 404);
   if (moment.authorId !== member.id) throw new MomentError('ลบได้เฉพาะโมเมนต์ของตัวเอง', 403);
   await momentRepository.remove(id);
+  return moment.images;
 }
 
 const toggle = (list: string[], id: string, on: boolean) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id));

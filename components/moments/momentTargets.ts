@@ -1,4 +1,5 @@
 import { Flag, MapPin, Tent, Users } from 'lucide-react';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 /** Where a moment came from, in its pillar's colors, and what the reader can do there (Home feed, /moments, /moments/[id]).
  *   is the pillar's dark text colour, for a line without a box */
@@ -18,9 +19,13 @@ export function momentTargetHref(type?: string | null, id?: string | null): stri
   return isMomentTarget(type) && id ? `${MOMENT_TARGETS[type].base}/${encodeURIComponent(id)}` : null;
 }
 
-/** Uploads go through the image optimizer at a width that fits a grid card; other sources are used as they are */
+/**
+ * Photos kept on this site (uploads and the sample photos in /public) go through the image optimizer at a width that
+ * fits the card; the sample PNGs were ~1 MB each on /moments (2026-11-01). Other sources go through optimizedImage's
+ * own rules (approved hosts resized, Unsplash sized by its link, the rest as they are).
+ */
 export function momentImageSrc(src: string, width = 640): string {
-  return src.startsWith('/uploads/') ? `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75` : src;
+  return optimizedImage(src, width);
 }
 
 /** The card title: the caption's first line (the rest is on the moment's own page) */

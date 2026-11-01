@@ -35,6 +35,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // No "X-Powered-By: Next.js": it tells attackers the framework for free
+  poweredByHeader: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

@@ -40,6 +40,11 @@ export function eventJsonLd(event: EventItem, path: string): JsonLd | null {
   const online = event.locationType === 'online';
   const free = isPriceFree(event.price);
   const image = imageUrl(event.image);
+  // Baht amounts written in the price ("฿600", "350–890 บาท"); a ตี้ that is full or over is no longer on offer
+  // Only numbers next to ฿ or บาท count, so a date in the text ("Early bird 30 ต.ค.") is never read as a price
+  const prices = [...new Set([...(event.price ?? '').replace(/,/g, '').matchAll(/฿\s*(\d{2,6})|(\d{2,6})(?:\s*[-–]\s*(\d{2,6}))?\s*บาท/g)].flatMap((m) => [m[1], m[2], m[3]]).filter(Boolean).map(Number))];
+  const isFull = event.eventType === 'community' && event.maxParticipants > 0 && (event.participantsCount ?? 0) >= event.maxParticipants;
+  const availability = isEventEnded(event) || isFull ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock';
 
   return {
     '@context': 'https://schema.org',
@@ -63,8 +68,11 @@ export function eventJsonLd(event: EventItem, path: string): JsonLd | null {
     ...(event.hostName && { organizer: { '@type': event.eventType === 'public_venue' ? 'Organization' : 'Person', name: event.hostName } }),
     ...(free && {
       isAccessibleForFree: true,
-      offers: { '@type': 'Offer', price: 0, priceCurrency: 'THB', url: absoluteUrl(path), availability: isEventEnded(event) ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock' },
+      offers: { '@type': 'Offer', price: 0, priceCurrency: 'THB', url: absoluteUrl(path), availability },
     }),
+    // A paid one names its price too (Google's event results recommend offers, 2026-11-01): one price, or the range
+    ...(!free && prices.length === 1 && { offers: { '@type': 'Offer', price: prices[0], priceCurrency: 'THB', url: absoluteUrl(path), availability } }),
+    ...(!free && prices.length > 1 && { offers: { '@type': 'AggregateOffer', lowPrice: Math.min(...prices), highPrice: Math.max(...prices), priceCurrency: 'THB', url: absoluteUrl(path), availability } }),
     ...(event.eventType === 'community' && event.maxParticipants > 0 && { maximumAttendeeCapacity: event.maxParticipants }),
   };
 }

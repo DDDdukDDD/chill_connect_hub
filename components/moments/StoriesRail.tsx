@@ -6,7 +6,7 @@ import { Flag, Plus, Trash2, X } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { STICKER_SPOT, StoryCaption, StoryComposer, StoryPhoto, StorySticker, type CaptionLayout, type StoryDraft, type StoryTargetDraft } from '@/components/moments/StoryComposer';
-import { momentTargetHref } from '@/components/moments/momentTargets';
+import { momentImageSrc, momentTargetHref } from '@/components/moments/momentTargets';
 import type { StoryTextColor } from '@/lib/storyTextColors';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -190,8 +190,9 @@ export function StoriesRail({ isLoggedIn, onNeedLogin, onToast, after, size = 'm
               aria-label={`ดูสตอรี่ของ ${g.author.displayName}`}
             >
               <span className={`${circle} rounded-full p-0.5 border-2 ${g.allSeen ? 'border-slate-300' : 'border-[#F43F5E]'}`}>
+                {/* A 56-72px ring: a small copy, not the full photo */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
-                <img loading="lazy" src={g.stories[g.stories.length - 1].image} alt="" className="w-full h-full rounded-full object-cover" />
+                <img loading="lazy" src={momentImageSrc(g.stories[g.stories.length - 1].image, 128)} alt="" className="w-full h-full rounded-full object-cover" />
               </span>
               <span className="w-full text-[11px] font-medium text-slate-700 truncate text-center">{g.isMine ? 'สตอรี่ของคุณ' : g.author.displayName}</span>
             </button>
