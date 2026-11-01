@@ -353,6 +353,8 @@ Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
 
 ### `POST /api/upload` — image upload
 
+Needs a signed-in member or a staff session (`401` otherwise, since 2026-11-01); members are limited to 20 uploads per 10 minutes per IP.
+
 `multipart/form-data`:
 | Field | Notes |
 |---|---|

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { momentRepository } from '@/lib/moments';
 import { deleteOwnMoment, editMoment, isPubliclyVisible, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { deleteMemberUploads } from '@/lib/media/cleanup';
+import { storyImagesInUse } from '@/lib/social/stories';
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -43,7 +45,10 @@ export async function DELETE(request: Request, context: Context) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   const { id } = await context.params;
   try {
-    await deleteOwnMoment(member, id);
+    const images = await deleteOwnMoment(member, id);
+    // The photo files go too (they stayed in storage before, 2026-11-01), unless another post or a story still shows them
+    const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
+    await deleteMemberUploads(images, [...remaining.flatMap((m) => m.images), ...storyImagesInUse()]).catch(() => 0);
     return NextResponse.json({ success: true });
   } catch (error) {
     return errorResponse(error, 'ลบไม่สำเร็จ');

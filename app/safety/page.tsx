@@ -52,7 +52,7 @@ export default function SafetyPage() {
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLoggedIn={isLoggedIn} setIsLoggedIn={handleSetIsLoggedIn} isAuthReady={isAuthReady} />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-12 lg:pb-16">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-28 xl:pb-16">
         <Link href="/" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           หน้าแรก
@@ -130,7 +130,7 @@ export default function SafetyPage() {
         </div>
       </main>
 
-      <SiteFooter className="mb-16 lg:mb-0" />
+      <SiteFooter className="mb-24 xl:mb-0" />
       <MobileNav activeTab="safety" setActiveTab={() => {}} />
     </div>
   );

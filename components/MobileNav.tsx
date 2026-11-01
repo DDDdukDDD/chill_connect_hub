@@ -35,15 +35,16 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     // Home is the member's live feed (and the visitor's landing), so it stays one tap away
     { id: 'home', label: 'หน้าแรก', href: '/', icon: Home },
     { id: 'explore', label: 'กิจกรรม', href: '/community', icon: Compass },
-    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
+    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
     // My Hub is personal: a visitor who is not signed in has nothing there
     ...(isLoggedIn ? [{ id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket }] : []),
   ];
 
   return (
+    // Every width below the top bar's links (xl), so no screen is left without a menu (owner 2026-11-01)
     // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones
-    <div className="fixed bottom-3 left-4 right-4 z-40 lg:hidden">
+    <div className="fixed bottom-3 left-4 right-4 z-40 xl:hidden">
       {actionBar && (
         <div
           aria-hidden={!heroActionsGone}

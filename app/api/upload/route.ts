@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { mediaStorage } from '@/lib/media';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
+import { getSessionMember } from '@/lib/members/session';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
-// Members have no server identity yet, so uploads are limited per IP (per server instance) to curb abuse
-// of paid storage. Admin sessions are not limited.
+// Only a signed-in member or staff may upload (2026-11-01: it was open to anyone while members had no server
+// identity; every caller is a signed-in screen now). Members are also limited per IP (per server instance) to curb
+// abuse of paid storage; admin sessions are not limited.
 const UPLOAD_LIMIT = 20;
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const globalForUploads = globalThis as unknown as { _cchUploadHits?: Map<string, number[]> };
@@ -34,6 +36,9 @@ function detectImageType(buffer: Buffer): string | null {
 }
 
 export async function POST(request: Request) {
+  if (!hasAdminCredentials(request) && !(await getSessionMember(request))) {
+    return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดรูป' }, { status: 401 });
+  }
   if (isRateLimited(request)) {
     return NextResponse.json(
       { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },

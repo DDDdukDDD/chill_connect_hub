@@ -103,7 +103,9 @@ export default function RootLayout({
     alternateName: "Chill & Connect",
     url: SITE_URL,
     logo: `${SITE_URL}/brand-logo.png`,
-    description: "แพลตฟอร์มศูนย์รวมกิจกรรมยามว่าง ฮีลใจ ออกกำลังกาย และคอมมูนิตี้สำหรับคนรุ่นใหม่",
+    // What AI search quotes about us: kept to what the site really does (the FAQPage that sat on every page was removed
+    // 2026-11-01: its questions were not on the pages and one answer made up a statistic)
+    description: "คอมมูนิตี้คนชอบออกไปใช้ชีวิตทั่วไทย: เข้าตี้หรือเปิดตี้ไปด้วยกัน หาที่เที่ยวและอีเวนต์ ทำชาเลนจ์ได้ XP และของรางวัล แล้วแชร์โมเมนต์ให้เพื่อนๆ ดู",
     sameAs: [
       "https://www.instagram.com/chillwaa_official",
       "https://www.tiktok.com/@chillwaa.official",
@@ -123,45 +125,6 @@ export default function RootLayout({
     },
   };
 
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "Chillwaa คืออะไร?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Chillwaa (chillwaa.com) คือแพลตฟอร์มศูนย์รวมกิจกรรม อีเวนต์ งานแฟร์ และคอมมูนิตี้ในกรุงเทพฯ ที่เชื่อมต่อคนที่อยากออกไปใช้ชีวิต หาเพื่อนใหม่ และทำกิจกรรมร่วมกันอย่างปลอดภัยและเป็นกันเอง",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "ชื่อ Chillwaa มีความหมายว่าอะไร?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Chill คือความสบายๆ ของการออกไปใช้ชีวิต ส่วน Waa มาจากภาษาญี่ปุ่น: 輪 (wa) วงเพื่อน, わあ (waa) เสียงว้าวตอนเจอสิ่งดีๆ และ 和 (wa) ความกลมกลืน รวมกันคือการออกไปชิลและเชื่อมต่อกับเพื่อนใหม่ (chill & connect)",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "มาคนเดียวสามารถเข้าร่วมกิจกรรมได้ไหม?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "ได้แน่นอน สมาชิกมากกว่า 80% เข้าร่วมคนเดียวเพื่อทำกิจกรรมที่ชอบและพบปะเพื่อนใหม่ที่มีไลฟ์สไตล์ตรงกัน พร้อมมีกลุ่มชวนเพื่อนย่อยในงานและระบบความปลอดภัยคัดกรองโฮสต์",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "มีกิจกรรมประเภทไหนบ้างใน Chillwaa?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "มีกิจกรรมครบทั้ง 4 มู้ด: 🌿 สายฮีลใจ (Sound Bath, คลาสโยคะ, บอร์ดเกม), 🏃 สายแอคทีฟ (วิ่งสวนเบญจกิติ, แบดมินตัน, ปีนผา, HYROX), ☕ สายชิลล์ (Specialty Coffee, ทัวร์คาเฟ่, มหกรรมงานแฟร์ QSNCC/BITEC), และ 🎨 สายเรียนรู้ (เวิร์กช็อปปั้นดิน, วาดรูป, ภาษาอังกฤษ)",
-        },
-      },
-    ],
-  };
-
   return (
     <html lang="th" className={`${ibmPlexSansThai.variable} ${plusJakartaSans.variable} antialiased`}>
       <head>
@@ -172,10 +135,6 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">

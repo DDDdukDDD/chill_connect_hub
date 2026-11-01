@@ -436,7 +436,6 @@ export default function CommunityDetailPage({
     return (
       <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         <Navbar
-        showMenuOnMobile
           activeTab={activeNavTab}
           setActiveTab={setActiveNavTab}
           isLoggedIn={isLoggedIn}
@@ -450,6 +449,7 @@ export default function CommunityDetailPage({
           <div className="h-6 w-48 bg-slate-100 animate-pulse rounded-lg" />
           <div className="h-56 sm:h-72 md:h-[320px] bg-slate-100 animate-pulse rounded-3xl" />
         </main>
+        <MobileNav activeTab="explore" setActiveTab={setActiveNavTab} />
       </div>
     );
   }
@@ -458,7 +458,6 @@ export default function CommunityDetailPage({
     return (
       <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
         <Navbar
-        showMenuOnMobile
           activeTab={activeNavTab}
           setActiveTab={setActiveNavTab}
           isLoggedIn={isLoggedIn}
@@ -482,6 +481,7 @@ export default function CommunityDetailPage({
             <span>กลับไปดูตี้ทั้งหมด</span>
           </Link>
         </main>
+        <MobileNav activeTab="explore" setActiveTab={setActiveNavTab} />
       </div>
     );
   }
@@ -522,7 +522,6 @@ export default function CommunityDetailPage({
       
       {/* 1. Header Navbar */}
       <Navbar
-        showMenuOnMobile
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
         isLoggedIn={isLoggedIn}
@@ -542,7 +541,7 @@ export default function CommunityDetailPage({
       />
 
       {/* Main Container */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 xl:pb-16">
         <Link href="/community" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ตี้ทั้งหมด

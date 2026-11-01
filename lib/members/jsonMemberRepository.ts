@@ -34,6 +34,9 @@ export const jsonMemberRepository: MemberRepository = {
   async findById(id) {
     return load().find((m) => m.id === id) ?? null;
   },
+  async findFresh(id) {
+    return load().find((m) => m.id === id) ?? null;
+  },
   async findByIds(ids) {
     const wanted = new Set(ids);
     return new Map(load().filter((m) => wanted.has(m.id)).map((m) => [m.id, m]));

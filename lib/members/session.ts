@@ -108,7 +108,7 @@ export async function getPageMember(): Promise<Member | null> {
 async function memberFromSessionToken(token: string | null | undefined): Promise<Member | null> {
   const payload = readSignedPayload<SessionPayload>(token);
   if (!payload || typeof payload.sub !== 'string' || payload.exp <= Math.floor(Date.now() / 1000)) return null;
-  const stored = await memberRepository.findById(payload.sub);
+  const stored = await memberRepository.findFresh(payload.sub);
   if (!stored || stored.sessionVersion !== payload.ver) return null;
   const member = await refreshMemberStatus(stored);
   return member.status === 'active' ? member : null;

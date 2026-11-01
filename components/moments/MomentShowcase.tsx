@@ -345,7 +345,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
   return (
     <MomentsChrome>
       {({ isLoggedIn, requireLogin, showToast }) => (
-        <main className="flex-1 pb-28 lg:pb-16">
+        <main className="flex-1 pb-28 xl:pb-16">
           <WhenSignedIn isLoggedIn={isLoggedIn} run={refreshHearts} />
           {/* Header band: the landing page's cream with soft circles, tilted prints on one side and the words on the other */}
           <section className="relative overflow-hidden bg-[#FFF8F1]">

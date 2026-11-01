@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
 import { dialogButton } from '@/components/auth/DialogShell';
 import type { HostApplication, PublicMember } from '@/lib/members/types';
 import { useAuth } from '@/lib/useAuth';
@@ -57,7 +58,6 @@ export function SettingsScreen() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
       <Navbar
-        showMenuOnMobile
         activeTab="profile"
         setActiveTab={() => undefined}
         isLoggedIn={isLoggedIn}
@@ -67,7 +67,7 @@ export function SettingsScreen() {
         onOpenLogout={() => setIsLogoutOpen(true)}
       />
 
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-4 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 pt-4 pb-28 xl:pb-16">
         <Link href="/profile" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           โปรไฟล์ของฉัน
@@ -102,6 +102,7 @@ export function SettingsScreen() {
           </div>
         )}
       </main>
+      <MobileNav activeTab="profile" setActiveTab={() => undefined} />
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
       <LogoutConfirmModal isOpen={isLogoutOpen} onClose={() => setIsLogoutOpen(false)} onConfirmLogout={() => handleSetIsLoggedIn(false)} />
