@@ -2431,3 +2431,10 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **No Vercel action:** clips go straight from the phone to Blob because a server function takes only about 4.5 MB. The route signs a short-lived URL with `handleUploadPresigned`, which works with the store's OIDC login, so no `BLOB_READ_WRITE_TOKEN` is needed (the store has none). The CSP now allows `vercel.com` and `*.blob.vercel-storage.com` for this.
 - **Limits of the trial:** length is read on the phone and the server checks the number only, not the file. No conversion, so an iPhone HEVC clip may not play on every device.
 - **Checked:** 30-step walk in headless Chrome at 360 wide with real recorded clips, on local storage. Not run: the direct Blob path (it needs Vercel's login, so it can only run after deploy), Safari, real phones.
+
+### BE-215 · One database connection per server (owner 2026-11-02)
+- **Why:** Supabase's session pooler allows 15 connections across all servers, and each Vercel server could hold 3, so about 5 busy servers filled it. A burst of requests on 2026-11-01 made database reads fail for about 4 minutes.
+- **Change:** `max: 1` and `idle_timeout: 5` in `lib/db/postgres/client.ts`, so it now takes about 15 busy servers. Requests on one server queue for its connection.
+- **Rule for new code:** inside `sql().begin()` every query must use `tx`. A separate query waits forever for the connection its own transaction holds. `referenceCodes` in `lib/db/adapters/postgresAdapter.ts` did this on ตี้ and place saves, and now takes `tx`.
+- **Checked:** production build on one connection: ตี้ save with a cold lookup (200), two bursts of 14 mixed requests (all 200, no hang), the 43-step walk. All transactions read through.
+- **Not done:** a load test on Vercel, so the new limit is reasoned, not measured there. Frozen servers may hold a connection past the idle timeout. Raising the pool in Supabase is still worth doing; it is on the owner's side.

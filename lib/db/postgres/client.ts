@@ -16,9 +16,10 @@ export function sql(): postgres.Sql {
     globalForSql._cchSql = postgres(url, {
       // Prepared statements only work when the pooler keeps one session per client (session mode, 5432)
       prepare: !url.includes(':6543/'),
-      // Supabase's session pooler has a small connection limit shared by every server
-      max: 3,
-      idle_timeout: 20,
+      // Supabase's session pooler allows 15 connections across all servers, and a burst on Vercel starts many servers.
+      // One each, closed soon after use. So inside sql().begin() every query must use `tx`: a separate query would wait forever.
+      max: 1,
+      idle_timeout: 5,
       ssl: 'require',
       onnotice: () => {},
     });
