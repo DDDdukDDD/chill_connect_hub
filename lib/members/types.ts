@@ -184,6 +184,8 @@ export interface MemberQuery {
 
 export interface MemberRepository {
   findById(id: string): Promise<Member | null>;
+  /** The stored member right now, past any short-lived copy: for the signed-in member, whose writes build on what is read */
+  findFresh(id: string): Promise<Member | null>;
   /** Many members in one read (feeds, chat, notifications); ids not found are left out */
   findByIds(ids: string[]): Promise<Map<string, Member>>;
   findByEmail(email: string): Promise<Member | null>;

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
 import { useAuth } from '@/lib/useAuth';
 
 type Result = { state: 'working' } | { state: 'signin' } | { state: 'done'; name: string } | { state: 'failed'; message: string };
@@ -38,8 +39,8 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] text-slate-900 font-sans flex flex-col">
-      <Navbar showMenuOnMobile activeTab="myhub" setActiveTab={() => undefined} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} onOpenLogin={() => undefined} onOpenLogout={() => undefined} />
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-10 sm:py-16">
+      <Navbar activeTab="myhub" setActiveTab={() => undefined} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} onOpenLogin={() => undefined} onOpenLogout={() => undefined} />
+      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-10 pb-28 sm:pt-16 xl:pb-16">
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center">
           {result.state === 'working' && (
             <>
@@ -75,6 +76,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
           )}
         </div>
       </main>
+      <MobileNav activeTab="myhub" setActiveTab={() => undefined} />
     </div>
   );
 }

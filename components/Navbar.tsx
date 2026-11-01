@@ -5,15 +5,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LogIn, 
   LogOut, 
   PlusCircle, 
-  Menu, 
-  X, 
-  Compass, 
-  Camera, 
   Ticket, 
-  Zap,
   ChevronRight,
   Gift,
   Search,
@@ -45,14 +39,11 @@ interface NavbarProps {
   onOpenSignup?: () => void;
   /** The ค้นพบ pages' own search box, in place of the site search (same look and place) */
   searchSlot?: React.ReactNode;
-  /** Pages without the floating bottom bar keep the menu button on phones and tablets */
-  showMenuOnMobile?: boolean;
   userName?: string;
   isAuthReady?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  activeTab,
   setActiveTab,
   isLoggedIn,
   setIsLoggedIn,
@@ -60,12 +51,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLogout,
   onOpenSignup,
   searchSlot,
-  showMenuOnMobile = false,
   userName = '',
   isAuthReady,
 }) => {
   const { userProfile, handleSetRole } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isOwnSignupOpen, setIsOwnSignupOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -85,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   useActivitySync();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close profile dropdown or drawer when clicking outside or pressing Escape
+  // Close profile dropdown when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -95,7 +84,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsProfileDropdownOpen(false);
-        setIsMobileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -106,16 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
-  const navItems = [
-    // ค้นพบ = meetups, fairs and places (/community, /events, /spots); the logo goes home
-    { id: 'explore', label: 'กิจกรรม', href: '/community', icon: Compass },
-    { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
-    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
-    // About sits in the footer of this menu
-    { id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: Ticket },
-  ];
-
-  // Wide screens: the three public sections sit in the top bar for everyone (the drawer keeps them too).
+  // Wide screens: the three public sections sit in the top bar for everyone; below that the floating bottom bar has them (components/MobileNav.tsx).
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
   // หน้าแรก first for everyone: a member's live feed (owner 2026-10-29), and for a visitor the landing, not only via the logo
@@ -319,125 +298,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
 
-            {/* Universal Luxury Hamburger / Menu Button (Active on Mobile, iPad, and Desktop).
-                Members only (owner 2026-10-19): for visitors, log in and sign up are the top bar's only actions, on every page.
-                Below desktop width the floating bottom bar does its job, so it shows there only when a page has no bar; from xl the
-                top bar holds ค้นพบ / โมเมนต์ / ชาเลนจ์ and the profile menu holds มายฮับ, so the button goes (owner 2026-10-25). */}
-            {isLoggedIn && (
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className={`${showMenuOnMobile ? 'flex xl:hidden' : 'hidden lg:flex xl:hidden'} items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer select-none group shrink-0`}
-              title="เปิดเมนูนำทาง"
-              aria-label="Toggle Navigation Menu"
-            >
-              <Menu className="w-4.5 h-4.5 text-slate-700 group-hover:text-slate-900 transition-colors" />
-              <span className="hidden sm:inline text-xs font-bold text-slate-700 group-hover:text-slate-900">
-                เมนู
-              </span>
-            </button>
-            )}
-
           </div>
 
         </div>
       </header>
-
-      {/* Slide-out Universal Luxury Drawer (Active across all screen sizes: Mobile, Tablet & Desktop) */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop Blur Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-fade-in"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Drawer Content Panel */}
-          <div className="relative w-[300px] sm:w-[340px] md:w-[360px] bg-white h-full shadow-2xl flex flex-col justify-between p-6 z-10 animate-slide-left border-l border-slate-200 overflow-y-auto">
-            
-            {/* Top Drawer Header */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <BrandLogo size="sm" />
-                  <span className="font-bold text-base text-[#1E293B]">เมนูหลัก</span>
-                </div>
-                <button
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 active:scale-90"
-                  title="ปิดเมนู"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Login CTA only when guest */}
-              {!isLoggedIn && (
-                <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 text-center space-y-2">
-                  <p className="text-xs text-amber-800 font-medium">เข้าสู่ระบบเพื่อบันทึกและจัดการกิจกรรม</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      if (onOpenLogin) onOpenLogin();
-                      else setIsLoggedIn?.(true);
-                    }}
-                    className="w-full bg-[#1E293B] hover:bg-[#0F172A] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Navigation Links */}
-              <div className="space-y-1">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">
-                  การนำทาง
-                </p>
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center justify-between p-3 rounded-2xl text-sm font-semibold transition-all ${
-                        isActive
-                          ? 'bg-slate-900 text-white shadow-xs font-bold'
-                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/90'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </div>
-                      <ChevronRight className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Minimal Brand Footer */}
-            <div className="pt-4 mt-6 border-t border-slate-100 text-center">
-              <p className="text-[11px] text-slate-500 font-medium mb-1.5">
-                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">เกี่ยวกับเรา</Link>
-                {' · '}
-                <Link href="/legal" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">ข้อตกลงการใช้งาน</Link>
-                {' · '}
-                <Link href="/legal?tab=privacy" onClick={() => setIsMobileMenuOpen(false)} className="hover:underline">นโยบายความเป็นส่วนตัว</Link>
-              </p>
-              <p className="text-[11px] text-slate-400 font-medium">© 2026 Chillwaa</p>
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* สร้างกิจกรรม: the chooser of all four kinds, then the new page once it is live */}
       <CreateEventModal

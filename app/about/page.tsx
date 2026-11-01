@@ -120,7 +120,7 @@ export default function AboutPage() {
         onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
-      <main className="flex-1 pb-24 sm:pb-12">
+      <main className="flex-1 pb-24 xl:pb-12">
         {/* 1. Who we are */}
         <section className="bg-[#FFF8F1]">
           <div className={`${WRAP} py-12 sm:py-16 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center`}>
@@ -278,7 +278,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <SiteFooter className="bg-white mb-16 md:mb-0" />
+      <SiteFooter className="bg-white mb-24 xl:mb-0" />
 
       <AuthModal
         isOpen={isAuthModalOpen}

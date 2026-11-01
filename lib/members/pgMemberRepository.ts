@@ -213,6 +213,10 @@ export const pgMemberRepository: MemberRepository = {
     const member = await cacheManager.getOrSet(`member:${id}`, () => findOne(sql(), sql()`m.legacy_id = ${id}`), { ttlMs: MEMBER_TTL_MS, tags: memberTags(id) });
     return copy(member);
   },
+  // Each Vercel server has its own cache, and a write on one does not clear the others (owner saw onboarding come back)
+  async findFresh(id) {
+    return findOne(sql(), sql()`m.legacy_id = ${id}`);
+  },
   async findByIds(ids) {
     const wanted = [...new Set(ids.filter(Boolean))];
     const found = new Map<string, Member>();

@@ -1941,7 +1941,7 @@ function MyHubContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#1E293B] font-sans pb-24 md:pb-16 flex flex-col justify-between">
+    <div className="min-h-screen bg-white text-[#1E293B] font-sans pb-24 xl:pb-16 flex flex-col justify-between">
       <div>
         {/* Navigation Bar */}
         <Navbar

@@ -27,7 +27,7 @@ export function DiscoverLoading({ kind }: { kind: DiscoverKind }) {
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
       <Navbar activeTab="explore" setActiveTab={noop} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} />
 
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-12 space-y-6" aria-busy="true">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 xl:pb-12 space-y-6" aria-busy="true">
         <div className="space-y-4">
           <div className="flex gap-5 sm:gap-7">
             {TABS.map((tab) => {

@@ -463,7 +463,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
       {/* Toast Notification */}
       <Toast message={toastMessage} />
 
-      <main className="flex-1 pb-28 sm:pb-16">
+      <main className="flex-1 pb-28 xl:pb-16">
         {isMember ? (
           <MemberLiveHome
             campaign={campaign}
@@ -681,7 +681,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
         )}
 
         <div className={CONTAINER}>
-          <SiteFooter className="pb-4 mt-12 sm:mt-16 mb-16 md:mb-0">
+          <SiteFooter className="pb-4 mt-12 sm:mt-16 mb-24 xl:mb-0">
             {isAuthReady && !isLoggedIn && (
               <p className="text-[13px] text-slate-500">
                 พร้อมออกไปเมื่อไหร่{' '}

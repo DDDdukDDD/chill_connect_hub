@@ -166,7 +166,7 @@ export default function RewardsPage() {
       />
       <Toast message={toastMessage} />
 
-      <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 xl:pb-16">
         <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
           {/* Wallet, shaped like a ticket: what I have and the next reward on top, how to get more below the tear line */}
           <aside className="lg:sticky lg:top-24">

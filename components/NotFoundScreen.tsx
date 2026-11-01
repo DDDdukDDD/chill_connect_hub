@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { useAuth } from '@/lib/useAuth';
 
@@ -23,7 +24,6 @@ export function NotFoundScreen() {
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
       <Navbar
-        showMenuOnMobile
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isLoggedIn={isLoggedIn}
@@ -32,7 +32,7 @@ export function NotFoundScreen() {
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
-      <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
+      <main className="flex-1 max-w-4xl mx-auto px-4 pt-20 pb-28 xl:pb-20 text-center space-y-4">
         <h1 className="text-2xl font-bold text-slate-900">ไม่เจอหน้านี้แล้ว</h1>
         <p className="text-sm text-slate-600">กิจกรรมหรือที่นี้อาจจบไปแล้ว ถูกยกเลิก หรือลิงก์พิมพ์ผิดนิดหน่อย ลองดูอย่างอื่นที่เพื่อนๆ กำลังไปกันได้เลย</p>
         <div className="flex flex-wrap justify-center gap-2 pt-2">
@@ -53,6 +53,7 @@ export function NotFoundScreen() {
           กลับหน้าแรก
         </Link>
       </main>
+      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={() => handleSetIsLoggedIn(true)} />
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}

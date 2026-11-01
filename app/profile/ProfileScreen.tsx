@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
+import { MobileNav } from '@/components/MobileNav';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
@@ -695,7 +696,6 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
       <Navbar
-        showMenuOnMobile
         activeTab="profile"
         setActiveTab={() => undefined}
         isLoggedIn={isLoggedIn}
@@ -705,7 +705,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
         onOpenLogout={() => setIsLogoutOpen(true)}
       />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-28 lg:pb-16">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-28 xl:pb-16">
         {state.status === 'loading' && (
           <div className={`${card} flex items-center gap-2 text-sm font-bold text-slate-500`} role="status">
             <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
@@ -1110,6 +1110,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
           </>
         )}
       </main>
+      <MobileNav activeTab="profile" setActiveTab={() => undefined} />
 
       {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it, opened from the small link */}
       {isInviteOpen && (
