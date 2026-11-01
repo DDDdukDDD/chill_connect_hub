@@ -2438,3 +2438,5 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Rule for new code:** inside `sql().begin()` every query must use `tx`. A separate query waits forever for the connection its own transaction holds. `referenceCodes` in `lib/db/adapters/postgresAdapter.ts` did this on ตี้ and place saves, and now takes `tx`.
 - **Checked:** production build on one connection: ตี้ save with a cold lookup (200), two bursts of 14 mixed requests (all 200, no hang), the 43-step walk. All transactions read through.
 - **Not done:** a load test on Vercel, so the new limit is reasoned, not measured there. Frozen servers may hold a connection past the idle timeout. Raising the pool in Supabase is still worth doing; it is on the owner's side.
+
+- **BE-214 follow-up:** the clip preview link goes through `encodeURI` in `components/moments/MomentComposer.tsx` to clear a CodeQL alert that blocked the merge. It is a browser `blob:` link, so behaviour is unchanged.

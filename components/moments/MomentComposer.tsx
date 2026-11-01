@@ -273,7 +273,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         const durationS = el.duration;
         finish(() => (canvas.width > 0 ? resolve({ durationS, cover }) : reject(new Error('unreadable'))));
       };
-      el.src = src;
+      // A blob: link from the browser, which encodeURI leaves as it is; CodeQL needs it for text that started in a file input
+      el.src = encodeURI(src);
     });
 
   const addClip = async (e: React.ChangeEvent<HTMLInputElement>) => {
