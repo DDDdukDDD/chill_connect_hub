@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ALL_PROVINCES, discoverHref, type DiscoverCounts, type DiscoverKind } from '@/lib/discoverMatch';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
+import { useAuth } from '@/lib/useAuth';
 
 /**
  * The top bar's search on every page outside ค้นพบ: the same box (word | province | blue button) in the same place.
@@ -26,8 +27,15 @@ async function firstTabWithResults(query: string, province: string): Promise<Dis
 }
 export function SiteSearch() {
   const router = useRouter();
+  const { member } = useAuth();
   const [query, setQuery] = useState('');
   const [province, setProvince] = useState(ALL_PROVINCES);
+  // A signed-in member starts in their own province (owner 2026-11-01); once they pick another, theirs stays picked
+  const [pickedByHand, setPickedByHand] = useState(false);
+  const ownProvince = member?.province;
+  useEffect(() => {
+    if (!pickedByHand) setProvince(ownProvince ?? ALL_PROVINCES);
+  }, [ownProvince, pickedByHand]);
 
   // "/" jumps to the search box, as on most sites
   useEffect(() => {
@@ -50,7 +58,10 @@ export function SiteSearch() {
       query={query}
       onQueryChange={setQuery}
       province={province}
-      onProvinceChange={setProvince}
+      onProvinceChange={(value) => {
+        setPickedByHand(true);
+        setProvince(value);
+      }}
       onSubmit={async () => router.push(discoverHref(await firstTabWithResults(query, province), query, province))}
     />
   );

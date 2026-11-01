@@ -40,7 +40,8 @@ export function ChallengeChecklist({ questId }: { questId: string }) {
     };
   }, [questId]);
 
-  if (!data || data.total === 0) return null;
+  // Nothing counted or waiting yet: the progress bar above already says 0 of n, and the places say how to count
+  if (!data || data.total === 0 || data.items.length === 0) return null;
   const left = Math.max(data.total - data.current, 0);
 
   return (

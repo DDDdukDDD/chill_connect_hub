@@ -31,7 +31,9 @@ export function homeEvents(upcoming: EventItem[], forMember: boolean): { events:
   const fairs = upcoming
     .filter((e) => e.eventType === 'public_venue')
     .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
-  const keep = new Set([...pickFairRow(fairs), ...(forMember ? fairs.slice(0, BAND_PICK_POOL) : [])]);
+  // Twice the row: the browser drops what has ended by its own clock (Bangkok, while the server runs on UTC, or a tab
+  // left open overnight) and re-picks six from the rest, so the row never shrinks (was 2 of 6 on an iPad, 2026-10-31)
+  const keep = new Set([...pickFairRow(fairs, FAIR_ROW_SHOWN * 2), ...(forMember ? fairs.slice(0, BAND_PICK_POOL) : [])]);
   return { events: upcoming.filter((e) => e.eventType !== 'public_venue' || keep.has(e)), fairTotal: fairs.length };
 }
 

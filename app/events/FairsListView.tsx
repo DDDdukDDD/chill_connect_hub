@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useOwnProvinceDefault } from '@/lib/useOwnProvince';
 import { Heart, X, Calendar, Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -51,6 +52,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
+  useOwnProvinceDefault(searchParams.get('province'), selectedProvince, setSelectedProvince);
   const [selectedVenue, setSelectedVenue] = useState<string>(searchParams.get('venue') || 'all');
   const [statusFilter, setStatusFilter] = useState<'upcoming' | 'ended' | 'all'>(() => {
     const status = searchParams.get('status');

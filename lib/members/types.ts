@@ -170,6 +170,8 @@ export interface PublicMember {
   createdAt: string;
   /** False until the member finishes (or skips through) onboarding once */
   onboarded: boolean;
+  /** The province they picked in onboarding or settings (a master-data id, e.g. "กรุงเทพฯ"): the top bar's search starts there */
+  province?: string;
   trust: MemberTrust;
 }
 
@@ -202,6 +204,7 @@ export function toPublicMember(member: Member): PublicMember {
     loginMethods: [...(member.passwordHash ? ['email' as const] : []), ...member.providers.map((p) => p.provider)],
     createdAt: member.createdAt,
     onboarded: Boolean(member.onboardedAt),
+    province: member.preferences?.province || undefined,
     trust: trustOf(member),
   };
 }

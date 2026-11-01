@@ -1,6 +1,6 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Camera } from 'lucide-react';
+import { Camera, MapPin } from 'lucide-react';
 import { PosterPhoto } from '@/components/PosterPhoto';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -124,21 +124,43 @@ export const heroButton = {
   icon: 'inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors',
 };
 
-/** The host's schedule ("กำหนดการ" in the ตั้งตี้ / อีเวนต์ form), times down the left; nothing when there is none */
-export function ItineraryList({ items }: { items?: { time: string; title: string }[] }) {
+/**
+ * The host's schedule ("กำหนดการ" in the ตั้งตี้ / อีเวนต์ form), times down the left; nothing when there is none.
+ * A ตี้ passes its meeting point too: where to meet belongs with when (owner 2026-11-01), the map section keeps the way there.
+ */
+export function ItineraryList({ items, meetingPoint }: { items?: { time: string; title: string }[]; meetingPoint?: string }) {
   const rows = (items ?? []).filter((row) => row.title?.trim());
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && !meetingPoint) return null;
   return (
-    <section className="space-y-3">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">กำหนดการ</h2>
-      <ol className="space-y-3">
-        {rows.map((row, i) => (
-          <li key={i} className="grid grid-cols-[4rem_1fr] gap-3 items-baseline">
-            <span className="text-sm font-bold text-slate-900 tabular-nums">{row.time || '–'}</span>
-            <span className="text-sm font-medium text-slate-700 leading-relaxed">{row.title}</span>
-          </li>
-        ))}
-      </ol>
+    <section className="space-y-4">
+      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{rows.length === 0 ? 'จุดนัดพบ' : meetingPoint ? 'กำหนดการ & จุดนัดพบ' : 'กำหนดการ'}</h2>
+      {/* Where first, as its own line, then when: a timeline with a dot per step */}
+      {meetingPoint && (
+        <div className="flex items-center gap-3">
+          <span className="w-10 h-10 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0" aria-hidden="true">
+            <MapPin className="w-5 h-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-slate-500">จุดนัดพบ</p>
+            <p className="text-sm sm:text-base font-semibold text-slate-900 leading-snug">{meetingPoint}</p>
+          </div>
+        </div>
+      )}
+      {rows.length > 0 && (
+        <ol>
+          {rows.map((row, i) => (
+            <li key={i} className="group grid grid-cols-[4.5rem_1fr] gap-x-3">
+              <span className="pt-px text-sm font-semibold text-slate-900 tabular-nums">{row.time || '–'}</span>
+              <div className="relative pl-6 pb-5 group-last:pb-0">
+                {/* The line to the next step stops at the last one */}
+                <span className="absolute left-[5px] top-3 -bottom-1 w-px bg-slate-200 group-last:hidden" aria-hidden="true" />
+                <span className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full ${i === 0 ? 'bg-[#2563EB]' : 'bg-white border-2 border-slate-300'}`} aria-hidden="true" />
+                <p className="text-sm font-medium text-slate-700 leading-relaxed">{row.title}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }

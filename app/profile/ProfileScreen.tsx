@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Users, type LucideIcon
+  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, type LucideIcon
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
@@ -19,9 +19,10 @@ import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
 import { useAuth } from '@/lib/useAuth';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
-import { RelatedMeetupTiles } from '@/components/detail/RelatedTiles';
+import { MeetupTile } from '@/components/MeetupTile';
 import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
 
 /**
@@ -49,6 +50,8 @@ interface PublicProfile {
   /** Badges of the challenges this member finished */
   challengeBadges?: { questId: string; badgeLabel: string; title: string }[];
   hostReviews?: { count: number; average: number; latest: { id: string; rating: number; text: string; eventTitle: string; authorId: string | null; authorName: string; timeAgo: string }[] };
+  /** ตี้ this member went to, ended ones only (the "ตี้ที่ไป" tab) */
+  wentTo?: EventItem[];
   isSampleAccount?: boolean;
   isSample?: boolean;
   sampleInterests?: string[];
@@ -81,6 +84,9 @@ const PAGE_HOSTED = 6;
 const FIRST_MOMENTS = 9;
 const PAGE_MOMENTS = 12;
 const FIRST_BADGES = 10;
+/** The tabs under the story, like IG (owner 2026-11-01): what they posted, ตี้ they went to, ตี้ they host, challenges they finished */
+type ProfileTab = 'moments' | 'went' | 'hosted' | 'challenges';
+const TILE_GRID = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8';
 const MORE_BUTTON = 'mt-5 inline-flex items-center gap-1.5 min-h-10 px-4 rounded-full border border-slate-300 hover:border-slate-900 text-sm font-bold text-slate-800 cursor-pointer disabled:opacity-60';
 /** About facts as short lines: an icon, a lead-in and the value ("ทำงานเป็น นักออกแบบ") */
 const ABOUT_ICONS: Partial<Record<ProfileFieldKey, LucideIcon>> = {
@@ -497,7 +503,10 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const [notice, setNotice] = useState('');
   const [hosted, setHosted] = useState<HostedEvent[]>([]);
   const [previewPublic, setPreviewPublic] = useState(false);
-  const [myStats, setMyStats] = useState<{ tee: number; xp: number | null } | null>(null);
+  const [myXp, setMyXp] = useState<number | null>(null);
+  // null: the first tab that has something
+  const [tab, setTab] = useState<ProfileTab | null>(null);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
   const memberId = member?.id;
@@ -551,17 +560,12 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     };
   }, [isAuthReady, wantsOwn, memberId, profileId, reload]);
 
-  // My own numbers: ตี้ I went to (host check-ins) and my XP
+  // My own XP (ตี้ I went to are the "ตี้ที่ไป" tab now)
   useEffect(() => {
     if (!isAuthReady || !wantsOwn || !memberId) return;
     let active = true;
-    Promise.all([
-      getJson<{ visits: { targetType: string; targetId: string }[] }>('/api/visits?mine=1'),
-      getJson<{ points?: { balance: number } }>('/api/rewards'),
-    ]).then(([visits, rewards]) => {
-      if (!active) return;
-      const tee = new Set((visits.json?.visits ?? []).filter((v) => v.targetType === 'community').map((v) => v.targetId)).size;
-      setMyStats({ tee, xp: rewards.json?.points?.balance ?? null });
+    getJson<{ points?: { balance: number } }>('/api/rewards').then((rewards) => {
+      if (active) setMyXp(rewards.json?.points?.balance ?? null);
     });
     return () => {
       active = false;
@@ -595,7 +599,6 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const viewOwn = own && !previewPublic ? own : null;
   const provinceName = profile?.province ? master.provinces.find((p) => p.id === profile.province)?.displayName ?? profile.province : undefined;
   const hiddenKeys = own?.details.hidden ?? [];
-  const liveHosted = hosted.filter((ev) => ev.approvalStatus === 'approved').length;
   const hostedRank = (ev: HostedEvent) => (ev.approvalStatus !== 'approved' ? 0 : ev.status === 'ended' ? 2 : 1);
   const hostedSorted = [...hosted].sort((a, b) => {
     const rank = hostedRank(a) - hostedRank(b);
@@ -631,31 +634,49 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     : [];
   const bio = viewOwn ? viewOwn.details.bio : profile?.about.bio;
 
-  // สายที่ชอบ: only the สาย the member picked (as in onboarding), with the สาย's own icon and colour; the places and
-  // events inferred from them are for suggestions, not something the member said (the owner sees hidden ones too)
+  // สายที่ชอบ: only the สาย the member picked (as in onboarding); the places and events inferred from them are for
+  // suggestions, not something the member said (the owner sees hidden ones too). Quiet chips with the drawn สาย icon
+  // in its own colour (owner 2026-11-01: the coloured chips stood out over everything else on the page)
   const interestSource = viewOwn ? viewOwn.preferences?.interests : profile?.interests;
-  const interestChips: { name: string; icon?: LucideIcon; tone: string }[] = interestSource
+  const interestChips: { name: string; icon?: CategoryIconComponent; iconColor?: string }[] = interestSource
     ? interestSource.communityCategories.flatMap((id) => {
         const cat = master.communityCategories.find((c) => c.id === id);
-        return cat ? [{ name: cat.name, icon: cat.icon, tone: `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}` }] : [];
+        return cat ? [{ name: cat.name, icon: meetupCategoryIcon(cat.id) ?? cat.icon, iconColor: cat.colorScheme.iconColor }] : [];
       })
-    : (profile?.sampleInterests ?? []).map((name) => ({ name, tone: 'bg-slate-100 text-slate-700' }));
+    : (profile?.sampleInterests ?? []).map((name) => ({ name }));
 
-  // The numbers under the name; each one appears only when it says something
+  // The numbers under the name; each one appears only when it says something. ตี้ที่ไป, ตี้ที่จัด and เหรียญ are left
+  // out: the tabs carry their counts (owner 2026-11-01)
   const hostedVisible = viewOwn ? hostedSorted : hostedSorted.filter((ev) => ev.approvalStatus === 'approved');
-  const momentsCount = String(state.momentsTotal ?? state.moments.length);
-  const stats: { label: string; value: string; href?: string; tone?: string }[] = (profile
+  const stats: { label: string; value: string; href?: string; tab?: ProfileTab; tone?: string; action?: { label: string; href: string } }[] = (profile
     ? [
-        ...(viewOwn && myStats ? [{ label: 'ตี้ที่ไปมาแล้ว', value: String(myStats.tee) }] : []),
-        ...(liveHosted > 0 ? [{ label: 'ตี้ที่จัด', value: String(liveHosted), href: '#hosted' }] : []),
         ...(profile.hostReviews && profile.hostReviews.count > 0 ? [{ label: `จาก ${profile.hostReviews.count} รีวิว`, value: `★ ${profile.hostReviews.average.toFixed(1)}`, href: '#reviews' }] : []),
-        ...(state.moments.length > 0 || viewOwn ? [{ label: 'โมเมนต์', value: momentsCount, href: '#moments' }] : []),
-        ...(profile.challengeBadges && profile.challengeBadges.length > 0 ? [{ label: 'เหรียญ', value: String(profile.challengeBadges.length), href: '#badges' }] : []),
-        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: String(profile.followerCount) }] : []),
-        ...(viewOwn && myStats?.xp != null ? [{ label: 'XP', value: myStats.xp.toLocaleString(), href: '/rewards' }] : []),
+        ...(viewOwn && myXp != null ? [{ label: 'XP', value: myXp.toLocaleString(), action: { label: 'แลกของรางวัล', href: '/rewards' } }] : []),
       ]
     : []
   ).filter((stat) => stat.value !== '0');
+  // Under the name, as on IG: posts, followers, following (zeros too: they are the start of a profile, not a gap)
+  const social: { label: string; value: number; tab?: ProfileTab }[] = profile
+    ? [
+        { label: 'โพสต์', value: state.momentsTotal ?? state.moments.length, tab: 'moments' as const },
+        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount }] : []),
+        ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount }] : []),
+      ]
+    : [];
+  const went = profile?.wentTo ?? [];
+  const tabs: { key: ProfileTab; label: string; count: number }[] = profile
+    ? [
+        ...(state.moments.length > 0 || viewOwn ? [{ key: 'moments' as const, label: 'โมเมนต์', count: state.momentsTotal ?? state.moments.length }] : []),
+        ...(went.length > 0 ? [{ key: 'went' as const, label: 'ตี้ที่ไป', count: went.length }] : []),
+        ...(hostedVisible.length > 0 ? [{ key: 'hosted' as const, label: 'ตี้ที่จัด', count: hostedVisible.length }] : []),
+        ...(profile.challengeBadges && profile.challengeBadges.length > 0 ? [{ key: 'challenges' as const, label: 'ชาเลนจ์', count: profile.challengeBadges.length }] : []),
+      ]
+    : [];
+  const activeTab = tabs.find((t) => t.key === tab)?.key ?? tabs[0]?.key;
+  const openTab = (key: ProfileTab) => {
+    setTab(key);
+    document.getElementById('profile-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // How complete my profile is: what a new friend looks at before joining my ตี้
   const strengthSteps = viewOwn
@@ -748,6 +769,28 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     {(profile.isSample || profile.isSampleAccount) && !profile.isMe && <span className="mt-2 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">โปรไฟล์ตัวอย่าง</span>}
                   </div>
 
+                  {/* Posts, followers, following in one row under the name, as on IG */}
+                  {social.length > 0 && (
+                    <dl className={`mt-5 grid text-center ${social.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                      {social.map((item) => {
+                        const cell = (
+                          <>
+                            {/* The label first for screen readers; flex-col-reverse puts the number on top */}
+                            <dt className="text-xs sm:text-sm font-medium text-slate-500">{item.label}</dt>
+                            <dd className="text-lg font-bold text-slate-900 tabular-nums">{item.value.toLocaleString()}</dd>
+                          </>
+                        );
+                        return item.tab && tabs.some((t) => t.key === item.tab) ? (
+                          <button key={item.label} type="button" onClick={() => openTab(item.tab!)} className="flex flex-col-reverse items-center rounded-xl py-1 hover:bg-slate-50 cursor-pointer">
+                            {cell}
+                          </button>
+                        ) : (
+                          <div key={item.label} className="flex flex-col-reverse items-center py-1">{cell}</div>
+                        );
+                      })}
+                    </dl>
+                  )}
+
                   {/* The numbers, one per line; zeros are left out */}
                   {stats.length > 0 && (
                     <dl className="mt-6 pt-5 border-t border-slate-200 space-y-2">
@@ -759,7 +802,21 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             <dt className="text-sm leading-7 font-medium text-slate-600">{stat.label}</dt>
                           </>
                         );
-                        return stat.href ? (
+                        // XP: the number, then where to spend it on the same line (owner 2026-11-01)
+                        if (stat.action) {
+                          return (
+                            <div key={stat.label} className="flex items-baseline gap-2">
+                              {row}
+                              <Link href={stat.action.href} className="ml-auto inline-flex items-center gap-0.5 text-sm font-bold text-amber-700 hover:text-amber-800 hover:underline underline-offset-4 whitespace-nowrap">
+                                {stat.action.label}
+                                <ChevronRight className="w-4 h-4 self-center" aria-hidden="true" />
+                              </Link>
+                            </div>
+                          );
+                        }
+                        return stat.tab ? (
+                          <button key={stat.label} type="button" onClick={() => openTab(stat.tab!)} className="flex items-baseline gap-2 hover:opacity-80 cursor-pointer">{row}</button>
+                        ) : stat.href ? (
                           <a key={stat.label} href={stat.href} className="flex items-baseline gap-2 hover:opacity-80">{row}</a>
                         ) : (
                           <div key={stat.label} className="flex items-baseline gap-2">{row}</div>
@@ -783,6 +840,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     <button type="button" onClick={() => setEditTab('me')} className="mt-6 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer">
                       <Pencil className="w-4 h-4" aria-hidden="true" />
                       แก้ไขโปรไฟล์
+                    </button>
+                  )}
+                  {/* ตั๋วเพื่อนซี้ as a small link under the one action (owner 2026-11-01), not a big box */}
+                  {profile.isMe && (
+                    <button type="button" onClick={() => setIsInviteOpen(true)} className="mt-3 w-full inline-flex items-center justify-center gap-1.5 min-h-10 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 cursor-pointer">
+                      <Ticket className="w-4 h-4" aria-hidden="true" />
+                      ชวนเพื่อนด้วยตั๋วเพื่อนซี้
                     </button>
                   )}
                   {!profile.isMe && !profile.isSample && isLoggedIn && !profile.viewer?.hasBlocked && (
@@ -881,8 +945,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       </div>
                       <ul className="mt-2.5 flex flex-wrap gap-2">
                         {interestChips.map((chip) => (
-                          <li key={chip.name} className={`inline-flex items-center gap-2 min-h-9 px-3.5 rounded-full text-sm font-bold ${chip.tone}`}>
-                            {chip.icon && <chip.icon className="w-4 h-4" aria-hidden="true" />}
+                          <li key={chip.name} className="inline-flex items-center gap-2 min-h-9 pl-2.5 pr-3.5 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-700">
+                            {chip.icon && <chip.icon className={`w-6 h-6 shrink-0 ${chip.iconColor ?? 'text-slate-500'}`} strokeWidth={1.75} aria-hidden="true" />}
                             {chip.name}
                           </li>
                         ))}
@@ -894,30 +958,120 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                   )}
                 </section>
 
-                {/* ตี้ this member hosts: a visitor's best signal of who they are. Managing them happens in My Hub. */}
-                {hostedVisible.length > 0 && (
-                  <div id="hosted" className={`${card} scroll-mt-24`}>
-                    <RelatedMeetupTiles
-                      className=""
-                      // The profile column is narrower than the page: four across keeps the /community tile size
-                      gridClassName="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-                      title="ตี้ที่จัด"
-                      allHref={viewOwn ? '/myhub' : undefined}
-                      allLabel="จัดการในมายฮับ"
-                      events={hostedVisible.slice(0, hostedShown)}
-                      // A ตี้ still in review has no page yet: no link, and the tile says where it stands
-                      tileProps={(ev) =>
-                        ev.approvalStatus === 'approved'
-                          ? { href: `${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}` }
-                          : { href: null, badge: ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ' }
-                      }
-                    />
-                    {hostedVisible.length > hostedShown && (
-                      <button type="button" onClick={() => setHostedShown((n) => n + PAGE_HOSTED)} className={MORE_BUTTON}>
-                        ดูเพิ่ม <span className="tabular-nums">({(hostedVisible.length - hostedShown).toLocaleString()})</span>
-                      </button>
-                    )}
-                  </div>
+                {/* What they posted, ตี้ they went to and ตี้ they host, as tabs like IG (owner 2026-11-01). Managing ตี้ happens in My Hub. */}
+                {tabs.length > 0 && activeTab && (
+                  <section id="profile-tabs" className={`${card} scroll-mt-24`}>
+                    <div className="flex items-end gap-6 sm:gap-8 border-b border-slate-200">
+                      <div role="tablist" aria-label={profile.isMe ? 'โมเมนต์ ตี้ และชาเลนจ์ของฉัน' : `โมเมนต์ ตี้ และชาเลนจ์ของ ${profile.displayName}`} className="flex gap-6 sm:gap-8 min-w-0 overflow-x-auto no-scrollbar">
+                        {tabs.map((t) => {
+                          const isOn = t.key === activeTab;
+                          return (
+                            <button
+                              key={t.key}
+                              type="button"
+                              role="tab"
+                              id={`profile-tab-${t.key}`}
+                              aria-selected={isOn}
+                              aria-controls="profile-tab-panel"
+                              onClick={() => setTab(t.key)}
+                              className={`-mb-px shrink-0 pb-3 border-b-2 text-base sm:text-lg font-bold whitespace-nowrap cursor-pointer transition-colors ${isOn ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                            >
+                              {t.label} <span className={`text-sm font-semibold tabular-nums ${isOn ? 'text-slate-500' : 'text-slate-400'}`}>{t.count.toLocaleString()}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {activeTab === 'hosted' && viewOwn && (
+                        <Link href="/myhub" className="ml-auto pb-3 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">จัดการในมายฮับ</Link>
+                      )}
+                    </div>
+
+                    <div role="tabpanel" id="profile-tab-panel" aria-labelledby={`profile-tab-${activeTab}`} className="mt-6">
+                      {activeTab === 'moments' &&
+                        (state.moments.length > 0 ? (
+                          <>
+                            <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                              {state.moments.slice(0, momentsShown).map((m) => (
+                                <li key={m.id} className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100">
+                                  <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+                                    <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                            {(state.momentsTotal ?? state.moments.length) > momentsShown && (
+                              <button type="button" onClick={showMoreMoments} disabled={isLoadingMoments} className={MORE_BUTTON}>
+                                {isLoadingMoments && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+                                ดูเพิ่ม
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                            <Camera className="w-4 h-4" aria-hidden="true" />
+                            ยังไม่มีโมเมนต์
+                            <Link href="/?share=new" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">แชร์โมเมนต์แรก ›</Link>
+                          </p>
+                        ))}
+
+                      {activeTab === 'went' && (
+                        <ul className={`${TILE_GRID} pt-2`}>
+                          {went.map((ev) => (
+                            <li key={ev.id}>
+                              <MeetupTile event={ev} />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {activeTab === 'hosted' && (
+                        <>
+                          <ul className={`${TILE_GRID} pt-2`}>
+                            {hostedVisible.slice(0, hostedShown).map((ev) => (
+                              <li key={ev.id}>
+                                {/* A ตี้ still in review has no page yet: no link, and the tile says where it stands */}
+                                {ev.approvalStatus === 'approved' ? (
+                                  <MeetupTile event={ev} href={`${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}`} />
+                                ) : (
+                                  <MeetupTile event={ev} href={null} badge={ev.approvalStatus === 'rejected' ? 'ไม่ผ่านการตรวจ' : 'รอทีมงานตรวจ'} />
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                          {hostedVisible.length > hostedShown && (
+                            <button type="button" onClick={() => setHostedShown((n) => n + PAGE_HOSTED)} className={MORE_BUTTON}>
+                              ดูเพิ่ม <span className="tabular-nums">({(hostedVisible.length - hostedShown).toLocaleString()})</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {/* Challenges they finished, as their medals: proof of going out and doing */}
+                      {activeTab === 'challenges' && profile.challengeBadges && (
+                        <>
+                          <ul className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                            {(showAllBadges ? profile.challengeBadges : profile.challengeBadges.slice(0, FIRST_BADGES)).map((badge) => (
+                              <li key={badge.questId}>
+                                <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="group flex flex-col items-center text-center gap-2 cursor-pointer">
+                                  <span className="w-16 h-16 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#6D28D9] text-white flex items-center justify-center ring-4 ring-[#F5F3FF] transition-transform group-hover:scale-105">
+                                    <Award className="w-8 h-8" aria-hidden="true" />
+                                  </span>
+                                  <span className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{badge.badgeLabel}</span>
+                                  <span className="-mt-1 text-[11px] sm:text-xs font-medium text-slate-500 line-clamp-2">{badge.title}</span>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          {!showAllBadges && profile.challengeBadges.length > FIRST_BADGES && (
+                            <button type="button" onClick={() => setShowAllBadges(true)} className={MORE_BUTTON}>
+                              ดูอีก <span className="tabular-nums">{profile.challengeBadges.length - FIRST_BADGES}</span> เหรียญ
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </section>
                 )}
 
                 {/* Reviews from people who joined this member's ตี้ */}
@@ -950,72 +1104,19 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                   </section>
                 )}
 
-                {/* Medals from finished challenges: proof of going out and doing */}
-                {profile.challengeBadges && profile.challengeBadges.length > 0 && (
-                  <section id="badges" className={`${card} scroll-mt-24`}>
-                    <SectionTitle>เหรียญจากชาเลนจ์</SectionTitle>
-                    <ul className="grid grid-cols-3 sm:grid-cols-5 gap-4">
-                      {(showAllBadges ? profile.challengeBadges : profile.challengeBadges.slice(0, FIRST_BADGES)).map((badge) => (
-                        <li key={badge.questId}>
-                          <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="group flex flex-col items-center text-center gap-2 cursor-pointer">
-                            <span className="w-16 h-16 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#6D28D9] text-white flex items-center justify-center ring-4 ring-[#F5F3FF] transition-transform group-hover:scale-105">
-                              <Award className="w-8 h-8" aria-hidden="true" />
-                            </span>
-                            <span className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{badge.badgeLabel}</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                    {!showAllBadges && profile.challengeBadges.length > FIRST_BADGES && (
-                      <button type="button" onClick={() => setShowAllBadges(true)} className={MORE_BUTTON}>
-                        ดูอีก <span className="tabular-nums">{profile.challengeBadges.length - FIRST_BADGES}</span> เหรียญ
-                      </button>
-                    )}
-                  </section>
-                )}
 
-                {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it */}
-                {profile.isMe && (
-                  <section id="invite" className={`${card} scroll-mt-24`}>
-                    <InviteFriendsCard />
-                  </section>
-                )}
-
-                {/* Moments; an empty list is one quiet line, only for the owner */}
-                {state.moments.length > 0 ? (
-                  <section id="moments" className={`${card} scroll-mt-24`}>
-                    <SectionTitle>{`โมเมนต์ (${momentsCount})`}</SectionTitle>
-                    <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                      {state.moments.slice(0, momentsShown).map((m) => (
-                        <li key={m.id} className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100">
-                          <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                            <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                    {(state.momentsTotal ?? state.moments.length) > momentsShown && (
-                      <button type="button" onClick={showMoreMoments} disabled={isLoadingMoments} className={MORE_BUTTON}>
-                        {isLoadingMoments && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-                        ดูเพิ่ม
-                      </button>
-                    )}
-                  </section>
-                ) : (
-                  viewOwn && (
-                    <p className={`${card} flex items-center gap-2 text-sm font-medium text-slate-500`}>
-                      <Camera className="w-4 h-4" aria-hidden="true" />
-                      ยังไม่มีโมเมนต์
-                      <Link href="/?share=new" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">แชร์โมเมนต์แรก ›</Link>
-                    </p>
-                  )
-                )}
               </div>
             </div>
           </>
         )}
       </main>
+
+      {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it, opened from the small link */}
+      {isInviteOpen && (
+        <DialogShell onClose={() => setIsInviteOpen(false)} title="ชวนเพื่อนมาไปตี้ด้วยกัน" size="md">
+          <InviteFriendsCard />
+        </DialogShell>
+      )}
 
       {editTab && own && (
         <EditProfileDialog

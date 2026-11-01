@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, ChevronDown, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -98,7 +98,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         onOpenLogout={() => setIsLogoutModalOpen(true)}
       />
       <Toast message={toastMessage} />
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 lg:pb-16">
         <Link href="/challenges" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           ชาเลนจ์ทั้งหมด
@@ -192,6 +192,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
   // with nothing in the period yet it says so instead of leaving the question open
   const showPlaces = tracked && !earned && !isEnded;
+  // On a desktop, places sit under the reward while deciding (what you get, then where); once joined they move to the main column
+  const placesBesideReward = showPlaces && !joined;
   // A host challenge is done by hosting: it offers to open a ตี้ instead of places to go
   const isHostQuest = Boolean(quest.rule?.asHost);
   const memories = earned ? detail.mine?.memories ?? [] : [];
@@ -242,6 +244,14 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
     }
   };
 
+  // The places sit beside the hero on a desktop and after the rules on phones: go to whichever is showing
+  const scrollToPlaces = () => {
+    const target = [document.getElementById('places-wide'), document.getElementById('places')].find((el) => el && el.offsetParent !== null);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  const onlyType = quest.rule?.targetTypes.length === 1 ? quest.rule.targetTypes[0] : 'spot';
+  const placesButton = onlyType === 'community' ? 'ดูตี้ที่นับ' : onlyType === 'fair' ? 'ดูอีเวนต์ที่นับ' : 'ดูที่ที่นับ';
+
   // One main action for the state the visitor is in
   let mainAction: React.ReactNode = null;
   if (earned) {
@@ -259,9 +269,21 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
       </button>
     );
+  } else if (tracked && isHostQuest) {
+    mainAction = (
+      <Link href="/community?create=1" className={dialogButton.primary}>
+        ตั้งตี้ของฉัน
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+      </Link>
+    );
   } else if (tracked) {
-    // Joined and counted by the system: the places are right below, so the only choice left here is to stop
-    mainAction = null;
+    // Joined and counted by the system: the next thing to do is go somewhere that counts
+    mainAction = (
+      <button type="button" onClick={scrollToPlaces} className={dialogButton.primary}>
+        {placesButton}
+        <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
+      </button>
+    );
   } else {
     mainAction = (
       <button type="button" onClick={handleNote} disabled={selfDone} className={dialogButton.primary}>
@@ -312,7 +334,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
           </button>
         ) : tracked ? (
-          <a href="#places" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>ดูที่ที่นับ</a>
+          <a href="#places" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{isHostQuest ? 'ตั้งตี้ของฉัน' : placesButton}</a>
         ) : (
           <button type="button" onClick={handleNote} disabled={selfDone} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>
             <Check className="w-4 h-4" aria-hidden="true" />
@@ -324,8 +346,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   );
 
   // A challenge that counts only ตี้ or only fairs names them; anything else is a place
-  const onlyKind = quest.rule?.targetTypes.length === 1 ? quest.rule.targetTypes[0] : 'spot';
-  const kindWords = { community: { heading: 'ตี้ที่นับในชาเลนจ์นี้', unit: 'ตี้', none: 'ยังไม่มีตี้เปิด' }, fair: { heading: 'อีเวนต์ที่นับในชาเลนจ์นี้', unit: 'งาน', none: 'ยังไม่มีอีเวนต์' }, spot: { heading: 'ที่ที่นับในชาเลนจ์นี้', unit: 'แห่ง', none: 'ยังไม่มีที่ไหนเปิด' } }[onlyKind];
+  const kindWords = { community: { heading: 'ตี้ที่นับในชาเลนจ์นี้', unit: 'ตี้', none: 'ยังไม่มีตี้เปิด' }, fair: { heading: 'อีเวนต์ที่นับในชาเลนจ์นี้', unit: 'งาน', none: 'ยังไม่มีอีเวนต์' }, spot: { heading: 'ที่ที่นับในชาเลนจ์นี้', unit: 'แห่ง', none: 'ยังไม่มีที่ไหนเปิด' } }[onlyType];
 
   const hostSection = (anchorId: string) => (
     <section id={anchorId} className="space-y-4 scroll-mt-24">
@@ -378,8 +399,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-sm font-bold text-slate-900 line-clamp-2">{target.title}</p>
-              {target.detail && <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{target.detail}</p>}
+              <p className="mt-2 text-[13px] font-bold leading-snug text-slate-900 line-clamp-2">{target.title}</p>
+              {target.detail && <p className="mt-0.5 text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">{target.detail}</p>}
             </Link>
           </li>
         ))}
@@ -482,7 +503,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
 
       <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
         {/* What you get: the reason to join, so it comes first on a phone and stays in view on a desktop */}
-        <aside className={`lg:order-2 space-y-10 ${showPlaces ? '' : 'lg:sticky lg:top-24'}`}>
+        {/* No space-y here: it put a margin under the reward box even while the places below it are hidden on phones */}
+        <aside className={`lg:order-2 ${placesBesideReward ? '' : 'lg:sticky lg:top-24'}`}>
           {earned && isPartner && detail.mine?.voucherCode ? (
             <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50 border border-emerald-200 space-y-3">
               <div className="flex items-start gap-2 text-emerald-800">
@@ -551,7 +573,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           )}
 
           {/* The places that count come right after the reward on a desktop: what you get, then where to go for it */}
-          {showPlaces && <div className="hidden lg:block">{placesSection('places-wide')}</div>}
+          {placesBesideReward && <div className="hidden lg:block mt-10">{placesSection('places-wide')}</div>}
         </aside>
 
         <div className="lg:order-1 flex flex-col gap-10 min-w-0">
@@ -572,8 +594,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                           {index + 1}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm font-bold text-slate-900 line-clamp-2">{memory.title}</p>
-                      <p className="text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
+                      <p className="mt-2 text-[13px] font-bold leading-snug text-slate-900 line-clamp-2">{memory.title}</p>
+                      <p className="mt-0.5 text-[11px] sm:text-xs font-semibold text-slate-500 tabular-nums truncate">
                         {shortDate(memory.at)}
                         {memory.ownPhoto ? ' · รูปของคุณ' : ''}
                       </p>
@@ -613,7 +635,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             <p className={`${BODY} max-w-prose`}>{about || quest.targetGoal || 'ชวนออกไปใช้ชีวิต ลองทำสิ่งใหม่ และเจอผู้คนที่ชอบอะไรคล้ายกัน'}</p>
           </section>
 
-          {!earned && !isEnded && (
+          {/* How to join: gone once joined, where the checklist and the places take over */}
+          {!joined && !earned && !isEnded && (
             <section className="space-y-4 order-3">
               <h2 className={SECTION_TITLE}>ขั้นตอนการเข้าร่วม</h2>
               <ol className="space-y-3">
@@ -629,9 +652,13 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             </section>
           )}
 
-          <section className="space-y-4 order-5">
-            <h2 className={SECTION_TITLE}>กติกาและเงื่อนไข</h2>
-            <dl className="divide-y divide-slate-200 border-y border-slate-200">
+          {/* The fine print folds away: the steps and the reward box already say the main points (still in the HTML) */}
+          <details className="group order-5">
+            <summary className="flex items-center justify-between gap-3 min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              <h2 className={SECTION_TITLE}>กติกาและเงื่อนไข</h2>
+              <ChevronDown className="w-5 h-5 text-slate-500 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
               {terms.map((term) => (
                 <div key={term.label} className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-x-4 gap-y-0.5 py-3">
                   <dt className={RULE_LABEL}>{term.label}</dt>
@@ -639,10 +666,11 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                 </div>
               ))}
             </dl>
-          </section>
+          </details>
 
-          {/* On phones and tablets the places come right after the rules (owner 2026-10-16) */}
-          {showPlaces && <div className="lg:hidden order-5">{placesSection('places')}</div>}
+          {/* Deciding: on phones and tablets the places come right after the rules (owner 2026-10-16).
+              Doing: where to go is the page's job, so they lead the main column on every screen. */}
+          {showPlaces && <div className={joined ? 'order-0' : 'lg:hidden order-5'}>{placesSection('places')}</div>}
 
           <div className="order-6">
             <EventAttendees

@@ -2324,3 +2324,59 @@ No frontend action; all user-facing text changed in this commit.
 - **Top bar on phones:** guests see the name Chill···Waa next to the logo again from 360px up (was hidden below 430px); below 360px the logo stands alone (`components/Navbar.tsx`). Checked at 320/360/375/393: สมัครฟรี stays 16px from the edge.
 - **Tagline under the logo:** "คอมมูนิตี้คนชอบออกไปใช้ชีวิต" (was "ชวนเพื่อน ออกไปใช้ชีวิต", which shut out people who come alone) in `components/BrandWordmark.tsx`; one line on desktop, still hidden on phones. Matches the site description in `app/layout.tsx`.
 - **Privacy policy:** new section "4. คุกกี้" (rights move to 5) in `components/TermsPrivacyModal.tsx`: only needed cookies (log-in, OAuth state, invite link `cch_ref` 30 days), no ad or outside tracking. Launch checklist: a consent banner before adding analytics, Pixel or AdSense.
+
+### BE-197 · Landing อีเวนต์ row keeps six on every device (owner 2026-11-01)
+- **Bug:** on an iPad the row "เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้" showed 2 of 6. The server sent exactly six; the browser then dropped those ended by its own clock (Bangkok, while Vercel runs on UTC, or a tab left open overnight), with no spares to fill the gap.
+- **Fix:** `homeEvents` in `lib/homeFairs.ts` sends twice the row (12) and the browser re-picks six from what is still on. Server HTML still shows six.
+
+### BE-198 · Challenge page to 9.5: the doing state leads to where to go (owner 2026-11-01)
+- **Gap under the reward box (phones):** the reward column's `space-y-10` left a 40px margin under the box even while the places below it were hidden, so the gap was 80px; now 40 like every other section (`app/challenges/[id]/ChallengeDetailView.tsx`).
+- **Joined (doing):** the hero gets one main button, "ดูที่ที่นับ" (ตี้/อีเวนต์ wording when the challenge counts only those; "ตั้งตี้ของฉัน" for a host challenge), which scrolls to the places; before, the quiet "ยกเลิก" button led. The places move to the top of the main column on every screen (desktop no longer leaves the left column short beside them), the reward box stays pinned on the right, and the join steps are hidden (step 1 was "กดร่วม").
+- **Checklist** (`components/detail/ChallengeChecklist.tsx`): hidden until the first visit is counted or waiting, so a new joiner no longer sees five "ยังไม่ได้ไป" rows repeating the hero's 0/n bar.
+- **กติกาและเงื่อนไข** folds into a `<details>` closed by default (7 rows that mostly repeat the steps and reward box); still in the server HTML.
+- **Place and memory tiles:** title 13px with `leading-snug` (was 14px, and the clamped second line was cut off and ran into the date), plus a small space above the date line.
+- Walked guest + a new member at 1280 and 500 wide; test account deleted. Not seen: the earned and ended states (no test data for them).
+
+### BE-199 · Detail pages as wide as the top bar (owner 2026-11-01)
+- ตี้, อีเวนต์, ที่เที่ยว and ชาเลนจ์ detail pages (and their shared loading skeleton `components/detail/DetailLoading.tsx`) go from `max-w-6xl` (1152px) to `max-w-7xl` (1280px), so the content lines up with the logo and the list pages instead of stepping inward. Screens under 1152px are unchanged; on 2xl screens the top bar grows to 1600px but detail pages stay at 1280 so the photo and two columns stay together. Checked at 1440 and 1024, no sideways scroll.
+
+### BE-200 · ตี้ page: meeting point with the schedule, the map section is only how to get there (owner 2026-11-01)
+- `ItineraryList` (`components/detail/DetailHero.tsx`) takes an optional `meetingPoint`: a "นัดเจอที่ …" line on top of the times, heading "กำหนดการ & จุดนัดพบ" (or "จุดนัดพบ" with no schedule). Only the ตี้ page passes it (meeting point, or the place when none is set); the อีเวนต์ page is unchanged, online ตี้ pass nothing.
+- The map section on `/community/[id]` is now "การเดินทาง" (was "จุดนัดพบ & การเดินทาง"); its "จุดนัด" line is gone, and the small "การเดินทาง" label under the heading shows only beside the parking note.
+- Same day, owner: `ItineraryList` drawn as a timeline (time column, a dot per step on a thin line, the first dot blue) and the meeting point as its own line with a round blue pin and a small "จุดนัดพบ" label. The อีเวนต์ page uses the same timeline.
+
+### BE-201 · ตี้ / อีเวนต์ / ที่เที่ยว pages: challenges and moments fold to one line (owner 2026-11-01)
+- `components/VisitPanel.tsx`: "นับในชาเลนจ์" is one purple line (closed by default) with up to three challenge photos, a purple count badge on them, and the best reward ("ได้สูงสุด +280 XP · มีของรางวัลจากร้าน", or "คุณทำอยู่ N ชาเลนจ์" for a member doing one). Opening it shows every challenge as the same `ChallengeTile` as /challenges (XP sticker, the member's progress bar when joined), 2 per row on phones, 3 from `sm`. The old "นับแล้ว" chip per challenge is gone; the progress bar carries it.
+- "โมเมนต์จากเพื่อนๆ" folds to one slim line ("ยังไม่มีโมเมนต์ · มาแชร์เป็นคนแรกกัน") only while there are no moments and the member has not marked the place; with photos it stays open as before. The share form and the "counted" notice now render outside the box so they work from either state.
+- API: `GET /api/visits` challenge lines gain `image?` (the challenge cover), `docs/API.md` updated; `lib/social/questProgress.ts`.
+
+### BE-202 · หน้าแรก in the top bar for visitors too (owner 2026-11-01)
+- `components/Navbar.tsx`: the wide-screen top bar (xl and up) now starts with หน้าแรก for everyone, not only members, and before the session is known (no shift when it loads). Checked at 1280 and 1440 as a guest: the search box keeps 245px and its placeholder, no sideways scroll. Phones are unchanged (their bottom bar is separate).
+
+### BE-203 · Category tabs show how many each holds (owner 2026-11-01)
+- `components/discover/DiscoverCategoryTabs.tsx` (/community, /events, /spots, /challenges): each tab's icon carries its count as a small tilted sticker in the pillar color (ทั้งหมด in grey), like the landing's category cards; 1,000 and up reads "1.6k". The member's own-สาย dot moved to the icon's left corner; the row got 8px on top so the sticker is not cut. Screen readers hear the count after the name.
+
+### BE-204 · Member home: search starts in the member's province, right column on wide screens (owner 2026-11-01)
+- **Province:** `PublicMember` gains `province?` (the member's own province id from their preferences; `lib/members/types.ts`, `docs/API.md`). The top bar search (`components/discover/SiteSearch.tsx`) starts there for a signed-in member, on every page; a province picked by hand stays until the page is left. Guests still start at ทั่วประเทศ.
+- **Right column** (`components/home/MemberLiveHome.tsx`, 2xl / 1536px and up only; owner picked it over a wider feed or a centred pair): "ตี้ใน<province>" (up to three, soonest first, the member's plans left out, matched with `eventInProvince` so กรุงเทพฯ and กรุงเทพมหานคร both count), falling back to "ตี้ที่น่าไป" when the province has none or is unset; the campaign moves here from the left column on those screens. Narrower screens unchanged. Walked at 1680 and 1536 with a Chiang Mai then Bangkok test member (deleted).
+
+### BE-205 · กิจกรรม pages start in the member's province; ชาเลนจ์ before โมเมนต์ (owner 2026-11-01)
+- New `lib/useOwnProvince.ts` (`useOwnProvinceDefault`), used by /community, /events and /spots: a signed-in member with a province lands on it, once, when the link names no province and nothing else is picked. `?province=all` still opens ทั่วประเทศ; guests and the server HTML are unchanged (search engines read the whole list). Checked as a Bangkok member: all three pages and their h1 read "ใน กรุงเทพฯ".
+- Top bar (xl) and the slide-out menu now read หน้าแรก · กิจกรรม · ชาเลนจ์ · โมเมนต์ (`components/Navbar.tsx`). The phone bottom bar (`components/MobileNav.tsx`) is unchanged.
+
+### BE-206 · Member home right column as folded lines (owner 2026-11-01)
+- `components/home/MemberLiveHome.tsx` (2xl / 1536px and up): the right column is four folded lines, closed at first and one open at a time: "ตี้ใน<province>" (or "ตี้ที่น่าไป"), "ชาเลนจ์ยอดฮิต", "อีเวนต์ช่วงนี้", "ที่เที่ยวน่าไป". Each line: up to three photos with a count badge (the tiles inside, at most 6), the title and one line that sells (soonest date, best XP, first place). Opened, it shows the site's own tiles (MeetupTile, ChallengeTile, FairTile, SpotTile), two per row, and "ดูทั้งหมด". Pillar tints per DESIGN_SYSTEM.md. The campaign stays its own line under them.
+- On those screens the ตี้/ชาเลนจ์/อีเวนต์/ที่เที่ยว cards between the posts are hidden (`2xl:hidden`), so the feed is only moments and nothing shows twice; the first-ตี้ picks for a member without plans stay in the feed. Laptops, tablets and phones unchanged (checked at 1280: the 3 cards still show). Replaces BE-204's single "ตี้ใน…" list.
+- Same day, owner: an opened fold has "สุ่มชุดใหม่" beside "ดูทั้งหมด" when its list holds more than six. It steps through the list six at a time and starts over after the last set (so a tap never repeats what was showing); the line's hook still speaks for the whole list (the soonest ตี้/อีเวนต์, the best XP). Tested as a member: all four folds change to six new tiles with no overlap.
+
+### BE-207 · Profile like IG: posts / followers / following, and tabs (owner 2026-11-01)
+- `app/profile/ProfileScreen.tsx`: under the name, one row of โพสต์ · ผู้ติดตาม · กำลังติดตาม (zeros shown; โพสต์ opens the moments tab). The list below keeps ตี้ที่ไปมาแล้ว, ตี้ที่จัด (opens its tab), reviews, เหรียญ and XP; โมเมนต์ and ผู้ติดตาม moved up.
+- The separate "ตี้ที่จัด" and "โมเมนต์" sections are now one tabbed section after the story: โมเมนต์ (photo grid, "ดูเพิ่ม"; an owner with none gets "แชร์โมเมนต์แรก") · ตี้ที่ไป · ตี้ที่จัด (review badges for the owner, "จัดการในมายฮับ"). A tab shows only when it has something (the owner always has โมเมนต์); the first one opens.
+- API: `GET /api/members/{id}` and the own `publicView` gain `wentTo` (new `lib/social/pastMeetups.ts`): ended ตี้ the member went to (host check-in or a moment there), newest first, at most 24. Upcoming ones never show, so a profile does not tell where its member will be next. `docs/API.md` updated.
+- Checked: a sample member with all three tabs at 1280 and 500 wide, and a new member's own profile (row 0/0/0, one โมเมนต์ tab with the first-post line; test account deleted).
+- Same day, owner: ตั๋วเพื่อนซี้ is no longer a big yellow section on the own profile; a small "ชวนเพื่อนด้วยตั๋วเพื่อนซี้" link under "แก้ไขโปรไฟล์" opens the same `InviteFriendsCard` in a dialog ("ชวนเพื่อนมาไปตี้ด้วยกัน"). Nothing linked to the old `#invite` anchor.
+- Same day, owner: a fourth tab **ชาเลนจ์** (the finished challenges' medals, with the challenge name under each; replaces the "เหรียญจากชาเลนจ์" section). อีเวนต์ and ที่เที่ยว stay out of the tabs (a list of someone's places shows their routine; moments already show the places they chose to share).
+- The left card no longer lists ตี้ที่ไปมาแล้ว, ตี้ที่จัด or เหรียญ (the tabs carry those counts; the old ตี้ count also differed from the tab's, which holds ended ตี้ only). It keeps ★ reviews and the owner's XP. The own-profile visits request went with it.
+- สายที่ชอบ chips: white with a thin border and dark text, the drawn สาย icon (`meetupCategoryIcon`, as on the category tabs) as the only colour (owner: the coloured chips outshone the rest of the profile).
+- Not seen in a browser: the ชาเลนจ์ tab, since no member in the sample data has finished a challenge yet.
+- Same day, owner: the owner's XP line on the profile card carries "แลกของรางวัล ›" (amber, to /rewards) on the right of the same line. Like every number there it shows only above 0, so a brand-new member sees neither; checked that a 0-XP account has no line. Not seen with XP above 0 in a browser (no test account with XP).

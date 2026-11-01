@@ -27,6 +27,14 @@ const PICKED: Record<Props['kind'], string> = {
   challenges: 'border-[#7C3AED] text-[#5B21B6]',
 };
 
+/** The count sticker on each icon, in the pillar color like the landing's category cards ("ทั้งหมด" in grey there too) */
+const STICKER: Record<Props['kind'], string> = {
+  meetups: 'bg-[#F26430] text-white',
+  fairs: 'bg-[#2B527A] text-white',
+  spots: 'bg-[#4A7C59] text-white',
+  challenges: 'bg-[#7C3AED] text-white',
+};
+
 /**
  * The categories of a ค้นพบ page as one quiet row of icon tabs (Meetup's Find page): an icon over a short name,
  * a line under the picked one, no boxes. Scrolls sideways; wide screens get arrows when there is more.
@@ -69,7 +77,7 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
   return (
     <div className="relative border-b border-slate-200">
       {/* relative: the sr-only "สายของคุณ" labels are absolute; without it they escape the scroll row and widen the page on phones */}
-      <div ref={rowRef} onScroll={measure} role="tablist" aria-label="หมวด" className="relative flex gap-1 sm:gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div ref={rowRef} onScroll={measure} role="tablist" aria-label="หมวด" className="relative flex gap-1 sm:gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pt-2">
         {tabs.map(({ id, name, Icon, iconColor, count, isDrawn }) => {
           const isPicked = id === selectedId;
           const isMine = id !== null && mineIds.includes(id);
@@ -87,9 +95,19 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
             >
               <span className="relative">
                 <Icon className={`${isDrawn ? 'w-9 h-9' : 'w-6 h-6'} transition-transform group-hover:-translate-y-0.5 ${iconColor}`} strokeWidth={1.75} aria-hidden="true" />
-                {isMine && <span className="absolute -top-0.5 -right-1.5 w-2 h-2 rounded-full bg-[#F26430] ring-2 ring-white" aria-hidden="true" />}
+                {/* The member's own สาย: a dot on the left, the count sticker keeps the right corner */}
+                {isMine && <span className="absolute -top-0.5 -left-1.5 w-2 h-2 rounded-full bg-[#F26430] ring-2 ring-white" aria-hidden="true" />}
+                {/* How many the tab holds, as a sticker on the corner like the landing's cards (owner 2026-11-01) */}
+                {count !== undefined && count > 0 && (
+                  <span
+                    className={`absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[10px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform tabular-nums ${id === null ? 'bg-slate-500 text-white' : STICKER[kind]}`}
+                    aria-hidden="true"
+                  >
+                    {count >= 1000 ? `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : count}
+                  </span>
+                )}
               </span>
-              <span>{name}{isMine && <span className="sr-only"> สายของคุณ</span>}</span>
+              <span>{name}{count !== undefined && count > 0 && <span className="sr-only"> {count.toLocaleString()} รายการ</span>}{isMine && <span className="sr-only"> สายของคุณ</span>}</span>
             </button>
           );
         })}

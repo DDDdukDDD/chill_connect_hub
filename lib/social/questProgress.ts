@@ -176,6 +176,8 @@ export interface TargetReward {
   questId: string;
   title: string;
   badgeLabel: string;
+  /** The challenge's cover photo, for the tiles on a place, ตี้ or อีเวนต์ page */
+  image?: string;
   rewardPoints: number;
   /** What the partner or the platform gives on completion */
   rewardTitle?: string;
@@ -211,6 +213,7 @@ export async function rewardsForTargets(targets: { targetType: VisitTargetType; 
             questId: q.id,
             title: q.title,
             badgeLabel: q.badgeLabel,
+            image: q.badgeCoverImg || q.image || undefined,
             rewardPoints: q.rewardPoints ?? 0,
             rewardTitle: q.brandReward?.title,
             count: q.rule.count,
