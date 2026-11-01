@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Camera, Heart, Loader2, MessageCircle, X } from 'lucide-react';
+import { Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
@@ -94,6 +94,12 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
           <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
             <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place}`} loading="lazy" className="w-full h-full object-cover" />
+            {moment.video && (
+              <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
+                <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+                <span className="sr-only">คลิปวิดีโอ</span>
+              </span>
+            )}
             {moment.images.length > 1 && (
               <span className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
                 1/{moment.images.length}

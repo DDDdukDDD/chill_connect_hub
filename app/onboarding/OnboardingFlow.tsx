@@ -173,22 +173,20 @@ const MIN_AGE = 18;
 /** The side panel shows the number only above this many members who share the สาย; below it, a welcome line (owner 2026-10-23) */
 const SAME_PEOPLE_MIN = 1000;
 /**
- * "บอกสิ่งที่ชอบ": a fixed example of friends' moments (stories row + one post), drawn like the landing's
+ * "บอกสิ่งที่ชอบ": a fixed example of a friend's moment (one post), drawn like the landing's
  * "เพื่อน & โมเมนต์". Fixed rather than live so it always reads well, even before members post (owner 2026-10-23).
  * Names and photos are illustrations, not members.
  */
-// The first story (orange ring) is the person whose post is shown below it
-const STORY_SAMPLES = [
-  { name: 'แพรว', image: '/images/destinations/chiangmai.jpg', avatar: '/images/onboarding/people/a.jpg' },
-  { name: 'บีม', image: '/event-city-run.png', avatar: '/images/onboarding/people/c.jpg' },
-  { name: 'ฝน', image: '/images/destinations/krabi.jpg', avatar: '/images/onboarding/people/d.jpg' },
-  { name: 'มิว', image: '/event-board-games.png', avatar: '/images/onboarding/people/e.jpg' },
-  { name: 'ข้าว', image: '/images/destinations/khaoyai.jpg', avatar: '/images/onboarding/people/f.jpg' },
-];
 /**
  * "บอกเราเกี่ยวกับคุณ": the example on "โมเมนต์แรกของคุณ" follows the first สาย picked that has one (owner 2026-10-23),
  * so the step carries on from the choices before it; the member's province is added to the caption
  */
+// Three small prints on the phone's photo band
+const MOMENT_PRINTS = [
+  { name: 'แพรว', image: '/images/destinations/chiangmai.jpg' },
+  { name: 'บีม', image: '/event-city-run.png' },
+  { name: 'ฝน', image: '/images/destinations/krabi.jpg' },
+];
 const FIRST_MOMENT_DEFAULT = { image: '/images/onboarding/chill-cafe.jpg', caption: 'ออกไปใช้ชีวิตวันแรก กับเพื่อนใหม่ที่คุยกันถูกคอ' };
 const FIRST_MOMENT_BY_SAI: Record<string, { image: string; caption: string }> = {
   running_fitness: { image: '/event-city-run.png', caption: 'วิ่งเช้าวันแรกกับเพื่อนใหม่ สดชื่นสุดๆ' },
@@ -1032,22 +1030,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                         'เลือกสายที่ชอบ แล้วไปเจอเพื่อนสายเดียวกัน'
                       )}
                     </p>
-                    {/* Friends' moments the way the landing's "เพื่อน & โมเมนต์" shows them: a stories row, then one post (a fixed example) */}
+                    {/* Friends' moments the way the landing's "เพื่อน & โมเมนต์" shows them: one post (a fixed example) */}
                     <div aria-hidden="true">
                       <p className="text-sm font-semibold text-white/80 mb-3">โมเมนต์จากเพื่อนๆ</p>
-                      <ul className="flex gap-3 mb-4">
-                        {STORY_SAMPLES.map((story, i) => (
-                          <li key={story.name} className="w-14 text-center">
-                            <span className={`relative block w-14 h-14 rounded-full p-[2px] ${i === 0 ? 'bg-[#F26430]' : 'bg-white/70'}`}>
-                              {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
-                              <img src={story.image} alt="" className="w-full h-full rounded-full object-cover border-2 border-black/20" />
-                              {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
-                              <img src={story.avatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full object-cover border-2 border-white" />
-                            </span>
-                            <span className="block mt-1 text-[11px] font-semibold text-white/90 truncate">{story.name}</span>
-                          </li>
-                        ))}
-                      </ul>
                       <div className="flex gap-3 bg-white text-slate-900 rounded-3xl p-3 shadow-2xl max-w-md">
                         {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
                         <img src={POST_SAMPLE.image} alt="" className="w-28 h-28 xl:w-32 xl:h-32 rounded-2xl object-cover shrink-0" />
@@ -1082,7 +1067,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         {/* Phones: the same shared moments as three small prints on the photo band */}
         {!done && !pledgeOnly && step === STEP_ABOUT && (
           <ul className="lg:hidden absolute right-4 top-4 flex" aria-hidden="true">
-            {STORY_SAMPLES.slice(0, 3).map((m, i) => (
+            {MOMENT_PRINTS.map((m, i) => (
               <li key={m.name} className={`${i ? '-ml-3' : ''} ${['-rotate-6', 'rotate-3', '-rotate-2'][i]}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
                 <img src={m.image} alt="" className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-white shadow-md" />
@@ -1388,7 +1373,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   {/* No visible title, like step 1 (owner 2026-10-23) */}
                   <h1 className="sr-only">บอกสิ่งที่ชอบ</h1>
 
-                  {/* Phones have no side panel: the welcome line and friends' stories sit above the สาย cards */}
+                  {/* Phones have no side panel: the welcome line sits above the สาย cards */}
                   <div className="lg:hidden -mt-2" aria-hidden="true">
                     <p className="text-sm font-semibold text-slate-700 leading-snug">
                       {samePeople !== null && samePeople > SAME_PEOPLE_MIN ? (
@@ -1397,19 +1382,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                         <PhraseText text="มาร่วมเป็นส่วนหนึ่งของคอมมูนิตี้สำหรับคุณรุ่นใหม่ แล้วออกไปใช้ชีวิตกัน" />
                       )}
                     </p>
-                    <ul className="mt-3 flex gap-3">
-                      {STORY_SAMPLES.map((story, i) => (
-                        <li key={story.name} className="w-14 text-center">
-                          <span className={`relative block w-14 h-14 rounded-full p-[2px] ${i === 0 ? 'bg-[#F26430]' : 'bg-slate-200'}`}>
-                            {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
-                            <img src={story.image} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
-                            {/* eslint-disable-next-line @next/next/no-img-element -- small local illustration */}
-                            <img src={story.avatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full object-cover border-2 border-white" />
-                          </span>
-                          <span className="block mt-1 text-[11px] font-semibold text-slate-700 truncate">{story.name}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
 
                   {/* The landing's สาย cards (tilted icon tile, colored base), many may be picked; no counts (owner 2026-10-23) */}

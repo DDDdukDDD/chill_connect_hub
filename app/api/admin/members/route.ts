@@ -3,7 +3,6 @@ import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeMeetAgainOf } from '@/lib/social/meetAgain';
 import { removeWaitlistOf } from '@/lib/social/waitlist';
 import { removeQuestionsOf } from '@/lib/social/eventQuestions';
-import { removeStoriesOf } from '@/lib/social/stories';
 import { removeReviewsBy } from '@/lib/social/reviews';
 import { removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
@@ -208,7 +207,6 @@ export async function POST(request: Request) {
     if (body.confirmName !== (tidyDisplayName(member.displayName).trim() || member.displayName)) return NextResponse.json({ success: false, error: 'พิมพ์ชื่อสมาชิกให้ตรงเพื่อยืนยัน' }, { status: 400 });
     const removedMoments = await momentRepository.removeByAuthor(member.id);
     const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
-    await removeStoriesOf(member.id);
     await removeReviewsBy(member.id);
     await removeVisitsBy(member.id);
     await removeRedemptionsBy(member.id);

@@ -21,7 +21,6 @@ Goals, in order: **security**, **performance**, **scalability** — while stayin
 | Challenge joins / finishes / reward codes | `quest_joins`, `quest_finishes`, `quest_vouchers` | small | — |
 | Visits (marked + reviews) | `visits.json` | small | XP recomputed by scanning everything |
 | Moments, likes, saves, comments, reports | `moments.json` (arrays inside each moment) | 24 | Likes as arrays; "popular" sort counts arrays |
-| Stories, views | `stories.json` | 0 | — |
 | Chat | `chat_messages.json` (room id = event id / `grp_…` / `pair~a~b`) | 106 | Clients poll every 4 s |
 | Notifications | `notifications.json` | small | Polling |
 | Event Q&A, reviews, meet-again picks, fair groups | separate files | small | — |
@@ -188,14 +187,15 @@ Redeem = one transaction: lock member_stats row → check balance → `stock_cou
 
 **campaigns** — fields as today · **campaign_quests** `PK (campaign_id, quest_id)` · `role` enum(step, extra) · `sort`.
 
-### 4.7 Moments and stories
+### 4.7 Moments
 
 **moments** — `id PK` · `author_id FK?` (null = sample) · `caption ≤ 500` · `location_text` · `category?` · `place_id? / event_id? / quest_id?` (at most one; none = general) · `status` enum(published, hidden, removed) · `hidden_by?` · `moderation_note?` · `evidence_status?` · `evidence_distance_m?` · `evidence_note?` · `image_ratio?` · `like_count` · `comment_count` · `save_count` · `sample_likes` · `is_sample`
 
 - **moment_images** `PK (moment_id, position)` · `url` (max 10, by `CHECK position < 10`)
 - **moment_likes** / **moment_saves** `PK (moment_id, member_id)`
 - **moment_comments** `id` · `moment_id FK` · `author_id FK?` · `text ≤ 300` · `hidden`
-- **stories** `id` · `author_id FK` · `image_url` · `caption` · `expires_at` · `hidden` · **story_views** `PK (story_id, viewer_id)`
+- **moment_reports** `PK (moment_id, member_id)` · `reason` (0013). Stories and story_views were dropped in 0014 (owner 2026-11-02, both empty).
+- **Added in 0013/0015:** `moments.target_type` + `target_ref` (the app's own target, kept even when it no longer resolves to a row), `author_badge`, `evidence_reason`, `evidence_rejected_at`, `edited_at`, `video_url`, `video_duration_s`; `moment_comments.slug` (the app's comment id) and `author_avatar` (samples).
 
 ### 4.8 Moderation
 
@@ -324,7 +324,8 @@ With `DATA_STORE=postgres` the website reads and writes **members, ตี้ / �
 - **App ids stay today's ids** (`members.legacy_id`, `slug`) until every store has moved, so JSON stores that point at members, ตี้ or places keep working.
 - **Lists** load the rows and reuse today's filters (`lib/db/queryEngine.ts`) behind the same 15–60 s caches. **Join, leave, check-in** are single transactions that lock the ตี้ row, so the last seat cannot be taken twice on two servers.
 - **Order:** `sort_key` (0011) keeps the JSON list order; new items come first.
-- **Connection:** the session pooler (port 5432). Measured: the transaction pooler (6543) moved large results 40–70× slower (all places 59 s vs 0.3–0.7 s). `max: 3` connections per server.
+- **Connection:** the session pooler (port 5432). Measured: the transaction pooler (6543) moved large results 40–70× slower (all places 59 s vs 0.3–0.7 s). One connection per server (`max: 1`, BE-215); the pooler allows 15 across all servers.
+- **Moments and chat moved 2026-11-02 (BE-212):** `lib/moments/pgMomentRepository.ts`, `lib/social/chatStore.ts`. `mutate` locks the moment's row, so a like or comment is safe across servers. `chat_room_members` is not written: who may read a room is still decided in `lib/social/chat.ts`. Fair group rooms have no `fair_group_id` until fair groups move (0013 allows that). Stories removed; notifications and challenge joins are still JSON files.
 - **Checked:** 17 public API reads identical to JSON mode; walks for sign-up, log-in, onboarding, profile, join/leave/ticket/My Hub, save, follow/block, account deletion, host check-in, staff create/approve/edit/delete of ตี้, places and challenges, curation recompute (2,179 places in ~4 s).
 - **Behaviour change:** deleting a host's account now deletes their own ตี้ (and its joins) through the foreign key. The JSON store left the ตี้ in place with no host.
 - **Re-import:** `db:import -- --replace` now refuses when members signed up after the last import (the database is live); `--force` overrides.

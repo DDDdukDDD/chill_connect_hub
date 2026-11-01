@@ -3,7 +3,6 @@ import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeMeetAgainOf } from '@/lib/social/meetAgain';
 import { removeWaitlistOf } from '@/lib/social/waitlist';
 import { removeQuestionsOf } from '@/lib/social/eventQuestions';
-import { removeStoriesOf, storyImagesInUse } from '@/lib/social/stories';
 import { deleteMemberUploads } from '@/lib/media/cleanup';
 import { removeReviewsBy } from '@/lib/social/reviews';
 import { marksOf, removeVisitsBy } from '@/lib/social/visits';
@@ -19,6 +18,7 @@ import { recordAudit } from '@/lib/auditLog';
 import { memberRepository, toPublicMember } from '@/lib/members';
 import { exportableAccount } from '@/lib/members/accounts';
 import { momentRepository } from '@/lib/moments';
+import { momentFiles } from '@/lib/moments/service';
 import { clearMemberSessionCookie, getSessionMember, isSameOrigin } from '@/lib/members/session';
 
 // PDPA: download my data (account, consent record, onboarding answers, my moments)
@@ -44,7 +44,6 @@ export async function DELETE(request: Request) {
   const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
   const removedMoments = await momentRepository.removeByAuthor(member.id);
   const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
-  const storyImages = await removeStoriesOf(member.id);
   await removeReviewsBy(member.id);
   await removeVisitsBy(member.id);
   await removeRedemptionsBy(member.id);
@@ -63,8 +62,8 @@ export async function DELETE(request: Request) {
   // The photos themselves go too, unless something that remains still shows them
   const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
   await deleteMemberUploads(
-    [...ownMoments.flatMap((m) => m.images), ...storyImages, member.avatarUrl],
-    [...remaining.flatMap((m) => m.images), ...storyImagesInUse()],
+    [...ownMoments.flatMap(momentFiles), member.avatarUrl],
+    remaining.flatMap(momentFiles),
   );
   // Keep proof that the deletion happened, without keeping who it was
   recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชีของตัวเอง (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments})`, { type: 'member', id: member.id });

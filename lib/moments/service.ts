@@ -3,7 +3,7 @@ import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import {
-  AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, Moment, MomentCategory, MomentComment,
+  AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
 } from './index';
 
@@ -21,6 +21,14 @@ const text = (value: unknown, max: number) => (typeof value === 'string' ? value
 export function isAllowedMomentImage(url: string): boolean {
   return url.startsWith('/uploads/') || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(url);
 }
+
+/** A clip comes from the video upload route, into the moments folder */
+export function isAllowedMomentVideo(url: string): boolean {
+  return url.startsWith('/uploads/moments/') || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/moments\//i.test(url);
+}
+
+/** Every stored file a moment shows, for deleting them with it */
+export const momentFiles = (moment: Moment): string[] => [...moment.images, ...(moment.video ? [moment.video.url] : [])];
 
 export function thaiTimeAgo(iso: string, now = Date.now()): string {
   const minutes = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
@@ -84,6 +92,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     userBadge: moment.authorBadge ?? '',
     images: moment.images,
     imageRatio: moment.imageRatio,
+    video: moment.video,
     caption: plain(moment.caption, moment.isSample),
     location: moment.location,
     category: moment.category,
@@ -203,6 +212,15 @@ export async function findPublicMoment(id: string): Promise<FeedItem | null> {
   return isPubliclyVisible(moment, people) ? toFeedItem(moment, null, people) : null;
 }
 
+function cleanVideo(input: unknown, imageCount: number): Moment['video'] {
+  if (input === undefined || input === null) return undefined;
+  const { url, durationS } = input as { url?: unknown; durationS?: unknown };
+  if (typeof url !== 'string' || !isAllowedMomentVideo(url)) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
+  if (typeof durationS !== 'number' || !Number.isFinite(durationS) || durationS <= 0 || durationS > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) throw new MomentError(`คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาที`);
+  if (imageCount !== 1) throw new MomentError('โมเมนต์ที่มีคลิปใช้รูปปกได้รูปเดียว');
+  return { url, durationS: Math.round(durationS * 10) / 10 };
+}
+
 export async function createMoment(member: Member, input: Record<string, unknown>): Promise<Moment> {
   const caption = text(input.caption, MAX_CAPTION_LENGTH + 1);
   if (!caption) throw new MomentError('กรุณาเขียนคำบรรยาย');
@@ -211,6 +229,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
   if (images.length === 0) throw new MomentError('กรุณาแนบรูปอย่างน้อย 1 รูป');
   if (images.length > MAX_MOMENT_IMAGES) throw new MomentError(`แนบรูปได้ไม่เกิน ${MAX_MOMENT_IMAGES} รูป`);
   if (!images.every(isAllowedMomentImage)) throw new MomentError('รูปต้องอัปโหลดผ่านระบบ (/api/upload) ก่อน');
+  const video = cleanVideo(input.video, images.length);
   const targetType = (TARGET_TYPES.has(input.targetType as MomentTargetType) ? input.targetType : 'general') as MomentTargetType;
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
   const location = text(input.location, 120) || text(input.targetTitle, 120) || 'ไลฟ์สไตล์ทั่วไป';
@@ -225,6 +244,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
     authorAvatar: member.avatarUrl,
     caption,
     images,
+    video,
     imageRatio: typeof input.imageRatio === 'number' && Number.isFinite(input.imageRatio) ? Math.min(3, Math.max(0.3, Math.round(input.imageRatio * 1000) / 1000)) : undefined,
     location,
     category,
@@ -266,7 +286,7 @@ export async function deleteOwnMoment(member: Member, id: string): Promise<strin
   if (!moment || moment.status === 'removed') throw new MomentError('ไม่พบโมเมนต์', 404);
   if (moment.authorId !== member.id) throw new MomentError('ลบได้เฉพาะโมเมนต์ของตัวเอง', 403);
   await momentRepository.remove(id);
-  return moment.images;
+  return momentFiles(moment);
 }
 
 const toggle = (list: string[], id: string, on: boolean) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id));

@@ -13,8 +13,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
   "font-src 'self' data:",
-  // data:/blob: are photos already in the browser (the upload compressor fetches its own data: URL)
-  "connect-src 'self' data: blob:",
+  // data:/blob: are photos already in the browser (the upload compressor fetches its own data: URL); a moment's clip goes straight to Vercel Blob
+  "connect-src 'self' data: blob: https://vercel.com https://*.blob.vercel-storage.com",
   // Map embeds on detail pages (maps.google.com redirects to www.google.com/maps)
   'frame-src https://maps.google.com https://www.google.com',
   "object-src 'none'",

@@ -2,12 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Image as ImageIcon, MapPin, Navigation, Search, Trophy, X } from 'lucide-react';
+import { CheckCircle2, Image as ImageIcon, MapPin, Navigation, Play, Search, Trophy, Video, X } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { uploadPresigned } from '@vercel/blob/client';
 import { compressImage } from '@/lib/media/compressor';
+import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, VIDEO_TYPES } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -69,6 +71,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
   const [isPosting, setIsPosting] = useState(false);
   const [images, setImages] = useState<string[]>(initial?.image ? [initial.image] : []);
+  // A clip takes the photos' place: `images` then holds only its first frame as the cover
+  const [clip, setClip] = useState<{ file: File; durationS: number } | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [caption, setCaption] = useState(initial?.caption ?? '');
   const [customLocation, setCustomLocation] = useState(initial?.location ?? '');
@@ -241,6 +245,70 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     }
   };
 
+  /** Reads a clip's length and first frame on the phone, so a clip over the limit never starts uploading */
+  const readClip = (file: File) =>
+    new Promise<{ durationS: number; cover: string }>((resolve, reject) => {
+      const src = URL.createObjectURL(file);
+      const el = document.createElement('video');
+      el.muted = true;
+      el.playsInline = true;
+      el.preload = 'auto';
+      const finish = (done: () => void) => {
+        URL.revokeObjectURL(src);
+        done();
+      };
+      el.onerror = () => finish(() => reject(new Error('unreadable')));
+      el.onloadedmetadata = () => {
+        if (!Number.isFinite(el.duration)) return finish(() => reject(new Error('unreadable')));
+        if (el.duration > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) return finish(() => reject(new Error('too_long')));
+        el.currentTime = Math.min(0.1, el.duration / 2);
+      };
+      el.onseeked = () => {
+        const scale = Math.min(1, 1080 / Math.max(el.videoWidth, el.videoHeight, 1));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(el.videoWidth * scale);
+        canvas.height = Math.round(el.videoHeight * scale);
+        canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
+        const cover = canvas.toDataURL('image/webp', 0.82);
+        const durationS = el.duration;
+        finish(() => (canvas.width > 0 ? resolve({ durationS, cover }) : reject(new Error('unreadable'))));
+      };
+      el.src = src;
+    });
+
+  const addClip = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!VIDEO_TYPES.includes(file.type as (typeof VIDEO_TYPES)[number])) return onToast('รองรับคลิป MP4, MOV และ WEBM นะ');
+    if (file.size > MAX_VIDEO_BYTES) return onToast('คลิปใหญ่เกิน 50MB ลองอัดสั้นลงหรือลดความละเอียดนะ');
+    setIsCompressing(true);
+    try {
+      const { durationS, cover } = await readClip(file);
+      setImages([cover]);
+      setClip({ file, durationS });
+    } catch (err) {
+      onToast(err instanceof Error && err.message === 'too_long' ? `คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาทีนะ` : 'เปิดคลิปนี้ไม่ได้ ลองคลิปอื่นนะ');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  /** Sends the clip straight to storage when the site can sign that; a local server keeps it itself */
+  const uploadClip = async (file: File): Promise<string | null> => {
+    const { mode } = await fetch('/api/upload/video', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ mode: 'off' }));
+    if (mode === 'direct') {
+      const name = `moments/clip.${file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'}`;
+      const blob = await uploadPresigned(name, file, { access: 'public', handleUploadUrl: '/api/upload/video', contentType: file.type });
+      return blob.url;
+    }
+    if (mode !== 'server') return null;
+    const form = new FormData();
+    form.append('file', file);
+    const stored = await fetch('/api/upload/video', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
+    return stored?.success ? stored.url : null;
+  };
+
   /**
    * Where the phone is right now, for a post at a place or fair: when it is at the place, the photo counts toward
    * challenges at once; without it (declined, no GPS) the photo waits for staff (lib/moments/evidence.ts)
@@ -259,7 +327,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     e.preventDefault();
     if (!caption.trim() || isPosting) return;
     // A moment is the member's own photo: no stock image is added on their behalf
-    if (images.length === 0) return onToast('เพิ่มรูปอย่างน้อย 1 รูปก่อนนะ');
+    if (images.length === 0) return onToast('เพิ่มรูปหรือคลิปก่อนนะ');
     // The picked place or event decides the title and the place shown on the post; otherwise the typed name does
     const location = linkedTarget ? linkedTarget.location || linkedTarget.title : customLocation.trim() || 'ไลฟ์สไตล์ทั่วไป';
 
@@ -278,6 +346,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         if (!upload?.success || !upload.url) return onToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
         imageUrls.push(upload.url);
       }
+      const clipUrl = clip ? await uploadClip(clip.file).catch(() => null) : null;
+      if (clip && !clipUrl) return onToast('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
       const imageRatio = await new Promise<number | undefined>((resolve) => {
         const probe = new window.Image();
         probe.onload = () => resolve(probe.naturalHeight > 0 ? probe.naturalWidth / probe.naturalHeight : undefined);
@@ -288,6 +358,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       const result = await postJson('/api/moments', {
         caption: caption.trim(),
         images: imageUrls,
+        video: clip && clipUrl ? { url: clipUrl, durationS: clip.durationS } : undefined,
         imageRatio,
         location,
         category: 'chill',
@@ -359,26 +430,34 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             {/* 1. Photos */}
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-slate-900">รูปภาพ</span>
-                <span className="text-xs font-medium text-slate-500">{isCompressing ? 'กำลังเตรียมรูป…' : `${images.length}/${MAX_MOMENT_IMAGES} รูป`}</span>
+                <span className="text-sm font-bold text-slate-900">รูปหรือคลิป</span>
+                <span className="text-xs font-medium text-slate-500">{isCompressing ? 'กำลังเตรียม…' : clip ? `คลิป ${Math.round(clip.durationS)} วินาที` : `${images.length}/${MAX_MOMENT_IMAGES} รูป`}</span>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {images.map((img, idx) => (
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
                     {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-                    <img src={img} alt={`รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={clip ? 'ปกคลิป' : `รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
+                    {clip && (
+                      <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white"><Play className="h-5 w-5 fill-current" /></span>
+                      </span>
+                    )}
                     {idx === 0 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-md">ปก</span>}
                     <button
                       type="button"
-                      onClick={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
+                      onClick={() => {
+                        setClip(null);
+                        setImages((prev) => prev.filter((_, i) => i !== idx));
+                      }}
                       className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                      aria-label={`ลบรูปที่ ${idx + 1}`}
+                      aria-label={clip ? 'ลบคลิป' : `ลบรูปที่ ${idx + 1}`}
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
-                {images.length < MAX_MOMENT_IMAGES && (
+                {!clip && images.length < MAX_MOMENT_IMAGES && (
                   <label
                     className={`${
                       images.length === 0 ? 'col-span-3 sm:col-span-4 py-7' : 'aspect-square'
@@ -388,6 +467,14 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                     <span className="text-sm font-bold text-slate-800">{images.length === 0 ? 'เลือกรูป' : 'เพิ่มรูป'}</span>
                     {images.length === 0 && <span className="text-xs text-slate-500">อย่างน้อย 1 รูป สูงสุด {MAX_MOMENT_IMAGES} รูป</span>}
                     <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={isCompressing} onChange={addImages} className="hidden" />
+                  </label>
+                )}
+                {images.length === 0 && (
+                  <label className="col-span-3 sm:col-span-4 py-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center gap-1 px-2">
+                    <Video className="w-6 h-6 text-slate-500" aria-hidden="true" />
+                    <span className="text-sm font-bold text-slate-800">หรือเลือกคลิปสั้น</span>
+                    <span className="text-xs text-slate-500">1 คลิป ไม่เกิน {MAX_VIDEO_SECONDS} วินาที และไม่เกิน 50MB</span>
+                    <input type="file" accept={VIDEO_TYPES.join(',')} disabled={isCompressing} onChange={addClip} className="hidden" />
                   </label>
                 )}
               </div>
@@ -530,7 +617,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
               disabled={!caption.trim() || images.length === 0 || isCompressing || isPosting}
               className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none text-white px-6 py-3 rounded-full font-bold text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
             >
-              {isCompressing ? 'กำลังเตรียมรูป…' : isPosting ? 'กำลังโพสต์…' : images.length === 0 ? 'เลือกรูปก่อนนะ' : !caption.trim() ? 'เขียนเล่าสั้นๆ ก่อนนะ' : 'โพสต์'}
+              {isCompressing ? 'กำลังเตรียม…' : isPosting ? 'กำลังโพสต์…' : images.length === 0 ? 'เลือกรูปหรือคลิปก่อนนะ' : !caption.trim() ? 'เขียนเล่าสั้นๆ ก่อนนะ' : 'โพสต์'}
             </button>
           </div>
         </form>
