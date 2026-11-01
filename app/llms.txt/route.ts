@@ -21,7 +21,7 @@ const body = `# Chillwaa
 - [อีเวนต์](${SITE_URL}/events): runs, concerts, expos and other events, soonest first
 - [ที่เที่ยว](${SITE_URL}/spots): places across Thailand by province and vibe
 - [ชาเลนจ์](${SITE_URL}/challenges): challenges with XP, badges and rewards
-- [โมเมนต์](${SITE_URL}/moments): photos and stories members shared
+- [โมเมนต์](${SITE_URL}/moments): photos members shared
 
 ## About
 

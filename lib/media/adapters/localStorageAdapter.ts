@@ -193,11 +193,17 @@ export class LocalStorageAdapter implements IMediaStorage {
 
   private getExtensionFromMime(mimeType: string, originalName: string): string {
     const extFromOriginal = path.extname(originalName).replace('.', '').toLowerCase();
-    if (extFromOriginal && ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg'].includes(extFromOriginal)) {
+    if (extFromOriginal && ['jpg', 'jpeg', 'png', 'webp', 'avif', 'svg', 'mp4', 'mov', 'webm'].includes(extFromOriginal)) {
       return extFromOriginal === 'jpeg' ? 'jpg' : extFromOriginal;
     }
 
     switch (mimeType) {
+      case 'video/mp4':
+        return 'mp4';
+      case 'video/quicktime':
+        return 'mov';
+      case 'video/webm':
+        return 'webm';
       case 'image/webp':
         return 'webp';
       case 'image/avif':

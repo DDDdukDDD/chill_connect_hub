@@ -159,7 +159,7 @@ function DetailBody({ initialMoment, isLoggedIn, requireLogin, showToast }: Deta
       <article className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 items-start">
         {/* On a computer the photo stays in view while a long comment thread scrolls beside it */}
         <div className="-mx-4 sm:mx-0 sm:rounded-3xl overflow-hidden lg:sticky lg:top-24">
-          <MomentPhotos images={moment.images} alt={title || `โมเมนต์จาก ${place}`} onOpen={(index) => setViewer(index)} onDoubleTap={() => !moment.isLiked && toggle('like')} />
+          <MomentPhotos images={moment.images} video={moment.video} alt={title || `โมเมนต์จาก ${place}`} onOpen={(index) => setViewer(index)} onDoubleTap={() => !moment.isLiked && toggle('like')} />
         </div>
 
         <div className="min-w-0 space-y-5">

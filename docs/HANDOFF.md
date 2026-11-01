@@ -2413,3 +2413,30 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Other per-server caches stay:** ตี้, places and challenges lists are cached 15–60 seconds per server, so seat counts can lag; joining still locks the row.
 - **Checked in Chrome at 8 sizes from 344 to 1279 wide:** login, sign-up, terms, join prompt, moment and story composers, notifications, profile menu, create chooser and the first step of all four create forms, edit profile, ticket and QR, group chat. Action bar on ตี้, place and challenge pages at 6 sizes. First load of 14 pages at 6 sizes (84 loads): no crash, no sideways scroll, one h1.
 - **Open:** folded landscape (658x416) with the top bar, action bar and bottom bar leaves about half the screen for content; it works. Not run: Safari, real devices, later steps of the create forms, the อีเวนต์ page's action bar.
+
+### BE-212 · Moments and chat moved to the database (owner 2026-11-02)
+- **Moments:** with `DATA_STORE=postgres`, posts, photos, likes, saves, comments and reports use Postgres (`lib/moments/pgMomentRepository.ts`). A like or comment locks the post's row, so it is safe across Vercel's servers. The API and page shapes did not change.
+- **Chat:** messages and rooms use Postgres (`lib/social/chatStore.ts`). New message ids are plain UUIDs instead of `msg_…`; nothing should read meaning into them.
+- **Schema:** migration 0013 (additive), applied. `db/backfill-moments.mjs` filled the new fields on the 24 sample moments; safe to rerun. The JSON stores stay for `DATA_STORE` unset.
+- **Not moved:** the 84 chat messages in rooms whose ตี้ no longer exist (test data), and anything live members posted into a Vercel server's temporary files.
+- **Open:** pair and fair group rooms store messages in the database, but who may enter them still comes from per-server JSON files. Notifications and challenge joins are still JSON. Chat polls every 4 seconds and moments are now database reads, so this adds to the connection limit problem found 2026-11-01.
+- **Checked:** 43-step local walk against the database: post, edit, search, like, save, comment, report, join and chat, account deletion. Pair and fair group rooms not walked.
+
+### BE-213 · Stories removed (owner 2026-11-02)
+- **Gone:** the home composer's สตอรี่ button and row, `/api/stories`, `/api/admin/stories`, the admin สตอรี่ tab, `lib/social/stories.ts`, and the tables (migration 0014, both empty). Also two unused components, `components/StoryBar.tsx` and `components/MomentsStoriesRail.tsx`.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`, `components/TermsPrivacyModal.tsx` (dropped the word สตอรี่ from the deletion clause), `app/onboarding/OnboardingFlow.tsx` (sample circle row removed, the sample post stays).
+
+### BE-214 · A short clip in a moment, trial (owner 2026-11-02)
+- **What:** a moment may hold one clip instead of photos: up to 15 seconds and 50 MB, MP4, MOV or WEBM. The first frame becomes the cover in `images[0]`, so grids and cards work unchanged. It plays only when tapped. Staff can watch it in the moment drawer. Deleting the moment or account deletes the file.
+- **No Vercel action:** clips go straight from the phone to Blob because a server function takes only about 4.5 MB. The route signs a short-lived URL with `handleUploadPresigned`, which works with the store's OIDC login, so no `BLOB_READ_WRITE_TOKEN` is needed (the store has none). The CSP now allows `vercel.com` and `*.blob.vercel-storage.com` for this.
+- **Limits of the trial:** length is read on the phone and the server checks the number only, not the file. No conversion, so an iPhone HEVC clip may not play on every device.
+- **Checked:** 30-step walk in headless Chrome at 360 wide with real recorded clips, on local storage. Not run: the direct Blob path (it needs Vercel's login, so it can only run after deploy), Safari, real phones.
+
+### BE-215 · One database connection per server (owner 2026-11-02)
+- **Why:** Supabase's session pooler allows 15 connections across all servers, and each Vercel server could hold 3, so about 5 busy servers filled it. A burst of requests on 2026-11-01 made database reads fail for about 4 minutes.
+- **Change:** `max: 1` and `idle_timeout: 5` in `lib/db/postgres/client.ts`, so it now takes about 15 busy servers. Requests on one server queue for its connection.
+- **Rule for new code:** inside `sql().begin()` every query must use `tx`. A separate query waits forever for the connection its own transaction holds. `referenceCodes` in `lib/db/adapters/postgresAdapter.ts` did this on ตี้ and place saves, and now takes `tx`.
+- **Checked:** production build on one connection: ตี้ save with a cold lookup (200), two bursts of 14 mixed requests (all 200, no hang), the 43-step walk. All transactions read through.
+- **Not done:** a load test on Vercel, so the new limit is reasoned, not measured there. Frozen servers may hold a connection past the idle timeout. Raising the pool in Supabase is still worth doing; it is on the owner's side.
+
+- **BE-214 follow-up:** the clip preview link goes through `encodeURI` in `components/moments/MomentComposer.tsx` to clear a CodeQL alert that blocked the merge. It is a browser `blob:` link, so behaviour is unchanged.

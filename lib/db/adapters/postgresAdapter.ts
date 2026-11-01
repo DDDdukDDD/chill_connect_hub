@@ -118,9 +118,10 @@ export class PostgresAdapter implements IDataRepository {
     }
   }
 
-  private async referenceCodes() {
+  /** Inside a transaction this must use its `tx`: a server has one connection, which that transaction is holding */
+  private async referenceCodes(tx: Sql) {
     if (!this.refs || Date.now() - this.refs.at > 5 * 60 * 1000) {
-      const [provinces, venues] = await Promise.all([sql()`select code from app.provinces`, sql()`select code from app.venues`]);
+      const [provinces, venues] = await Promise.all([tx`select code from app.provinces`, tx`select code from app.venues`]);
       this.refs = { provinceCodes: new Set(provinces.map((p) => p.code)), venueCodes: new Set(venues.map((v) => v.code)), at: Date.now() };
     }
     return this.refs;
@@ -162,7 +163,7 @@ export class PostgresAdapter implements IDataRepository {
   /** Upserts events, looking up the member host, place and series rows they point at */
   private async writeEvents(tx: Sql, events: EventItem[], sortKeys?: Map<string, number>): Promise<void> {
     if (events.length === 0) return;
-    const { provinceCodes, venueCodes } = await this.referenceCodes();
+    const { provinceCodes, venueCodes } = await this.referenceCodes(tx);
     const hostIds = [...new Set(events.flatMap((e) => [str(loose(e).createdByMemberId), str(loose(e).hostId)]).filter((v): v is string => !!v))];
     const placeOf = (e: EventItem) => str(loose(e).spotId) ?? str(loose(e).placeId);
     const spotIds = [...new Set(events.map(placeOf).filter((v): v is string => !!v))];
@@ -204,7 +205,7 @@ export class PostgresAdapter implements IDataRepository {
 
   private async writeSpots(tx: Sql, spots: LifestyleSpotItem[], sortKeys?: Map<string, number>): Promise<void> {
     if (spots.length === 0) return;
-    const { provinceCodes } = await this.referenceCodes();
+    const { provinceCodes } = await this.referenceCodes(tx);
     const existing = await tx`select id, slug from app.places where slug in ${tx(spots.map((s) => s.id))}`;
     const idBy = new Map(existing.map((p) => [p.slug as string, p.id as string]));
     const rows = spots.map((s) => {

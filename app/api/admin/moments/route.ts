@@ -30,6 +30,7 @@ function toAdminItem(moment: Moment, people: Map<string, Member>, counted: Map<s
     authorStatus: author?.status ?? (moment.authorId ? 'deleted' : 'sample'),
     caption: moment.caption,
     images: moment.images,
+    video: moment.video,
     location: moment.location,
     targetType: moment.targetType,
     targetTitle: moment.targetTitle,

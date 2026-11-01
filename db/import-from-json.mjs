@@ -58,7 +58,7 @@ const auditLog = readJson('audit_log.json');
 const placesUsage = readJson('google_places_usage.json', null);
 
 // Stores that are empty today. Stop rather than drop data if one fills up before this script learns its shape.
-for (const name of ['waitlist', 'quest_finishes', 'quest_vouchers', 'redemptions', 'reviews', 'stories', 'event_questions', 'fair_groups', 'meet_again', 'content_reports']) {
+for (const name of ['waitlist', 'quest_finishes', 'quest_vouchers', 'redemptions', 'reviews', 'event_questions', 'fair_groups', 'meet_again', 'content_reports']) {
   if (readJson(`${name}.json`).length > 0) throw new Error(`data/${name}.json has rows, but this importer does not handle it yet.`);
 }
 if (moments.some((moment) => moment.reports?.length)) throw new Error('moment reports are not handled yet.');

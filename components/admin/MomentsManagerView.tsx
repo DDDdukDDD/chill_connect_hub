@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Camera, CheckCircle2, Eye, Flag, Heart, Loader2, MessageCircle, RefreshCw, Search, Trophy, X } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, Flag, Heart, Loader2, MessageCircle, RefreshCw, Search, Trophy, X } from 'lucide-react';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminEmptyState, AdminPageHeader, AdminStatus, AdminStatusChip, adminButton } from './AdminUI';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
@@ -18,6 +18,7 @@ interface AdminMoment {
   authorStatus: 'active' | 'suspended' | 'banned' | 'deleted' | 'sample';
   caption: string;
   images: string[];
+  video?: { url: string; durationS: number };
   location: string;
   targetType: string;
   targetTitle?: string;
@@ -34,18 +35,6 @@ interface AdminMoment {
   evidenceRejected?: { at: string; note: string };
   evidence?: { status: 'auto' | 'pending' | 'approved'; at: string; distanceM?: number; reason?: string };
   timeAgo: string;
-}
-
-interface AdminStory {
-  id: string;
-  authorName: string;
-  authorStatus: string;
-  image: string;
-  caption: string;
-  hoursLeft: number;
-  views: number;
-  hidden: boolean;
-  reports: Array<{ reason: string; at: string }>;
 }
 
 interface Counts { published: number; hidden: number; reported: number; samples: number }
@@ -130,6 +119,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
     >
       <FormSection title="เนื้อหา">
         <div className="sm:col-span-2 space-y-3">
+          {moment.video && <video src={moment.video.url} poster={moment.images[0]} controls playsInline preload="none" className="max-h-80 w-full rounded-lg bg-black" />}
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
             {moment.images.map((src, index) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -244,120 +234,9 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
   );
 }
 
-/** Stories live 24 hours, so this is a short list: look, hide or take down */
-function StoriesPanel({ canModerate, reloadToken, onLoading }: { canModerate: boolean; reloadToken: number; onLoading: (loading: boolean) => void }) {
-  const [stories, setStories] = useState<AdminStory[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [localReload, setLocalReload] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/admin/stories', { cache: 'no-store' })
-      .then(async (res) => {
-        if (handleAdminUnauthorized(res)) return;
-        const json = await res.json();
-        if (!res.ok || !json.success) throw new Error(json.error || 'โหลดสตอรี่ไม่สำเร็จ');
-        if (active) {
-          setStories(json.stories);
-          setError(null);
-        }
-      })
-      .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : 'โหลดสตอรี่ไม่สำเร็จ'); })
-      .finally(() => { if (active) onLoading(false); });
-    return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoading only reports back
-  }, [reloadToken, localReload]);
-
-  const act = async (story: AdminStory, action: 'remove' | 'hide' | 'restore', message: string) => {
-    if (action === 'remove' && !confirm('ลบสตอรี่นี้ถาวร?')) return;
-    setBusy(story.id);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/stories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: story.id, action }) });
-      if (handleAdminUnauthorized(res)) return;
-      const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || 'ทำรายการไม่สำเร็จ');
-      setNotice(message);
-      setLocalReload((t) => t + 1);
-    } catch (actError) {
-      setError(actError instanceof Error ? actError.message : 'ทำรายการไม่สำเร็จ');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {error && (
-        <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          <AlertCircle size={16} className="mt-0.5 shrink-0" /><span className="flex-1">{error}</span>
-        </div>
-      )}
-      {notice && (
-        <div role="status" className="flex items-center gap-2 border-l-2 border-emerald-500 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          <CheckCircle2 size={16} className="shrink-0" />{notice}
-        </div>
-      )}
-      {stories === null ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((n) => <div key={n} className="aspect-[3/4] animate-pulse rounded-2xl bg-slate-100" />)}
-        </div>
-      ) : stories.length === 0 ? (
-        <AdminEmptyState>ตอนนี้ไม่มีสตอรี่ที่ยังแสดงอยู่ (สตอรี่หายเองใน 24 ชั่วโมง)</AdminEmptyState>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {stories.map((story) => (
-            <div key={story.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
-              <div className="relative aspect-[3/4] bg-slate-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={story.image} alt="" className={`h-full w-full object-cover ${story.hidden ? 'opacity-40 grayscale' : ''}`} />
-                <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-                  <AdminStatusChip status={story.hidden ? 'rejected' : 'published'} />
-                  {story.reports.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white"><Flag size={10} />{story.reports.length}</span>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1.5 p-2.5">
-                {story.caption && <p className="line-clamp-2 text-xs font-semibold leading-5 text-slate-800">{story.caption}</p>}
-                <p className="truncate text-[11px] text-slate-500">
-                  {story.authorName}
-                  {story.authorStatus !== 'active' && <span className="ml-1 font-semibold text-rose-600">({story.authorStatus})</span>}
-                </p>
-                <p className="flex items-center gap-2 text-[11px] text-slate-500">
-                  <span>เหลือ {story.hoursLeft} ชม.</span>
-                  <span className="inline-flex items-center gap-0.5"><Eye size={11} /> {story.views}</span>
-                </p>
-                {story.reports.length > 0 && (
-                  <ul className="space-y-0.5 text-[11px] text-rose-700">
-                    {story.reports.map((report, index) => <li key={index} className="truncate">· {report.reason}</li>)}
-                  </ul>
-                )}
-                {canModerate && (
-                  <div className="flex gap-1 pt-1">
-                    {story.hidden ? (
-                      <button type="button" disabled={busy === story.id} onClick={() => act(story, 'restore', 'คืนการแสดงสตอรี่แล้ว')} className={adminButton.secondarySm}>คืนการแสดง</button>
-                    ) : (
-                      <button type="button" disabled={busy === story.id} onClick={() => act(story, 'hide', 'ซ่อนสตอรี่แล้ว')} className={adminButton.secondarySm}>ซ่อน</button>
-                    )}
-                    <button type="button" disabled={busy === story.id} onClick={() => act(story, 'remove', 'ลบสตอรี่แล้ว')} className={adminButton.dangerSm}>ลบ</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function MomentsManagerView({ initialFilter }: { initialFilter?: string }) {
   const { can } = useAdminSession();
   const canModerate = can('community.review');
-  const [view, setView] = useState<'moments' | 'stories'>('moments');
   const [filter, setFilter] = useState<Filter>(FILTERS.find((f) => f.id === initialFilter)?.id ?? 'all');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -381,7 +260,6 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
   }, [query]);
 
   useEffect(() => {
-    if (view !== 'moments') return;
     let active = true;
     const params = new URLSearchParams({ filter, page: String(page), limit: '24' });
     if (debouncedQuery) params.set('q', debouncedQuery);
@@ -399,14 +277,14 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
       .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : 'โหลดโมเมนต์ไม่สำเร็จ'); })
       .finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; };
-  }, [view, filter, page, debouncedQuery, reloadToken]);
+  }, [filter, page, debouncedQuery, reloadToken]);
 
   return (
     <div className="space-y-5">
       <AdminPageHeader
         icon={Camera}
         title="โมเมนต์"
-        description="โพสต์รูปและสตอรี่จากสมาชิก ขึ้นทันที ถูกรายงานครบ 3 คนจะซ่อนอัตโนมัติและรอตรวจที่นี่"
+        description="โพสต์รูปจากสมาชิก ขึ้นทันที ถูกรายงานครบ 3 คนจะซ่อนอัตโนมัติและรอตรวจที่นี่"
         actions={
           <button type="button" onClick={() => refetch(() => setReloadToken((t) => t + 1))} disabled={isLoading} className={adminButton.secondary}>
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> รีเฟรช
@@ -419,8 +297,8 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
           <button
             key={f.id}
             type="button"
-            onClick={() => refetch(() => { setView('moments'); setFilter(f.id); setPage(1); })}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${view === 'moments' && filter === f.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            onClick={() => refetch(() => { setFilter(f.id); setPage(1); })}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === f.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {f.label}
             {f.count && counts && (
@@ -428,14 +306,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
             )}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={() => refetch(() => setView('stories'))}
-          className={`rounded-full px-3 py-1.5 text-xs font-bold ${view === 'stories' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-        >
-          สตอรี่
-        </button>
-        <div className={`relative ml-auto w-full sm:w-64 ${view === 'stories' ? 'invisible' : ''}`}>
+        <div className="relative ml-auto w-full sm:w-64">
           <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
@@ -459,9 +330,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
         </div>
       )}
 
-      {view === 'stories' ? (
-        <StoriesPanel canModerate={canModerate} reloadToken={reloadToken} onLoading={setIsLoading} />
-      ) : !isLoading && moments.length === 0 ? (
+      {!isLoading && moments.length === 0 ? (
         <AdminEmptyState>{filter === 'reported' ? 'ไม่มีโมเมนต์ที่ถูกรายงาน' : filter === 'evidence' ? 'ยังไม่มีโมเมนต์ของสมาชิกที่ใช้นับชาเลนจ์' : 'ไม่พบโมเมนต์ที่ตรงกับตัวกรอง'}</AdminEmptyState>
       ) : (
         <>

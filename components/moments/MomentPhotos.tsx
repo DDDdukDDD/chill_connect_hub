@@ -14,6 +14,8 @@ import { optimizedImage } from '@/lib/optimizedImage';
 
 interface MomentPhotosProps {
   images: string[];
+  /** One short clip: played here in place of the photos, and `images[0]` is its cover */
+  video?: { url: string };
   /** Width / height of the first photo. Not used for the frame any more (every post is square); kept so callers need not change. */
   ratio?: number;
   alt: string;
@@ -32,7 +34,7 @@ const responsive = (src: string) =>
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;
 
-export function MomentPhotos({ images, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
+export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
   const [index, setIndex] = useState(0);
   const [hearts, setHearts] = useState(0);
   const track = useRef<HTMLDivElement>(null);
@@ -65,6 +67,15 @@ export function MomentPhotos({ images, alt, onOpen, onDoubleTap }: MomentPhotosP
       onOpen(index);
     }, onDoubleTap ? DOUBLE_TAP_MS : 0);
   };
+
+  // Plays only when tapped: a feed of clips should not spend anyone's data on its own
+  if (video) {
+    return (
+      <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black">
+        <video src={video.url} poster={images[0]} controls playsInline preload="none" aria-label={alt} className="w-full h-full object-contain" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

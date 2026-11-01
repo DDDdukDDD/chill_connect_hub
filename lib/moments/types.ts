@@ -9,6 +9,11 @@ export type MomentCategory = 'heal' | 'move' | 'chill' | 'learn';
 export const MAX_MOMENT_IMAGES = 10;
 export const MAX_CAPTION_LENGTH = 500;
 export const MAX_COMMENT_LENGTH = 300;
+/** Clip limits (trial, owner 2026-11-02). The composer reads the length; the small grace is for how phones round it. */
+export const MAX_VIDEO_SECONDS = 15;
+export const VIDEO_SECONDS_GRACE = 0.5;
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'] as const;
 /** Distinct member reports that hide a moment until a moderator reviews it */
 export const AUTO_HIDE_REPORTS = 3;
 
@@ -40,6 +45,8 @@ export interface Moment {
   images: string[];
   /** Width / height of the first photo, so the feed can reserve the right frame before the photo loads */
   imageRatio?: number;
+  /** One short clip; `images` then holds only its first frame, which every grid and card shows as the cover */
+  video?: MomentVideo;
   location: string;
   category?: MomentCategory;
   targetType: MomentTargetType;
@@ -66,6 +73,11 @@ export interface Moment {
   isSample: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface MomentVideo {
+  url: string;
+  durationS: number;
 }
 
 export interface MomentEvidence {
