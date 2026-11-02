@@ -17,34 +17,34 @@ For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARC
 
 ---
 
-## 🤝 0. Multi-Agent Collaboration (Read First)
+## 🤝 0. Who Works Where (Read First)
 
-Two AI tools build this project in parallel. Each one owns one side of the codebase and coordinates with the other through shared files in this repo — never through assumptions about the other side's code.
+Since 2026-11-02 **Claude Code builds the whole project**: user-facing pages, admin console and backend. The old frontend/backend split (FE-001) is retired.
 
-| Agent | Role | Works on branch | Owns (may edit freely) |
-| :--- | :--- | :--- | :--- |
-| **Antigravity IDE (Gemini)** | Frontend (User-Facing UI) | `main` | All user-facing pages: `app/**/page.tsx`, `app/**/layout.tsx` (except `app/admin/**`), `app/globals.css`, user-facing components in `components/**` (except `components/admin/**` and `components/AdminCreateEventModal.tsx`), `public/**` (except uploads), client-only helpers (`lib/useResponsiveItemsPerPage.ts`, `lib/media/compressor.ts`), `DESIGN_SYSTEM.md` |
-| **Claude Code** | Backend & Admin Console | `claude` | Admin UI: `app/admin/**`, `components/admin/**`, `components/AdminCreateEventModal.tsx`; Member auth UI (since 2026-10-10, BE-017): `components/auth/**`, `components/AuthModal.tsx`, `components/RequireMembershipModal.tsx`, `components/TermsPrivacyModal.tsx`, `app/legal/**`, `app/profile/**`, `app/verify-email/**`, `app/login/**`, `app/reset-password/**`, `lib/useAuth.ts`, `app/onboarding/**`; Backend: `app/api/**`, all other `lib/**`, `data/**` stores and datasets, `docs/API.md`, `BACKEND_IMPLEMENTATION_LOG.md` |
+**Antigravity IDE (Gemini) is the tester.** It tests the site and reports problems as `TR-###` items in **[docs/TEST_REPORTS.md](docs/TEST_REPORTS.md)**, which also holds the format and the steps for both sides. It works on its own `tester` branch, changes only that file, and never changes code or data.
 
-Ownership is about **editing**, not importing: the frontend may import anything from `lib/` and `data/` (types, `contentClient`, `dateUtils`, image resolvers). Shared utilities used by both sides (`lib/dateUtils.ts`, `lib/spotImageResolver.ts`, `lib/eventImageResolver.ts`, `lib/contentClient.ts`) are backend-owned; behavior changes to them must be announced in `docs/HANDOFF.md`.
+Claude Code runs in **two local clones** of `github.com/DDDdukDDD/chill_connect_hub`, one per computer. The clones share nothing except GitHub, so each has its own branch:
 
-Shared (either may edit, keep changes minimal and announce them in `docs/HANDOFF.md`): `AGENTS.md`, `ARCHITECTURE.md`, `docs/HANDOFF.md`, `package.json`, config files.
+| Clone | Works on branch | Reaches `main` by |
+| :--- | :--- | :--- |
+| Main computer | `claude` | Owner merges `claude` into `main` |
+| Office notebook | `office-notebook` | Pull request into `claude` |
+| Antigravity (tester) | `tester` | Never merged into `main`; Claude Code picks up its reports |
 
-**The project owner merges `claude` into `main`.** Agents never push to the other agent's branch and never merge branches themselves unless the owner asks.
+**The project owner does the merges.** Agents never push to another agent's branch and never merge branches themselves unless the owner asks. The owner allows two exceptions, for keeping up to date: the session checklist merges below, and merging `origin/tester` to pick up test reports.
 
-**Each agent works in its own local clone** of `github.com/DDDdukDDD/chill_connect_hub`; the clones share nothing except GitHub. The other agent's work only becomes visible after it is pushed (and, for backend work, merged into `main`) and you pull. Never reference files by absolute local paths (e.g. `file:///c:/Users/...`) in docs or code — always use repo-relative paths, which resolve correctly in every clone and on GitHub.
+Work from the other clone only becomes visible after it is pushed and you pull. Never reference files by absolute local paths (e.g. `file:///c:/Users/...`) in docs or code — always use repo-relative paths, which resolve correctly in every clone and on GitHub.
 
-### Session checklist (every agent, every session)
-1. `git pull` before starting (Frontend: `main`; Backend: `claude`, then merge in new `main` commits if any). Push when you finish so the other clone can see your work.
-2. Read **[docs/HANDOFF.md](docs/HANDOFF.md)** and handle open items addressed to you.
-3. Frontend: read **[docs/API.md](docs/API.md)** before calling or changing any API usage. Backend: keep it accurate.
-4. Commit in small, focused commits with clear messages so the other agent can follow `git log`.
+### Session checklist (every clone, every session)
+1. `git fetch`, then bring your branch up to date: `claude` pulls `origin/claude` and merges new `main` commits; `office-notebook` pulls itself and merges new `origin/claude` commits.
+2. Read **[docs/HANDOFF.md](docs/HANDOFF.md)**: it is the change log both clones read. Then merge `origin/tester` and handle open reports in **[docs/TEST_REPORTS.md](docs/TEST_REPORTS.md)**. Before adding a HANDOFF item, check the highest `BE-###` on `origin/claude` so the two clones do not reuse a number.
+3. Keep **[docs/API.md](docs/API.md)** accurate when you change an API.
+4. Commit in small, focused commits with clear messages so the other clone can follow `git log`.
 
-### Rules across the boundary
-- **Do not edit files the other agent owns.** If you need a change there, write a request in `docs/HANDOFF.md` (what, why, and the exact file/area).
-  - Frontend needs a new endpoint, field, or filter → `FE-###` request; do **not** add code under `app/api/`, `lib/`, or `app/admin/`.
-  - Backend changes a response shape or behavior the UI relies on → update `docs/API.md` in the same commit and post a `BE-###` note with the required frontend action.
-- **`docs/API.md` is the contract.** Build UI against it, not against guesses from mock data. Report mismatches in `docs/HANDOFF.md`.
+### Rules
+- **Changing a response shape or behavior the UI relies on:** update `docs/API.md` and the UI in the same change, and post a `BE-###` note.
+- **Shared utilities** (`lib/dateUtils.ts`, `lib/spotImageResolver.ts`, `lib/eventImageResolver.ts`, `lib/contentClient.ts`) are used across many pages; announce behavior changes to them in `docs/HANDOFF.md`.
+- **`docs/API.md` is the contract.** Build UI against it, not against guesses from mock data.
 - **Use shared types, never copies:** `EventItem` / `ChallengeQuest` from `@/data/mockData`, `LifestyleSpotItem` from `@/data/spotsData`, query and pagination types from `@/lib/db/types`.
 - **Never send roles or permissions from the client.** The server decides admin access from its own session (`/api/auth/admin`).
 - **Mutable runtime data** (`data/chill_database.json`, `data/discovery_content.json`) is written by the backend at runtime. Do not hand-edit it to change UI behavior; ask for a data or API change instead.

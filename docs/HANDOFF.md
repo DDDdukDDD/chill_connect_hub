@@ -1,11 +1,11 @@
 # Handoff Board — Frontend ⇄ Backend
 
-The shared message board between the AI tools working on this repo (see "Multi-Agent Collaboration" in [AGENTS.md](../AGENTS.md)).
+The shared change log for the Claude Code clones working on this repo (see "Who Works Where" in [AGENTS.md](../AGENTS.md)). Since 2026-11-02 Claude Code builds every part of the project and Antigravity is the tester, reporting in [TEST_REPORTS.md](TEST_REPORTS.md); "Action for the other side" lines in older items are history.
 
 - **Read this file at the start of every session.** Act on open items addressed to you.
 - **Add an item** when you need something from the other side, or when you changed something the other side depends on.
 - **Close an item** by moving it to "Done" with the date, the commit, and a one-line note. Do not delete items.
-- IDs: `FE-###` = raised by Frontend (Antigravity), `BE-###` = raised by Backend (Claude Code). Keep numbering increasing.
+- IDs: `BE-###` = changes from either Claude Code clone; check the highest number on `origin/claude` first. `FE-###` = frontend requests from Antigravity, until 2026-11-02; test reports are now `TR-###` in [TEST_REPORTS.md](TEST_REPORTS.md). Keep numbering increasing.
 - API shapes live in [API.md](API.md); this board is for *changes and requests*, not for repeating the contract.
 
 Item template:
@@ -2455,3 +2455,22 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Change:** with `DATA_STORE=postgres`, a local server stores an `avatars` upload inline as a `data:image` link in the member row. `updateProfile` accepts that form only off Vercel, up to 300,000 characters. Live uploads still go to Blob.
 - **Data not changed:** Duke's `avatar_url` still holds the old `/uploads/...` link, so that photo stays missing on the live site until it is uploaded again.
 - **Still open:** a moment posted from a local server still points at that computer's disk, so its photos and clip will not show on the live site. Post test moments on the live site, or delete local ones afterwards.
+
+### BE-218 · 77 จังหวัด: a photo for every province (owner 2026-10-30)
+Admin and data only; no frontend action. Only 12 provinces had a photo; all 77 do now. The 65 new ones are in `public/images/provinces/<name>.jpg` (1000 px, 24-212 KB), listed in `data/provincePhotos.ts` (seed) and written to `data/master_data.json`.
+- **Source:** each province's photo on Wikidata from Wikimedia Commons (open licences), every photo checked by eye. Weak or wrong ones were replaced with a well-known landmark: Thi Lo Su (ตาก), Wat Pho Prathap Chang (พิจิตร), Erawan Museum (สมุทรปราการ), Wat Phra Phutthabat (สระบุรี), Wat Phra That Nong Bua (อุบลราชธานี), Pha Lom Sak at Phu Kradueng (เลย), Mu Ko Chumphon (ชุมพร; the Wikidata photo was storm damage), a temple Buddha (อำนาจเจริญ).
+- **Credit kept:** provinces gain `imageCredit` (author · licence · Commons link), shown as "เครดิตรูป" in the admin province form. Today province photos show only in admin; anyone who puts them on a public page must show the credit with them.
+
+### BE-219 · Admin: "บทบาท & สิทธิ์" explains staff roles and member levels; Editors may edit master data (owner 2026-10-30)
+Admin console only; no frontend action.
+- **Page renamed** "ทีมงาน & สิทธิ์" → "บทบาท & สิทธิ์", two tabs. **ทีมงาน**: team list, a card per role (who it is for, which pages it can change), and "ดูรายละเอียดสิทธิ์รายหน้า": a table by sidebar page with แก้ไข / แก้บางส่วน / ดู / – per role, built from `MODULE_PERMISSIONS` and the new `MODULE_EDIT_PERMISSIONS` in `components/admin/AdminSidebar.tsx` (keep that map in step with the API checks). **สมาชิกบนเว็บไซต์**: the member ladder (guest → new → verified → trusted → ผู้จัดตี้ → ผู้จัดงาน/เจ้าของพื้นที่, plus suspended/banned) with what each step allows, read from `lib/members/trust.ts`, live counts (`overview.levels` on `/api/admin/members?view=overview`), and links to the host and flagged queues.
+- **Role names in Thai:** เจ้าของ, บรรณาธิการเนื้อหา, ผู้ดูแลชุมชน, ทีมข้อมูล (`ROLE_LABELS`); ids unchanged. Permission labels now say what they really cover (moments and reports under community.review; campaigns and sponsored cards under content.edit).
+- **Access change (owner):** new permission `master.edit` for `POST /api/admin/master` (categories, provinces and zones, venues, rails), given to Editor and Data Ops. `system.manage` keeps media, cache and `reset_and_seed`. Before, Editors could not fix a venue photo or a category.
+
+
+### BE-220 · Claude Code now builds the whole project, Antigravity tests it; office notebook works on `office-notebook` (owner 2026-11-02)
+Docs only; no code change.
+- **Claude Code builds everything:** user-facing pages, admin and backend. The frontend/backend split in AGENTS.md section 0 (and FE-001) is retired.
+- **Antigravity is now the tester:** it tests the site and reports problems as `TR-###` items in `docs/TEST_REPORTS.md`, on its own `tester` branch. It changes only that file; Claude Code fixes the problems, and Antigravity confirms each fix before it is closed.
+- **Two clones, two branches:** the main computer keeps `claude`; the office notebook works on `office-notebook` and reaches `claude` by pull request. The owner still merges `claude` into `main`.
+- **Numbering:** both clones add `BE-###` items here; check the highest number on `origin/claude` before adding one. BE-218 and BE-219 came from the office notebook.
