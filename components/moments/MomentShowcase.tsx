@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
+import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
@@ -73,7 +74,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
-  const href = `/moments/${encodeURIComponent(moment.id)}`;
+  const href = `/moments/${encodeURIComponent(moment.id)}${moment.video ? '?full=1' : ''}`;
   // Photos lean a little left or right when pointed at, like prints picked up from a table
   const tilt = index % 2 ? 'group-hover:rotate-1' : 'group-hover:-rotate-1';
   return (
@@ -94,6 +95,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
           <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
             <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place}`} loading="lazy" className="w-full h-full object-cover" />
+            {moment.video && <ClipPlayer url={moment.video.url} fit="cover" interactive={false} className="absolute inset-0" />}
             {moment.video && (
               <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
                 <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />

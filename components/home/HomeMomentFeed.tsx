@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Trash2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Share2, Trash2, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -68,11 +69,12 @@ interface PostHandlers {
   onToggle: (id: string, action: Action) => void;
   onComment: (id: string, text: string) => Promise<boolean>;
   onDeleteComment: (id: string, commentId: string) => void;
-  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy') => void;
+  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
   onPhotos: (images: string[], index: number) => void;
 }
 
 function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; handlers: PostHandlers; myAvatar?: string; myName: string }) {
+  const router = useRouter();
   const [showComments, setShowComments] = useState(false);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -154,7 +156,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </div>
       </div>
 
-      {moment.images.length > 0 && <MomentPhotos images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => handlers.onPhotos(moment.images, index)} onDoubleTap={() => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
+      {moment.images.length > 0 && <MomentPhotos images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => (moment.video ? router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`) : handlers.onPhotos(moment.images, index))} onDoubleTap={() => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
 
       {moment.caption && (
         <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-line">
@@ -194,6 +196,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         >
           <MessageCircle className="w-[18px] h-[18px]" />
           <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>
+        </button>
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="cursor-pointer hover:text-slate-800">
+          <Share2 className="w-[18px] h-[18px]" />
         </button>
         <button
           type="button"
@@ -518,8 +523,13 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
-      if (choice === 'copy') {
+      if (choice === 'copy' || choice === 'share') {
         const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
+        // The phone's own share sheet where there is one; otherwise the link is copied
+        if (choice === 'share' && navigator.share) {
+          navigator.share({ title: 'โมเมนต์', url }).catch(() => undefined);
+          return;
+        }
         if (!navigator.clipboard) return showToast(url);
         navigator.clipboard.writeText(url).then(
           () => showToast('คัดลอกลิงก์โมเมนต์แล้ว'),

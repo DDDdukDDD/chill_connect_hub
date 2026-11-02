@@ -2440,3 +2440,18 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Not done:** a load test on Vercel, so the new limit is reasoned, not measured there. Frozen servers may hold a connection past the idle timeout. Raising the pool in Supabase is still worth doing; it is on the owner's side.
 
 - **BE-214 follow-up:** the clip preview link goes through `encodeURI` in `components/moments/MomentComposer.tsx` to clear a CodeQL alert that blocked the merge. It is a browser `blob:` link, so behaviour is unchanged.
+
+### BE-216 · Clips play by themselves, clip page like a Reel (owner 2026-11-02)
+- **Plays by itself:** `components/moments/ClipPlayer.tsx` starts a clip once 60% of it is on screen, silent and looping, and stops it when it leaves. Only the topmost clip on screen plays, and nothing loads before it plays. This replaces "plays only when tapped" from BE-214. A reader on a data saver or with reduced motion starts clips with a tap.
+- **Where:** Home feed and /moments/[id], and the /moments grid tiles (no buttons there). A double tap likes, the speaker turns the sound on and that choice carries from clip to clip.
+- **Full screen (owner 2026-11-02):** a tap on a clip in the feed, grid or moment page fills the screen, over both bars, with the buttons kept; a tap there pauses. Feed and grid open `/moments/[id]?full=1` (canonical stays without it), and X or Esc goes back to where the tap came from. The comment button opens the comments over the clip while it keeps playing: a panel on the right from 1024 wide, a sheet from the bottom below that, and guests can read them. It is a page layout, not the browser's Fullscreen API, because an iPhone would hand that to its plain player without the buttons, so the phone browser's own address bar stays visible.
+- **Clip page:** author, caption and the buttons (like, comment, share, save, report or delete) sit on the video; the place and comments follow it. Photo moments are unchanged. The page has a `VideoObject` in its JSON-LD.
+- **Home feed:** every post gets a share button: the phone's share sheet, or the link is copied.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`.
+- **Checked:** production build in headless Chrome: autoplay, pause, sound, stop and resume on scroll, one clip at a time across 8 clips (feed response patched so nothing was written), rail buttons at 360x740, 344x882, 884x1104, 658x416, 1024x768, 1440x900. Throwaway accounts deleted. At 658x416 the lower buttons need a scroll. Not run: Safari, real phones. Sound was toggled by script only.
+
+### BE-217 · Profile photos from a local server show on the live site (owner 2026-11-02)
+- **Cause:** local and live share one database, but a local upload stays on that computer's disk, so the live site got a `/uploads/...` link to nothing. Only the Duke account was affected.
+- **Change:** with `DATA_STORE=postgres`, a local server stores an `avatars` upload inline as a `data:image` link in the member row. `updateProfile` accepts that form only off Vercel, up to 300,000 characters. Live uploads still go to Blob.
+- **Data not changed:** Duke's `avatar_url` still holds the old `/uploads/...` link, so that photo stays missing on the live site until it is uploaded again.
+- **Still open:** a moment posted from a local server still points at that computer's disk, so its photos and clip will not show on the live site. Post test moments on the live site, or delete local ones afterwards.

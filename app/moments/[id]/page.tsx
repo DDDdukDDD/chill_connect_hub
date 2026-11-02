@@ -8,7 +8,7 @@ import { breadcrumbJsonLd, jsonLdHtml, momentJsonLd } from '@/lib/structuredData
 import { MomentDetailView } from '@/components/moments/MomentDetailView';
 import { momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ full?: string }> };
 
 const getMoment = cache(async (id: string) => {
   await ensureSampleMembers(); // development sample accounts for the sample posts
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // Public: the photos, caption, place and comments are in the server HTML; the member's likes and saves load in the browser
-export default async function MomentPage({ params }: Props) {
+export default async function MomentPage({ params, searchParams }: Props) {
   const moment = await getMoment(decodeURIComponent((await params).id));
   if (!moment) notFound();
   const path = `/moments/${encodeURIComponent(moment.id)}`;
@@ -54,7 +54,7 @@ export default async function MomentPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'โมเมนต์', path: '/moments' }, { name: pageTitle(moment.caption, ''), path }]))}
       />
-      <MomentDetailView initialMoment={moment} />
+      <MomentDetailView initialMoment={moment} openFullScreen={(await searchParams).full === '1'} />
     </>
   );
 }
