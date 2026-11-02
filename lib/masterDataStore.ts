@@ -178,6 +178,7 @@ function cleanProvince(input: Record<string, unknown>): Omit<MasterProvince, 'id
     tagline: str(input.tagline, 120),
     description: str(input.description, 600),
     image: imageUrl(input.image),
+    imageCredit: str(input.imageCredit, 300) || undefined,
     featured: input.featured === true,
   };
 }

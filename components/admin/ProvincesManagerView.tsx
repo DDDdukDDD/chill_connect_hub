@@ -8,7 +8,7 @@ import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer'
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterAdmin';
 
-type ProvinceForm = { id: string; displayName: string; nameEn: string; region: Region; tagline: string; description: string; image: string; featured: boolean };
+type ProvinceForm = { id: string; displayName: string; nameEn: string; region: Region; tagline: string; description: string; image: string; imageCredit: string; featured: boolean };
 
 function ProvinceEditor({ entry, onClose, onSave, isSaving }: { entry: MasterProvince; onClose: () => void; onSave: (form: ProvinceForm) => void; isSaving: boolean }) {
   const [form, setForm] = useState<ProvinceForm>({
@@ -19,6 +19,7 @@ function ProvinceEditor({ entry, onClose, onSave, isSaving }: { entry: MasterPro
     tagline: entry.tagline,
     description: entry.description,
     image: entry.image ?? '',
+    imageCredit: entry.imageCredit ?? '',
     featured: entry.featured,
   });
   const set = <K extends keyof ProvinceForm>(key: K, value: ProvinceForm[K]) => setForm((current) => ({ ...current, [key]: value }));
@@ -86,6 +87,9 @@ function ProvinceEditor({ entry, onClose, onSave, isSaving }: { entry: MasterPro
         <div className="sm:col-span-2">
           <ImageField id="prov-image" value={form.image} onChange={(url) => set('image', url)} folder="province" />
         </div>
+        <Field label="เครดิตรูป:" htmlFor="prov-image-credit" wide hint="ผู้ถ่าย · สัญญาอนุญาต · ที่มา (จำเป็นสำหรับรูปจาก Wikimedia Commons)">
+          <input id="prov-image-credit" value={form.imageCredit} onChange={(e) => set('imageCredit', e.target.value)} className={fieldInputClass} />
+        </Field>
       </FormSection>
     </AdminDrawer>
   );

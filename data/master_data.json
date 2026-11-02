@@ -2054,7 +2054,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/kalasin.jpg",
+      "imageCredit": "รูป Mattes · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2754583"
     },
     {
       "id": "กำแพงเพชร",
@@ -2066,7 +2068,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/kamphaeng_phet.jpg",
+      "imageCredit": "รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=56406233"
     },
     {
       "id": "ขอนแก่น",
@@ -2078,7 +2082,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": true
+      "featured": true,
+      "image": "/images/provinces/khon_kaen.jpg",
+      "imageCredit": "รูป Nopparat thanatawan · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=69828788"
     },
     {
       "id": "จันทบุรี",
@@ -2090,7 +2096,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chanthaburi.jpg",
+      "imageCredit": "รูป Martin Püschel · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=23782694"
     },
     {
       "id": "ฉะเชิงเทรา",
@@ -2102,7 +2110,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chachoengsao.jpg",
+      "imageCredit": "รูป Thaweesak Churasri · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=56815649"
     },
     {
       "id": "ชลบุรี",
@@ -2127,7 +2137,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chai_nat.jpg",
+      "imageCredit": "รูป Kittipong khunnen · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=28349384"
     },
     {
       "id": "ชัยภูมิ",
@@ -2139,7 +2151,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chaiyaphum.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2168141"
     },
     {
       "id": "ชุมพร",
@@ -2151,7 +2165,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chumphon.jpg",
+      "imageCredit": "รูป KOSIN SUKHUM · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=49529491"
     },
     {
       "id": "เชียงราย",
@@ -2163,7 +2179,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/chiang_rai.jpg",
+      "imageCredit": "รูป Christopher Michel · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=24815342"
     },
     {
       "id": "เชียงใหม่",
@@ -2188,7 +2206,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/trang.jpg",
+      "imageCredit": "รูป Lerdsuwa · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=586581"
     },
     {
       "id": "ตราด",
@@ -2200,7 +2220,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/trat.jpg",
+      "imageCredit": "รูป Heinz Albers · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=3820971"
     },
     {
       "id": "ตาก",
@@ -2212,7 +2234,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/tak.jpg",
+      "imageCredit": "รูป Yxejamir · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=5999027"
     },
     {
       "id": "นครนายก",
@@ -2224,7 +2248,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nakhon_nayok.jpg",
+      "imageCredit": "รูป mohigan · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=59199795"
     },
     {
       "id": "นครปฐม",
@@ -2236,7 +2262,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nakhon_pathom.jpg",
+      "imageCredit": "รูป Preecha.MJ · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=51658684"
     },
     {
       "id": "นครพนม",
@@ -2248,7 +2276,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nakhon_phanom.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2168011"
     },
     {
       "id": "นครราชสีมา",
@@ -2273,7 +2303,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nakhon_si_thammarat.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2230447"
     },
     {
       "id": "นครสวรรค์",
@@ -2285,7 +2317,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nakhon_sawan.jpg",
+      "imageCredit": "รูป Tanawat buatsunthia · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=62566301"
     },
     {
       "id": "นนทบุรี",
@@ -2297,7 +2331,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nonthaburi.jpg",
+      "imageCredit": "รูป Banphot Nuchleang (Octahedron80) · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=14457779"
     },
     {
       "id": "นราธิวาส",
@@ -2309,7 +2345,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/narathiwat.jpg",
+      "imageCredit": "รูป preetamrai · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=5904868"
     },
     {
       "id": "น่าน",
@@ -2334,7 +2372,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/bueng_kan.jpg",
+      "imageCredit": "รูป Erwannjacquin · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=43205820"
     },
     {
       "id": "บุรีรัมย์",
@@ -2346,7 +2386,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/buriram.jpg",
+      "imageCredit": "รูป Benh LIEU SONG · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=7919168"
     },
     {
       "id": "ปทุมธานี",
@@ -2358,7 +2400,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/pathum_thani.jpg",
+      "imageCredit": "รูป Marek Ślusarczyk (Tupungato) · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=111428550"
     },
     {
       "id": "ประจวบคีรีขันธ์",
@@ -2383,7 +2427,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/prachin_buri.jpg",
+      "imageCredit": "รูป Khunkay · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=43796735"
     },
     {
       "id": "ปัตตานี",
@@ -2395,7 +2441,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/pattani.jpg",
+      "imageCredit": "รูป Ukwaenterprise · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=8642859"
     },
     {
       "id": "พระนครศรีอยุธยา",
@@ -2420,7 +2468,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phang_nga.jpg",
+      "imageCredit": "รูป Vyacheslav Argenberg · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=111793519"
     },
     {
       "id": "พัทลุง",
@@ -2432,7 +2482,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phatthalung.jpg",
+      "imageCredit": "รูป Vyacheslav Argenberg · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=8642836"
     },
     {
       "id": "พิจิตร",
@@ -2444,7 +2496,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phichit.jpg",
+      "imageCredit": "รูป Kittipong khunnen · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=28197381"
     },
     {
       "id": "พิษณุโลก",
@@ -2456,7 +2510,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phitsanulok.jpg",
+      "imageCredit": "รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=52876580"
     },
     {
       "id": "เพชรบุรี",
@@ -2468,7 +2524,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phetchaburi.jpg",
+      "imageCredit": "รูป Bundit Sincharoen · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=60090605"
     },
     {
       "id": "เพชรบูรณ์",
@@ -2480,7 +2538,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phetchabun.jpg",
+      "imageCredit": "รูป Hanumann · CC BY 2.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=32624872"
     },
     {
       "id": "แพร่",
@@ -2492,7 +2552,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phrae.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=1605333"
     },
     {
       "id": "พะเยา",
@@ -2504,7 +2566,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/phayao.jpg",
+      "imageCredit": "รูป Sarawut VRW · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=28467393"
     },
     {
       "id": "ภูเก็ต",
@@ -2529,7 +2593,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/maha_sarakham.jpg",
+      "imageCredit": "รูป Silintrathip · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=62809047"
     },
     {
       "id": "มุกดาหาร",
@@ -2541,7 +2607,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/mukdahan.jpg",
+      "imageCredit": "รูป Premica Pata, Schwägerin · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=1733472"
     },
     {
       "id": "แม่ฮ่องสอน",
@@ -2553,7 +2621,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/mae_hong_son.jpg",
+      "imageCredit": "รูป John · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=74168929"
     },
     {
       "id": "ยะลา",
@@ -2565,7 +2635,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/yala.jpg",
+      "imageCredit": "รูป กิตติ เลขะกุล · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=54772091"
     },
     {
       "id": "ยโสธร",
@@ -2577,7 +2649,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/yasothon.jpg",
+      "imageCredit": "รูป ชลวิชญ์ ประกอบสุข · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=79373301"
     },
     {
       "id": "ร้อยเอ็ด",
@@ -2589,7 +2663,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/roi_et.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2172654"
     },
     {
       "id": "ระนอง",
@@ -2601,7 +2677,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/ranong.jpg",
+      "imageCredit": "รูป Atimedho · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=5226647"
     },
     {
       "id": "ระยอง",
@@ -2613,7 +2691,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/rayong.jpg",
+      "imageCredit": "รูป Yakuzakorat · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=60509816"
     },
     {
       "id": "ราชบุรี",
@@ -2625,7 +2705,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/ratchaburi.jpg",
+      "imageCredit": "รูป Toey19863 · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=42911970"
     },
     {
       "id": "ลพบุรี",
@@ -2637,7 +2719,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/lopburi.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=3612207"
     },
     {
       "id": "ลำปาง",
@@ -2649,7 +2733,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/lampang.jpg",
+      "imageCredit": "รูป Charin ninsu · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=55195480"
     },
     {
       "id": "ลำพูน",
@@ -2661,7 +2747,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/lamphun.jpg",
+      "imageCredit": "รูป gary4now · CC BY 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=53049417"
     },
     {
       "id": "เลย",
@@ -2673,7 +2761,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/loei.jpg",
+      "imageCredit": "รูป Billybobmac · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=3713236"
     },
     {
       "id": "ศรีสะเกษ",
@@ -2685,7 +2775,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/si_sa_ket.jpg",
+      "imageCredit": "รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=60156031"
     },
     {
       "id": "สกลนคร",
@@ -2697,7 +2789,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/sakon_nakhon.jpg",
+      "imageCredit": "รูป ::::=UT=:::: · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=56988838"
     },
     {
       "id": "สงขลา",
@@ -2722,7 +2816,9 @@
       "region": "ภาคใต้",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/satun.jpg",
+      "imageCredit": "รูป Vyacheslav Argenberg · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=111848406"
     },
     {
       "id": "สมุทรปราการ",
@@ -2734,7 +2830,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/samut_prakan.jpg",
+      "imageCredit": "รูป Ddalbiez · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=5794263"
     },
     {
       "id": "สมุทรสงคราม",
@@ -2746,7 +2844,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/samut_songkhram.jpg",
+      "imageCredit": "รูป Chainwit. · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=118759454"
     },
     {
       "id": "สมุทรสาคร",
@@ -2758,7 +2858,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/samut_sakhon.jpg",
+      "imageCredit": "รูป Mr.Niwat Tantayanusorn,Ph.D. · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=38197302"
     },
     {
       "id": "สระแก้ว",
@@ -2770,7 +2872,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/sa_kaeo.jpg",
+      "imageCredit": "รูป Jose A. Garcia, U.S. Marine Corps · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=10677052"
     },
     {
       "id": "สระบุรี",
@@ -2782,7 +2886,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/saraburi.jpg",
+      "imageCredit": "รูป Mastertongapollo · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=153586169"
     },
     {
       "id": "สิงห์บุรี",
@@ -2794,7 +2900,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/sing_buri.jpg",
+      "imageCredit": "รูป Chainwit. · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=74923760"
     },
     {
       "id": "สุโขทัย",
@@ -2806,7 +2914,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/sukhothai.jpg",
+      "imageCredit": "รูป Garonzi Stefania · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=76437866"
     },
     {
       "id": "สุพรรณบุรี",
@@ -2818,7 +2928,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/suphan_buri.jpg",
+      "imageCredit": "รูป Tnwq · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=73241337"
     },
     {
       "id": "สุราษฎร์ธานี",
@@ -2843,7 +2955,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/surin.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2148171"
     },
     {
       "id": "หนองคาย",
@@ -2855,7 +2969,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nong_khai.jpg",
+      "imageCredit": "รูป Perthite · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=140962084"
     },
     {
       "id": "หนองบัวลำภู",
@@ -2867,7 +2983,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/nong_bua_lamphu.jpg",
+      "imageCredit": "รูป Boasnirut · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=56846938"
     },
     {
       "id": "อ่างทอง",
@@ -2879,7 +2997,9 @@
       "region": "ภาคกลาง & ตะวันออก",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/ang_thong.jpg",
+      "imageCredit": "รูป Chainwit. · CC BY 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=152066862"
     },
     {
       "id": "อุดรธานี",
@@ -2891,7 +3011,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/udon_thani.jpg",
+      "imageCredit": "รูป Stefan Fussan · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=33577525"
     },
     {
       "id": "อุทัยธานี",
@@ -2903,7 +3025,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/uthai_thani.jpg",
+      "imageCredit": "รูป Meneerke bloem · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=9991134"
     },
     {
       "id": "อุตรดิตถ์",
@@ -2915,7 +3039,9 @@
       "region": "ภาคเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/uttaradit.jpg",
+      "imageCredit": "รูป Oatz · สาธารณสมบัติ · Wikimedia Commons https://commons.wikimedia.org/?curid=2156547"
     },
     {
       "id": "อุบลราชธานี",
@@ -2927,7 +3053,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/ubon_ratchathani.jpg",
+      "imageCredit": "รูป Henry Flower · CC BY-SA 3.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=49593817"
     },
     {
       "id": "อำนาจเจริญ",
@@ -2939,7 +3067,9 @@
       "region": "ภาคตะวันออกเฉียงเหนือ",
       "tagline": "",
       "description": "",
-      "featured": false
+      "featured": false,
+      "image": "/images/provinces/amnat_charoen.jpg",
+      "imageCredit": "รูป พระมหาอนุชิต อภิธัมโม · CC BY-SA 4.0 · Wikimedia Commons https://commons.wikimedia.org/?curid=48475795"
     }
   ],
   "zones": [
