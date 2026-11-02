@@ -16,7 +16,7 @@ import { optimizedImage } from '@/lib/optimizedImage';
 interface MomentPhotosProps {
   images: string[];
   /** One short clip: played here in place of the photos, and `images[0]` is its cover */
-  video?: { url: string };
+  video?: { url: string; startS?: number; durationS?: number };
   /** Width / height of the first photo. Not used for the frame any more (every post is square); kept so callers need not change. */
   ratio?: number;
   alt: string;
@@ -70,7 +70,7 @@ export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: Moment
   };
 
   if (video) {
-    return <ClipPlayer url={video.url} poster={images[0]} label={alt} onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
+    return <ClipPlayer url={video.url} startS={video.startS} durationS={video.durationS} poster={images[0]} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
   }
 
   return (

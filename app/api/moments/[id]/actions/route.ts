@@ -4,7 +4,7 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
-import { notify } from '@/lib/social/notifications';
+import { notify, removeNotifications } from '@/lib/social/notifications';
 
 /**
  * Member actions on a moment:
@@ -28,6 +28,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       case 'unlike':
         moment = await setLike(member, id, body.action === 'like');
         if (body.action === 'like') await notify(moment.authorId, member, 'like', moment.id);
+        else if (moment.authorId) await removeNotifications({ memberId: moment.authorId, actorId: member.id, types: ['like'], momentId: moment.id });
         break;
       case 'save':
       case 'unsave':
@@ -39,10 +40,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         }
         await guardPosting(member, 'comment', typeof body.text === 'string' ? body.text : '');
         moment = await addComment(member, id, body.text);
-        await notify(moment.authorId, member, 'comment', moment.id, typeof body.text === 'string' ? body.text.trim() : undefined);
+        await notify(moment.authorId, member, 'comment', moment.id, typeof body.text === 'string' ? body.text.trim() : undefined, moment.comments[moment.comments.length - 1]?.id);
         break;
       case 'delete_comment':
         moment = await deleteComment(member, id, String(body.commentId ?? ''));
+        await removeNotifications({ types: ['comment'], momentId: moment.id, commentId: String(body.commentId ?? '') });
         break;
       case 'report': {
         const result = await reportMoment(member, id, body.reason);

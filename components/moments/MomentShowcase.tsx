@@ -28,6 +28,8 @@ const TABS: { chip: Chip; label: string; dot: string; marker: string }[] = [
 
 /** Moments of one place or event (links from its page); the tabs are hidden while it is set */
 export interface ShowcasePlace {
+  /** One hashtag's moments; `location` then holds it with its # */
+  tag?: string;
   targetType?: string;
   targetId?: string;
   location?: string;
@@ -94,8 +96,8 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
         <span className="relative block">
           <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
-            <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place}`} loading="lazy" className="w-full h-full object-cover" />
-            {moment.video && <ClipPlayer url={moment.video.url} fit="cover" interactive={false} className="absolute inset-0" />}
+            <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place || moment.userName}`} loading="lazy" className="w-full h-full object-cover" />
+            {moment.video && <ClipPlayer url={moment.video.url} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
             {moment.video && (
               <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
                 <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
@@ -135,7 +137,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
       )}
 
       <div className="mt-2 px-0.5 flex items-center gap-3 lg:gap-4 text-xs lg:text-sm font-medium text-slate-600 tabular-nums">
-        {onLike ? (
+        {moment.likesOff ? null : onLike ? (
           // Liked straight from the grid; the padding gives a finger-sized target without moving the row
           <button
             type="button"
@@ -154,11 +156,13 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
             <span className="sr-only">ถูกใจ</span>
           </span>
         )}
+        {!moment.commentsOff && (
         <span className="inline-flex items-center gap-1">
           <MessageCircle className="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" aria-hidden="true" />
           {moment.commentsCount.toLocaleString()}
           <span className="sr-only">ความคิดเห็น</span>
         </span>
+        )}
       </div>
     </article>
   );
@@ -221,7 +225,9 @@ const tabHref = (chip: Chip) => (chip === 'all' ? '/moments' : `/moments?type=${
 
 const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number) => {
   const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
-  if (place?.targetType && place.targetId) {
+  if (place?.tag) {
+    params.set('tag', place.tag);
+  } else if (place?.targetType && place.targetId) {
     params.set('targetType', place.targetType);
     params.set('targetId', place.targetId);
   } else if (place?.location) {
@@ -364,7 +370,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                 <h1 className="text-[24px] leading-[1.3] sm:text-[34px] lg:text-[42px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
                   {placeName ? (
                     <>
-                      โมเมนต์จาก
+                      {place?.tag ? 'โมเมนต์ในแท็ก' : 'โมเมนต์จาก'}
                       <br />
                       <span style={{ color: ROSE }}>{placeName}</span>
                     </>

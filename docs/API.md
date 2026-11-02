@@ -278,11 +278,12 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 
 | Method & path | Body / params | Response |
 |---|---|---|
-| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
-| `POST /api/moments` | `{ caption (1–500), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
+| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&tag&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
+| `POST /api/moments` | `{ caption? (0–500, optional since 2026-11-02), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
 | `POST /api/moments` with a clip (trial, 2026-11-02) | Add `video: { url, durationS }`, with `images` holding only the cover. `durationS` is at most 15 (15.5 with rounding); `url` must come from `/api/upload/video`. Feed items and moment pages carry `video`; `images[0]` is its cover, so grids keep working | `400` when a rule fails |
+| `POST /api/moments` options (2026-11-02) | Add `commentsOff?`, `likesOff?`, `sharesOff?` (booleans). `video` also takes `startS`, where in the file the post starts playing; the file may run longer than `durationS`, which stays at most 15 | Feed items always carry the three booleans. A closed post answers `400` to `like` or `comment`, shows `comments: []` and `likesCount: 0` |
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
-| `PATCH /api/moments/[id]` | `{ caption?, location? }` | own posts only (`403`) |
+| `PATCH /api/moments/[id]` | `{ caption?, location?, commentsOff?, likesOff?, sharesOff? }` | own posts only (`403`) |
 | `DELETE /api/moments/[id]` | — | own posts only |
 | `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300) }` · `{ action: 'delete_comment', commentId }` (commenter or post author) · `{ action: 'report', reason }` (once per member, not your own) | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
 
