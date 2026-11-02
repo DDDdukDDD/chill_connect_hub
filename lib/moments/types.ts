@@ -47,6 +47,10 @@ export interface Moment {
   imageRatio?: number;
   /** One short clip; `images` then holds only its first frame, which every grid and card shows as the cover */
   video?: MomentVideo;
+  /** The author closed comments, likes or sharing on this post */
+  commentsOff?: boolean;
+  likesOff?: boolean;
+  sharesOff?: boolean;
   location: string;
   category?: MomentCategory;
   targetType: MomentTargetType;
@@ -77,7 +81,10 @@ export interface Moment {
 
 export interface MomentVideo {
   url: string;
+  /** How long it plays, at most MAX_VIDEO_SECONDS, even when the file is longer */
   durationS: number;
+  /** Where in the file it starts; the member picks this part of a longer clip */
+  startS?: number;
 }
 
 export interface MomentEvidence {

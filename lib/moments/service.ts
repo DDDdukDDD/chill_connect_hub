@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
+import { hasHashtag } from './hashtags';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -15,6 +16,9 @@ export class MomentError extends Error {
 
 const TARGET_TYPES = new Set<MomentTargetType>(['spot', 'community', 'fair', 'challenge', 'general']);
 const CATEGORIES = new Set<MomentCategory>(['heal', 'move', 'chill', 'learn']);
+/** Words the form used to fill in when no place was chosen; a post without a place now simply shows none */
+const NOT_A_PLACE = new Set(['ไลฟ์สไตล์ทั่วไป', 'ตำแหน่งปัจจุบันของฉัน (GPS)', 'กรุงเทพมหานคร (พิกัดใกล้ฉัน)']);
+const realPlace = (value: string | undefined) => (value && !NOT_A_PLACE.has(value) ? value : '');
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
 /** Only images uploaded through /api/upload (local disk or Vercel Blob) may be attached */
@@ -70,7 +74,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
   const author = moment.authorId ? people.get(moment.authorId) : undefined;
   // The viewer does not see comments from people they blocked
   const blocked = new Set(viewer?.blockedIds ?? []);
-  const comments = moment.comments
+  const comments = (moment.commentsOff ? [] : moment.comments)
     .filter((comment) => !comment.hidden && (!comment.authorId || (people.get(comment.authorId)?.status !== 'banned' && !blocked.has(comment.authorId))))
     .map((comment) => {
       const commenter = comment.authorId ? people.get(comment.authorId) : undefined;
@@ -94,10 +98,13 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     imageRatio: moment.imageRatio,
     video: moment.video,
     caption: plain(moment.caption, moment.isSample),
-    location: moment.location,
+    location: realPlace(moment.location),
     category: moment.category,
-    likesCount: moment.likedBy.length + moment.sampleLikes,
+    likesCount: moment.likesOff ? 0 : moment.likedBy.length + moment.sampleLikes,
     commentsCount: comments.length,
+    commentsOff: Boolean(moment.commentsOff),
+    likesOff: Boolean(moment.likesOff),
+    sharesOff: Boolean(moment.sharesOff),
     timeAgo: thaiTimeAgo(moment.createdAt),
     createdAt: moment.createdAt,
     isLiked: Boolean(viewer && moment.likedBy.includes(viewer.id)),
@@ -108,7 +115,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     comments,
     targetType: moment.targetType,
     targetId: moment.targetId,
-    targetTitle: moment.targetTitle,
+    targetTitle: realPlace(moment.targetTitle) || undefined,
     isSample: moment.isSample,
     // Only the author learns that staff did not count the photo as a visit
     evidenceRejected: viewer && moment.authorId === viewer.id && moment.evidenceRejected ? { note: moment.evidenceRejected.note } : undefined,
@@ -126,6 +133,8 @@ export interface MomentListOptions {
   targetId?: string;
   location?: string;
   q?: string;
+  /** One hashtag, with or without the # */
+  tag?: string;
   page?: number;
   limit?: number;
 }
@@ -155,7 +164,7 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
     targetType,
     targetId: options.targetId || undefined,
     location: options.location || undefined,
-    q: options.q || undefined,
+    q: options.q || (options.tag ? `#${options.tag.replace(/^#/, '')}` : undefined),
     sort: tab === 'popular' ? 'popular' : 'newest',
     page: 1,
     limit: 10_000,
@@ -168,7 +177,8 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
       isPubliclyVisible(moment, people) &&
       !(moment.authorId && blocked.has(moment.authorId)) &&
       (!following || (moment.authorId !== null && following.has(moment.authorId))) &&
-      (!category || moment.category === category)
+      (!category || moment.category === category) &&
+      (!options.tag || hasHashtag(moment.caption, options.tag))
   );
   return {
     moments: visible.slice((page - 1) * limit, page * limit).map((moment) => toFeedItem(moment, viewer, people)),
@@ -214,16 +224,16 @@ export async function findPublicMoment(id: string): Promise<FeedItem | null> {
 
 function cleanVideo(input: unknown, imageCount: number): Moment['video'] {
   if (input === undefined || input === null) return undefined;
-  const { url, durationS } = input as { url?: unknown; durationS?: unknown };
+  const { url, durationS, startS } = input as { url?: unknown; durationS?: unknown; startS?: unknown };
   if (typeof url !== 'string' || !isAllowedMomentVideo(url)) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
   if (typeof durationS !== 'number' || !Number.isFinite(durationS) || durationS <= 0 || durationS > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) throw new MomentError(`คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาที`);
   if (imageCount !== 1) throw new MomentError('โมเมนต์ที่มีคลิปใช้รูปปกได้รูปเดียว');
-  return { url, durationS: Math.round(durationS * 10) / 10 };
+  const start = typeof startS === 'number' && Number.isFinite(startS) && startS > 0 ? Math.round(startS * 10) / 10 : 0;
+  return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}) };
 }
 
 export async function createMoment(member: Member, input: Record<string, unknown>): Promise<Moment> {
   const caption = text(input.caption, MAX_CAPTION_LENGTH + 1);
-  if (!caption) throw new MomentError('กรุณาเขียนคำบรรยาย');
   if (caption.length > MAX_CAPTION_LENGTH) throw new MomentError(`คำบรรยายยาวได้ไม่เกิน ${MAX_CAPTION_LENGTH} ตัวอักษร`);
   const images = Array.isArray(input.images) ? input.images.filter((url): url is string => typeof url === 'string') : [];
   if (images.length === 0) throw new MomentError('กรุณาแนบรูปอย่างน้อย 1 รูป');
@@ -232,7 +242,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
   const video = cleanVideo(input.video, images.length);
   const targetType = (TARGET_TYPES.has(input.targetType as MomentTargetType) ? input.targetType : 'general') as MomentTargetType;
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
-  const location = text(input.location, 120) || text(input.targetTitle, 120) || 'ไลฟ์สไตล์ทั่วไป';
+  const location = text(input.location, 120) || text(input.targetTitle, 120);
   const targetId = text(input.targetId, 120) || undefined;
   // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
   const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
@@ -245,6 +255,9 @@ export async function createMoment(member: Member, input: Record<string, unknown
     caption,
     images,
     video,
+    commentsOff: input.commentsOff === true || undefined,
+    likesOff: input.likesOff === true || undefined,
+    sharesOff: input.sharesOff === true || undefined,
     imageRatio: typeof input.imageRatio === 'number' && Number.isFinite(input.imageRatio) ? Math.min(3, Math.max(0.3, Math.round(input.imageRatio * 1000) / 1000)) : undefined,
     location,
     category,
@@ -275,9 +288,11 @@ export async function editMoment(member: Member, id: string, input: Record<strin
   const moment = await requireVisible(id);
   if (moment.authorId !== member.id) throw new MomentError('แก้ไขได้เฉพาะโมเมนต์ของตัวเอง', 403);
   const caption = input.caption !== undefined ? text(input.caption, MAX_CAPTION_LENGTH + 1) : moment.caption;
-  if (!caption || caption.length > MAX_CAPTION_LENGTH) throw new MomentError(`คำบรรยายต้องมี 1-${MAX_CAPTION_LENGTH} ตัวอักษร`);
+  if (caption.length > MAX_CAPTION_LENGTH) throw new MomentError(`คำบรรยายยาวได้ไม่เกิน ${MAX_CAPTION_LENGTH} ตัวอักษร`);
   const location = input.location !== undefined ? text(input.location, 120) || moment.location : moment.location;
-  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, updatedAt: new Date().toISOString() }));
+  // Only what the request names changes; the author can open or close these after posting
+  const options = (['commentsOff', 'likesOff', 'sharesOff'] as const).reduce<Partial<Moment>>((set, key) => (typeof input[key] === 'boolean' ? { ...set, [key]: input[key] } : set), {});
+  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, ...options, updatedAt: new Date().toISOString() }));
 }
 
 /** Removes the member's own moment and answers its photo links, so the caller can delete the files too */
@@ -292,7 +307,8 @@ export async function deleteOwnMoment(member: Member, id: string): Promise<strin
 const toggle = (list: string[], id: string, on: boolean) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id));
 
 export async function setLike(member: Member, id: string, liked: boolean): Promise<Moment> {
-  await requireVisible(id);
+  const moment = await requireVisible(id);
+  if (liked && moment.likesOff) throw new MomentError('เจ้าของโพสต์ปิดการกดถูกใจไว้');
   return momentRepository.mutate(id, (m) => ({ ...m, likedBy: toggle(m.likedBy, member.id, liked) }));
 }
 
@@ -302,7 +318,8 @@ export async function setSaved(member: Member, id: string, saved: boolean): Prom
 }
 
 export async function addComment(member: Member, id: string, input: unknown): Promise<Moment> {
-  await requireVisible(id);
+  const moment = await requireVisible(id);
+  if (moment.commentsOff) throw new MomentError('เจ้าของโพสต์ปิดความคิดเห็นไว้');
   const body = text(input, MAX_COMMENT_LENGTH + 1);
   if (!body) throw new MomentError('กรุณาพิมพ์ความคิดเห็น');
   if (body.length > MAX_COMMENT_LENGTH) throw new MomentError(`ความคิดเห็นยาวได้ไม่เกิน ${MAX_COMMENT_LENGTH} ตัวอักษร`);

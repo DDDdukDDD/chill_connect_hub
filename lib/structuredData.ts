@@ -140,7 +140,7 @@ export function momentJsonLd(
 /** /moments: a collection page listing the moments shown first, each pointing to its own page. */
 export function momentCollectionJsonLd(moments: { id: string; caption: string; images: string[] }[], path: string, name: string, description: string): JsonLd {
   return collectionJsonLd(
-    moments.map((moment) => ({ path: `/moments/${encodeURIComponent(moment.id)}`, name: metaDescription(moment.caption, 110), image: moment.images[0] })),
+    moments.map((moment) => ({ path: `/moments/${encodeURIComponent(moment.id)}`, name: metaDescription(moment.caption, 110) || 'โมเมนต์', image: moment.images[0] })),
     path,
     name,
     description

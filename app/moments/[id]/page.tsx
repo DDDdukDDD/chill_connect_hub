@@ -16,8 +16,8 @@ const getMoment = cache(async (id: string) => {
 });
 
 /** "ไปมาแล้ว ร้านลับ ๆ …" → a title of about 60 characters, with the place when it fits */
-function pageTitle(caption: string, place: string): string {
-  const first = momentTitle(caption) || `โมเมนต์จาก ${place || 'เพื่อนๆ'}`;
+function pageTitle(caption: string, place: string, author: string): string {
+  const first = momentTitle(caption) || `โมเมนต์จาก ${place || author}`;
   const short = first.length > 60 ? `${first.slice(0, 58).trim()}…` : first;
   return place && !short.includes(place) && short.length + place.length < 80 ? `${short} · ${place}` : short;
 }
@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!moment) return { title: 'โมเมนต์', robots: { index: false } };
   const place = moment.targetTitle || moment.location;
   return pageMetadata({
-    title: pageTitle(moment.caption, place),
-    description: metaDescription(`${moment.caption} — โมเมนต์จาก ${moment.userName}${place ? ` ที่ ${place}` : ''}`),
+    title: pageTitle(moment.caption, place, moment.userName),
+    description: metaDescription(`${moment.caption ? `${moment.caption} — ` : ''}โมเมนต์จาก ${moment.userName}${place ? ` ที่ ${place}` : ''}`),
     path: `/moments/${encodeURIComponent(moment.id)}`,
     image: moment.images[0],
     type: 'article',
@@ -52,7 +52,7 @@ export default async function MomentPage({ params, searchParams }: Props) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'โมเมนต์', path: '/moments' }, { name: pageTitle(moment.caption, ''), path }]))}
+        dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'โมเมนต์', path: '/moments' }, { name: pageTitle(moment.caption, '', moment.userName), path }]))}
       />
       <MomentDetailView initialMoment={moment} openFullScreen={(await searchParams).full === '1'} />
     </>

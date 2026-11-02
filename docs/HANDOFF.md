@@ -2455,3 +2455,44 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Change:** with `DATA_STORE=postgres`, a local server stores an `avatars` upload inline as a `data:image` link in the member row. `updateProfile` accepts that form only off Vercel, up to 300,000 characters. Live uploads still go to Blob.
 - **Data not changed:** Duke's `avatar_url` still holds the old `/uploads/...` link, so that photo stays missing on the live site until it is uploaded again.
 - **Still open:** a moment posted from a local server still points at that computer's disk, so its photos and clip will not show on the live site. Post test moments on the live site, or delete local ones afterwards.
+
+### BE-218 · Posting works like Instagram: choose, edit, then details (owner 2026-11-02)
+- **Steps:** `components/moments/MomentComposer.tsx` is now choose (photos or clip) → edit → details. Editing lives in `components/moments/PhotoEditor.tsx` and `lib/media/photoEdit.ts`: crop (drag, pinch, wheel, slider), 7 filters, light / contrast / colour, text on the photo (drag, colour, size, background) and a sticker of the place.
+- **Everything is baked into the picture**, so posts stay plain images and old screens need no change. The preview and the upload use one drawing routine. Output is always a square, because every post shows in a square frame. Colours are worked pixel by pixel because Safari's canvas has no `filter`; JPEG is the fallback where the browser cannot write WebP.
+- **Post switches:** `commentsOff`, `likesOff`, `sharesOff` on a moment (migration `0016`, applied to the shared database). The server refuses a like or comment on a closed post. The author can change them later in แก้ไขโพสต์ (was แก้ไขข้อความ).
+- **Sharing is closed in the UI only:** the buttons go for everyone but the author, but a public post's link can still be copied from the address bar.
+- **Hashtags:** `#word` in a caption links to `/moments?tag=word` (`lib/moments/hashtags.ts`, `components/moments/CaptionText.tsx`). Thai vowels and tone marks stay in the tag; a match is the whole tag. No new column. The grid header reads โมเมนต์จาก #word.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`.
+
+### BE-219 · Clips post on their own path, from the gallery too (owner 2026-11-02)
+- **Report:** a clip from the phone's files would not post, even a 5 second one; recording a new one worked. **The exact cause on the owner's phone is not confirmed**, because no real phone was available here.
+- **What changed for it:** `accept="video/*"` replaces a list of three types, so phones offer the gallery; a missing or odd file type is judged by the file name (`lib/media/clip.ts`); reading a clip times out after 15 seconds instead of waiting forever; a clip whose picture cannot be drawn gets a plain cover; each refusal names its reason (type, MB, cannot open).
+- **Separate paths:** the feed box has รูป and คลิป buttons, and the form's first step has โพสต์รูป and โพสต์คลิป.
+- **Longer clips:** `components/moments/ClipTrimmer.tsx` picks 15 seconds of a longer clip. `video.startS` holds the start; `components/moments/ClipPlayer.tsx` plays and loops only that part. The whole file still uploads, so the 50 MB limit stays and a viewer's browser may fetch more than the 15 seconds.
+- **Upload progress** shows as a percentage on the direct Blob path.
+
+### BE-220 · A clip plays under the mouse (owner 2026-11-02)
+- `components/moments/ClipPlayer.tsx`: on a computer the clip under the mouse plays, and the first on screen takes over when the mouse leaves. Touch is unchanged. Autoplay of the first clip on screen stays (BE-216), and a reader on a data saver or with reduced motion is still not started automatically.
+
+### BE-221 · Cards between posts show on ล่าสุด only (owner 2026-11-02)
+- `components/home/HomeMomentFeed.tsx` drops the suggestion cards on ติดตาม, ยอดฮิต, บันทึก and ของฉัน, including under an empty list.
+
+**Checked (BE-218..221):** 28 checks in Chrome against a local server: the whole photo and clip flows, 390x844, 568x320, 844x390 and 1280x800, server refusals, hashtag matching, hover and leaving. Test members and posts were deleted. Production build passes. One earlier run returned a 500 on a moment delete that a retry cleared; it did not repeat and its cause was not found.
+**Not checked:** real iPhone and Android, Safari, pinch with real fingers, the direct Blob upload path (local uses the server path).
+
+### BE-222 · Caption optional, and the fixes from a full posting and viewing walk (owner 2026-11-02)
+- **Caption is optional,** as on Instagram. `caption` may be empty on `POST` and `PATCH /api/moments`. A post without one shows no line under the author; its `<h1>` stays for search engines but is visually hidden, and reads โมเมนต์จาก plus the author's name.
+- **No made-up place:** a post without a place now has none, instead of "ไลฟ์สไตล์ทั่วไป". That text and the old GPS texts on existing posts are hidden when served (`realPlace` in `lib/moments/service.ts`); stored rows are unchanged.
+- **GPS button removed from the form:** it never read a real place and saved "กรุงเทพมหานคร (พิกัดใกล้ฉัน)" even when location was refused. Checking a visit at posting time (`capture`) is unchanged.
+- **Clips in the feed fill the same square as photos,** with no black bars. Full screen and the clip page still show the whole clip, so the sides or top of a clip are cut in the feed only.
+- **Back from a full screen clip** returns to the same post, tab and loaded list (`saveFeedReturn` in `components/moments/momentsReturn.ts`), and the clip plays again. The return window is now 15 seconds for both the feed and /moments.
+- **Long captions in the feed** fold to two lines with ดูเพิ่มเติม, so the reactions stay near the photo. On the moment page a first line over 60 characters reads as body text, not a large headline.
+- **Play button:** shows only when a tap is needed (reader paused, data saver, reduced motion, autoplay refused), not while a clip is about to start.
+- **Share:** when the phone's share sheet fails for a reason other than the reader cancelling, the link is copied instead of nothing happening.
+- **Clips this device cannot open still post:** `readContainerDuration` in `lib/media/clip.ts` reads the length from the MP4 or MOV header, so no decoder is needed. The clip step then says it cannot show a preview, and the post gets a plain cover. **Open:** a viewer whose device cannot play that format sees the plain cover only.
+- **Smaller:** the photo viewer is solid black, the editor hides the photo strip while typing on a phone, text on photos has a stronger shadow, and the hashtag page reads โมเมนต์ในแท็ก.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`, `components/FriendsMomentsWall.tsx`.
+
+**Checked:** 56 checks with two members and a guest on phone and computer sizes, in Chrome and the first part in WebKit 18.2: every kind of post, feed, swipe, viewer, like, double tap, comment, delete, save, share, report, hashtag, closed posts, full screen, sound, comments over a clip, edit, delete, profile. Another 10 checks on clips that cannot be decoded, both browsers. Screens were reviewed by eye. Every test account and post was deleted. Production build passes, but clip playback was walked on `next dev`, because `next start` does not serve files uploaded after the build.
+**Not checked:** real iPhone and Android, Safari itself, real fingers, the direct Blob upload, a real HEVC file (a made-up file with a real header stood in for it). One run reported a hydration warning that did not repeat, and its page was not identified.
+**Known, not changed:** a deleted comment's text stays in the author's notification. On a computer, with comments open beside an upright clip, the caption runs across the black side bars.
