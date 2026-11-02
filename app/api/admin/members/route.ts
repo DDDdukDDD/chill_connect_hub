@@ -21,7 +21,7 @@ import { exportableAccount } from '@/lib/members/accounts';
 import { isMailerConfigured } from '@/lib/members/mailer';
 import { providerStatus } from '@/lib/members/oauth';
 import { getSessionSecret } from '@/lib/members/session';
-import { hasOpenRisk, trustOf } from '@/lib/members/trust';
+import { hasOpenRisk, trustLevel, trustOf } from '@/lib/members/trust';
 import { momentRepository } from '@/lib/moments';
 import { roleHasPermission } from '@/lib/permissions';
 
@@ -62,6 +62,20 @@ async function overview() {
     pledged: count((m) => Boolean(m.pledgeAcceptedAt)),
     flagged: count(hasOpenRisk),
     pendingHosts: count((m) => m.hostApplication?.status === 'pending'),
+    // One count per step of the member ladder (roles page); active accounts only, approved hosts counted on their own step
+    levels: (() => {
+      const active = items.filter((m) => m.status === 'active');
+      const hostKind = (m: Member) => (m.hostApplication?.status === 'approved' ? m.hostApplication.kind : null);
+      return {
+        new: active.filter((m) => !hostKind(m) && trustLevel(m) === 'new').length,
+        verified: active.filter((m) => !hostKind(m) && trustLevel(m) === 'verified').length,
+        trusted: active.filter((m) => !hostKind(m) && trustLevel(m) === 'trusted').length,
+        host: active.filter((m) => hostKind(m) === 'host').length,
+        organizer: active.filter((m) => hostKind(m) === 'organizer' || hostKind(m) === 'venue').length,
+        suspended: count((m) => m.status === 'suspended'),
+        banned: count((m) => m.status === 'banned'),
+      };
+    })(),
     byMethod: {
       email: count((m) => Boolean(m.passwordHash)),
       google: count((m) => m.providers.some((p) => p.provider === 'google')),

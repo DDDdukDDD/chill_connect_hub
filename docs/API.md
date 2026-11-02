@@ -1,6 +1,6 @@
 # Chill & Connect Hub — API Contract
 
-> **Owner:** Backend (Claude Code). **Consumers:** Frontend (Antigravity IDE) and admin console.
+> **Owner:** Backend (Claude Code). **Consumers:** user-facing pages and admin console (also built by Claude Code since 2026-11-02; Antigravity tests them).
 > This is the source of truth for how the frontend talks to the backend. If a response shape here
 > differs from the code, the code is wrong or this file is stale — report it in [HANDOFF.md](HANDOFF.md).
 >
@@ -387,12 +387,13 @@ All `/api/admin/*` routes require admin access:
 
 Every request is checked against the caller's **role** (matrix in `lib/permissions.ts`, read from the server session, never from the client):
 
-| Permission | Owner | Editor | Moderator | Data Ops |
+| Permission | Owner (เจ้าของ) | Editor (บรรณาธิการเนื้อหา) | Moderator (ผู้ดูแลชุมชน) | Data Ops (ทีมข้อมูล) |
 |---|:-:|:-:|:-:|:-:|
 | `content.view` (every `GET`) | ✓ | ✓ | ✓ | ✓ |
-| `community.review` (decide community meetups) | ✓ | ✓ | ✓ | – |
-| `content.edit` (spots, fairs, quests, events writes; decide fairs and spots) | ✓ | ✓ | – | – |
+| `community.review` (decide community meetups; safety reports, moments) | ✓ | ✓ | ✓ | – |
+| `content.edit` (spots, fairs, quests, campaigns, events writes; decide fairs and spots) | ✓ | ✓ | – | – |
 | `sources.run` (sources, scrape) | ✓ | ✓ | – | ✓ |
+| `master.edit` (`POST /api/admin/master`: categories, provinces, zones, venues, rails) | ✓ | ✓ | – | ✓ |
 | `system.manage` (media, cache, `reset_and_seed`) | ✓ | – | – | ✓ |
 | `audit.view` | ✓ | ✓ | – | – |
 | `members.manage` (member accounts) | ✓ | – | ✓ | – |
@@ -424,10 +425,10 @@ All writes are `POST` with an `action` field unless noted.
 | `/api/admin/sponsored` (added 2026-10-31, BE-193) | `GET` → `{ slots: SponsoredSlot[], options: { community, events, spots, challenges: [{ id, title, detail? }] } }` (types in `lib/sponsored/types.ts`; options are what each list page shows today: open ตี้, อีเวนต์ not ended, challenges not ended, every place) | `save {slot}` (new when `slot.id` is empty; `400` with a Thai `error` for an unknown page or item, a sponsor name under 2 characters, bad dates), `delete {id}`. Needs `content.edit`; audited. List pages read the running slot on the server (`liveSponsoredId(pillar)`); there is no public endpoint |
 | `/api/admin/moments` | `GET ?filter=all\|reported\|evidence\|hidden\|published\|samples&q&page&limit(≤60)` → `{ moments (with reports, all comments, authorStatus, hiddenBy, moderationNote, countsToward, evidenceRejected), counts: {published, hidden, removed, reported, samples}, pagination }` | `hide {id, note (required)}`, `restore {id}` (also clears reports), `dismiss_reports {id}`, `remove {id}` (permanent), `hide_comment\|show_comment\|delete_comment {id, commentId}`, `reject_evidence {id, note (required)}`, `accept_evidence {id}` (see "Evidence review"). Needs `community.review`; audited |
 | `/api/admin/members?queue=flagged\|hosts` | `GET` → the same list shape, limited to accounts with open risk flags or reports, or with a pending host application. Each member also carries `trust`, `hasOpenRisk`, `riskFlags`, `reportsReceived`, `hostApplication` | Actions: `clear_flags {id}` and `host_decision {id, decision: approve\|reject, note? (required to reject)}`. Needs `members.manage`; audited |
-| `/api/admin/members?view=overview` | `GET` → `{ overview: { total, newThisWeek, onboarded, wantsToHost, byMethod, topInterests[{id, members}], readiness: { sessionSecret, providers, mailer, durableStorage } } }` | Needs `members.manage` |
+| `/api/admin/members?view=overview` | `GET` → `{ overview: { total, newThisWeek, onboarded, wantsToHost, byMethod, topInterests[{id, members}], levels: { new, verified, trusted, host, organizer, suspended, banned }, readiness: { sessionSecret, providers, mailer, durableStorage } } }` (`levels`: active members per trust step, approved hosts and organizers/venues counted on their own step; suspended and banned by status) | Needs `members.manage` |
 | `/api/admin/members?export=<id>` | `GET` → JSON download of everything stored about one member (for a PDPA access request); audited | Needs `members.manage` |
 | `/api/admin/members` | `GET ?q&status=all\|active\|suspended\|banned&page&limit` → `{ members (no password hashes; `hasPassword`), counts, pagination }` | `set_status {id, status: active\|suspended\|banned, days (suspended, 1–365), reason (required unless active)}` (suspend/ban ends the member's sessions), `force_logout {id}`. Needs `members.manage`; audited |
-| `/api/admin/master` | `GET` → all collections including inactive entries (each entry has `active`, `sortOrder`, `builtIn`) | `save {collection, item}` (create when `item.id` is absent; id from `nameEn`/`name`), `set_active {collection, id, active}`, `delete {collection, id}` (not for built-in entries), `reorder {collection, ids}`. Collections: `spotVibes`, `communityMoods`, `provinces` (fixed: edit only), `communityCategories`, `fairCategories`, `questCategories`, `venues`, `zones`, `communityClubs`, `venueGroups` (rail cards need ≥ 1 keyword). Names cannot contain emoji; icons and colors must be from `ICON_OPTIONS`/`COLOR_PRESETS`; image URLs must be `https://` or `/`. Needs `system.manage` |
+| `/api/admin/master` | `GET` → all collections including inactive entries (each entry has `active`, `sortOrder`, `builtIn`) | `save {collection, item}` (create when `item.id` is absent; id from `nameEn`/`name`), `set_active {collection, id, active}`, `delete {collection, id}` (not for built-in entries), `reorder {collection, ids}`. Collections: `spotVibes`, `communityMoods`, `provinces` (fixed: edit only), `communityCategories`, `fairCategories`, `questCategories`, `venues`, `zones`, `communityClubs`, `venueGroups` (rail cards need ≥ 1 keyword). Names cannot contain emoji; icons and colors must be from `ICON_OPTIONS`/`COLOR_PRESETS`; image URLs must be `https://` or `/`. Needs `master.edit` |
 | `/api/admin/coverage` | `GET` → `{ vibes: [{id, label}], provinces: [{ province, total, drafts, vibes: {<vibeId>: count} }], totals: { published, drafts, vibes, emptyCells }, unknownProvinces }`. Published spots per province × the 7 frontend vibes; drafts are counted separately. `GET ?view=points` → `{ points: [{ id, title, province, vibe, status: published\|draft, lat, lng, validCoordinates }] }` for every spot (admin map) | — |
 | `/api/admin/sources` | `GET` → `{ sources }` (each may carry `runHistory: [{ at, status: success\|partial\|failed, scanned, imported, duplicates, errors (≤ 3), context? }]`, newest first, last 20 runs; `context` is the province for spot runs) | `POST {name, url (https), targetType: events\|spots, ...}` add (`400` for blocked platforms: Meetup, Facebook, allevents.in, dev.events) · `PATCH {id, status}` toggle · `DELETE ?id=` remove |
 | `/api/admin/scrape` | — | `POST {targetType: events\|spots, sourceId?, province?, limit?}` → `{ newCount, duplicateCount, totalScanned, sourceResults, events \| spots }`. Imported events are always `public_venue`, start as `pending` unless auto-publish is on, and use Thai display dates (`"12 ต.ค. 2026"`). Province-based spot sources (Tourism Directory) require `province` (one of `MASTER_77_PROVINCES`; otherwise `400`) and import up to `limit` attractions (1–100, default 30) plus a few cafes, as drafts |

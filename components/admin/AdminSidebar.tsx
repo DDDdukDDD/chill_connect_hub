@@ -113,7 +113,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     groupLabel: 'ผู้ใช้',
     modules: [
       { id: 'members', label: 'สมาชิก', icon: UserRound },
-      { id: 'staff', label: 'ทีมงาน & สิทธิ์', icon: ShieldCheck },
+      { id: 'staff', label: 'บทบาท & สิทธิ์', icon: ShieldCheck },
       { id: 'audit', label: 'บันทึกการกระทำ', icon: History },
     ],
   },
@@ -149,6 +149,34 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   audit: 'audit.view',
   media: 'content.view',
   cache: 'content.view',
+};
+
+/**
+ * What can be changed on each module and the permission each change needs, as the API checks it.
+ * The roles page builds its table from this; keep it in step with the requireAdminApiAccess calls.
+ */
+export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: AdminPermission; what: string }>> = {
+  dashboard: [],
+  review: [{ permission: 'community.review', what: 'อนุมัติตี้' }, { permission: 'content.edit', what: 'อนุมัติอีเวนต์และที่เที่ยว' }],
+  reports: [{ permission: 'community.review', what: 'ดูแชตที่ถูกรายงานและปิดรายงาน' }],
+  community: [{ permission: 'community.review', what: 'อนุมัติ / ไม่อนุมัติตี้' }, { permission: 'content.edit', what: 'แก้ไขและลบตี้' }],
+  fairs: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
+  spots: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
+  quests: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
+  campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าแรก' }],
+  sponsored: [{ permission: 'content.edit', what: 'เพิ่ม แก้ไข และลบการ์ดสนับสนุน' }],
+  moments: [{ permission: 'community.review', what: 'ซ่อนและตรวจโมเมนต์และหลักฐาน' }],
+  scraper: [{ permission: 'sources.run', what: 'จัดการแหล่งข้อมูลและรันการดึงข้อมูล' }],
+  coverage: [],
+  taxonomy: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดหมวดหมู่' }],
+  provinces: [{ permission: 'master.edit', what: 'แก้จังหวัด รูป และโซน' }],
+  venues: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดสถานที่จัดงาน' }],
+  rails: [{ permission: 'master.edit', what: 'แก้การ์ดแนะนำ' }],
+  members: [{ permission: 'members.manage', what: 'ระงับ แบน และอนุมัติผู้จัด' }, { permission: 'staff.manage', what: 'ลบบัญชีสมาชิก' }],
+  staff: [{ permission: 'staff.manage', what: 'เพิ่มทีมงาน เปลี่ยน role และปิดบัญชี' }],
+  audit: [],
+  media: [{ permission: 'system.manage', what: 'อัปโหลดและลบรูป' }],
+  cache: [{ permission: 'system.manage', what: 'ล้าง cache' }],
 };
 
 interface AdminSidebarProps {

@@ -116,7 +116,7 @@ function AdminConsole() {
       case 'members':
         return <MembersManagerView key={key} initialQuery={moduleFilters.q} initialQueue={moduleFilters.queue} />;
       case 'staff':
-        return <StaffManagerView />;
+        return <StaffManagerView onNavigate={setActiveModule} />;
       case 'audit':
         return <AuditLogView />;
       case 'taxonomy':

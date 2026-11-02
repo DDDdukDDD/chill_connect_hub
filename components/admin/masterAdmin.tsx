@@ -12,7 +12,7 @@ import { handleAdminUnauthorized } from './adminAuthUtils';
 /** Loads all master data and exposes the admin actions; every view of "ข้อมูลหลัก" uses it. */
 export function useMasterAdmin() {
   const { can } = useAdminSession();
-  const canEdit = can('system.manage');
+  const canEdit = can('master.edit');
   const [data, setData] = useState<MasterData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
