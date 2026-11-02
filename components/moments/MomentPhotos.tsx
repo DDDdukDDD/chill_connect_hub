@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { optimizedImage } from '@/lib/optimizedImage';
 
 /**
@@ -68,13 +69,8 @@ export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: Moment
     }, onDoubleTap ? DOUBLE_TAP_MS : 0);
   };
 
-  // Plays only when tapped: a feed of clips should not spend anyone's data on its own
   if (video) {
-    return (
-      <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black">
-        <video src={video.url} poster={images[0]} controls playsInline preload="none" aria-label={alt} className="w-full h-full object-contain" />
-      </div>
-    );
+    return <ClipPlayer url={video.url} poster={images[0]} label={alt} onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
   }
 
   return (

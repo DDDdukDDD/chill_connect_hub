@@ -146,7 +146,9 @@ export async function updateProfile(member: Member, input: { displayName?: unkno
   if (input.displayName !== undefined) changes.displayName = cleanDisplayName(input.displayName);
   if (input.avatarUrl !== undefined) {
     const url = typeof input.avatarUrl === 'string' ? input.avatarUrl.trim() : '';
-    if (url && !/^https:\/\//.test(url) && !url.startsWith('/')) throw new MemberAuthError('URL รูปโปรไฟล์ไม่ถูกต้อง');
+    // Inline photos come only from a local server's uploads (lib/media/adapters/localStorageAdapter.ts); live members' go to Blob
+    const isLocalInline = !process.env.VERCEL && url.length <= 300_000 && /^data:image\/(webp|jpeg|png|avif);base64,/.test(url);
+    if (url && !/^https:\/\//.test(url) && !url.startsWith('/') && !isLocalInline) throw new MemberAuthError('URL รูปโปรไฟล์ไม่ถูกต้อง');
     changes.avatarUrl = url || undefined;
   }
   return memberRepository.update(member.id, changes);

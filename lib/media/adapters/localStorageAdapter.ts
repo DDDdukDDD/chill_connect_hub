@@ -72,7 +72,10 @@ export class LocalStorageAdapter implements IMediaStorage {
       process.env.NETLIFY
     );
 
-    if (isServerless) {
+    // A local server sharing the live database: a profile photo on this disk would never show on the live site
+    const isSharedAvatar = process.env.DATA_STORE === 'postgres' && folder === 'avatars';
+
+    if (isServerless || isSharedAvatar) {
       return {
         url: `data:${mimeType};base64,${fileBuffer.toString('base64')}`,
         key: relativeKey,

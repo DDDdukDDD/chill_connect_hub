@@ -102,7 +102,7 @@ export function placeJsonLd(spot: LifestyleSpotItem, path: string): JsonLd {
  * and the place, event or challenge page it is about.
  */
 export function momentJsonLd(
-  moment: { caption: string; images: string[]; userName: string; createdAt: string; likesCount: number; commentsCount: number; location: string; targetTitle?: string },
+  moment: { caption: string; images: string[]; video?: { url: string; durationS: number }; userName: string; createdAt: string; likesCount: number; commentsCount: number; location: string; targetTitle?: string },
   path: string,
   title: string,
   aboutPath: string | null
@@ -117,6 +117,17 @@ export function momentJsonLd(
     datePublished: moment.createdAt,
     image: moment.images.map(imageUrl).filter(Boolean).slice(0, 5),
     author: { '@type': 'Person', name: moment.userName },
+    ...(moment.video && {
+      video: {
+        '@type': 'VideoObject',
+        name: metaDescription(title, 110),
+        description: metaDescription(moment.caption, 500),
+        thumbnailUrl: moment.images.map(imageUrl).filter(Boolean).slice(0, 1),
+        contentUrl: moment.video.url,
+        uploadDate: moment.createdAt,
+        duration: `PT${Math.max(1, Math.round(moment.video.durationS))}S`,
+      },
+    }),
     ...(place && { contentLocation: { '@type': 'Place', name: place } }),
     ...(aboutPath && place && { about: { '@type': 'Thing', name: place, url: absoluteUrl(aboutPath) } }),
     interactionStatistic: [
