@@ -209,7 +209,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
         {moment.video ? (
           <div
             style={{ '--clip-w': `min(100vw, calc(100dvh * ${clipRatio}))` } as React.CSSProperties}
-            className={`overflow-hidden bg-black ${isFull ? `fixed inset-0 z-[60] ${commentsOpen ? 'lg:right-[400px]' : ''}` : 'relative -mx-4 sm:mx-0 sm:rounded-3xl h-[calc(100dvh-14rem)] xl:h-[calc(100dvh-9rem)] min-h-[340px] lg:sticky lg:top-24'}`}
+            className={`overflow-hidden bg-black ${isFull ? `fixed inset-0 z-[60] ${commentsOpen ? 'bottom-[70dvh] lg:bottom-0 lg:right-[400px]' : ''}` : 'relative -mx-4 sm:mx-0 sm:rounded-3xl h-[calc(100dvh-14rem)] xl:h-[calc(100dvh-9rem)] min-h-[340px] lg:sticky lg:top-24'}`}
           >
             <ClipPlayer
               url={moment.video.url}
@@ -219,6 +219,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               onDoubleTap={() => !moment.isLiked && toggle('like')}
               className="absolute inset-0"
             />
+            {/* On a phone the clip shrinks above the comments, whole and still playing; a tap on it closes them */}
+            {commentsOpen && <button type="button" aria-label="ปิดความคิดเห็น" tabIndex={-1} onClick={() => setCommentsOpen(false)} className="absolute inset-0 z-[5] cursor-default lg:hidden" />}
             {isFull && (
               <button type="button" onClick={leaveFull} aria-label="ออกจากเต็มจอ" className="absolute top-3 left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white">
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -226,7 +228,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
             )}
 
             <div
-              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 text-white pointer-events-none ${
+              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
                 besideClip ? 'lg:inset-x-auto lg:bottom-auto lg:top-4 lg:right-[calc(50%+var(--clip-w)/2+0.75rem)] lg:w-[min(20rem,calc(50%-var(--clip-w)/2-5rem))] lg:bg-none lg:p-0' : ''
               }`}
             >
@@ -257,7 +259,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </div>
             </div>
 
-            <div className={`absolute right-1.5 bottom-3 z-10 flex flex-col items-center gap-1 ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+            <div className={`absolute right-1.5 bottom-3 z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
                 <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
                 {moment.likesCount.toLocaleString()}
@@ -388,9 +390,6 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </button>
             </div>
           )}
-
-          {/* A tap above the sheet closes it, on a phone where it covers the clip's buttons */}
-          {commentsOpen && <button type="button" aria-label="ปิดความคิดเห็น" tabIndex={-1} onClick={() => setCommentsOpen(false)} className="fixed inset-0 z-[61] cursor-default lg:hidden" />}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
           <section
