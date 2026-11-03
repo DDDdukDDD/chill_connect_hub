@@ -85,7 +85,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img key={i} src={p.avatar} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
                               ) : (
-                                <span key={i} className={`w-5 h-5 rounded-full ring-2 ring-white ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[9px] font-bold flex items-center justify-center`}>
+                                <span key={i} className={`w-5 h-5 rounded-full ring-2 ring-white ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}>
                                   {nameInitial(p.name)}
                                 </span>
                               )

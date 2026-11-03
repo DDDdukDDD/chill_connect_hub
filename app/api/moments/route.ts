@@ -4,6 +4,7 @@ import { createMoment, listMoments, loadPeople, MomentError, toFeedItem } from '
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { notify } from '@/lib/social/notifications';
 import { isRateLimited } from '@/lib/rateLimit';
 
 /**
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     // Trust rules: verified members only; new accounts have a daily limit and cannot post contact details
     await guardPosting(member, 'moment', typeof input?.caption === 'string' ? input.caption : '');
     const moment = await createMoment(member, input);
+    await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
     const people = await loadPeople([moment]);
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, people) }, { status: 201 });
   } catch (error) {

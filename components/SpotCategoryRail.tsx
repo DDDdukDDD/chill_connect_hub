@@ -104,7 +104,7 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
             </div>
             {spotCounts['all'] !== undefined && (
               <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
                   selectedCategoryId === null || selectedCategoryId === 'all' ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
                 }`}
               >
@@ -118,7 +118,7 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
             }`}>
               ทั้งหมด
             </span>
-            <span className={`block text-[10px] font-medium ${
+            <span className={`block text-[11px] font-medium ${
               selectedCategoryId === null || selectedCategoryId === 'all' ? 'text-[#4A7C59]' : 'text-slate-400'
             }`}>
               All
@@ -167,14 +167,14 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
                 <div className="flex items-center gap-1.5">
                   {count > 0 ? (
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
                         isSelected ? 'bg-emerald-200/70 text-[#2D5A3C]' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {count}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                    <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
                       0
                     </span>
                   )}
@@ -188,7 +188,7 @@ export const SpotCategoryRail: React.FC<SpotCategoryRailProps> = ({
                   {cat.name}
                 </span>
                 <span
-                  className={`block text-[10px] font-medium truncate leading-normal ${
+                  className={`block text-[11px] font-medium truncate leading-normal ${
                     isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#4A7C59]' : 'text-slate-400'
                   }`}
                 >

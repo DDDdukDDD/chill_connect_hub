@@ -4,8 +4,9 @@ import { db } from '../db';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
+import { guardOrganizer } from '../members/submissions';
 import type { Member } from '../members/types';
-import { createJsonStore } from './jsonStore';
+import { fairGroupStore } from './stores';
 import { guardMemberText } from './textRules';
 
 /** A small group of members who agree to walk a fair together: a time and a meeting point inside a public venue */
@@ -22,17 +23,15 @@ export interface FairGroup {
   createdAt: string;
 }
 
-const store = createJsonStore<FairGroup>('fair_groups');
 const MAX_GROUPS_PER_MEMBER_PER_FAIR = 2;
 const clean = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
-export const isFairGroupMember = (groupId: string, memberId: string) => Boolean(store.read().find((g) => g.id === groupId)?.memberIds.includes(memberId));
-export const fairGroupById = (groupId: string) => store.read().find((g) => g.id === groupId) ?? null;
+export const fairGroupById = (groupId: string) => fairGroupStore.find(groupId);
 
 export async function fairGroupsOf(fairId: string, viewer: Member | null) {
   const blocked = new Set(viewer?.blockedIds ?? []);
   const result = [];
-  const groups = store.read().filter((g) => g.fairId === fairId && !blocked.has(g.creatorId));
+  const groups = (await fairGroupStore.ofFair(fairId)).filter((g) => !blocked.has(g.creatorId));
   const creators = await memberRepository.findByIds(groups.map((g) => g.creatorId));
   for (const group of groups) {
     const creator = creators.get(group.creatorId);
@@ -61,6 +60,7 @@ async function requireOpenFair(fairId: string) {
 }
 
 export async function createFairGroup(member: Member, fairId: string, input: Record<string, unknown>): Promise<FairGroup> {
+  guardOrganizer(member);
   await requireOpenFair(fairId);
   const title = clean(input.title, 80);
   const meetupPoint = clean(input.meetupPoint, 120);
@@ -71,49 +71,38 @@ export async function createFairGroup(member: Member, fairId: string, input: Rec
   if (!time) throw new MemberAuthError('บอกเวลานัดด้วยนะ');
   const maxMembers = Math.min(15, Math.max(2, Math.round(Number(input.maxMembers)) || 4));
   await guardMemberText(member, `${title} ${meetupPoint} ${note}`, 'กลุ่มในอีเวนต์');
-  if (store.read().filter((g) => g.fairId === fairId && g.creatorId === member.id).length >= MAX_GROUPS_PER_MEMBER_PER_FAIR) {
+  if ((await fairGroupStore.ofFair(fairId)).filter((g) => g.creatorId === member.id).length >= MAX_GROUPS_PER_MEMBER_PER_FAIR) {
     throw new MemberAuthError(`เปิดได้ ${MAX_GROUPS_PER_MEMBER_PER_FAIR} กลุ่มต่องาน ลบกลุ่มเก่าก่อนนะ`, 429);
   }
   const group: FairGroup = { id: `grp_${randomUUID()}`, fairId, title, meetupPoint, time, note, maxMembers, creatorId: member.id, memberIds: [member.id], createdAt: new Date().toISOString() };
-  await store.update((items) => [group, ...items]);
+  await fairGroupStore.add(group);
   return group;
 }
 
 export async function joinFairGroup(member: Member, groupId: string): Promise<FairGroup> {
-  const found = fairGroupById(groupId);
+  const found = await fairGroupById(groupId);
   if (!found) throw new MemberAuthError('ไม่พบกลุ่มนี้', 404);
   await requireOpenFair(found.fairId);
   await guardMemberText(member, '', 'กลุ่มในอีเวนต์');
-  let result: FairGroup | null = null;
-  let full = false;
-  // The seat check and the write happen under the store's lock
-  await store.update((items) =>
-    items.map((g) => {
-      if (g.id !== groupId) return g;
-      if (g.memberIds.includes(member.id)) return (result = g);
-      if (g.memberIds.length >= g.maxMembers) {
-        full = true;
-        return g;
-      }
-      return (result = { ...g, memberIds: [...g.memberIds, member.id] });
-    })
-  );
-  if (full || !result) throw new MemberAuthError(full ? 'กลุ่มนี้เต็มแล้ว' : 'ไม่พบกลุ่มนี้', full ? 409 : 404);
+  const outcome = await fairGroupStore.join(groupId, member.id);
+  const result = outcome === 'ok' ? await fairGroupById(groupId) : null;
+  if (!result) throw new MemberAuthError(outcome === 'full' ? 'กลุ่มนี้เต็มแล้ว' : 'ไม่พบกลุ่มนี้', outcome === 'full' ? 409 : 404);
   return result;
 }
 
 /** Leaving one's own group closes it for everyone */
 export async function leaveFairGroup(member: Member, groupId: string): Promise<{ closed: boolean }> {
-  const found = fairGroupById(groupId);
+  const found = await fairGroupById(groupId);
   if (!found || !found.memberIds.includes(member.id)) throw new MemberAuthError('คุณไม่ได้อยู่ในกลุ่มนี้', 404);
   const closed = found.creatorId === member.id;
-  await store.update((items) => (closed ? items.filter((g) => g.id !== groupId) : items.map((g) => (g.id === groupId ? { ...g, memberIds: g.memberIds.filter((id) => id !== member.id) } : g))));
+  if (closed) await fairGroupStore.close(groupId);
+  else await fairGroupStore.leave(groupId, member.id);
   return { closed };
 }
 
 export async function myFairGroups(memberId: string) {
   const result = [];
-  for (const group of store.read().filter((g) => g.memberIds.includes(memberId))) {
+  for (const group of await fairGroupStore.ofMember(memberId)) {
     const fair = await db.findEventById(group.fairId);
     result.push({ id: group.id, fairId: group.fairId, fairTitle: fair?.title ?? '', title: group.title, time: group.time, meetupPoint: group.meetupPoint, isMine: group.creatorId === memberId });
   }
@@ -122,5 +111,5 @@ export async function myFairGroups(memberId: string) {
 
 /** Account deletion: groups the member opened are closed; they leave the others */
 export async function removeFairGroupsOf(memberId: string): Promise<void> {
-  await store.update((items) => items.filter((g) => g.creatorId !== memberId).map((g) => (g.memberIds.includes(memberId) ? { ...g, memberIds: g.memberIds.filter((id) => id !== memberId) } : g)));
+  await fairGroupStore.removeOf(memberId);
 }

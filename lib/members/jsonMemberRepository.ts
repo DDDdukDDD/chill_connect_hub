@@ -45,6 +45,9 @@ export const jsonMemberRepository: MemberRepository = {
     const normalized = email.trim().toLowerCase();
     return load().find((m) => m.email === normalized) ?? null;
   },
+  async findByVerifiedPhone(phone) {
+    return load().find((m) => m.phone === phone && m.phoneVerifiedAt) ?? null;
+  },
   async findByProvider(provider: OAuthProvider, subject: string) {
     return load().find((m) => m.providers.some((p) => p.provider === provider && p.subject === subject)) ?? null;
   },

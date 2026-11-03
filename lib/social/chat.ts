@@ -4,7 +4,7 @@ import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
-import { fairGroupById, isFairGroupMember } from './fairGroups';
+import { fairGroupById } from './fairGroups';
 import { isMutual, pairMembersOf } from './meetAgain';
 import { chatStore, type ChatMessage } from './chatStore';
 import { guardMemberText } from './textRules';
@@ -23,14 +23,14 @@ async function roomOf(member: Member, roomId: string): Promise<{ title: string; 
   const pair = pairMembersOf(roomId);
   if (pair) {
     const otherId = pair[0] === member.id ? pair[1] : pair[1] === member.id ? pair[0] : null;
-    if (!otherId || !isMutual(member.id, otherId)) throw new MemberAuthError('แชตนี้เปิดเมื่อเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
+    if (!otherId || !(await isMutual(member.id, otherId))) throw new MemberAuthError('แชตนี้เปิดเมื่อเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
     const other = await memberRepository.findById(otherId);
     if (!other || other.status !== 'active' || other.blockedIds?.includes(member.id) || member.blockedIds?.includes(otherId)) throw new MemberAuthError('ห้องแชตนี้ปิดแล้ว', 403);
     return { title: tidyDisplayName(other.displayName).trim() || other.displayName, members: 2 };
   }
   if (roomId.startsWith('grp_')) {
-    const group = fairGroupById(roomId);
-    if (!group || !isFairGroupMember(roomId, member.id)) throw new MemberAuthError('แชตนี้สำหรับสมาชิกของกลุ่มเท่านั้น', 403);
+    const group = await fairGroupById(roomId);
+    if (!group || !group.memberIds.includes(member.id)) throw new MemberAuthError('แชตนี้สำหรับสมาชิกของกลุ่มเท่านั้น', 403);
     return { title: group.title, members: group.memberIds.length };
   }
   const event = await db.findEventById(roomId);

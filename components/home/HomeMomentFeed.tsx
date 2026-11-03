@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
 import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
@@ -115,7 +116,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     <article id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
       <div className="flex items-center gap-2.5 min-w-0">
         {moment.authorId ? (
-          <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="shrink-0">
+          <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} aria-label={`โปรไฟล์ของ ${moment.userName}`} className="shrink-0">
             <Avatar name={moment.userName} src={moment.userAvatar} className="w-10 h-10 text-sm" />
           </Link>
         ) : (
@@ -123,6 +124,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         )}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 truncate">{moment.userName}</p>
+          <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
             {moment.timeAgo}
             {moment.location && ` · ${moment.location}`}
@@ -178,7 +180,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} />
           </p>
           {foldsCaption && (
-            <button type="button" onClick={() => setShowWholeCaption(true)} className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+            <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
               ดูเพิ่มเติม
             </button>
           )}
@@ -197,14 +199,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </Link>
       )}
 
-      <div className="flex items-center gap-5 text-[13px] font-medium text-slate-500">
+      <div className="-my-1.5 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
         {!moment.likesOff && (
         <button
           type="button"
           onClick={() => handlers.onToggle(moment.id, moment.isLiked ? 'unlike' : 'like')}
           aria-pressed={moment.isLiked}
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
-          className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#F43F5E]' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#F43F5E]' : ''}`}
         >
           <Heart className={`w-[18px] h-[18px] ${moment.isLiked ? 'fill-current' : ''}`} />
           <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>
@@ -216,14 +218,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           onClick={() => setShowComments((open) => !open)}
           aria-expanded={showComments}
           aria-label="ความคิดเห็น"
-          className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
           <MessageCircle className="w-[18px] h-[18px]" />
           <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>
         </button>
         )}
         {mayShare && (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="cursor-pointer hover:text-slate-800">
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
           <Share2 className="w-[18px] h-[18px]" />
         </button>
         )}
@@ -232,7 +234,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           onClick={() => handlers.onToggle(moment.id, moment.isSaved ? 'unsave' : 'save')}
           aria-pressed={moment.isSaved}
           aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'}
-          className={`ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
+          className={`inline-flex items-center justify-center min-h-11 min-w-11 ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
         >
           <Bookmark className={`w-[18px] h-[18px] ${moment.isSaved ? 'fill-current' : ''}`} />
         </button>
@@ -242,7 +244,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         <ul className="space-y-2">
           {shownComments.map((comment) => (
             <li key={comment.id} className="flex items-start gap-2 text-[13px] text-slate-700">
-              <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[10px] mt-0.5" />
+              <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[11px] mt-0.5" />
               <span className="min-w-0 flex-1">
                 <strong className="font-semibold text-slate-900">{comment.userName}</strong> {comment.text}
                 <span className="block text-[11px] text-slate-400">{comment.timeAgo}</span>
@@ -262,7 +264,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </ul>
       )}
       {!showComments && moment.commentsCount > 1 && (
-        <button type="button" onClick={() => setShowComments(true)} className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+        <button type="button" onClick={() => setShowComments(true)} className="inline-flex items-center min-h-11 -my-2 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
           ดูความคิดเห็นทั้งหมด {moment.commentsCount} รายการ
         </button>
       )}
@@ -276,7 +278,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             maxLength={300}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="เขียนความคิดเห็น…"
-            className="flex-1 min-w-0 h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+            className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
           <button
             type="submit"

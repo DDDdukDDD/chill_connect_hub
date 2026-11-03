@@ -66,7 +66,7 @@ function Avatar({ name, src }: { name: string; src?: string }) {
     // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
     <img src={src} alt="" className="w-6 h-6 lg:w-9 lg:h-9 rounded-full object-cover bg-slate-100 shrink-0" />
   ) : (
-    <span className="w-6 h-6 lg:w-9 lg:h-9 rounded-full bg-slate-200 text-[10px] lg:text-xs font-bold text-slate-700 flex items-center justify-center shrink-0">{nameInitial(name)}</span>
+    <span className="w-6 h-6 lg:w-9 lg:h-9 rounded-full bg-slate-200 text-[11px] lg:text-xs font-bold text-slate-700 flex items-center justify-center shrink-0">{nameInitial(name)}</span>
   );
 }
 

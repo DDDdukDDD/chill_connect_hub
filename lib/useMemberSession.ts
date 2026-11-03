@@ -140,6 +140,15 @@ export const memberActions = {
     const json = await postJson('/api/auth/member/verify-email', returnTo ? { returnTo } : {});
     return { sent: Boolean(json.sent), alreadyVerified: Boolean(json.alreadyVerified), devVerifyUrl: json.devVerifyUrl as string | undefined };
   },
+  sendPhoneCode: async (phone: string) => {
+    const json = await postJson('/api/auth/member/phone', { phone });
+    return { devCode: json.devCode as string | undefined };
+  },
+  confirmPhoneCode: async (code: string) => {
+    const json = await postJson('/api/auth/member/phone/confirm', { code });
+    if (state.member && state.member.id === json.member.id) setState({ member: json.member });
+    return json.member as PublicMember;
+  },
   confirmEmailVerification: async (token: string) => {
     const json = await postJson('/api/auth/member/verify-email/confirm', { token });
     if (state.member && state.member.id === json.member.id) setState({ member: json.member });

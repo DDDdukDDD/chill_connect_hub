@@ -20,7 +20,7 @@ export default async function SpotsPage({ searchParams }: Props) {
   await connection();
   const params = await searchParams;
   const get = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : undefined);
-  const sponsoredId = liveSponsoredId('spots');
+  const sponsoredId = await liveSponsoredId('spots');
   const [initial, initialCounts, sponsored] = await Promise.all([
     browseSpots({ ...browseParamsFrom(get), ids: undefined, near: undefined, openedAt: undefined, limit: SERVER_SPOTS }),
     discoverStart(searchParams),

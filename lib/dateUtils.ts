@@ -15,9 +15,14 @@ export const THAI_MONTHS_MAP: Record<string, number> = {
   'ธ.ค.': 11, 'ธันวาคม': 11, 'dec': 11,
 };
 
+const ISO_DAY_IN_TEXT = /(\d{4})-(\d{2})-(\d{2})/;
+
 export function parseEventDateToTimestamp(dateStr: string): number {
   if (!dateStr) return 9999999999999;
   const str = dateStr.trim().toLowerCase();
+  // 2026-11-08, as an API caller may send; read by month name below it would land in September
+  const iso = str.match(ISO_DAY_IN_TEXT);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3], 0, 0, 0).getTime();
 
   let year = 2026;
   const yearMatch = str.match(/(202[4-9]|203[0-9]|256[7-9]|257[0-9])/);
@@ -49,6 +54,11 @@ export function parseEventDateToTimestamp(dateStr: string): number {
 export function parseEventEndDateToTimestamp(dateStr: string): number {
   if (!dateStr) return 9999999999999;
   const str = dateStr.trim().toLowerCase();
+  const isoDays = [...str.matchAll(new RegExp(ISO_DAY_IN_TEXT, 'g'))];
+  if (isoDays.length) {
+    const last = isoDays[isoDays.length - 1];
+    return new Date(+last[1], +last[2] - 1, +last[3], 23, 59, 59).getTime();
+  }
 
   let year = 2026;
   const yearMatch = str.match(/(202[4-9]|203[0-9]|256[7-9]|257[0-9])/);

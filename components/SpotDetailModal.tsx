@@ -351,7 +351,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
             <div className="flex items-center gap-2 text-xs">
               <Clock className="w-3.5 h-3.5 text-[#4A7C59] shrink-0" />
               <div className="min-w-0 flex-1">
-                <span className="text-slate-400 text-[10px] block font-bold">เวลาเปิด-ปิด:</span>
+                <span className="text-slate-400 text-[11px] block font-bold">เวลาเปิด-ปิด:</span>
                 <span className="font-semibold text-[#1E293B] block">{spot.openHours}</span>
               </div>
             </div>
@@ -363,7 +363,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
               <div className="flex items-start gap-2 min-w-0 flex-1">
                 <MapPin className="w-3.5 h-3.5 text-[#F26430] shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <span className="text-slate-400 text-[10px] block font-bold">ย่าน / อำเภอ:</span>
+                  <span className="text-slate-400 text-[11px] block font-bold">ย่าน / อำเภอ:</span>
                   <span className="font-bold text-[#1E293B] text-xs leading-relaxed break-words">{spot.district}, {spot.province}</span>
                 </div>
               </div>
@@ -474,11 +474,11 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                     <h3 className="text-xs sm:text-sm font-bold text-[#1E293B]">
                       ชวนเพื่อนทำกิจกรรม / เที่ยวที่นี่ ({localSubActivities.length})
                     </h3>
-                    <span className="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
                       {isBuddySectionOpen ? 'แตะเพื่อย่อ' : 'แตะเพื่อเปิดดู'}
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate mt-0.5">
+                  <p className="text-[11px] sm:text-[11px] text-[#64748B] truncate mt-0.5">
                     หาเพื่อนร่วมเดินเที่ยว หรือสร้างนัดหมายกลุ่มย่อยของคุณ
                   </p>
                 </div>
@@ -526,7 +526,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                         <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                         <span>ตั้งกลุ่มชวนเพื่อนเที่ยวสถานที่นี้</span>
                       </h4>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                         นัดกลุ่มย่อย
                       </span>
                     </div>
@@ -678,7 +678,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                                   e.stopPropagation();
                                   showToast(`ได้รับรายงานกลุ่ม "${sub.title}" แล้ว ทีมงานจะตรวจสอบความปลอดภัยครับ`);
                                 }}
-                                className="text-[10px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
+                                className="text-[11px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
                                 title="รายงานความไม่ปลอดภัยของกลุ่มนี้"
                               >
                                 <Flag className="w-3 h-3" />
@@ -690,10 +690,10 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                           </div>
 
                           {/* Row 2: Host, Date, Time & Members */}
-                          <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-[#64748B]">
+                          <div className="flex items-center gap-1.5 flex-wrap text-[11px] sm:text-[11px] text-[#64748B]">
                             <span className="flex items-center gap-1">
                               <span>จัดโดย <strong className="text-[#1E293B]">{sub.creatorName}</strong></span>
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                                 <span>ยืนยันตัวตน</span>
                               </span>
@@ -709,10 +709,10 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                           {/* Row 3: Criteria Badges (Left) & Action Button (Right) */}
                           <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-100/60 flex-wrap">
                             <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                                 👥 ทุกเพศ
                               </span>
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
                                 🎂 ไม่จำกัดอายุ
                               </span>
                             </div>
@@ -720,7 +720,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                             <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                               {isSubJoined ? (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 select-none">
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 select-none">
                                     เข้าร่วมแล้ว
                                   </span>
                                   <button
@@ -729,7 +729,7 @@ export const SpotDetailModal: React.FC<SpotDetailModalProps> = ({
                                       e.stopPropagation();
                                       handleToggleJoinSub(sub.id, sub.title);
                                     }}
-                                    className="text-[10px] text-rose-500 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                                    className="text-[11px] text-rose-500 hover:text-rose-700 font-bold hover:underline cursor-pointer"
                                   >
                                     ยกเลิก
                                   </button>

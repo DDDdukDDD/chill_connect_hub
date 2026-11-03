@@ -220,10 +220,11 @@ export async function savePreferences(member: Member, input: unknown): Promise<M
  * download, which leaves out staff-only safety notes: risk flags, who reported them, and the sign-up fingerprint.
  */
 export function exportableAccount(member: Member, options: { forMember?: boolean } = {}) {
-  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, ...account } = member;
+  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, ...account } = member;
   void _version;
   void _reset;
   void _verify;
+  void _phoneCode;
   if (options.forMember) {
     const { riskFlags: _flags, riskReviewedAt: _reviewed, signupIpHash: _ip, reportsReceived: _reports, ...own } = account;
     void _flags;

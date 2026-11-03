@@ -68,7 +68,7 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
 
             {/* Distance Pill */}
             {(spot as any).distanceKm !== undefined && (
-              <span className="absolute bottom-1.5 left-1.5 text-[9px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-1.5 py-0.5 rounded-full shadow-2xs">
+              <span className="absolute bottom-1.5 left-1.5 text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-1.5 py-0.5 rounded-full shadow-2xs">
                 {((spot as any).distanceKm).toFixed(1)} กม.
               </span>
             )}
@@ -97,20 +97,20 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
             {/* Top Row: Rating & Category / Highlights */}
             <div className="flex items-center gap-2 flex-wrap text-xs">
               {spot.rating > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.2 rounded-md shrink-0">
+                <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/50 px-1.5 py-0.2 rounded-md shrink-0">
                   <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                   <span>{spot.rating.toFixed(1)}</span>
                 </span>
               )}
 
               {spot.categoryLabel && (
-                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[160px]">
+                <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[160px]">
                   {spot.categoryLabel}
                 </span>
               )}
 
               {spot.vibeTags && spot.vibeTags.length > 0 && (
-                <span className="hidden sm:inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                <span className="hidden sm:inline-block text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md truncate max-w-[120px]">
                   #{spot.vibeTags[0]}
                 </span>
               )}

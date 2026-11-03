@@ -369,7 +369,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       <div className="flex items-end justify-between gap-3">
         <h2 className={SECTION_TITLE}>{kindWords.heading}</h2>
         {detail.browseHref && detail.targetsTotal > detail.targets.length && (
-          <Link href={detail.browseHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
+          <Link href={detail.browseHref} className="inline-flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
             ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> {kindWords.unit}
           </Link>
         )}

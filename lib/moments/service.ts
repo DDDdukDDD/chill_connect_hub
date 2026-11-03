@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
@@ -51,6 +52,7 @@ export async function loadPeople(moments: Moment[]): Promise<Map<string, Member>
   for (const moment of moments) {
     if (moment.authorId) ids.add(moment.authorId);
     for (const comment of moment.comments) if (comment.authorId) ids.add(comment.authorId);
+    for (const id of moment.taggedIds ?? []) ids.add(id);
   }
   return memberRepository.findByIds([...ids]);
 }
@@ -99,6 +101,13 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     video: moment.video,
     caption: plain(moment.caption, moment.isSample),
     location: realPlace(moment.location),
+    // Someone blocked by the viewer, or gone, is left out; nothing is shown about who took a tag off
+    tagged: (moment.taggedIds ?? []).flatMap((id) => {
+      const person = people.get(id);
+      if (person?.status !== 'active' || viewer?.blockedIds?.includes(id) || person.blockedIds?.includes(viewer?.id ?? '')) return [];
+      return [{ id, name: tidyDisplayName(person.displayName).trim() || person.displayName }];
+    }),
+    isTaggedMe: Boolean(viewer && moment.taggedIds?.includes(viewer.id)),
     category: moment.category,
     likesCount: moment.likesOff ? 0 : moment.likedBy.length + moment.sampleLikes,
     commentsCount: comments.length,
@@ -232,6 +241,27 @@ function cleanVideo(input: unknown, imageCount: number): Moment['video'] {
   return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}) };
 }
 
+/** People the member follows who follow back, neither blocking the other: the only ones they can tag */
+export async function taggableFriends(member: Member): Promise<Member[]> {
+  const followed = await memberRepository.findByIds(member.followingIds ?? []);
+  return [...followed.values()].filter((other) => other.status === 'active' && other.followingIds?.includes(member.id) && !other.blockedIds?.includes(member.id) && !member.blockedIds?.includes(other.id));
+}
+
+const MAX_MOMENT_TAGS = 10;
+
+/** The request's list cut down to real friends; anyone else is dropped, so a tag cannot reach a stranger */
+async function cleanTags(member: Member, input: unknown): Promise<string[]> {
+  if (!Array.isArray(input) || input.length === 0) return [];
+  const friends = new Set((await taggableFriends(member)).map((friend) => friend.id));
+  return [...new Set(input)].filter((id): id is string => typeof id === 'string' && friends.has(id)).slice(0, MAX_MOMENT_TAGS);
+}
+
+/** A tagged person takes themselves off a post */
+export async function removeMyTag(member: Member, id: string): Promise<Moment> {
+  await requireVisible(id);
+  return momentRepository.mutate(id, (m) => ({ ...m, taggedIds: m.taggedIds?.filter((tagged) => tagged !== member.id) }));
+}
+
 export async function createMoment(member: Member, input: Record<string, unknown>): Promise<Moment> {
   const caption = text(input.caption, MAX_CAPTION_LENGTH + 1);
   if (caption.length > MAX_CAPTION_LENGTH) throw new MomentError(`คำบรรยายยาวได้ไม่เกิน ${MAX_CAPTION_LENGTH} ตัวอักษร`);
@@ -244,6 +274,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
   const location = text(input.location, 120) || text(input.targetTitle, 120);
   const targetId = text(input.targetId, 120) || undefined;
+  const taggedIds = await cleanTags(member, input.taggedIds);
   // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
   const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
 
@@ -260,6 +291,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
     sharesOff: input.sharesOff === true || undefined,
     imageRatio: typeof input.imageRatio === 'number' && Number.isFinite(input.imageRatio) ? Math.min(3, Math.max(0.3, Math.round(input.imageRatio * 1000) / 1000)) : undefined,
     location,
+    taggedIds: taggedIds.length ? taggedIds : undefined,
     category,
     targetType,
     targetId,

@@ -46,6 +46,7 @@ export interface MemberConsent {
 
 export type TrustLevel = 'new' | 'verified' | 'trusted';
 export type HostStatus = 'none' | 'pending' | 'approved' | 'rejected';
+export type OrganizerNeed = 'identity' | 'pledge' | 'phone' | 'email';
 export type RiskFlagCode = 'disposable_email' | 'shared_ip' | 'risky_name' | 'risky_text' | 'contact_info' | 'reported';
 
 export interface RiskFlag {
@@ -59,6 +60,13 @@ export interface MemberTrust {
   level: TrustLevel;
   emailVerified: boolean;
   hasEmail: boolean;
+  /** Confirmed email, or signed in with LINE, Google or Facebook: enough to post, comment and join */
+  identityConfirmed: boolean;
+  phoneVerified: boolean;
+  /** Codes can reach members on this deployment */
+  phoneCheckOn: boolean;
+  /** What is still missing before they can open ตี้, challenges and trips; null when nothing is */
+  organizerNeeds: OrganizerNeed | null;
   pledged: boolean;
   hostStatus: HostStatus;
   /** What the member was approved to run; set only when hostStatus is 'approved' */
@@ -132,6 +140,11 @@ export interface Member {
   pledgeVersion?: string;
   /** Pending "confirm your email" link: sha256 of the token's secret part */
   emailVerification?: { tokenHash: string; expiresAt: string };
+  /** Mobile number, staff only; never on a public profile. Counts once phoneVerifiedAt is set */
+  phone?: string;
+  phoneVerifiedAt?: string;
+  /** Pending phone code: its hash, where it went, and how many wrong tries so far */
+  phoneVerification?: { phone: string; codeHash: string; expiresAt: string; sentAt: string; attempts: number };
   hostApplication?: HostApplication;
   /** Automatic warning signs for staff; never shown to members */
   riskFlags?: RiskFlag[];
@@ -190,6 +203,7 @@ export interface MemberRepository {
   findByIds(ids: string[]): Promise<Map<string, Member>>;
   findByEmail(email: string): Promise<Member | null>;
   findByProvider(provider: OAuthProvider, subject: string): Promise<Member | null>;
+  findByVerifiedPhone(phone: string): Promise<Member | null>;
   create(member: Member): Promise<Member>;
   update(id: string, changes: Partial<Member>): Promise<Member>;
   remove(id: string): Promise<boolean>;

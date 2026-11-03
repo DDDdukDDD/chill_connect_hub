@@ -12,7 +12,7 @@ import { memberActions, useMemberSession } from '@/lib/useMemberSession';
 export function VerifyToPostDialog({ onClose }: { onClose: () => void }) {
   const session = useMemberSession();
   const trust = session.member?.trust;
-  const needsEmail = !trust?.emailVerified;
+  const needsEmail = !trust?.identityConfirmed;
   const needsPledge = !trust?.pledged;
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');

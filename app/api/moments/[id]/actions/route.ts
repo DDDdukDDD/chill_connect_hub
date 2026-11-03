@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addComment, deleteComment, loadPeople, MomentError, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { addComment, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
@@ -10,7 +10,7 @@ import { notify, removeNotifications } from '@/lib/social/notifications';
  * Member actions on a moment:
  * { action: 'like' | 'unlike' | 'save' | 'unsave' }
  * { action: 'comment', text } · { action: 'delete_comment', commentId }
- * { action: 'report', reason }
+ * { action: 'report', reason } · { action: 'untag' } (the member takes themselves off the post)
  * Returns the updated feed item (for report: also { autoHidden }).
  */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -45,6 +45,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       case 'delete_comment':
         moment = await deleteComment(member, id, String(body.commentId ?? ''));
         await removeNotifications({ types: ['comment'], momentId: moment.id, commentId: String(body.commentId ?? '') });
+        break;
+      case 'untag':
+        moment = await removeMyTag(member, id);
+        await removeNotifications({ memberId: member.id, types: ['tagged'], momentId: moment.id });
         break;
       case 'report': {
         const result = await reportMoment(member, id, body.reason);

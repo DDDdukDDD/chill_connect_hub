@@ -377,7 +377,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor={ids.password} className="block text-sm font-bold text-slate-800">รหัสผ่าน</label>
-                <button type="button" onClick={() => go('forgot')} className="text-xs font-bold text-slate-500 hover:text-[#2563EB] hover:underline cursor-pointer">
+                <button type="button" onClick={() => go('forgot')} className="inline-flex items-center min-h-11 -my-3 text-xs font-bold text-slate-500 hover:text-[#2563EB] hover:underline cursor-pointer">
                   ลืมรหัสผ่าน?
                 </button>
               </div>

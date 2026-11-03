@@ -98,7 +98,7 @@ export function Faces({ people, ring = 'ring-white', size = 'w-5 h-5' }: { peopl
           // eslint-disable-next-line @next/next/no-img-element
           <img key={i} src={p.avatar} alt="" className={`${size} rounded-full ring-2 ${ring} object-cover bg-slate-100`} />
         ) : (
-          <span key={i} className={`${size} rounded-full ring-2 ${ring} ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[9px] font-bold flex items-center justify-center`}>
+          <span key={i} className={`${size} rounded-full ring-2 ${ring} ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}>
             {nameInitial(p.name)}
           </span>
         )

@@ -122,14 +122,14 @@ function FaceStack({ event }: { event: EventItem }) {
         ) : (
           <span
             key={p.id}
-            className={`${box} ${FACE_COLORS[[...p.name].reduce((n, c) => n + c.charCodeAt(0), 0) % FACE_COLORS.length]} text-white text-[10px] font-bold flex items-center justify-center`}
+            className={`${box} ${FACE_COLORS[[...p.name].reduce((n, c) => n + c.charCodeAt(0), 0) % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}
           >
             {[...p.name][0] ?? '?'}
           </span>
         )
       )}
       {more > 0 && (
-        <span className={`${box} bg-slate-100 text-slate-700 text-[10px] font-bold flex items-center justify-center`}>+{more}</span>
+        <span className={`${box} bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center justify-center`}>+{more}</span>
       )}
     </span>
   );

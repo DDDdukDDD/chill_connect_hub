@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionMember } from '@/lib/members/session';
-import { trustLevel } from '@/lib/members/trust';
+import { organizerNeeds, trustLevel, verifyFirstMessage } from '@/lib/members/trust';
 import { spotAllowsMeetups, spotTripHostStatus } from '@/lib/social/spotTrips';
 
 /**
@@ -23,11 +23,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const found = await db.findEvents({ page: 1, limit: 20, eventType: 'community', spotId: spot.id, sortBy: 'date', approvalStatus: 'approved' });
     const trips = found.items.filter((ev) => !blocked.has((ev as { createdByMemberId?: string }).createdByMemberId ?? ''));
 
-    let host: { canHost: boolean; reason?: string } | undefined;
+    let host: { canHost: boolean; reason?: string; needsPhone?: boolean } | undefined;
     if (viewer) {
+      const needs = organizerNeeds(viewer);
       host = viewer.status !== 'active' || trustLevel(viewer) === 'new'
-        ? { canHost: false, reason: 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)' }
-        : await spotTripHostStatus(viewer);
+        ? { canHost: false, reason: verifyFirstMessage(viewer) }
+        : needs === 'phone'
+          ? { canHost: false, needsPhone: true, reason: 'ยืนยันเบอร์โทรก่อนนะ แล้วชวนเพื่อนไปที่นี่ได้เลย' }
+          : needs === 'email'
+            ? { canHost: false, reason: viewer.email ? 'ยืนยันอีเมลก่อนนะ แล้วชวนเพื่อนไปที่นี่ได้เลย (ดูที่หน้าโปรไฟล์)' : 'ตอนนี้การชวนเพื่อนเปิดให้บัญชีที่ยืนยันอีเมลก่อน อีกไม่นานจะยืนยันด้วยเบอร์โทรได้' }
+            : await spotTripHostStatus(viewer);
     }
     return NextResponse.json({ success: true, meetupAllowed: true, trips, host }, { headers });
   } catch (error) {

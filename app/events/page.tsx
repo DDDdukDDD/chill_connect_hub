@@ -32,7 +32,7 @@ export default async function FairsPage({ searchParams }: Props) {
           fairCollectionJsonLd(upcoming, '/events', 'อีเวนต์ งานแฟร์ คอนเสิร์ต งานวิ่ง ทั่วไทย', 'รวมอีเวนต์ที่กำลังจะมาถึง งานแฟร์ เอ็กซ์โป คอนเสิร์ต งานวิ่ง และกีฬา เรียงตามวัน ดูวันจัด สถานที่ และค่าเข้าชม แล้วชวนเพื่อนไปด้วยกัน')
         )}
       />
-      <FairsListView initialEvents={live} initialCounts={initialCounts} sponsoredId={liveSponsoredId('events')} />
+      <FairsListView initialEvents={live} initialCounts={initialCounts} sponsoredId={await liveSponsoredId('events')} />
     </>
   );
 }

@@ -89,7 +89,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <span>{title}</span>
-              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+              <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                 {totalCount} เรื่องราว
               </span>
             </h2>
@@ -108,7 +108,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>โมเมนต์ & บรรยากาศจริงจากชุมชน</span>
-                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                   {totalCount} เรื่องราว
                 </span>
               </h2>
@@ -192,7 +192,7 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
                 {/* Top Location Badge */}
                 {(post.targetTitle || post.location) && (
                   <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-white/95 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/15 truncate max-w-full">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-white/95 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/15 truncate max-w-full">
                       <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                       <span className="truncate">{post.targetId && post.targetTitle ? post.targetTitle : post.location}</span>
                     </span>
@@ -212,12 +212,12 @@ export const CommunityMomentsStrip: React.FC<CommunityMomentsStripProps> = ({
                         alt={post.userName}
                         className="w-4 h-4 rounded-full object-cover border border-white/40 shrink-0"
                       />
-                      <span className="truncate text-[10.5px] font-medium text-white/90">
+                      <span className="truncate text-[11px] font-medium text-white/90">
                         {post.userName.split(' ')[0]}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-rose-300 font-bold text-[10.5px] shrink-0 ml-1">
+                    <div className="flex items-center gap-1 text-rose-300 font-bold text-[11px] shrink-0 ml-1">
                       <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
                       <span>{post.likesCount}</span>
                     </div>

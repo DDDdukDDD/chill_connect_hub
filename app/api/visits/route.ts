@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: true, requiresLogin: true, visits: [], marks: [], quests: [], points: { total: 0, fromVisits: 0, fromQuests: 0 } }, { headers });
       }
       const [progress, month] = await Promise.all([progressOf(member.id), searchParams.get('month') === '1' ? monthOf(member.id) : null]);
-      return NextResponse.json({ success: true, ...progress, marks: marksOf(member.id), ...(month && { month }) }, { headers });
+      return NextResponse.json({ success: true, ...progress, marks: await marksOf(member.id), ...(month && { month }) }, { headers });
     }
 
     const targets = (searchParams.get('targets') ?? '')
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     const [proofs, progress] = await Promise.all([socialProofFor([target]), progressOf(member.id)]);
     return NextResponse.json({
       success: true,
-      mark: markedVisitOf(member.id, targetType, targetId) ?? null,
+      mark: (await markedVisitOf(member.id, targetType, targetId)) ?? null,
       proof: proofs[targetKey(targetType, targetId)],
       points: progress.points,
       quests: progress.quests,

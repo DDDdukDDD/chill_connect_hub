@@ -186,7 +186,7 @@ export function LiveTicker({ live }: { live: LiveState }) {
       <div className="flex items-center gap-2.5 h-11 pl-3 pr-1.5 min-w-0">
         <LiveDot />
         <Link key={item.id} href={liveHref(item.target)} className="min-w-0 flex-1 flex items-center gap-2 text-[13px] text-slate-700 motion-safe:animate-slide-in">
-          <Avatar name={item.person.name} src={item.person.avatar} className="w-6 h-6 text-[10px]" />
+          <Avatar name={item.person.name} src={item.person.avatar} className="w-6 h-6 text-[11px]" />
           <span className="min-w-0 truncate">
             <strong className="font-semibold text-slate-900">{item.person.name}</strong> {VERB[item.kind]} <span className={`font-semibold ${style.text}`}>{item.target.title}</span>
             <span className="text-slate-400"> · {item.timeAgo}</span>

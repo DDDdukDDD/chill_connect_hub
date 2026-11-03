@@ -6,7 +6,7 @@ import { AsyncMutex } from '../db/mutex';
 
 /**
  * Small JSON list store for the prototype (data/<name>.json, gitignored: member content).
- * On serverless hosts it lives in /tmp and does not persist. Swap for a database table later.
+ * The path for a clone without a database; with DATA_STORE=postgres the stores use their tables. On serverless hosts it lives in /tmp and does not persist.
  */
 export function createJsonStore<T>(name: string) {
   const file = IS_SERVERLESS ? path.join(os.tmpdir(), `${name}.json`) : path.join(process.cwd(), 'data', `${name}.json`);

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
@@ -6,7 +5,7 @@ import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
 import { guardPosting } from '../members/safety';
 import { thaiTimeAgo } from '../moments/service';
-import { createJsonStore } from './jsonStore';
+import { questionStore } from './stores';
 import { notifyQuestion } from './notifications';
 
 /**
@@ -14,7 +13,7 @@ import { notifyQuestion } from './notifications';
  * Everyone can read them (they are on the page for visitors and search engines); asking needs a verified member,
  * answering is the host's. Text follows the comment rules (no links or phone numbers for new accounts).
  */
-interface EventQuestion {
+export interface EventQuestion {
   id: string;
   eventId: string;
   authorId: string;
@@ -24,7 +23,6 @@ interface EventQuestion {
   hidden?: boolean;
 }
 
-const store = createJsonStore<EventQuestion>('event_questions');
 export const MAX_QUESTION_LENGTH = 200;
 const MAX_PER_EVENT = 100;
 
@@ -42,7 +40,7 @@ export async function questionsOf(eventId: string, viewer: Member | null) {
   const event = await db.findEventById(eventId);
   if (!event) return null;
   const blocked = new Set(viewer?.blockedIds ?? []);
-  const list = store.read().filter((q) => q.eventId === eventId && !q.hidden && !blocked.has(q.authorId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const list = (await questionStore.ofEvent(eventId)).filter((q) => !q.hidden && !blocked.has(q.authorId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const host = hostOf(event as { createdByMemberId?: string });
   const people = await memberRepository.findByIds([...list.map((q) => q.authorId), ...(host ? [host] : [])]);
   const hostMember = host ? people.get(host) ?? null : null;
@@ -72,9 +70,8 @@ export async function askQuestion(member: Member, eventId: string, input: unknow
   const text = clean(input);
   if (text.length < 3) throw new MemberAuthError('พิมพ์คำถามก่อนนะ');
   await guardPosting(member, 'comment', text);
-  if (store.read().filter((q) => q.eventId === eventId).length >= MAX_PER_EVENT) throw new MemberAuthError('ตี้นี้มีคำถามเยอะแล้ว ลองทักในแชตกลุ่มหลังลงทะเบียน', 409);
-  const question: EventQuestion = { id: `que_${randomUUID()}`, eventId, authorId: member.id, text, createdAt: new Date().toISOString() };
-  await store.update((items) => [...items, question]);
+  if ((await questionStore.ofEvent(eventId)).length >= MAX_PER_EVENT) throw new MemberAuthError('ตี้นี้มีคำถามเยอะแล้ว ลองทักในแชตกลุ่มหลังลงทะเบียน', 409);
+  const question = await questionStore.add(eventId, member.id, text);
   if (host) await notifyQuestion(host, member, eventId, 'question', text);
   return question;
 }
@@ -82,25 +79,26 @@ export async function askQuestion(member: Member, eventId: string, input: unknow
 export async function answerQuestion(member: Member, eventId: string, questionId: unknown, input: unknown) {
   const event = await communityEvent(eventId);
   if (hostOf(event as { createdByMemberId?: string }) !== member.id) throw new MemberAuthError('ตอบได้เฉพาะคนจัดตี้นี้', 403);
-  const question = store.read().find((q) => q.id === questionId && q.eventId === eventId);
+  const question = await questionStore.find(String(questionId), eventId);
   if (!question) throw new MemberAuthError('ไม่พบคำถามนี้', 404);
   const text = clean(input);
   if (!text) throw new MemberAuthError('พิมพ์คำตอบก่อนนะ');
   await guardPosting(member, 'comment', text);
-  await store.update((items) => items.map((q) => (q.id === question.id ? { ...q, answer: { text, at: new Date().toISOString() } } : q)));
+  await questionStore.answer(question.id, text);
   await notifyQuestion(question.authorId, member, eventId, 'answer', text);
 }
 
 /** The asker removes their own question, or the host hides one on their ตี้ */
 export async function removeQuestion(member: Member, eventId: string, questionId: unknown) {
   const event = await communityEvent(eventId);
-  const question = store.read().find((q) => q.id === questionId && q.eventId === eventId);
+  const question = await questionStore.find(String(questionId), eventId);
   if (!question) throw new MemberAuthError('ไม่พบคำถามนี้', 404);
   const isHost = hostOf(event as { createdByMemberId?: string }) === member.id;
   if (question.authorId !== member.id && !isHost) throw new MemberAuthError('ลบได้เฉพาะคำถามของตัวเอง', 403);
-  await store.update((items) => (question.authorId === member.id ? items.filter((q) => q.id !== question.id) : items.map((q) => (q.id === question.id ? { ...q, hidden: true } : q))));
+  if (question.authorId === member.id) await questionStore.remove(question.id);
+  else await questionStore.hide(question.id);
 }
 
 export async function removeQuestionsOf(memberId: string): Promise<void> {
-  await store.update((items) => items.filter((q) => q.authorId !== memberId));
+  await questionStore.removeOf(memberId);
 }

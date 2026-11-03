@@ -9,6 +9,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { useAuth } from '@/lib/useAuth';
+import { useMemberSession } from '@/lib/useMemberSession';
+import { OrganizerGateDialog } from '@/components/auth/OrganizerGateDialog';
 import { VisitPanel } from '@/components/VisitPanel';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 // Type only: the server page sends bundled sample events too, so the ~200 KB of them stay off the browser (2026-10-28)
@@ -100,7 +102,10 @@ export default function FairDetailPage({
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
+  const [openedAt] = useState(() => Date.now());
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { member } = useMemberSession();
+  const organizerGate = member?.trust?.organizerNeeds;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
@@ -524,7 +529,7 @@ export default function FairDetailPage({
   // In My Hub: on the schedule while the fair is ahead, kept to follow once it has ended
   const isFav = isEnded ? favorites.includes(eventData.id) : joinedEventIds.includes(eventData.id);
   // Started and not ended: "กำลังจัดอยู่" (the landing's fair list uses the same rule)
-  const isOngoing = !isEnded && parseEventDateToTimestamp(eventData.date) <= Date.now();
+  const isOngoing = !isEnded && parseEventDateToTimestamp(eventData.date) <= openedAt;
 
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">
@@ -613,7 +618,7 @@ export default function FairDetailPage({
                 ) : (
                   <span />
                 )}
-                <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
                   <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                   แจ้งข้อมูลผิด
                 </button>
@@ -747,7 +752,7 @@ export default function FairDetailPage({
                             <MapPin className="w-3 h-3 text-sky-700 shrink-0" />
                             <span>{sub.meetupPoint}</span>
                           </span>
-                          <span className={`font-bold shrink-0 px-2 py-0.5 rounded-full text-[10px] ${
+                          <span className={`font-bold shrink-0 px-2 py-0.5 rounded-full text-[11px] ${
                             isFull
                               ? 'bg-slate-100 text-slate-500'
                               : isJoined
@@ -776,7 +781,7 @@ export default function FairDetailPage({
                           />
                           <div className="min-w-0">
                             <span className="text-xs font-bold text-slate-800 block truncate">{sub.creatorName}</span>
-                            <span className="text-[10px] text-slate-400 block">นัด {sub.time}</span>
+                            <span className="text-[11px] text-slate-400 block">นัด {sub.time}</span>
                           </div>
                         </div>
 
@@ -959,7 +964,9 @@ export default function FairDetailPage({
       />
       {eventData && (
         <>
-          {isFairBuddyModalOpen && <SpotBuddyGatheringModal
+          {/* A group brings people out to meet, so it asks for the same check as a ตี้, before any typing goes to waste; the form opens once it passes */}
+          {isFairBuddyModalOpen && organizerGate && <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={() => setIsFairBuddyModalOpen(false)} />}
+          {isFairBuddyModalOpen && !organizerGate && <SpotBuddyGatheringModal
             isOpen={isFairBuddyModalOpen}
             onClose={() => setIsFairBuddyModalOpen(false)}
             spotTitle={cleanText(eventData.title)}

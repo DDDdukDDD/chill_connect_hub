@@ -2,7 +2,9 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Hash, Image as ImageIcon, MapPin, Play, Search, Trophy, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
+import { PlacePicker } from '@/components/moments/PlacePicker';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -65,7 +67,6 @@ export interface MomentComposerProps {
 }
 
 const LINK_TYPE_LABELS: Record<MomentLinkTarget['type'], string> = { community: 'ตี้', fair: 'อีเวนต์', spot: 'ที่เที่ยว' };
-const MINE_SHOWN = 4;
 const OPTION_ROWS: [keyof PostOptions, string][] = [
   ['commentsOff', 'ปิดความคิดเห็น'],
   ['likesOff', 'ปิดการกดถูกใจ'],
@@ -113,7 +114,7 @@ function EditedThumb({ photo }: { photo: EditedPhoto }) {
 export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
   const session = useMemberSession();
   const trust = session.member?.trust;
-  const needsVerification = Boolean(trust && !(trust.emailVerified && trust.pledged));
+  const needsVerification = Boolean(trust && !(trust.identityConfirmed && trust.pledged));
 
   const [isPosting, setIsPosting] = useState(false);
   const [step, setStep] = useState<'pick' | 'photos' | 'clip' | 'details'>('pick');
@@ -129,10 +130,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [caption, setCaption] = useState(initial?.caption ?? '');
   const [customLocation, setCustomLocation] = useState(initial?.location ?? '');
   const [linkedTarget, setLinkedTarget] = useState<MomentLinkTarget | null>(initial?.target ?? null);
-  const [linkQuery, setLinkQuery] = useState('');
-  const [linkResults, setLinkResults] = useState<MomentLinkTarget[]>([]);
-  const [isLinkSearching, setIsLinkSearching] = useState(false);
-  const [showAllMine, setShowAllMine] = useState(false);
+  const [tagged, setTagged] = useState<TagFriend[]>([]);
+  const [pickerOpen, setPickerOpen] = useState<'place' | 'friends' | null>(null);
   const [targetQuests, setTargetQuests] = useState<Record<string, { questId: string; title: string }[]>>({});
   const [savedSpotTargets, setSavedSpotTargets] = useState<MomentLinkTarget[]>([]);
   const [savedEvents, setSavedEvents] = useState<EventItem[]>([]);
@@ -141,19 +140,20 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const { joinedQuestIds } = useMyRewards(true);
 
   // Something is filled in: a tap outside the form must not throw it away
-  const hasDraft = Boolean(caption.trim() || photos.length > 0 || clip || customLocation.trim());
+  const hasDraft = Boolean(caption.trim() || photos.length > 0 || clip || customLocation.trim() || tagged.length > 0);
+  const placeChosen = Boolean(linkedTarget || customLocation.trim());
   const leave = () => (hasDraft ? setConfirmDiscard(true) : onClose());
 
   // Esc closes the form unless a post is on its way
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || isPosting) return;
+      if (e.key !== 'Escape' || isPosting || pickerOpen) return;
       if (hasDraft) setConfirmDiscard(true);
       else onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPosting, onClose, hasDraft]);
+  }, [isPosting, onClose, hasDraft, pickerOpen]);
 
   // The photo links go when the form really closes; React's test re-mount in development must not cut them while they load
   useEffect(() => {
@@ -165,31 +165,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       });
     };
   }, []);
-
-  // Search both catalogs once typing pauses
-  useEffect(() => {
-    const q = linkQuery.trim();
-    if (q.length < 2 || linkedTarget) return;
-    let active = true;
-    const timer = setTimeout(async () => {
-      setIsLinkSearching(true);
-      const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
-      const [events, spots] = await Promise.all([
-        get(`/api/events?q=${encodeURIComponent(q)}&limit=5&includeEnded=true`),
-        get(`/api/spots?q=${encodeURIComponent(q)}&limit=4`),
-      ]);
-      if (!active) return;
-      setLinkResults([
-        ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
-        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
-      ]);
-      setIsLinkSearching(false);
-    }, 300);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [linkQuery, linkedTarget]);
 
   // Before the member types, offer what they joined or saved: the likeliest places a moment is from
   const savedSpotKey = activity.savedSpotIds.slice(0, 30).join(',');
@@ -235,14 +210,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     ];
     return all.filter((item, index) => all.findIndex((other) => other.type === item.type && other.id === item.id) === index);
   }, [activity.joined, savedSpotTargets, savedEvents, openedAt]);
-
-  // While typing, the member's own matches come before the catalog's
-  const linkMatches = useMemo(() => {
-    const q = linkQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    const mine = myLinkTargets.filter((item) => item.title.toLowerCase().includes(q) || item.location.toLowerCase().includes(q)).slice(0, 4);
-    return [...mine, ...linkResults.filter((r) => !mine.some((item) => item.type === r.type && item.id === r.id))];
-  }, [linkQuery, linkResults, myLinkTargets]);
 
   // Which challenges the picked place or event counts toward; the one the member is doing is named first
   const linkedKey = linkedTarget ? `${linkedTarget.type}:${linkedTarget.id}` : '';
@@ -411,6 +378,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         targetType: linkedTarget ? linkedTarget.type : 'general',
         targetId: linkedTarget?.id,
         targetTitle: linkedTarget ? linkedTarget.title : location || undefined,
+        taggedIds: tagged.map((friend) => friend.id),
         capture,
       });
       if (!result.ok || !result.moment) return onToast(result.message);
@@ -436,113 +404,54 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
   if (needsVerification) return <VerifyToPostDialog onClose={onClose} />;
 
-  const renderLinkRow = (r: MomentLinkTarget) => (
-    <li key={`${r.type}-${r.id}`}>
-      <button type="button" onClick={() => pickTarget(r)} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer">
-        <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
-          {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
-        </span>
-      </button>
-    </li>
-  );
-
-  // What it is about: one optional choice
+  // Where it is from, and who was there: one optional row each, like Instagram
+  const rowButton = 'w-full flex items-center gap-3 min-h-12 py-2 text-left cursor-pointer';
   const placeField = (
-    <div className="space-y-2">
-      <label htmlFor="moment-link" className="flex items-center justify-between gap-2">
-        <span className="text-sm font-bold text-slate-900">ไปที่ไหนมา</span>
-        <span className="text-xs font-medium text-slate-500 shrink-0">ไม่บังคับ</span>
-      </label>
-      {!linkedTarget && (
-        <p className="text-xs font-medium text-slate-600 leading-relaxed">เลือกที่เที่ยว ตี้ หรืองานที่ไปมา เพื่อนๆ จะตามไปได้ และถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</p>
-      )}
-      {linkedTarget ? (
-        <div>
-          <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl border border-blue-200 bg-blue-50/60">
-            <span className="min-w-0">
-              <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget.title}</span>
-              <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>
+    <div className="divide-y divide-slate-100 border-y border-slate-100">
+      <div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setPickerOpen('place')} className={`${rowButton} flex-1 min-w-0`}>
+            <MapPin className={`w-5 h-5 shrink-0 ${placeChosen ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget?.title ?? (customLocation.trim() || 'เพิ่มสถานที่')}</span>
+              {linkedTarget && <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>}
+              {!placeChosen && <span className="block text-xs font-medium text-slate-500">ไม่บังคับ แต่ถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</span>}
             </span>
+            {!placeChosen && <ChevronRight className="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true" />}
+          </button>
+          {placeChosen && (
             <button
               type="button"
               onClick={() => {
                 setLinkedTarget(null);
-                setLinkQuery('');
+                setCustomLocation('');
               }}
-              className="shrink-0 w-9 h-9 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
-              aria-label="เอารายการนี้ออก"
+              className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+              aria-label="เอาสถานที่ออก"
             >
               <X className="w-4 h-4" />
             </button>
-          </div>
-          {linkedQuest && (
-            <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
-              <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
-              <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
-            </p>
-          )}
-          {linkedQuest && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
-            <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-              โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
-            </p>
           )}
         </div>
-      ) : (
-        <div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
-            <input
-              id="moment-link"
-              type="search"
-              value={linkQuery}
-              onChange={(e) => setLinkQuery(e.target.value)}
-              placeholder="ค้นหาที่เที่ยว ตี้ หรืออีเวนต์"
-              autoComplete="off"
-              className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
-            />
-          </div>
-          {linkQuery.trim().length < 2 && myLinkTargets.length > 0 && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <p className="text-xs font-bold text-slate-600">ที่คุณเข้าร่วมหรือบันทึกไว้</p>
-                {myLinkTargets.length > MINE_SHOWN && (
-                  <button type="button" onClick={() => setShowAllMine((open) => !open)} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
-                    {showAllMine ? 'ย่อ' : `ดูทั้งหมด ${myLinkTargets.length}`}
-                  </button>
-                )}
-              </div>
-              <ul className={`rounded-2xl border border-slate-200 divide-y divide-slate-100 ${showAllMine ? 'max-h-64 overflow-y-auto' : 'overflow-hidden'}`} aria-label="ที่คุณเข้าร่วมหรือบันทึกไว้">
-                {(showAllMine ? myLinkTargets : myLinkTargets.slice(0, MINE_SHOWN)).map(renderLinkRow)}
-              </ul>
-            </div>
-          )}
-          {linkQuery.trim().length >= 2 && (
-            <ul className="mt-2 rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden" aria-label="ผลการค้นหา">
-              {linkMatches.map(renderLinkRow)}
-              {linkMatches.length === 0 && (
-                <li className="px-3.5 py-3 text-sm font-medium text-slate-500">{isLinkSearching ? 'กำลังค้นหา…' : 'ไม่พบรายการที่ตรง ลองคำอื่น หรือพิมพ์ชื่อสถานที่ด้านล่างแทน'}</li>
-              )}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {!linkedTarget && (
-        <div className="relative">
-            <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
-            <input
-              type="text"
-              value={customLocation}
-              maxLength={80}
-              onChange={(e) => setCustomLocation(e.target.value)}
-              placeholder="หรือพิมพ์ชื่อสถานที่"
-              aria-label="ชื่อสถานที่"
-              className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
-            />
-        </div>
-      )}
+        {linkedQuest && (
+          <p className="pb-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
+            <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+          </p>
+        )}
+        {linkedQuest && linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
+          <p className="pb-2 text-xs text-slate-600 leading-relaxed">
+            โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
+          </p>
+        )}
+      </div>
+      <button type="button" onClick={() => setPickerOpen('friends')} className={rowButton}>
+        <UserPlus className={`w-5 h-5 shrink-0 ${tagged.length ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-hidden="true" />
+        <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 truncate">
+          {tagged.length ? `กับ ${tagged.slice(0, 2).map((friend) => friend.name).join(', ')}${tagged.length > 2 ? ` และอีก ${tagged.length - 2} คน` : ''}` : 'แท็กเพื่อน'}
+        </span>
+        <ChevronRight className="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true" />
+      </button>
     </div>
   );
   const placeTitle = linkedTarget?.title ?? (customLocation.trim() || null);
@@ -705,6 +614,32 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
           </form>
         )}
       </div>
+
+      {pickerOpen === 'place' && (
+        <PlacePicker
+          mine={myLinkTargets}
+          onClose={() => setPickerOpen(null)}
+          onPickTarget={(target) => {
+            pickTarget(target);
+            setPickerOpen(null);
+          }}
+          onPickName={(name) => {
+            setLinkedTarget(null);
+            setCustomLocation(name.slice(0, 80));
+            setPickerOpen(null);
+          }}
+        />
+      )}
+      {pickerOpen === 'friends' && (
+        <FriendTagPicker
+          value={tagged}
+          onClose={() => setPickerOpen(null)}
+          onDone={(friends) => {
+            setTagged(friends);
+            setPickerOpen(null);
+          }}
+        />
+      )}
 
       {confirmDiscard && (
         <DialogShell onClose={() => setConfirmDiscard(false)} title="ทิ้งโพสต์นี้ไหม" subtitle="รูปหรือคลิปและข้อความที่ทำไว้จะหายไป" size="sm">

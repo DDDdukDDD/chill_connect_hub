@@ -127,13 +127,13 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
             <h2 className="text-xs sm:text-sm md:text-base font-bold text-[#1E293B] tracking-tight truncate">
               {title}
             </h2>
-            <span className={`text-[9px] sm:text-[9.5px] font-bold px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider ${
+            <span className={`text-[11px] sm:text-[9.5px] font-bold px-2 py-0.5 rounded-full shadow-2xs shrink-0 tracking-wider ${
               badgeColor || 'bg-rose-50 text-rose-600 border border-rose-200/80'
             }`}>
               {badgeText}
             </span>
           </div>
-          <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate hidden sm:block">
+          <p className="text-[11px] sm:text-[11px] font-medium text-slate-500 truncate hidden sm:block">
             {subtitle}
           </p>
         </div>
@@ -248,13 +248,13 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                           {reason}
                         </span>
                       ) : (
-                        <span className="text-[10px] sm:text-[10.5px] font-medium text-slate-500 truncate">
+                        <span className="text-[11px] sm:text-[11px] font-medium text-slate-500 truncate">
                           {event.hostName}
                         </span>
                       )}
                       {hasKnownPrice(event.price) && (
                         <span
-                          className={`text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 max-w-[110px] sm:max-w-[125px] truncate ${
+                          className={`text-[9.5px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 max-w-[110px] sm:max-w-[125px] truncate ${
                             isPriceFree(event.price)
                               ? 'bg-emerald-50 text-emerald-800'
                               : 'bg-slate-100 text-slate-700'
@@ -271,7 +271,7 @@ export const TrendingCarousel: React.FC<TrendingCarouselProps> = ({
                     </h3>
 
                     {/* Date & Location */}
-                    <div className="space-y-0.5 text-[10.5px] sm:text-[11px] text-slate-500">
+                    <div className="space-y-0.5 text-[11px] sm:text-[11px] text-slate-500">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
                         <span className="truncate">{event.date}</span>

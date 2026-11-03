@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, Send, Share2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { TaggedFriends } from '@/components/moments/TaggedFriends';
+import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -40,11 +42,13 @@ interface DetailProps {
 
 function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, requireLogin, showToast }: DetailProps & MomentsChromeContext) {
   const router = useRouter();
+  const myId = useMemberSession().member?.id;
   const [moment, setMoment] = useState(initialMoment);
   const [viewer, setViewer] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string | null>(null);
   // Long threads open on the newest few; every comment is still in the server HTML
   const [showAllComments, setShowAllComments] = useState(false);
@@ -178,6 +182,13 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
     );
   };
 
+  const removeMyTag = async () => {
+    const result = await call(`${url}/actions`, 'POST', { action: 'untag' });
+    if (!result.ok) return showToast(result.message);
+    setMoment((m) => ({ ...m, isTaggedMe: false, tagged: m.tagged?.filter((person) => person.id !== myId) }));
+    showToast('เอาแท็กของคุณออกแล้ว');
+  };
+
   const deleteMoment = async () => {
     setIsBusy(true);
     const result = await call(url, 'DELETE');
@@ -233,7 +244,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
             )}
 
             <div
-              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
+              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 sm:pb-6 sm:pl-6 sm:pr-28 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
                 besideClip ? 'lg:inset-x-auto lg:bottom-auto lg:top-4 lg:right-[calc(50%+var(--clip-w)/2+0.75rem)] lg:w-[min(20rem,calc(50%-var(--clip-w)/2-5rem))] lg:bg-none lg:p-0' : ''
               }`}
             >
@@ -247,6 +258,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   ) : (
                     <span className="block text-sm font-bold truncate">{moment.userName}</span>
                   )}
+                  <TaggedFriends people={moment.tagged} className="text-xs text-white" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-white/80">
                     {moment.timeAgo}
                   </time>
@@ -264,7 +276,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </div>
             </div>
 
-            <div className={`absolute right-1.5 bottom-3 z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
                 <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
@@ -295,17 +307,41 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
                 <Bookmark className={`w-7 h-7 drop-shadow ${moment.isSaved ? 'fill-white' : ''}`} aria-hidden="true" />
               </button>
-              {moment.isMine ? (
-                <button type="button" onClick={() => setConfirmDelete(true)} aria-label="ลบโมเมนต์" className={railButton}>
-                  <Trash2 className="w-6 h-6 drop-shadow" aria-hidden="true" />
+              {/* Delete or report stay one step away, so they are not pressed by mistake */}
+              <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
+                <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-label="ตัวเลือกเพิ่มเติม" aria-haspopup="menu" aria-expanded={moreOpen} className={railButton}>
+                  <MoreHorizontal className="w-7 h-7 drop-shadow" aria-hidden="true" />
                 </button>
-              ) : (
-                !moment.hasReported && (
-                  <button type="button" onClick={() => (isLoggedIn ? setReportReason('') : requireLogin('เพื่อรายงานโพสต์'))} aria-label="รายงานโพสต์นี้" className={railButton}>
-                    <Flag className="w-6 h-6 drop-shadow" aria-hidden="true" />
-                  </button>
-                )
-              )}
+                {moreOpen && (
+                  <>
+                    <button type="button" aria-label="ปิดเมนู" tabIndex={-1} onClick={() => setMoreOpen(false)} className="fixed inset-0 z-10 cursor-default" />
+                    <div role="menu" className="absolute right-full bottom-0 z-20 mr-2 w-max rounded-2xl bg-white p-1.5 shadow-lg">
+                      {moment.isTaggedMe && (
+                        <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); removeMyTag(); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-slate-800 hover:bg-slate-100 cursor-pointer">
+                          <UserMinus className="w-4 h-4" aria-hidden="true" />
+                          เอาแท็กของฉันออก
+                        </button>
+                      )}
+                      {moment.isMine ? (
+                        <button type="button" role="menuitem" autoFocus onClick={() => { setMoreOpen(false); setConfirmDelete(true); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-rose-600 hover:bg-rose-50 cursor-pointer">
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          ลบโมเมนต์
+                        </button>
+                      ) : moment.hasReported ? (
+                        <p role="menuitem" aria-disabled="true" className="flex min-h-11 items-center gap-2.5 px-3 text-sm font-medium text-slate-500">
+                          <Flag className="w-4 h-4" aria-hidden="true" />
+                          รายงานแล้ว ทีมงานกำลังดูให้
+                        </p>
+                      ) : (
+                        <button type="button" role="menuitem" autoFocus onClick={() => { setMoreOpen(false); if (isLoggedIn) setReportReason(''); else requireLogin('เพื่อรายงานโพสต์'); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-slate-800 hover:bg-slate-100 cursor-pointer">
+                          <Flag className="w-4 h-4" aria-hidden="true" />
+                          รายงานโพสต์นี้
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -328,12 +364,19 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   ) : (
                     <span className="block text-sm font-bold text-slate-900 truncate">{moment.userName}</span>
                   )}
+                  <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-slate-500">
                     {moment.timeAgo}
                   </time>
                 </div>
                 {/* Share and report (or delete your own) sit with the author, away from the reactions */}
                 <div className="ml-auto flex items-center gap-0.5 shrink-0">
+                  {moment.isTaggedMe && (
+                    <button type="button" onClick={removeMyTag} className={`${iconButton} text-slate-500`}>
+                      <UserMinus className="w-4 h-4" aria-hidden="true" />
+                      <span className="sr-only sm:not-sr-only">เอาแท็กออก</span>
+                    </button>
+                  )}
                   {mayShare && (
                   <button type="button" onClick={share} className={iconButton}>
                     <Link2 className="w-5 h-5" aria-hidden="true" />

@@ -216,6 +216,13 @@ Response `200`:
 
 ### Member accounts — `/api/auth/member/*`
 
+**Moments: places and tags (BE-227).** `GET /api/places/nearby?lat=&lng=` → our places near the member; add `&general=1` for named places and the area from OpenStreetMap (signed in). `GET /api/members/friends` → people the member can tag. `POST /api/moments` takes `taggedIds` (anyone not a mutual follow is dropped, at most 10). Feed items carry `tagged: [{ id, name }]` and `isTaggedMe`. `POST /api/moments/[id]/actions` `{ action: "untag" }` removes the member's own tag.
+
+**Identity and phone check (BE-224).** `member.trust` also carries `identityConfirmed` (confirmed email, or a LINE, Google or Facebook sign-in; with the pledge this is enough to post, comment and join), `phoneVerified`, and `organizerNeeds`: `null`, or what is missing before creating a ตี้, a challenge, a trip or a group inside an อีเวนต์ (`identity`, `pledge`, `phone`, or `email` on a deployment with no SMS). `POST /api/events`, `POST /api/quests` and `action: 'create'` on `POST /api/events/{fairId}/groups` answer 403 until it is `null`. `GET /api/spots/[id]/trips` adds `host.needsPhone`.
+- `POST /api/auth/member/phone` `{ phone }` sends a code; `devCode` comes back only on a local server. 400 bad number, 409 number on another account, 429 too soon or too many.
+- `POST /api/auth/member/phone/confirm` `{ code }` → `{ member }`. 400 wrong or expired.
+- Public profile `badges` adds `socialSignIn` and `phoneVerified`. The number itself is never public.
+
 The server decides who is signed in through an httpOnly cookie (`cch_member_session`, 30 days). The client never sends a user id or name to identify itself. **Use `useMemberSession()` from `lib/useMemberSession.ts`.**
 
 | Method & path | Body | Response |
@@ -495,7 +502,7 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `GET /api/chat/{roomId}?after=<ISO time>` → `{ room: { title, members }, messages: [{ id, authorId, authorName, authorAvatar, text, createdAt, isMine }] }`. `roomId` is an event id (participants and the event's host) or a fair group id `grp_…` (group members). Others get 403. Up to 100 messages per call; poll with `after`.
 - `POST /api/chat/{roomId}` `{ text }` (≤500) → 201; `{ action: 'delete', id }` removes one's own message. Verified accounts only; accounts younger than 7 days cannot send links, phone numbers or LINE ids.
 - `GET /api/events/{fairId}/groups` → `{ groups: [{ id, title, meetupPoint, time, note, maxMembers, currentMembers, creator: { id, displayName, avatarUrl }, isJoined, isMine }] }` (public).
-- `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Verified accounts only; at most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
+- `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Joining needs a verified account; creating also needs `organizerNeeds` to be `null` (403), the same check as a ตี้. At most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
 - **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.
