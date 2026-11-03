@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:dev": "node db/dev-database.mjs",
     "db:migrate": "node db/migrate.mjs",
     "db:runtime-login": "node db/setup-runtime-login.mjs",
     "db:verify": "node db/verify-security.mjs",

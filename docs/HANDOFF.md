@@ -2564,3 +2564,10 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Checked on a production build:** all 2,179 list items and 261 events compare equal to the full read; a new server made one light download and no full one; no second download after the cache ran out with nothing changed; one fresh download after a change.
 - **Second step, same day:** the public place list is now 3.41 MB (no drafts, descriptions stop at 281 characters, a gallery photo only for a place with no cover). Lists go through Next's data cache (`sharedAcrossServers`), read in parts of 500 places, with the table's fingerprint in the key, so a server that just started downloads nothing unless the table changed. Checked with a restart on `next start`: 0 parts downloaded; after a change, all 5 parts once. **Not yet seen on Vercel.**
 - **Search change to know about:** `GET /api/spots?q=` and the `/spots` search now read the first 281 characters of a description, plus title, province, district, tags and category as before.
+
+### BE-231 · A separate database for development (owner 2026-11-03)
+- **Why:** local servers and test walks used the live database, so they spent its egress quota and could change live data.
+- **How it works:** `next dev` reads `.env.development.local` (not in Git) before `.env.local`, so `npm run dev` uses the development database. The quota is per Supabase organization, so this database sits in its own organization.
+- **`npm run db:dev`** applies migrations there and sets the `app_runtime` login once. **`npm run db:dev -- --copy`** replaces its data with a copy of the live data, reading live on a read-only session. Phone numbers and the audit log are not copied. It refuses to run if the file points at the live project.
+- **Another computer:** `git pull`, copy `.env.local` and `.env.development.local` across by hand, then `npm run dev`. New migrations: `npm run db:dev` once from any computer.
+- **Still on live:** `next start` and `next build` read `.env.local`, so a production-build walk uses the live database unless `DATABASE_URL` is set in the environment. File uploads were not separated.
