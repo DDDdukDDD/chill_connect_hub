@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
 // Actions: save {collection, item} | set_active {collection, id, active} | delete {collection, id} | reorder {collection, ids}
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'system.manage');
+  const denied = requireAdminApiAccess(request, 'master.edit');
   if (denied) return denied;
   const actor = getAdminActor(request);
 

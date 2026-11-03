@@ -11,6 +11,7 @@ import {
   MasterCommunityLifestyleCategory, MasterCommunityMood, MasterFairCategory, MasterSpotCategory, MasterVenueOption,
   CommunityMoodId, SpotVibeId,
 } from '@/data/masterHub';
+import { PROVINCE_PHOTOS } from '@/data/provincePhotos';
 import { BANGKOK_ZONES } from '@/data/zones';
 
 /**
@@ -96,6 +97,8 @@ export interface MasterProvince extends MasterBase {
   tagline: string;
   description: string;
   image?: string;
+  /** Who took the photo, its licence and source (Wikimedia Commons photos need it) */
+  imageCredit?: string;
   /** Shown in "จังหวัดยอดนิยม" rails and filters */
   featured: boolean;
 }
@@ -261,7 +264,8 @@ export function buildSeedMasterData(now: string = new Date().toISOString()): Mas
       const region = (Object.entries(PROVINCE_REGION_LISTS).find(([, list]) => list.includes(name))?.[0] ?? 'ภาคกลาง & ตะวันออก') as Region;
       return {
         ...base(name, i), displayName: featured?.displayName ?? name, nameEn: featured?.nameEn ?? '', region,
-        tagline: featured?.tagline ?? '', description: '', image: featured?.image,
+        tagline: featured?.tagline ?? '', description: '',
+        ...(featured?.image ? { image: featured.image } : PROVINCE_PHOTOS[name]),
         featured: Boolean(featured) || popularProvinces.has(name),
       };
     }),
