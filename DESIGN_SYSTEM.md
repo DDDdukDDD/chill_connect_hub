@@ -1,4 +1,4 @@
-# Design System: Chill & Connect Hub
+# Design System: Chillwaa
 
 The single source of truth for how the product looks and reads. It covers the public site and the admin console.
 
@@ -292,18 +292,9 @@ Measured on 2026-10-10 in user-facing files (`app/`, `components/`, admin exclud
 | No horizontal scroll at 360px | Fixed on 2026-10-10 (the header row in `components/Navbar.tsx` needed 429px). Keep checking new pages at 360px |
 | No looping decoration | 15 pulsing dots on the homepage, 16 on `/community` |
 
-**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing))
+**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing)): the list is stage 6 of [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).
 
-| Where | What |
-| :--- | :--- |
-| `components/EventGrid.tsx` | A host with no rating shows "4.9" |
-| Homepage "Member Privileges" | Sample offers: "ลด 10%", "จอยตี้ฟรี", "ลด 15%" |
-| `/moments` | The 24 seeded sample posts and their like counts (`isSample`) |
-| Community meetups | Sample events whose dates roll forward so the feed is never empty |
-| Host and member names on sample events and posts | Sample people |
-| `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` | 24 sample accounts (`isSample`, email `…@sample.invalid`, cannot sign in) that own the sample moments, with made-up profiles. Remove the two files, the `ensureSampleMembers()` calls, and delete the accounts and their moments. |
-
-A page-by-page audit with rendered counts is in [docs/HANDOFF.md](docs/HANDOFF.md) item BE-020.
+A page-by-page audit from 2026-10-10 is in [the archived board](docs/archive/handoff-until-2026-11-03.md), item BE-020.
 
 Compliant references to copy from: `components/auth/AuthPanel.tsx`, `app/onboarding/OnboardingFlow.tsx`.
 

@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chillwaa
 
-## Getting Started
+โซเชียลแพลตฟอร์มของคนชอบออกไปใช้ชีวิต: หาเพื่อนไปด้วยผ่านตี้ มีเหตุผลให้ออกไปจากชาเลนจ์ และเก็บเรื่องราวเป็นโมเมนต์
 
-First, run the development server:
+- เว็บจริงตอนนี้: https://chillwaa.vercel.app (โดเมน www.chillwaa.com ยังไม่ได้ต่อ)
+- Next.js 16, Supabase Postgres, Vercel Blob
+
+## เริ่มใช้งานบนเครื่อง
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git pull
+npm install
+npm run dev     # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+คอมเครื่องใหม่ต้องคัดลอก `.env.local` และ `.env.development.local` มาเอง เพราะไม่อยู่ใน Git
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run dev` ใช้ฐานข้อมูลพัฒนาจาก `.env.development.local` ส่วน `next start` และ `next build` อ่าน `.env.local` ซึ่งชี้ฐานจริง ถ้าจะทดสอบ production build ให้ส่ง `DATABASE_URL` ของฐานพัฒนาผ่าน environment ทุกครั้ง
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## คำสั่งที่ใช้บ่อย
 
-## Learn More
+| คำสั่ง | ทำอะไร |
+| :--- | :--- |
+| `npx tsc --noEmit` | ตรวจชนิดข้อมูล |
+| `npm run lint` | ตรวจโค้ด |
+| `npm run build` | build แบบ production |
+| `npm run db:dev` | อัปเดตฐานพัฒนาให้ตรง migration (`-- --copy` คัดลอกข้อมูลจากฐานจริงมาด้วย) |
+| `npm run db:migrate` | รัน migration |
+| `npm run db:verify` | ตรวจสิทธิ์และความปลอดภัยของฐานข้อมูล |
 
-To learn more about Next.js, take a look at the following resources:
+## เอกสาร
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| ไฟล์ | อ่านเมื่อ |
+| :--- | :--- |
+| [AGENTS.md](AGENTS.md) | กฎการทำงาน ใครทำส่วนไหน และ branch ไหน |
+| [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md) | งานที่เหลือก่อนเปิดจริง |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | ภาพรวมระบบ |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | กฎหน้าตาและการเขียน ต้องอ่านก่อนแก้ UI |
+| [docs/PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md) | ทิศทางสินค้า ก่อนตัดสินใจว่าหน้าไหนควรมีอะไร |
+| [docs/API.md](docs/API.md) | สัญญาของ API |
+| [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) | เหตุผลการออกแบบฐานข้อมูล |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | บันทึกการเปลี่ยนแปลงล่าสุด |
+| [docs/TEST_REPORTS.md](docs/TEST_REPORTS.md) | ปัญหาจากผู้ทดสอบ |
+| [docs/archive/](docs/archive/) | ประวัติเก่า ไม่ต้องอ่านประจำ |

@@ -10,10 +10,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ---
 
-# 🌿 Chill & Connect Hub: Mandatory Architecture & Design Concept (Global Luxury 9.8+)
+# Chillwaa: Working Rules
 
-This document defines the strict, permanent architecture, design system, and editorial standards for **Chill & Connect Hub**. Every agent working on this codebase **MUST** strictly adhere to these conventions.
-For a complete system blueprint, mental model (3-4-3), and usage guide, see [ARCHITECTURE.md](ARCHITECTURE.md).
+The rules every agent working on this codebase **MUST** follow. The public name is **Chillwaa**; the repo and older docs still say "Chill & Connect Hub".
+System overview: [ARCHITECTURE.md](ARCHITECTURE.md). What is left before launch: [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).
 
 ---
 
@@ -47,8 +47,9 @@ Work from the other clone only becomes visible after it is pushed and you pull. 
 - **`docs/API.md` is the contract.** Build UI against it, not against guesses from mock data.
 - **Use shared types, never copies:** `EventItem` / `ChallengeQuest` from `@/data/mockData`, `LifestyleSpotItem` from `@/data/spotsData`, query and pagination types from `@/lib/db/types`.
 - **Never send roles or permissions from the client.** The server decides admin access from its own session (`/api/auth/admin`).
-- **Mutable runtime data** (`data/chill_database.json`, `data/discovery_content.json`) is written by the backend at runtime. Do not hand-edit it to change UI behavior; ask for a data or API change instead.
-- The project is a **prototype** (seed data, no real users). Prefer clear, simple solutions over production-scale infrastructure.
+- **Live data is in Postgres,** not in `data/*.json` (seed data and the no-database mode). Do not hand-edit those files to change what the site shows.
+- **`npm run dev` uses the development database. Never write test data to the live one,** and never burst-test the live site.
+- **The goal since 2026-11-03 is production at quality 9.5** (still seed data, no real users yet). Prefer clear, simple solutions; postponed work goes in `docs/LAUNCH_CHECKLIST.md`.
 
 ---
 

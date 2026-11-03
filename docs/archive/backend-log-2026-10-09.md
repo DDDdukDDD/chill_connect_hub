@@ -1,5 +1,7 @@
 # Backend Implementation Log
 
+> Archived 2026-11-03: last updated 2026-10-09, before the move to Postgres. Scraper notes are still useful; storage notes are out of date. Current picture: [ARCHITECTURE.md](../../ARCHITECTURE.md).
+
 Last updated: 2026-10-09 (Google-rated nearby dining; older entries archived)
 
 ## Working Scope
@@ -25,7 +27,7 @@ The Discovery & Content work includes backend contracts and the admin control pl
 
 ## Implemented In This Handoff
 
-Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [docs/archive/backend-log-2026-10-03.md](docs/archive/backend-log-2026-10-03.md).
+Entries up to 2026-10-04 (FE-002) and the 2026-10-03 verification notes are in [docs/archive/backend-log-2026-10-03.md](backend-log-2026-10-03.md).
 
 - Scraper sources (2026-10-04): sources without Schema.org JSON-LD are read by site adapters (`lib/scrapers/*`, registry in `siteAdapters.ts`). Adapters are matched on the configured source URL, and all their requests go through the scraper's guarded fetch (SSRF guard, robots.txt, blocked platforms, size and time limits). Ended events are skipped. Live test results (scanned → imported; every rerun gave only duplicates):
   - **QSNCC** `qsncc.com/en/whats-on/event-calendar`: Prismic `calendar_event` docs in `__NEXT_DATA__`, first calendar page only. 9 → 9.
