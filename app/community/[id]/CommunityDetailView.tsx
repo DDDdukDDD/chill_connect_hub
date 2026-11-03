@@ -113,10 +113,10 @@ export default function CommunityDetailPage({
   const joinReturnPath = `/community/${encodeURIComponent(decodedId)}?join=1`;
 
   // Favorites & Joined Events State
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   // What the member joined comes from the account; this keeps the page in step with it
   const myActivity = useMyActivity();
+  const favorites = isLoggedIn ? myActivity.savedEventIds : [];
   useEffect(() => {
     if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
   }, [myActivity.isLoaded, myActivity.joinedIds]);
@@ -199,21 +199,6 @@ export default function CommunityDetailPage({
     return parseEventPrice(eventData?.price, 'เข้าร่วมฟรี');
   }, [eventData?.price]);
 
-  // Load user status from localStorage
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const savedFavs = localStorage.getItem('favorite_events');
-    if (savedFavs) {
-      try {
-        setFavorites(JSON.parse(savedFavs));
-      } catch {}
-    }
-
-    // Who joined what comes from the account (useMyActivity above), never from this browser:
-    // lists kept in the browser belong to whoever used it last, so another member would look "joined"
-  }, []);
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -226,21 +211,13 @@ export default function CommunityDetailPage({
       setIsRequireMembershipOpen(true);
       return;
     }
-    setFavorites((prev) => {
-      const isFavorited = prev.includes(eventId);
-      let updated: string[];
-      if (isFavorited) {
-        updated = prev.filter((id) => id !== eventId);
-        showToast('ลบออกจากรายการโปรดแล้ว');
-      } else {
-        updated = [...prev, eventId];
-        const targetTitle = eventId === eventData?.id ? eventData?.title : (relatedActivities.find((a) => a.id === eventId)?.title || eventData?.title);
-        showToast(`เพิ่ม "${cleanText(targetTitle)}" ใน MyHub เรียบร้อย! ❤️`);
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('favorite_events', JSON.stringify(updated));
-      }
-      return updated;
+    // Saved on the account, the list My Hub shows under "ที่บันทึก"
+    const wasSaved = favorites.includes(eventId);
+    void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
+      if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+      if (wasSaved) return showToast('เอาออกจากที่บันทึกแล้ว');
+      const targetTitle = eventId === eventData?.id ? eventData?.title : (relatedActivities.find((a) => a.id === eventId)?.title || eventData?.title);
+      showToast(`บันทึก "${cleanText(targetTitle)}" ไว้ในมายฮับแล้ว`);
     });
   };
 
@@ -995,7 +972,6 @@ export default function CommunityDetailPage({
         onConfirmLogout={() => {
           handleSetIsLoggedIn(false);
           setIsLogoutModalOpen(false);
-          setFavorites([]);
           setJoinedEventIds([]);
           // Close all authenticated and pending modals on logout
           setIsETicketOpen(false);

@@ -163,6 +163,14 @@ export const activityActions = {
 /** Hearts toggled by older pages land in localStorage; this sends the difference to the account */
 async function pushLocalHearts() {
   if (!memberId || !state.isLoaded) return;
+  // Hearts on the home page and ตี้ pages stayed in this key until 2026-11-03 and never reached the account: bring them over once
+  const stranded = readList('favorite_events').filter((id) => !state.savedEventIds.includes(id));
+  try {
+    localStorage.removeItem('favorite_events');
+  } catch {
+    /* storage unavailable */
+  }
+  for (const id of stranded.slice(0, 50)) await activityActions.setSaved('event', id, true);
   for (const [kind, key, known] of [['event', MIRROR.events, state.savedEventIds], ['spot', MIRROR.spots, state.savedSpotIds]] as const) {
     const local = readList(key);
     const added = local.filter((id) => !known.includes(id));

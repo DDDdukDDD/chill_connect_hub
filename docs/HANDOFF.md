@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-243 · My Hub tabs reordered; no empty chips (owner 2026-11-03)
+- **What changed:** tabs read กำลังจะมาถึง, ที่บันทึก, ที่ผ่านมา: what lies ahead first, history last. The "ชาเลนจ์" chip no longer shows at 0 in the list, where it looked like a wrong count next to the month view. Challenges under way stay in "กำลังทำอยู่" and return to the list in their last 7 days, as before.
+
+### BE-242 · Every save button reaches the account (owner 2026-11-03)
+- **Bug:** saving from a place page, a ตี้ page or a home page tile only wrote to the browser, and the account never got it. On a place page the sync even overwrote the save. An อีเวนต์ page's button joined the schedule instead, so it never showed under saved, while the tile's heart used the saved list.
+- **What changed:** all of them call `activityActions.setSaved` and read `savedEventIds` / `savedSpotIds`; do not write saved lists to localStorage. An อีเวนต์ saved from now on is under "ที่บันทึก", not on the schedule; one already on the schedule stays there and its button removes it. Hearts stranded in `favorite_events` move to the account once. My Hub asks by id for a saved place missing from its catalog.
+- **Removed:** the "โหมดพัฒนา" row in My Hub and `/api/dev/demo` (owner).
+
+### BE-241 · My Hub: saved items are a tab of the schedule (owner 2026-11-03)
+- **What changed:** "ที่บันทึก" joins "กำลังจะมาถึง" and "ที่ผ่านมา" in one line of tabs, like the profile, with ตี้, อีเวนต์ and places in one list. It replaces the left-column summary and the separate saved-places view (its search and vibe filters went with it). The "กำหนดการ" heading is gone. `/myhub#my-saved` and `?tab=scrapbook` open the tab.
+- **Also fixed:** "ถัดไปของคุณ" and the list now order a shared day by start time; they used the date alone, so a 08:00 could come before a 07:30.
+
 ### BE-240 · Ended ตี้ and อีเวนต์ keep their colour; profile grid smaller (owner 2026-11-03)
 - **What changed:** a ตี้ or อีเวนต์ that has ended is a good memory, not something broken, so its photo stays in colour with the "จบแล้ว" badge (`MeetupTile`, `FairTile`, `PosterPhoto` loses `dim`). My Hub: hosted and attended rows in colour; cancelled and missed stay faded. Ended challenges are faded only (`opacity-70`), since people browse them for what is still open. The profile's moment grid is 4 across from `sm` and shows 12 first.
 - **What to do about it:** do not bring grayscale back for ended content. Admin's hidden moments keep it.

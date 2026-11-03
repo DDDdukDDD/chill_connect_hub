@@ -9,7 +9,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { useAuth } from '@/lib/useAuth';
-import { useMyActivity } from '@/lib/useMyActivity';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { CreateEventModal, type PlacePick } from '@/components/LazyCreateEventModal';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
@@ -163,7 +163,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   // What the member joined comes from the account; this keeps the page in step with it
   const myActivity = useMyActivity();
@@ -181,6 +180,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const favorites = isLoggedIn ? myActivity.savedSpotIds : [];
 
   // Fullscreen Photo Lightbox Modal State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -256,19 +256,10 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
     if (typeof window === 'undefined') return;
 
     if (!isLoggedIn) {
-      setFavorites([]);
       setJoinedEventIds([]);
       return;
     }
 
-    const savedFavs = localStorage.getItem('favorite_spots');
-    if (savedFavs) {
-      try {
-        setFavorites(JSON.parse(savedFavs));
-      } catch {
-        // ignore
-      }
-    }
     const savedJoined = localStorage.getItem('joined_event_ids');
     if (savedJoined) {
       try {
@@ -290,21 +281,13 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
       setIsRequireMembershipOpen(true);
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.includes(spotId);
-      let updated: string[];
-      if (isFav) {
-        updated = prev.filter((id) => id !== spotId);
-        showToast('นำออกจากสมุดบันทึกสถานที่เที่ยวแล้ว');
-      } else {
-        updated = [...prev, spotId];
-        const addedSpotTitle = spotId === spot?.id ? spot?.title : (nearbySpots.find((s) => s.id === spotId)?.title || spot?.title);
-        showToast(`เพิ่ม "${cleanText(addedSpotTitle)}" ลงในสมุดบันทึกสถานที่เที่ยวแล้ว`);
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('favorite_spots', JSON.stringify(updated));
-      }
-      return updated;
+    // Saved on the account, the list My Hub shows under "ที่บันทึก"
+    const wasSaved = favorites.includes(spotId);
+    void activityActions.setSaved('spot', spotId, !wasSaved).then((ok) => {
+      if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+      if (wasSaved) return showToast('เอาออกจากที่บันทึกแล้ว');
+      const addedSpotTitle = spotId === spot?.id ? spot?.title : (nearbySpots.find((s) => s.id === spotId)?.title || spot?.title);
+      showToast(`บันทึก "${cleanText(addedSpotTitle)}" ไว้ในมายฮับแล้ว`);
     });
   };
 

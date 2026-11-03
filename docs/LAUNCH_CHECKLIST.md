@@ -106,7 +106,6 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [ ] ตัวเลขบวกเพิ่มบนหน้าแรก: `SAMPLE_COUNTS` และ `withSampleCounts` ใน `components/home/LiveActivity.tsx`
 - [ ] "Member Privileges" ในหน้าแรก: ข้อเสนอตัวอย่างใน `components/MemberPrivilegesSection.tsx`
 - [ ] โค้ดเติมเนื้อหาให้ข้อมูลตัวอย่าง: เงื่อนไข `sample` จาก `lib/contentOrigin.ts` ในหน้ารายละเอียด `/community/[id]`, `/events/[id]`, `/spots/[id]` และตัวเลือกรูปใน `lib/eventImageResolver.ts`, `lib/spotImageResolver.ts`
-- [ ] ตัวช่วยเติมข้อมูล: `app/api/dev/demo/route.ts` และแถบ "โหมดพัฒนา" ในมายฮับ
 - [ ] ทริปเก่าวันที่ผิดรูปแบบ `spot-buddy-1791731960279`
 - [ ] ไล่ตรวจทุกหน้าว่าไม่เหลือชื่อ รูป ตัวเลข หรือรีวิวที่แต่งขึ้น
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -28,12 +28,11 @@ import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { useSpotCatalog } from '@/lib/useSpotCatalog';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
-import { SpotCard } from '@/components/SpotCard';
 import { Toast } from '@/components/Toast';
 import {
+  Bookmark,
   Users,
   Trophy,
   Gift,
@@ -53,7 +52,6 @@ import {
   CalendarDays,
   Check,
   Tag,
-  BookOpen,
   Star,
   Compass,
   Trash2,
@@ -75,9 +73,7 @@ import {
   Ticket, Navigation,
   Layers,
   Camera,
-  X,
   AlertCircle,
-  Search,
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -94,7 +90,7 @@ import {
   RewardShopItem,
   REWARD_SHOP_ITEMS,
 } from '@/data/rewardsData';
-import { avatarImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -127,7 +123,7 @@ function MyHubContent() {
   const [activeNavTab, setActiveNavTab] = useState('myhub');
 
   // 4 Core Lifestyle Tabs aligned with Platform Architecture
-  const [activeSubTab, setActiveSubTab] = useState<'community' | 'trips' | 'fairs' | 'scrapbook' | 'quests_rewards'>('community');
+  const [activeSubTab, setActiveSubTab] = useState<'community' | 'trips' | 'fairs' | 'quests_rewards'>('community');
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -177,8 +173,7 @@ function MyHubContent() {
 
   // Travel Scrapbook state & quick filters
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
-  const [scrapbookSearch, setScrapbookSearch] = useState('');
-  const [scrapbookVibeFilter, setScrapbookVibeFilter] = useState<string>('all');
+  const [savedFilter, setSavedFilter] = useState<'all' | 'community' | 'fairs' | 'spots'>('all');
 
   const [checkedInTicketIds, setCheckedInTicketIds] = useState<string[]>([]);
 
@@ -189,7 +184,7 @@ function MyHubContent() {
   // Main Dual Mode: Master Calendar by default as requested
   // 'calendar' is the member's schedule (list or month); 'categories' holds the saved places and the challenges views
   const [hubMainMode, setHubMainMode] = useState<'categories' | 'calendar' | 'hosting'>('calendar');
-  const [scheduleWhen, setScheduleWhen] = useState<'upcoming' | 'past'>('upcoming');
+  const [scheduleWhen, setScheduleWhen] = useState<'upcoming' | 'past' | 'saved'>('upcoming');
   // The schedule opens on the list; the month grid is the other way to look at it
   const [scheduleView, setScheduleView] = useState<'list' | 'month'>('list');
   const [openedAt] = useState(() => Date.now());
@@ -265,18 +260,6 @@ function MyHubContent() {
     setReviewedEventIds((prev) => Array.from(new Set([...prev, ...((activity as { reviewedEventIds?: string[] }).reviewedEventIds ?? [])])));
   }, [activity]);
 
-  // Development only: fills or clears sample activity for the signed-in account (POST / DELETE /api/dev/demo)
-  const [isDemoBusy, setIsDemoBusy] = useState(false);
-  const runDemo = async (method: 'POST' | 'DELETE') => {
-    setIsDemoBusy(true);
-    const json = await fetch('/api/dev/demo', { method }).then((res) => res.json()).catch(() => null);
-    setIsDemoBusy(false);
-    if (!json?.success) return showToast(json?.message || 'ทำรายการไม่สำเร็จ');
-    handleSetIsLoggedIn(true);
-    await activityActions.refresh();
-    showToast(method === 'POST' ? 'เติมข้อมูลตัวอย่างแล้ว' : 'ลบกิจกรรมตัวอย่างแล้ว');
-  };
-
   // Host check-in: the people who joined one of the member's events
   type HostParticipant = { userId: string; userName: string; userAvatar: string; checkedInAt?: string; isHost: boolean };
   const [checkInEvent, setCheckInEvent] = useState<EventItem | null>(null);
@@ -314,7 +297,10 @@ function MyHubContent() {
     } else if (tabParam === 'community' || tabParam === 'fairs') {
       setHubMainMode('calendar');
       setCalendarCategoryFilter(tabParam);
-    } else if (tabParam === 'scrapbook' || tabParam === 'quests_rewards') {
+    } else if (tabParam === 'scrapbook') {
+      setHubMainMode('calendar');
+      setScheduleWhen('saved');
+    } else if (tabParam === 'quests_rewards') {
       setHubMainMode('categories');
       setActiveSubTab(tabParam);
     } else if (tabParam === 'quests' || tabParam === 'rewards') {
@@ -350,6 +336,12 @@ function MyHubContent() {
     const goToHash = () => {
       const id = window.location.hash.slice(1);
       if (!id.startsWith('my-')) return;
+      // Saved items are a tab of the schedule: open it, and the section below appears
+      if (id === 'my-saved') {
+        setHubMainMode('calendar');
+        setScheduleView('list');
+        setScheduleWhen('saved');
+      }
       const started = Date.now();
       cancelAnimationFrame(frame);
       const look = () => {
@@ -548,27 +540,26 @@ function MyHubContent() {
   // Live catalog (published spots + bundled ones saved earlier)
   const spotCatalog = useSpotCatalog('home');
 
-  // Saved Lifestyle Spots for Scrapbook (Filterable by search and vibe)
+  // The catalog here was read when the page opened and holds only some places, so a place saved since is asked for by id
+  const [extraSavedSpots, setExtraSavedSpots] = useState<LifestyleSpotItem[]>([]);
+  const askedSpotIds = useRef(new Set<string>());
+  useEffect(() => {
+    const missing = savedSpotIds.filter((id) => !askedSpotIds.current.has(id) && !spotCatalog.some((s) => s.id === id)).slice(0, 30);
+    if (missing.length === 0) return;
+    missing.forEach((id) => askedSpotIds.current.add(id));
+    fetch(`/api/spots?ids=${encodeURIComponent(missing.join(','))}`)
+      .then((res) => res.json())
+      .then((json: { spots?: LifestyleSpotItem[] }) => setExtraSavedSpots((prev) => [...prev, ...(json.spots ?? [])]))
+      .catch(() => missing.forEach((id) => askedSpotIds.current.delete(id)));
+  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    let list = spotCatalog.filter((s) => savedSpotIds.includes(s.id));
-    if (scrapbookSearch.trim()) {
-      const q = scrapbookSearch.toLowerCase().trim();
-      list = list.filter(
-        (s) =>
-          s.title.toLowerCase().includes(q) ||
-          s.province.toLowerCase().includes(q) ||
-          s.district.toLowerCase().includes(q)
-      );
-    }
-    if (scrapbookVibeFilter !== 'all') {
-      list = list.filter((s) => (getCachedSpotVibeCategory(s) as string) === scrapbookVibeFilter || (s.category as string) === scrapbookVibeFilter);
-    }
-    return list;
-  }, [savedSpotIds, scrapbookSearch, scrapbookVibeFilter, spotCatalog]);
+    const byId = new Map([...extraSavedSpots, ...spotCatalog].map((s) => [s.id, s]));
+    return savedSpotIds.flatMap((id) => byId.get(id) ?? []);
+  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
 
-  const handleRemoveFromScrapbook = async (spotId: string, spotTitle: string) => {
-    if (!(await activityActions.setSaved('spot', spotId, false))) return showToast('นำออกไม่สำเร็จ ลองอีกครั้งนะ');
-    showToast(`นำ "${spotTitle}" ออกจากสมุดบันทึกสถานที่เที่ยวแล้ว`);
+  const removeSaved = async (kind: 'spot' | 'event', id: string, title: string) => {
+    if (!(await activityActions.setSaved(kind, id, false))) return showToast('นำออกไม่สำเร็จ ลองอีกครั้งนะ');
+    showToast(`นำ "${title}" ออกจากที่บันทึกแล้ว`);
   };
 
   // Calendar calculations
@@ -872,8 +863,13 @@ function MyHubContent() {
   // A challenge that has not started is placed on its first day (visits before it do not count); one under way, on its last day
   const questDates = (ev: EventItem) => ev as EventItem & { questStartTs?: number; questEndTs?: number };
   const isQuestNotStarted = (ev: EventItem) => isQuestEntry(ev) && (questDates(ev).questStartTs ?? 0) > openedAt;
+  // Dates alone tie on a shared day, so the time decides which comes first (a 07:30 before an 08:00 on the same day)
+  const startMinutes = (ev: EventItem) => {
+    const start = /(\d{1,2})[:.](\d{2})/.exec(ev.time ?? '');
+    return start ? Number(start[1]) * 60 + Number(start[2]) : 0;
+  };
   const scheduleTs = (ev: EventItem) =>
-    isQuestEntry(ev) ? (isQuestNotStarted(ev) ? questDates(ev).questStartTs ?? 0 : questDates(ev).questEndTs ?? 0) : parseEventDateToTimestamp(ev.date);
+    isQuestEntry(ev) ? (isQuestNotStarted(ev) ? questDates(ev).questStartTs ?? 0 : questDates(ev).questEndTs ?? 0) : parseEventDateToTimestamp(ev.date) + startMinutes(ev) * 60_000;
   const isUpcomingItem = (ev: EventItem) => (isQuestEntry(ev) ? scheduleTs(ev) >= openedAt : getEventAttendanceStatus(ev) === 'upcoming');
   // The one thing at the top of the page: the next event the member goes to
   const nextEvent = guestEvents.filter((ev) => !isQuestEntry(ev) && isUpcomingItem(ev)).sort((a, b) => scheduleTs(a) - scheduleTs(b))[0];
@@ -885,7 +881,7 @@ function MyHubContent() {
   const whenCounts = { upcoming: upcomingTotal, past: listItems.length - upcomingTotal };
   const listPool = listItems.filter((ev) => isUpcomingItem(ev) === (scheduleWhen === 'upcoming'));
   // Counts are the rows in the list: what is shown above ("กำลังทำอยู่", "ถัดไปของคุณ") is not counted again.
-  // The "ชาเลนจ์" chip stays for a member with joined challenges even at 0, and then says where they are
+  // A type with no rows has no chip (owner 2026-11-03: "ชาเลนจ์ (0)" read as a wrong count beside the month's 2)
   const hasJoinedQuests = guestEvents.some(isQuestEntry);
   const listRows = listPool
     .filter((ev) => calendarCategoryFilter === 'all' || calGroupOf(ev) === calendarCategoryFilter)
@@ -897,7 +893,7 @@ function MyHubContent() {
   const countsOf = (pool: EventItem[]) => ({ all: pool.length, community: countIn(pool, 'community'), fairs: countIn(pool, 'fairs'), spots: countIn(pool, 'spots'), quests: countIn(pool, 'quests') });
   const chipCounts = scheduleView === 'month' ? masterCategoryCounts : countsOf(listPool);
   // The type chips show only when there is a choice: with one type ("ทั้งหมด (2)" next to "ตี้ (2)") they said it twice
-  const chipGroups = [chipCounts.community, chipCounts.fairs, chipCounts.spots].filter((n) => n > 0).length + (chipCounts.quests > 0 || hasJoinedQuests ? 1 : 0);
+  const chipGroups = [chipCounts.community, chipCounts.fairs, chipCounts.spots].filter((n) => n > 0).length + (chipCounts.quests > 0 ? 1 : 0);
 
   // The host's side of My Hub: what is still to run (who is coming, check-in, team chat) and what has been run
   const renderHostingView = () => {
@@ -1021,80 +1017,15 @@ function MyHubContent() {
     );
   };
 
-  const renderSummaryCards = () => {
-    const openView = (tab: 'scrapbook' | 'quests_rewards') => {
-      setHubMainMode('categories');
-      setActiveSubTab(tab);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    const openLink = 'py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
-    return (
-      // Named as the home page's "ของฉัน" link that lands here (owner 2026-10-30)
-      <section aria-label="กิจกรรมที่บันทึก" className="border-t border-slate-200/70 pt-5 space-y-3">
-        <h2 className="text-base font-bold text-slate-900">กิจกรรมที่บันทึก</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5">
-        <section aria-label="ที่เที่ยวที่บันทึก">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-slate-900">ที่เที่ยว</h2>
-            {savedSpotIds.length > 0 && <button type="button" onClick={() => openView('scrapbook')} className={openLink}>ดูทั้งหมด</button>}
-          </div>
-          {savedSpotIds.length > 0 ? (
-            <ul className="mt-3 space-y-3">
-              {savedSpotsList.slice(0, 3).map((spot) => (
-                <li key={spot.id}>
-                  <Link href={`/spots/${encodeURIComponent(spot.id)}`} className="flex items-start gap-3 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={resolveSpotImage(spot)} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-slate-900 leading-snug break-words group-hover:underline">{spot.title}</span>
-                      <span className="block text-xs font-medium text-slate-500 truncate">{[spot.district, spot.province].filter(Boolean).join(', ')}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-              {savedSpotIds.length > 3 && <li className="text-xs font-medium text-slate-500 tabular-nums">และอีก {savedSpotIds.length - 3} แห่ง</li>}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm font-medium text-slate-600">
-              ยังไม่ได้บันทึกที่ไหนไว้ <Link href="/spots" className="font-bold text-[#2563EB] hover:underline">ดูที่เที่ยว</Link>
-            </p>
-          )}
-        </section>
-        {savedNotJoined.length > 0 && (
-          <section aria-label="ตี้และอีเวนต์ที่บันทึก">
-            <h2 className="text-sm font-bold text-slate-900">ตี้และอีเวนต์</h2>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">ยังไม่ได้กดเข้าร่วม</p>
-            <ul className="mt-3 space-y-3">
-              {savedNotJoined.slice(0, 3).map((ev) => (
-                <li key={ev.id}>
-                  <Link href={`${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}`} className="flex items-start gap-3 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-slate-900 leading-snug break-words group-hover:underline">{ev.title}</span>
-                      <span className="block text-xs font-medium text-slate-500 truncate tabular-nums">{[thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · ')}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-              {savedNotJoined.length > 3 && <li className="text-xs font-medium text-slate-500 tabular-nums">และอีก {savedNotJoined.length - 3} รายการ</li>}
-            </ul>
-          </section>
-        )}
-      </div>
-      </section>
-    );
-  };
-
   // A member with nothing on the schedule yet: no filters full of zeros, just three ways to get a first entry
-  const renderFirstSteps = () => {
+  const renderFirstSteps = (underTabs = false) => {
     const steps = [
       { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
       { href: '/events', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
       { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
     ];
     return (
-      <section aria-label="เริ่มที่ไหนดี" className={scheduleDivider}>
+      <section aria-label="เริ่มที่ไหนดี" className={underTabs ? undefined : scheduleDivider}>
         <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
 
@@ -1158,56 +1089,169 @@ function MyHubContent() {
   // Sections are open, split by a thin line like the member home (owner 2026-10-30: no white boxes); on a wide
   // screen the first thing in the right column has no line over it
   const scheduleDivider = `border-t border-slate-200/70 pt-5${doingChallenges.length === 0 && !nextEvent ? ' lg:border-t-0 lg:pt-0' : ''}`;
+  // What the member has their eye on, in one list: saved ตี้ and อีเวนต์ they have not joined, then saved places
+  const renderSaved = () => {
+    const rows = [
+      ...savedNotJoined.map((ev) => {
+        const isFair = ev.eventType === 'public_venue';
+        return {
+          key: `event-${ev.id}`,
+          group: isFair ? ('fairs' as const) : ('community' as const),
+          label: isFair ? 'อีเวนต์' : 'ตี้',
+          dot: isFair ? 'bg-[#2B527A]' : 'bg-[#2D5A3C]',
+          ink: isFair ? 'text-[#1F3D5C]' : 'text-[#2D5A3C]',
+          href: `${isFair ? '/events' : '/community'}/${encodeURIComponent(ev.id)}`,
+          image: ev.image,
+          title: ev.title,
+          detail: isEventEnded(ev) ? 'จบแล้ว' : [thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · '),
+          remove: () => removeSaved('event', ev.id, ev.title),
+        };
+      }),
+      ...savedSpotsList.map((spot) => ({
+        key: `spot-${spot.id}`,
+        group: 'spots' as const,
+        label: 'ที่เที่ยว',
+        dot: 'bg-[#4A7C59]',
+        ink: 'text-[#2D5A3C]',
+        href: `/spots/${encodeURIComponent(spot.id)}`,
+        image: resolveSpotImage(spot),
+        title: spot.title,
+        detail: [spot.district, spot.province].filter(Boolean).join(', '),
+        remove: () => removeSaved('spot', spot.id, spot.title),
+      })),
+    ];
+    const chips = (['community', 'fairs', 'spots'] as const)
+      .map((group) => ({ group, count: rows.filter((row) => row.group === group).length, first: rows.find((row) => row.group === group) }))
+      .filter((chip) => chip.count > 0);
+    // A filter whose last item was just removed falls back to everything
+    const filter = chips.some((chip) => chip.group === savedFilter) ? savedFilter : 'all';
+    const shown = filter === 'all' ? rows : rows.filter((row) => row.group === filter);
+    const chipClass = (active: boolean) =>
+      `px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${active ? 'bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] shadow-2xs' : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200'}`;
+
+    return (
+      <section id="my-saved" aria-label="ที่บันทึกไว้" className="scroll-mt-24">
+        {rows.length === 0 ? (
+          <p className="py-6 text-sm font-medium text-slate-600 leading-relaxed">
+            ยังไม่ได้บันทึกอะไรไว้เลย เจออันไหนถูกใจก็กดบันทึกไว้ดูทีหลังได้นะ ลองดู{' '}
+            <Link href="/community" className="font-bold text-[#2563EB] hover:underline">ตี้</Link>,{' '}
+            <Link href="/events" className="font-bold text-[#2563EB] hover:underline">อีเวนต์</Link> หรือ{' '}
+            <Link href="/spots" className="font-bold text-[#2563EB] hover:underline">ที่เที่ยว</Link>
+          </p>
+        ) : (
+          <>
+            {chips.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 mb-1">
+                <button type="button" aria-pressed={filter === 'all'} onClick={() => setSavedFilter('all')} className={chipClass(filter === 'all')}>ทั้งหมด ({rows.length})</button>
+                {chips.map(({ group, count, first }) => (
+                  <button key={group} type="button" aria-pressed={filter === group} onClick={() => setSavedFilter(group)} className={chipClass(filter === group)}>
+                    <span className={`w-2 h-2 rounded-full ${first?.dot}`} aria-hidden="true" />
+                    {first?.label} ({count})
+                  </button>
+                ))}
+              </div>
+            )}
+            <ul className="divide-y divide-slate-100">
+              {shown.map((row) => (
+                <li key={row.key} className="py-3 flex items-center gap-3">
+                  <Link href={row.href} className="flex flex-1 min-w-0 items-center gap-3 group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={optimizedImage(row.image, 128) || undefined} alt="" loading="lazy" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
+                    <span className="min-w-0">
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${row.ink}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${row.dot}`} aria-hidden="true" />
+                        {row.label}
+                      </span>
+                      <span className="block text-sm font-bold text-slate-900 leading-snug line-clamp-2 break-words group-hover:underline">{row.title}</span>
+                      <span className="block text-xs font-medium text-slate-500 truncate tabular-nums">{row.detail}</span>
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={row.remove}
+                    aria-label={`เอา ${row.title} ออกจากที่บันทึก`}
+                    title="เอาออกจากที่บันทึก"
+                    className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center text-[#2563EB] hover:bg-slate-100 cursor-pointer"
+                  >
+                    <Bookmark className="w-5 h-5 fill-current" aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    );
+  };
+
   const renderMasterCalendarView = () => {
-    if (guestEvents.length === 0) return renderFirstSteps();
+    const savedCount = savedNotJoined.length + savedSpotsList.length;
+    // Nothing anywhere yet: the first steps alone, no tabs full of zeros. A link to the saved tab still opens it
+    if (guestEvents.length === 0 && savedCount === 0 && scheduleWhen !== 'saved') return renderFirstSteps();
     const activeRing = 'ring-2 ring-slate-900 bg-slate-50/80';
+    const showingSaved = scheduleWhen === 'saved';
+
+    // One line of tabs, like the profile. The list and the month show the same events through the same filters; the month has no
+    // upcoming or past, so no tab is lit there and a tab returns to the list
+    const tabs = (
+      <div className="flex flex-col-reverse sm:flex-row sm:items-end justify-between gap-x-3 gap-y-2 sm:border-b sm:border-slate-200">
+        <h2 className="sr-only">กำหนดการและที่บันทึกไว้</h2>
+        <div className="flex items-center gap-4 sm:gap-5 border-b border-slate-200 sm:border-b-0" role="group" aria-label="แสดง">
+          {([
+            { id: 'upcoming', label: 'กำลังจะมาถึง', count: whenCounts.upcoming },
+            { id: 'saved', label: 'ที่บันทึก', count: savedCount },
+            { id: 'past', label: 'ที่ผ่านมา', count: whenCounts.past },
+          ] as const).map((tab) => {
+            const active = scheduleView === 'list' && scheduleWhen === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setScheduleWhen(tab.id);
+                  setScheduleView('list');
+                  setSelectedCalDay(null);
+                }}
+                className={`-mb-px py-2 border-b-2 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${active ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+              >
+                {tab.label} <span className="tabular-nums">{tab.count}</span>
+              </button>
+            );
+          })}
+        </div>
+        {!showingSaved && guestEvents.length > 0 && (
+          <div className="self-end sm:mb-1.5 inline-flex items-center p-1 bg-slate-100 rounded-full" role="group" aria-label="วิธีมอง">
+            {([
+              { id: 'list', label: 'รายการ', Icon: Layers },
+              { id: 'month', label: 'เดือน', Icon: CalendarDays },
+            ] as const).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={scheduleView === id}
+                onClick={() => {
+                  setScheduleView(id);
+                  setSelectedCalDay(null);
+                }}
+                className={`flex items-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+              >
+                <Icon className={`w-4 h-4 ${scheduleView === id ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    if (showingSaved) return <div className={`${scheduleDivider} space-y-4`}>{tabs}{renderSaved()}</div>;
+    if (guestEvents.length === 0) return <div className={`${scheduleDivider} space-y-4`}>{tabs}{renderFirstSteps(true)}</div>;
 
     return (
       <div className={`${scheduleDivider} space-y-4`}>
         <div className="space-y-4">
-          {/* One schedule, two ways to look at it: the list and the month show the same events through the same filters.
-              One header line on every screen: the title and how to look; when (upcoming or past) sits under it as text tabs */}
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">กำหนดการ</h2>
-            <div className="inline-flex items-center p-1 bg-slate-100 rounded-full" role="group" aria-label="วิธีมอง">
-              {([
-                { id: 'list', label: 'รายการ', Icon: Layers },
-                { id: 'month', label: 'เดือน', Icon: CalendarDays },
-              ] as const).map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={scheduleView === id}
-                  onClick={() => {
-                    setScheduleView(id);
-                    setSelectedCalDay(null);
-                  }}
-                  className={`flex items-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  <Icon className={`w-4 h-4 ${scheduleView === id ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {scheduleView === 'list' && (
-            <div className="flex items-center gap-5 border-b border-slate-200" role="group" aria-label="ช่วงเวลา">
-              {([
-                { id: 'upcoming', label: 'กำลังจะมาถึง' },
-                { id: 'past', label: 'ที่ผ่านมา' },
-              ] as const).map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  aria-pressed={scheduleWhen === tab.id}
-                  onClick={() => setScheduleWhen(tab.id)}
-                  className={`-mb-px py-2 border-b-2 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleWhen === tab.id ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
-                >
-                  {tab.label} <span className="tabular-nums">{whenCounts[tab.id]}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {tabs}
 
           {/* Header Controls: Month Navigator & Category Filter Chips */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -1343,7 +1387,7 @@ function MyHubContent() {
                 </button>
                 )}
 
-              {(chipCounts.quests > 0 || calendarCategoryFilter === 'quests' || hasJoinedQuests) && (
+              {(chipCounts.quests > 0 || calendarCategoryFilter === 'quests') && (
                 <button
                   type="button"
                   onClick={() => setCalendarCategoryFilter('quests')}
@@ -2131,23 +2175,9 @@ function MyHubContent() {
                     <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
                   </div>
                 )}
-                <div id="my-saved" className="order-5 lg:order-none scroll-mt-24">{renderSummaryCards()}</div>
                 <div className="order-6 lg:order-none">
                 {/* Places and challenge ideas sent to staff */}
                 <MySubmissions />
-
-                {/* Development only: sample activity for this account, so every feature can be seen with one login */}
-                {process.env.NODE_ENV !== 'production' && (
-                  <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500" role="note">
-                    <span>โหมดพัฒนา · ข้อมูลตัวอย่างของบัญชีนี้</span>
-                    <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('POST')} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline disabled:text-slate-400 cursor-pointer">
-                      {isDemoBusy ? 'กำลังทำ…' : 'เติม'}
-                    </button>
-                    <button type="button" disabled={isDemoBusy} onClick={() => void runDemo('DELETE')} className="font-bold text-slate-600 hover:text-slate-900 hover:underline disabled:text-slate-400 cursor-pointer">
-                      ลบ
-                    </button>
-                  </p>
-                )}
 
                 </div>
               </aside>
@@ -2155,7 +2185,7 @@ function MyHubContent() {
               {/* Right: what the member is doing. The challenges under way, the next event, then the schedule (or the host side, or a view opened from the left) */}
               <main id="hub-content-section" className="contents lg:flex lg:flex-col lg:gap-5 lg:min-w-0">
                 <div className="order-2 lg:order-none empty:hidden">
-                {/* Saved places and the challenges view open from the cards under the schedule; this is the way back */}
+                {/* The challenges view opens away from the schedule; this is the way back */}
                 {hubMainMode === 'categories' && (
                   <button type="button" onClick={() => setHubMainMode('calendar')} className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
                     <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -2244,150 +2274,6 @@ function MyHubContent() {
                 renderHostingView()
               ) : (
                 <>
-
-              {/* ============================================================= */}
-              {/* TAB 3: 🌲 TRAVEL SCRAPBOOK                                     */}
-              {/* ============================================================= */}
-              {activeSubTab === 'scrapbook' && (
-                <div className="space-y-6">
-                  {/* Scrapbook Header Banner */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="space-y-0.5">
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-[#2D5A3C]" />
-                        <span>ที่เที่ยวที่บันทึกไว้ ({savedSpotsList.length} แห่ง)</span>
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        ที่เที่ยวและคาเฟ่ที่คุณบันทึกไว้ แตะการ์ดเพื่อดูรายละเอียดหรือชวนเพื่อนไปด้วยกัน
-                      </p>
-                    </div>
-
-                    <Link
-                      href="/spots"
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-all cursor-pointer"
-                    >
-                      <Compass className="w-3.5 h-3.5" />
-                      <span>หาที่เที่ยวเพิ่ม</span>
-                    </Link>
-                  </div>
-
-                  {/* Search & Vibe Filters (Shown when user has saved spots) */}
-                  {savedSpotIds.length > 0 && (
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
-                      {/* Search Input */}
-                      <div className="relative flex-1 min-w-[200px]">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <input
-                          type="text"
-                          placeholder="ค้นหาชื่อพิกัด, จังหวัด, อำเภอ..."
-                          value={scrapbookSearch}
-                          onChange={(e) => setScrapbookSearch(e.target.value)}
-                          className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2D5A3C]/20 focus:border-[#2D5A3C] transition-all text-slate-800 placeholder:text-slate-400"
-                        />
-                        {scrapbookSearch && (
-                          <button
-                            type="button"
-                            onClick={() => setScrapbookSearch('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200/60 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Vibe Chips (Horizontal Scrollable) */}
-                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs">
-                        {[
-                          { id: 'all', label: 'ทั้งหมด' },
-                          { id: 'cafe_slowbar', label: 'คาเฟ่' },
-                          { id: 'nature_camping', label: 'ธรรมชาติ' },
-                          { id: 'mountain_mist', label: 'ขุนเขา' },
-                          { id: 'sea_island', label: 'ทะเล' },
-                          { id: 'art_creative', label: 'ศิลปะ' },
-                          { id: 'oldtown_culture', label: 'ย่านเก่า' },
-                        ].map((vibe) => {
-                          const active = scrapbookVibeFilter === vibe.id;
-                          return (
-                            <button
-                              key={vibe.id}
-                              type="button"
-                              onClick={() => setScrapbookVibeFilter(vibe.id)}
-                              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all text-xs cursor-pointer ${
-                                active
-                                  ? 'bg-slate-900 text-white shadow-2xs'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                              }`}
-                            >
-                              {vibe.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Spots Grid or Empty State */}
-                  {savedSpotIds.length === 0 ? (
-                    /* Initial Empty State */
-                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
-                          <Compass className="w-5 h-5 text-slate-500" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-800">
-                            ยังไม่มีพิกัดในสมุดบันทึกสถานที่เที่ยว
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            เมื่อคุณพบสถานที่ท่องเที่ยวหรือจุดฮีลใจที่น่าสนใจ ให้กดปุ่มบันทึกลงสมุดเพื่อรวบรวมไว้ที่นี่
-                          </p>
-                        </div>
-                      </div>
-                      <Link
-                        href="/spots"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer active:scale-95"
-                      >
-                        <span>สำรวจพิกัด 77 จังหวัด</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  ) : savedSpotsList.length === 0 ? (
-                    /* Search / Filter Empty State */
-                    <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white text-slate-600 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
-                          <Search className="w-5 h-5 text-slate-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-800">
-                            ไม่พบพิกัดที่ตรงกับเงื่อนไขการค้นหา
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            ลองเปลี่ยนคำค้นหา หรือรีเซ็ตตัวกรองเพื่อดูสถานที่ทั้งหมดในสมุดบันทึก
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setScrapbookSearch('');
-                          setScrapbookVibeFilter('all');
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer"
-                      >
-                        <span>ล้างตัวกรอง</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {/* The same card as on /spots; its heart takes the place off the saved list */}
-                      {savedSpotsList.map((spotItem) => (
-                        <SpotCard key={spotItem.id} spot={spotItem} isFavorite onToggleFavorite={(id) => handleRemoveFromScrapbook(id, spotItem.title)} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* ============================================================= */}
               {/* TAB 4: ⚡ QUESTS & REWARDS (Gamified Lifestyle Locker)       */}

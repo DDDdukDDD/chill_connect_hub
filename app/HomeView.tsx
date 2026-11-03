@@ -28,7 +28,7 @@ import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { useMyMonth } from '@/lib/useMyMonth';
-import { useMyActivity } from '@/lib/useMyActivity';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
@@ -155,7 +155,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   const [isEventsLoaded, setIsEventsLoaded] = useState(Boolean(initialEvents));
   const [questList, setQuestList] = useState<ChallengeQuest[]>(initialQuests ?? []);
   const [isQuestsLoaded, setIsQuestsLoaded] = useState(Boolean(initialQuests));
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
 
@@ -198,6 +197,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   }, [isAuthReady, isMember, serverSpotTotal]);
   const sessionMember = useMemberSession().member;
   const activity = useMyActivity();
+  const favorites = activity.savedEventIds;
   const [now] = useState(() => Date.now());
   const [likedCategories, setLikedCategories] = useState<string[]>(memberData?.likedCategories ?? []);
   // Onboarding goals pick the journey band's first tab (a ตี้ or a challenge)
@@ -230,11 +230,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
 
   // Sync with runtime DB and localStorage
   useEffect(() => {
-    try {
-      const storedFavs = localStorage.getItem('favorite_events');
-      if (storedFavs) setFavorites(JSON.parse(storedFavs));
-    } catch {}
-
     let isActive = true;
     // The server page sends the challenges and the events that are not over, plus a member's own saved and visited
     // อีเวนต์; only a member who signed in on this page (no server data) loads the full list
@@ -278,14 +273,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
       triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.includes(eventId);
-      const updated = isFav ? prev.filter((id) => id !== eventId) : [...prev, eventId];
-      showToast(isFav ? 'ลบออกจากรายการโปรดแล้ว' : 'เพิ่มเข้ารายการโปรดแล้ว');
-      try {
-        localStorage.setItem('favorite_events', JSON.stringify(updated));
-      } catch {}
-      return updated;
+    // Saved on the account, the list My Hub shows under "ที่บันทึก"
+    const wasSaved = favorites.includes(eventId);
+    void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
+      showToast(!ok ? 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ' : wasSaved ? 'เอาออกจากที่บันทึกแล้ว' : 'บันทึกไว้ในมายฮับแล้ว');
     });
   };
 
