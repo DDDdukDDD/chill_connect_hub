@@ -28,7 +28,7 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [ ] `เจ้าของ` **บัญชีโซเชียลใน JSON-LD** ยืนยันว่า instagram.com/chillwaa_official และ tiktok.com/@chillwaa.official เป็นของเราจริง ถ้าไม่ใช่ให้ Claude เอาออกจาก `app/layout.tsx`
 - [ ] `เจ้าของ` **การเชื่อมต่อฐานข้อมูล** เพิ่ม pool ใน Supabase (จำกัด 15) โค้ดลดเหลือ 1 ต่อเซิร์ฟเวอร์แล้ว แต่ยังต้องดูตอนมีคนใช้พร้อมกัน
 - [ ] `เจ้าของ` **สำรองข้อมูล** เปิด Point-in-Time Recovery (แผนเสียเงิน) แล้วลองกู้หนึ่งครั้ง
-- [ ] `ร่วม` **รูปและคลิปบน Blob** ทดสอบอัปโหลด แสดงผล และลบบนเว็บจริง ดูค่าใช้จ่าย และเพิ่มโดเมน Blob ใน `OPTIMIZED_REMOTE_IMAGES` เพื่อให้ย่อรูปได้
+- [ ] `ร่วม` **รูปและคลิปบน Blob** ทดสอบการลบบนเว็บจริง และดูค่าใช้จ่ายทั้ง Blob และโควตาย่อรูปของ Vercel (อัปโหลดและแสดงผลใช้งานจริงแล้ว ตรวจ 3 พ.ย.)
 - [ ] `ร่วม` **สถานที่ใกล้ตัวและการค้นหาตอนปักหมุด** Overpass ฟรีตอบว่าเต็มทุกครั้งที่ทดสอบ และ Nominatim จำกัดราว 1 ครั้งต่อวินาที เลือกบริการเสียเงินหรือตั้งเอง และตรวจเงื่อนไข เพราะข้อมูล Google Places เก็บไว้กับโพสต์ไม่ได้
 
 ## ขั้น 2: ความปลอดภัย (ทำก่อนให้คนนอกเข้า)
@@ -123,6 +123,8 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [ ] `Claude` ทดสอบรับโหลดบนฐานพัฒนา ห้ามยิงเว็บจริง
 - [ ] `Claude` ย้ายการกรอง ค้นหา และหาที่ใกล้เคียงของสถานที่ไปทำที่ server แล้วใช้ดัชนีฐานข้อมูล แทนการดึงทั้งรายการ
 - [ ] `ร่วม` รูปจาก thailandtourismdirectory ยังโหลดขนาดเต็ม (รูปละ 0.4-4 MB) เลือกระหว่างให้ Vercel ย่อ (ฟรีราว 5,000 ครั้งต่อเดือน) หรือย่อครั้งเดียวแล้วเก็บ Blob ซึ่งประหยัดระยะยาวกว่า
+- [ ] `Claude` **รูปที่ยังไม่ผ่านตัวย่อ** (ตรวจ 3 พ.ย., BE-236) เรียงตามผลกระทบ: รูปโปรไฟล์ราว 25 จุด (เจอไฟล์ละ 1 MB แสดงแค่ 24-40 px), โมเมนต์ใน `app/profile/ProfileScreen.tsx`, `components/VisitPanel.tsx`, ตัวดูรูปใน `components/home/HomeMomentFeed.tsx`, แกลเลอรีหน้ารายละเอียด ตี้/อีเวนต์/สถานที่, รูปเล็กในมายฮับ, `components/SpotCard.tsx`, `components/SpotListItem.tsx`, `components/discover/EventDateList.tsx` และหน้าแอดมิน
+- [ ] `Claude` ลบ component ที่ไม่มีใครใช้ 13 ไฟล์: `CommunityChallengeBar`, `CommunityMoments`, `CommunityMomentsStrip`, `EventDetailModal`, `HeroSection`, `JourneyHolidayPlans`, `JourneyMomentCard`, `SpotDetailModal`, `SurpriseModal`, `TopCommunityRail`, `TopDestinationsRail`, `TopVenuesRail`, `TrendingCarousel`
 - [ ] `Claude` เก็บตัวเลขนับสำเร็จรูป (หัวใจ คอมเมนต์ ผู้ติดตาม)
 - [ ] `Claude` แบ่งหน้าโมเมนต์แบบต่อจากรายการล่าสุด เพื่อไม่ให้โพสต์ซ้ำหรือข้าม
 - [ ] `Claude` รวมคำขอหน้าตาคนที่ไปบนการ์ดตี้ ตอนนี้แยกกันสูงสุด 24 ครั้งต่อชุด

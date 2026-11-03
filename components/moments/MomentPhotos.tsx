@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { isOptimizedRemote, optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * A moment's photos the way Instagram and Lemon8 show them: one photo at a time, swiped sideways on a phone,
@@ -30,7 +30,7 @@ interface MomentPhotosProps {
 const FRAME_WIDTHS = [640, 828, 1200];
 const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
 const responsive = (src: string) =>
-  src.startsWith('/uploads/') ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
+  src.startsWith('/uploads/') || isOptimizedRemote(src) ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
 
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;
@@ -70,7 +70,7 @@ export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: Moment
   };
 
   if (video) {
-    return <ClipPlayer url={video.url} startS={video.startS} durationS={video.durationS} poster={images[0]} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
+    return <ClipPlayer url={video.url} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
   }
 
   return (
