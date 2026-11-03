@@ -12,6 +12,7 @@ import type { MarkedVisit } from '@/lib/social/visits';
 import { EVIDENCE_HINTS, type QuestDetail } from '@/lib/questDisplay';
 import { MOMENT_REACTED_EVENT, type ShareRequest } from '@/components/home/HomeMomentFeed';
 import { nameInitial } from '@/lib/displayName';
+import { avatarImage } from '@/lib/optimizedImage';
 import { DAY_MS, FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, endsAt, eventHref, startsAt, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 
 /**
@@ -783,7 +784,7 @@ export function FollowRow({ onFollowed, onLoaded, emptyText }: { onFollowed?: ()
             <Link href={`/profile?id=${encodeURIComponent(p.id)}`} className="group flex flex-col items-center min-w-0 w-full">
               {p.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover bg-slate-100 border-2 border-white shadow-sm" />
+                <img src={avatarImage(p.avatarUrl)} alt="" className="w-12 h-12 rounded-full object-cover bg-slate-100 border-2 border-white shadow-sm" />
               ) : (
                 <span className="w-12 h-12 rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center border-2 border-white shadow-sm" aria-hidden="true">{nameInitial(p.displayName)}</span>
               )}

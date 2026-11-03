@@ -500,7 +500,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             spots={memberSpots}
             cardKinds={interests.kinds}
             isSpotsLoaded={isSpotsLoaded}
-            stampCount={myRewards.finished.length}
           />
         ) : isMemberPending ? (
           <MemberHomeSkeleton />

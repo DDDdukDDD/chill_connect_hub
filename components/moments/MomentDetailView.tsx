@@ -17,11 +17,12 @@ import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/M
 
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
 import { markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
+import { avatarImage } from '@/lib/optimizedImage';
 
 function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={src} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
+    <img src={avatarImage(src)} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
   ) : (
     <span className={`${className} rounded-full bg-slate-200 font-bold text-slate-700 flex items-center justify-center shrink-0`}>{nameInitial(name)}</span>
   );
@@ -552,8 +553,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
       {confirmDelete && (
         <DialogShell onClose={() => setConfirmDelete(false)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDelete(false)}>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" data-autofocus className={dialogButton.quiet} onClick={() => setConfirmDelete(false)}>
               ยกเลิก
             </button>
             <button type="button" className={dialogButton.danger} disabled={isBusy} onClick={deleteMoment}>
@@ -579,7 +580,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </label>
             ))}
           </fieldset>
-          <div className="flex flex-wrap justify-end gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             <button type="button" className={dialogButton.quiet} onClick={() => setReportReason(null)}>
               ยกเลิก
             </button>

@@ -48,7 +48,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
         src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE}
         alt=""
         loading="lazy"
-        className={`w-[72px] h-[72px] sm:w-44 sm:h-[99px] rounded-xl sm:rounded-2xl object-cover bg-slate-100 shrink-0 ${isEnded ? 'grayscale opacity-80' : ''}`}
+        className={`w-[72px] h-[72px] sm:w-44 sm:h-[99px] rounded-xl sm:rounded-2xl object-cover bg-slate-100 shrink-0 ${isEnded ? 'opacity-70' : ''}`}
       />
       <div className="min-w-0 flex-1 basis-[150px] sm:basis-48">
         <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-600 min-w-0">

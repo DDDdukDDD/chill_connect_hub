@@ -101,7 +101,7 @@ export function FairTile({
     <Link href={`/events/${encodeURIComponent(event.id)}`} className="group block">
       <span className="relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md">
         {/* A tall poster shows whole over a blurred copy of itself; a plain photo fills the square as on a ตี้ tile */}
-        <PosterPhoto src={optimizedImage(event.image, 384)} dim={isEnded} zoom />
+        <PosterPhoto src={optimizedImage(event.image, 384)} zoom />
         {badge && <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${badge.tone}`}>{badge.text}</span>}
         {sponsored && <SponsoredBadge />}
         {onToggleSave && !isEnded && (

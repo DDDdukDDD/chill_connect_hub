@@ -17,6 +17,7 @@ import {
   QrCode,
   Calendar
 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 export interface ExpoMeetupPassData {
   id: string;
@@ -168,7 +169,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-white border border-sky-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
-                  src={passData.creatorAvatar}
+                  src={avatarImage(passData.creatorAvatar)}
                   alt={passData.creatorName}
                   className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
                 />

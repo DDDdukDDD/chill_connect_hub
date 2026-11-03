@@ -65,6 +65,7 @@ import {
   Ticket
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { avatarImage } from '@/lib/optimizedImage';
 
 // The ticket and the chat open on a tap, so their code loads then, not with the page
 const ETicketModal = dynamic(() => import('@/components/ETicketModal').then((m) => m.ETicketModal), { ssr: false });
@@ -683,7 +684,7 @@ export default function CommunityDetailPage({
               <Link href={profileHref} className="flex items-center gap-3 min-w-0 group">
                 {/* eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers */}
                 <img
-                  src={eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'}
+                  src={avatarImage(eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80')}
                   alt=""
                   className="w-12 h-12 rounded-full object-cover bg-white shrink-0"
                 />

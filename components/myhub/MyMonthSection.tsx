@@ -6,6 +6,7 @@ import { Camera } from 'lucide-react';
 import { MomentComposer, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { nameInitial } from '@/lib/displayName';
 import { useMyMonth, type MonthItem } from '@/lib/useMyMonth';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -83,7 +84,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
                             {(item.people ?? []).map((p, i) =>
                               p.avatar ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img key={i} src={p.avatar} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
+                                <img key={i} src={avatarImage(p.avatar)} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
                               ) : (
                                 <span key={i} className={`w-5 h-5 rounded-full ring-2 ring-white ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}>
                                   {nameInitial(p.name)}

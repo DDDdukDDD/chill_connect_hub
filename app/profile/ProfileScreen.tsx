@@ -26,6 +26,8 @@ import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
+import { FollowListDialog, type FollowTab } from './FollowListDialog';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * Member profile.
@@ -83,7 +85,8 @@ const ABOUT_ORDER: ProfileFieldKey[] = ['connectGoal', 'occupation', 'workplace'
 const card = 'mt-10 pt-10 border-t border-slate-200';
 // How much of a long list shows at first, and per "ดูเพิ่ม"
 const PAGE_HOSTED = 6;
-const FIRST_MOMENTS = 9;
+// 12 fills whole rows at both 3 and 4 across
+const FIRST_MOMENTS = 12;
 const PAGE_MOMENTS = 12;
 const FIRST_BADGES = 10;
 /** The tabs under the story, like IG (owner 2026-11-01): what they posted, ตี้ they went to, ตี้ they host, challenges they finished */
@@ -327,7 +330,7 @@ export function HostCard({ member, application, onChanged }: { member: PublicMem
           </div>
           <ErrorLine message={error} />
           {!canApply && <p className="text-xs font-bold text-slate-500"><PhraseText text="ยืนยันตัวตนและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะส่งคำขอได้" /></p>}
-          <button type="submit" disabled={busy || !canApply} className={dialogButton.secondary}>
+          <button type="submit" disabled={busy || !canApply} className={`${dialogButton.secondary} w-full`}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <CalendarPlus className="w-4 h-4" aria-hidden="true" />}
             ส่งคำขอให้ทีมงาน
           </button>
@@ -515,6 +518,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   // null: the first tab that has something
   const [tab, setTab] = useState<ProfileTab | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [followList, setFollowList] = useState<FollowTab | null>(null);
 
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
   const memberId = member?.id;
@@ -615,6 +619,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     return hostedRank(a) === 2 ? -when : when;
   });
 
+  const closeFollowList = (changed: boolean) => {
+    setFollowList(null);
+    if (changed) refresh();
+  };
+
   const toggleFollow = async () => {
     if (!profile) return;
     const following = !profile.viewer?.isFollowing;
@@ -664,11 +673,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     : []
   ).filter((stat) => stat.value !== '0');
   // Under the name, as on IG: posts, followers, following (zeros too: they are the start of a profile, not a gap)
-  const social: { label: string; value: number; tab?: ProfileTab }[] = profile
+  const social: { label: string; value: number; tab?: ProfileTab; list?: FollowTab }[] = profile
     ? [
         { label: 'โพสต์', value: state.momentsTotal ?? state.moments.length, tab: 'moments' as const },
-        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount }] : []),
-        ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount }] : []),
+        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount, list: 'followers' as const }] : []),
+        ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount, list: 'following' as const }] : []),
       ]
     : [];
   const went = profile?.wentTo ?? [];
@@ -761,7 +770,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     <span className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-5xl font-bold flex items-center justify-center">
                       {profile.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
-                        <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={avatarImage(profile.avatarUrl, 256)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         nameInitial(profile.displayName, 'C')
                       )}
@@ -787,6 +796,15 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             <dd className="text-lg font-bold text-slate-900 tabular-nums">{item.value.toLocaleString()}</dd>
                           </>
                         );
+                        // The lists are the member's own: on another member's profile the numbers stay plain
+                        if (viewOwn && item.list) {
+                          const list = item.list;
+                          return (
+                            <button key={item.label} type="button" onClick={() => setFollowList(list)} aria-haspopup="dialog" className="flex flex-col-reverse items-center rounded-xl py-1 hover:bg-slate-50 cursor-pointer">
+                              {cell}
+                            </button>
+                          );
+                        }
                         return item.tab && tabs.some((t) => t.key === item.tab) ? (
                           <button key={item.label} type="button" onClick={() => openTab(item.tab!)} className="flex flex-col-reverse items-center rounded-xl py-1 hover:bg-slate-50 cursor-pointer">
                             {cell}
@@ -999,12 +1017,12 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       {activeTab === 'moments' &&
                         (state.moments.length > 0 ? (
                           <>
-                            <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                            <ul className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
                               {state.moments.slice(0, momentsShown).map((m) => (
-                                <li key={m.id} className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100">
+                                <li key={m.id} className="aspect-[4/5] rounded-xl overflow-hidden bg-slate-100">
                                   <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                                    <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                    <img src={optimizedImage(m.image, 384)} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                   </Link>
                                 </li>
                               ))}
@@ -1122,6 +1140,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
       <MobileNav activeTab="profile" setActiveTab={() => undefined} />
 
       {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it, opened from the small link */}
+      {followList && <FollowListDialog initialTab={followList} onClose={closeFollowList} />}
+
       {isInviteOpen && (
         <DialogShell onClose={() => setIsInviteOpen(false)} title="ชวนเพื่อนมาไปตี้ด้วยกัน" size="md">
           <InviteFriendsCard />

@@ -39,6 +39,11 @@ export function optimizedImage(src: string | undefined, width: number): string {
   return encodeImageLink(unsplashAtWidth(src, width));
 }
 
+/** A member's face: shown at 48 px or less on most screens, while the file behind it can be 800 px (one was 1 MB, 2026-11-03) */
+export function avatarImage(src: string | null | undefined, width = 128): string | undefined {
+  return optimizedImage(src ?? undefined, width) || undefined;
+}
+
 /**
  * Unsplash resizes by its own link parameters: ask for the card's width in WebP/AVIF instead of the 800–1200 px JPEG
  * the sample data names (the landing's sample photos were ~220 KB each on a phone, 2026-10-29).

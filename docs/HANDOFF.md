@@ -20,6 +20,23 @@ Item template:
 
 ---
 
+### BE-240 · Ended ตี้ and อีเวนต์ keep their colour; profile grid smaller (owner 2026-11-03)
+- **What changed:** a ตี้ or อีเวนต์ that has ended is a good memory, not something broken, so its photo stays in colour with the "จบแล้ว" badge (`MeetupTile`, `FairTile`, `PosterPhoto` loses `dim`). My Hub: hosted and attended rows in colour; cancelled and missed stay faded. Ended challenges are faded only (`opacity-70`), since people browse them for what is still open. The profile's moment grid is 4 across from `sm` and shows 12 first.
+- **What to do about it:** do not bring grayscale back for ended content. Admin's hidden moments keep it.
+
+### BE-239 · Followers and following lists on your own profile (owner 2026-11-03)
+- **What changed:** on your own profile the two numbers open `app/profile/FollowListDialog.tsx`, with a tab for each list. New `GET /api/members/follows`. "กำลังติดตาม" unfollows at once and the person stays as "ติดตาม", one tap to undo. Numbers on another member's profile stay plain, so who follows whom stays private until the owner decides otherwise.
+- **To watch:** `followLists` reads all members, as `followerCount` does; both belong to the follower-count item in stage 7 of the checklist.
+
+### BE-238 · "พาสปอร์ตของฉัน" removed for now (owner 2026-11-03)
+- **Why:** the owner found no reason to keep it. It showed what "เหรียญของคุณ", the profile and `/challenges` already show, and its stamps were the same as badges.
+- **What changed:** removed `components/home/StampPassport.tsx`, its section in My Hub and its link in the home page's "ของฉัน". Badges and challenge data are unchanged. The challenges named "พาสปอร์ตสุดสัปดาห์" keep their name.
+- **What to do about it:** a real collect-the-places idea would be a new design, with stamps earned by going somewhere.
+
+### BE-237 · Faces and profile photos through the optimizer (owner 2026-11-03)
+- **What changed:** new `avatarImage(src, width = 128)` in `lib/optimizedImage.ts`, used wherever a member's face shows outside admin. The profile's moment grid and `VisitPanel` photos use `optimizedImage`. Use `avatarImage` for any new avatar.
+- **Checked:** production build on the development database, phone size, cache off: `/profile?id=` 105 KB of images, against 7.43 MB for the same member on live (old code; live had one more image). No failed images or page errors. The development data has fewer members' photos than live, so `/moments` is not a like-for-like figure.
+
 ### BE-236 · Member photos: resized when shown, 500 KB limit when sent (owner 2026-11-03)
 - **Why:** live moment photos reached 3.19 MB (mostly JPEG from Safari), and the feed loaded them whole because Vercel Blob was not an allowed optimizer host.
 - **What changed:** our store's host is in `OPTIMIZED_REMOTE_IMAGES` (`lib/optimizedImage.ts`), by its exact name so the optimizer stays closed to other stores. A new store needs its host there. `MomentPhotos` gives Blob photos the same three widths as `/uploads`, and clip covers go through the optimizer. New `encodeForUpload` (`lib/media/compressor.ts`) is used by `exportPhoto` and `compressImage`: it lowers quality, then size down to 800 px, until a photo fits `MAX_PHOTO_BYTES`. `compressImage` used to send Safari's PNG when asked for WebP; it now sends JPEG.

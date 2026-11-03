@@ -11,6 +11,7 @@ import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 24;
 /** The moments pillar colour (rose) */
@@ -64,7 +65,7 @@ const STICKER = 'absolute z-10 inline-flex items-center gap-1 whitespace-nowrap 
 function Avatar({ name, src }: { name: string; src?: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={src} alt="" className="w-6 h-6 lg:w-9 lg:h-9 rounded-full object-cover bg-slate-100 shrink-0" />
+    <img src={avatarImage(src)} alt="" className="w-6 h-6 lg:w-9 lg:h-9 rounded-full object-cover bg-slate-100 shrink-0" />
   ) : (
     <span className="w-6 h-6 lg:w-9 lg:h-9 rounded-full bg-slate-200 text-[11px] lg:text-xs font-bold text-slate-700 flex items-center justify-center shrink-0">{nameInitial(name)}</span>
   );

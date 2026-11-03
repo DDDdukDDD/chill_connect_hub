@@ -48,7 +48,7 @@ export function VerifyToPostDialog({ onClose }: { onClose: () => void }) {
           <a href={devUrl} className="mt-1 block text-xs font-bold text-[#2563EB] underline break-all">{devUrl}</a>
         </div>
       )}
-      <div className="flex flex-wrap justify-end gap-2.5">
+      <div className="flex flex-wrap justify-center gap-2.5">
         <button type="button" className={dialogButton.quiet} onClick={onClose}>ไว้ทีหลัง</button>
         {needsEmail ? (
           <button type="button" className={dialogButton.primary} onClick={send} disabled={busy}>

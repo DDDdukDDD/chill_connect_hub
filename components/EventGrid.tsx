@@ -10,6 +10,7 @@ import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUt
 import { fairPlace, placeName } from '@/lib/placeName';
 import { FloatingCarousel } from '@/components/FloatingCarousel';
 import { EmptyResults } from '@/components/discover/EmptyResults';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface EventGridProps {
   events: EventItem[];
@@ -162,7 +163,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <img
-                          src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                          src={avatarImage(event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80')}
                           alt={event.hostName}
                           className="w-4 h-4 rounded-full object-cover shrink-0"
                         />
@@ -360,7 +361,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
               <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <img
-                    src={event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
+                    src={avatarImage(event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80')}
                     alt={event.hostName}
                     className="w-4 h-4 rounded-full object-cover shrink-0"
                   />

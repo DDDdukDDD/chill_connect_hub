@@ -6,7 +6,7 @@ import { Bell } from 'lucide-react';
 import { DialogShell } from '@/components/auth/DialogShell';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 interface NotificationItem {
   id: string;
@@ -153,7 +153,7 @@ export function NotificationBell() {
                           <Link href={hrefOf(n)} onClick={close} className={`flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
                             {n.actorAvatar ? (
                               // eslint-disable-next-line @next/next/no-img-element -- member upload
-                              <img src={n.actorAvatar} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
+                              <img src={avatarImage(n.actorAvatar)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
                             ) : (
                               <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
                                 {nameInitial(n.actorName)}

@@ -11,7 +11,6 @@ import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
 import { MyMonthSection } from '@/components/myhub/MyMonthSection';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
-import { StampPassport, buildPassport } from '@/components/home/StampPassport';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -95,6 +94,7 @@ import {
   RewardShopItem,
   REWARD_SHOP_ITEMS,
 } from '@/data/rewardsData';
+import { avatarImage } from '@/lib/optimizedImage';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -342,7 +342,7 @@ function MyHubContent() {
     }
   }, [searchParams]);
 
-  // The home page's "ของฉัน" links name a section (#my-schedule, #my-passport, #my-saved). Those sections arrive after
+  // The home page's "ของฉัน" links name a section (#my-schedule, #my-saved). Those sections arrive after
   // the member's data, so the browser's own jump misses them: wait for the section, scroll to it and light it up briefly
   useEffect(() => {
     let frame = 0;
@@ -906,7 +906,7 @@ function MyHubContent() {
     const row = (ev: EventItem, ended: boolean) => (
       <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex flex-wrap items-center gap-x-4 gap-y-2.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ev.image} alt="" className={`w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0 ${ended ? 'grayscale opacity-80' : ''}`} />
+        <img src={ev.image} alt="" className={`w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0`} />
         <div className="min-w-0 flex-1 basis-40">
           <Link href={`/community/${encodeURIComponent(ev.id)}`} className="block text-sm font-bold text-slate-900 truncate hover:underline">{ev.title}</Link>
           <p className="text-xs font-medium text-slate-600 mt-0.5 truncate tabular-nums">{[thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · ')}</p>
@@ -1660,7 +1660,7 @@ function MyHubContent() {
                           <img
                             src={ev.image || fallbackImg}
                             alt=""
-                            className={`w-14 h-14 rounded-xl object-cover bg-slate-100 ${isCancelled || isMissed || isAttended ? 'grayscale-[0.6] opacity-85' : ''}`}
+                            className={`w-14 h-14 rounded-xl object-cover bg-slate-100 ${isCancelled || isMissed ? 'grayscale-[0.6] opacity-85' : ''}`}
                           />
                         </Link>
                         <div className={`min-w-0 flex-1 ${hasRowAction ? 'basis-44' : 'basis-28'}`}>
@@ -2077,7 +2077,7 @@ function MyHubContent() {
                 <div className="space-y-3 text-slate-900">
                   <div className="flex items-center gap-3 min-w-0">
                     {hubMember?.avatarUrl ? (
-                      <img src={hubMember.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
+                      <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
                     ) : (
                       <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
                         {nameInitial(hubName)}
@@ -2129,12 +2129,6 @@ function MyHubContent() {
                 {isLoggedIn && (
                   <div className="order-4 lg:order-none empty:hidden border-t border-slate-200/70 pt-5">
                     <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
-                  </div>
-                )}
-                {/* The stamp passport: one stamp per finished challenge; the home page links here */}
-                {isLoggedIn && myRewards.isLoaded && questCatalog && (
-                  <div className="order-5 lg:order-none border-t border-slate-200/70 pt-5">
-                    <StampPassport {...buildPassport(myRewards.finished, myRewards.quests, questCatalog)} />
                   </div>
                 )}
                 <div id="my-saved" className="order-5 lg:order-none scroll-mt-24">{renderSummaryCards()}</div>
@@ -2746,7 +2740,7 @@ function MyHubContent() {
                 <li key={p.userId} className="py-2.5 flex items-center justify-between gap-3">
                   <Link href={`/profile?id=${p.userId}`} className="flex items-center gap-2.5 min-w-0">
                     {p.userAvatar ? (
-                      <img src={p.userAvatar} alt="" className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0" />
+                      <img src={avatarImage(p.userAvatar)} alt="" className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0" />
                     ) : (
                       <span className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(p.userName)}</span>
                     )}

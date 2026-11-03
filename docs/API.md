@@ -461,6 +461,7 @@ All writes are `POST` with an `action` field unless noted.
 ## Following and suggested members (added 2026-10-11)
 - `POST /api/members/{id}/actions` with `{ action: 'follow' | 'unfollow' }` → `{ success, following, followerCount }`. Signed-in members only; blocking a member also unfollows them.
 - `GET /api/members/{id}` and `GET /api/auth/member/profile` (`publicView`) now include `followerCount`, `followingCount`; `viewer.isFollowing` on another member's profile.
+- `GET /api/members/follows` (added 2026-11-03, BE-239) → `{ success, followers, following }`, each `[{ id, name, avatar, isFollowing, followsMe }]`: the signed-in member's own lists, active members only, nobody either side blocked. `401` signed out. Another member's lists are not available.
 - `GET /api/members/suggested` → `{ success, members: [{ id, displayName, avatarUrl, momentCount, trusted, approvedHost }] }`: up to 5 verified members with published moments, without the viewer, people they follow or blocked, and accounts with open risk flags.
 - `GET /api/members/interest-count?ids=cafe_social,running_fitness` (added 2026-10-23) → `{ success, people }`: how many active members picked at least one of these `communityCategories` ids in onboarding. A number only, never names (interests are private answers). Used by the onboarding "บอกสิ่งที่ชอบ" side panel.
 - `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).

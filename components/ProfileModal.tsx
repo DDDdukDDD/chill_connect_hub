@@ -18,6 +18,7 @@ import {
   ExternalLink,
   MessageCircle,
 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="flex items-end justify-between gap-3 -mt-12 mb-2">
             <div className="relative">
               <img
-                src={profile.avatar}
+                src={avatarImage(profile.avatar)}
                 alt={profile.name}
                 className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md bg-white shrink-0"
               />

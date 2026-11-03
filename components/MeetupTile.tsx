@@ -188,7 +188,7 @@ export function MeetupTile({
           src={optimizedImage(event.image, 384)}
           alt=""
           loading="lazy"
-          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${isEnded ? 'grayscale opacity-80' : ''}`}
+          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
         />
         {badge ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 whitespace-nowrap shadow-sm">{badge}</span>

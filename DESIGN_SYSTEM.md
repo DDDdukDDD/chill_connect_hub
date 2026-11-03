@@ -200,7 +200,8 @@ A slim horizontal strip, never a large box: `bg-slate-50/80 rounded-2xl p-4 sm:p
 - Overlay `bg-black/65`; panel white, up to `max-w-[520px]`, `max-h-[92vh] overflow-y-auto`.
 - The close button is a quiet round button in the top-right corner.
 - Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs.
-- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice.
+- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice. 
+- `DialogShell`'s heading is centered, so a dialog's buttons are never pushed to one side: two buttons take equal widths (`grid grid-cols-2 gap-3`), or `flex flex-wrap justify-center gap-2.5` when a label is too long for half the panel; one button is centered or full width.
 
 ### Short messages (toasts)
 - Use `<Toast message={…} />` from `components/Toast.tsx` on every member-facing page; never draw a new one. Light: white, thin slate border, soft shadow, top centre under the top bar (clear of the phone's bottom bar). Never black (owner 2026-10-25).

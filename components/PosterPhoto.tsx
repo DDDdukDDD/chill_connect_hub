@@ -11,7 +11,6 @@ export function PosterPhoto({
   src,
   alt = '',
   posterFrom = 1.1,
-  dim = false,
   zoom = false,
   className = '',
   onClick,
@@ -20,8 +19,6 @@ export function PosterPhoto({
   src: string;
   alt?: string;
   posterFrom?: number;
-  /** Ended: grey and faded */
-  dim?: boolean;
   /** Grows a little on the tile's hover (needs a `group` parent) */
   zoom?: boolean;
   className?: string;
@@ -37,11 +34,10 @@ export function PosterPhoto({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
-  const tone = dim ? 'grayscale opacity-80' : '';
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element -- content images come from many hosts */}
-      {isPoster && <img src={src} alt="" aria-hidden="true" className={`absolute inset-0 h-full w-full object-cover scale-110 blur-xl ${tone}`} />}
+      {isPoster && <img src={src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl" />}
       {/* eslint-disable-next-line @next/next/no-img-element -- content images come from many hosts */}
       <img
         ref={ref}
@@ -51,7 +47,7 @@ export function PosterPhoto({
         fetchPriority={fetchPriority}
         onLoad={(e) => measure(e.currentTarget)}
         onClick={onClick}
-        className={`absolute inset-0 h-full w-full ${isPoster ? 'object-contain' : 'object-cover'} ${zoom ? 'transition-transform duration-500 group-hover:scale-105' : ''} ${tone} ${className}`}
+        className={`absolute inset-0 h-full w-full ${isPoster ? 'object-contain' : 'object-cover'} ${zoom ? 'transition-transform duration-500 group-hover:scale-105' : ''} ${className}`}
       />
     </>
   );

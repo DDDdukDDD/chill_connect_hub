@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BadgeCheck } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 type Attendee = { id: string; name: string; avatar: string; verified: boolean; isHost: boolean; isMe: boolean; attendance?: { attended: number; total: number } };
 
@@ -23,7 +24,7 @@ function Face({ name, avatar, verified, size = 'lg' }: { name: string; avatar: s
   return (
     <span className="relative inline-block shrink-0">
       {avatar ? (
-        <img src={avatar} alt="" className={`${box} rounded-full object-cover bg-slate-100`} />
+        <img src={avatarImage(avatar)} alt="" className={`${box} rounded-full object-cover bg-slate-100`} />
       ) : (
         <span className={`${box} ${color} rounded-full text-white font-bold flex items-center justify-center`}>{[...name][0] ?? '?'}</span>
       )}

@@ -7,6 +7,7 @@ import type { EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const TAGS = ['สนุก', 'ตรงเวลา', 'รู้สึกปลอดภัย', 'คนจัดดูแลดี', 'อยากไปอีก'];
 const MAX_REVIEW = 300;
@@ -200,7 +201,7 @@ export function AfterTeePanel({ event, isHost, onOpenPairChat }: { event: EventI
               <li key={person.id} className="flex items-center gap-3 py-2.5">
                 {person.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element -- member photos
-                  <img src={person.avatar} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+                  <img src={avatarImage(person.avatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
                 ) : (
                   <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold" aria-hidden="true">{person.name.slice(0, 1)}</span>
                 )}

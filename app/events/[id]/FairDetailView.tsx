@@ -77,6 +77,7 @@ import {
   CalendarPlus,
   Ticket
 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 // Helper to strip rogue emojis for clean, editorial typography
 const cleanText = (str?: string): string => {
@@ -775,7 +776,7 @@ export default function FairDetailPage({
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <img
-                            src={sub.creatorAvatar}
+                            src={avatarImage(sub.creatorAvatar)}
                             alt={sub.creatorName}
                             className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
                           />
