@@ -78,6 +78,7 @@ const toParticipant = (r: Loose): ParticipantInfo => ({
 export class PostgresAdapter implements IDataRepository {
   private initialized: Promise<void> | null = null;
   private refs: { provinceCodes: Set<string>; venueCodes: Set<string>; at: number } | null = null;
+  private snapshots = new Map<string, { version: string; items: unknown[] }>();
 
   /** Once per server: the same start-up clean-ups the JSON adapter runs (core ตี้, seed challenges) */
   private ensureInitialized(): Promise<void> {
@@ -129,18 +130,61 @@ export class PostgresAdapter implements IDataRepository {
 
   /* ---------- loading ---------- */
 
+  /**
+   * Downloads a table again only when something in it changed. Whole-table reads were most of the database's outgoing
+   * data (2026-11-03: over the free plan's quota), and the fingerprint is one short row. Every write to these tables
+   * moves updated_at (a trigger), and a sum also notices a write that started before the newest one.
+   */
+  private async readIfChanged<T>(key: string, table: 'events' | 'places' | 'quests', read: () => Promise<T[]>): Promise<T[]> {
+    const [{ rows, stamp }] = await sql().unsafe(`select count(*) as rows, sum(extract(epoch from updated_at)) as stamp from app.${table}`);
+    const version = `${rows}:${stamp}`;
+    const known = this.snapshots.get(key);
+    if (known?.version === version) return known.items as T[];
+    const items = await read();
+    this.snapshots.set(key, { version, items });
+    return items;
+  }
+
+  /** The columns rowToEvent reads, so the copies kept for search and the map stay in the database */
   private loadEvents(): Promise<EventItem[]> {
     return cacheManager.getOrSet(
       'pg:events',
-      async () => (await sql()`select * from app.events order by sort_key desc, created_at desc`).map((row) => rowToEvent(row) as EventItem),
+      () => this.readIfChanged('pg:events', 'events', async () =>
+        (await sql()`
+          select slug, title, description, event_type, tag, zone, online_platform, meeting_point, price_text, target_gender, target_age,
+                 energy_level, cancellation_policy, approval_status, source_name, source_url, external_url, cover_image_url, organizer_avatar,
+                 details, participants_count
+          from app.events order by sort_key desc, created_at desc`).map((row) => rowToEvent(row) as EventItem)),
       { staleMs: STALE_MS, ttlMs: 15 * 1000, tags: ['events'] },
     );
   }
 
+  /** Every field of every place: staff screens and scrapers, which also see drafts */
   private loadSpots(): Promise<LifestyleSpotItem[]> {
     return cacheManager.getOrSet(
       'pg:spots',
-      async () => (await sql()`select * from app.places order by sort_key desc`).map((row) => rowToPlace(row) as LifestyleSpotItem),
+      () => this.readIfChanged('pg:spots', 'places', async () =>
+        (await sql()`select * from app.places order by sort_key desc`).map((row) => rowToPlace(row) as LifestyleSpotItem)),
+      { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
+    );
+  }
+
+  /**
+   * The public catalog without what only a place's own page shows (lib/listItems.ts, SPOT_DETAIL_ONLY). Highlights stay
+   * for search, the map link for the nearby-dining cards, and the first gallery photo for a place with no cover.
+   * A place's page reads its own row.
+   */
+  private loadSpotList(): Promise<LifestyleSpotItem[]> {
+    return cacheManager.getOrSet(
+      'pg:spots:list',
+      () => this.readIfChanged('pg:spots:list', 'places', async () =>
+        (await sql()`
+          select slug, title, category, district, description, open_hours, price, entry_fee, best_time, google_maps_url, vibe_tags,
+                 (details - '{galleryImages,contact,facilities,parkingInfo,reviews,tips,faq,website,phone}'::text[]) #- '{curation,reasons}'
+                   || case when jsonb_typeof(details->'galleryImages') = 'array'
+                        then jsonb_build_object('galleryImages', jsonb_path_query_array(details->'galleryImages', '$[0]'))
+                        else '{}'::jsonb end as details
+          from app.places order by sort_key desc`).map((row) => rowToPlace(row) as LifestyleSpotItem)),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }
@@ -148,7 +192,8 @@ export class PostgresAdapter implements IDataRepository {
   private loadQuests(): Promise<ChallengeQuest[]> {
     return cacheManager.getOrSet(
       'pg:quests',
-      async () => (await sql()`select * from app.quests order by sort_key desc`).map((row) => rowToQuest(row) as ChallengeQuest),
+      () => this.readIfChanged('pg:quests', 'quests', async () =>
+        (await sql()`select * from app.quests order by sort_key desc`).map((row) => rowToQuest(row) as ChallengeQuest)),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['quests'] },
     );
   }
@@ -486,7 +531,7 @@ export class PostgresAdapter implements IDataRepository {
   public async findSpots(params?: SpotQueryParams): Promise<PaginatedResult<LifestyleSpotItem>> {
     return cacheManager.getOrSet(
       `spots:${JSON.stringify(params || {})}`,
-      async () => paginateArray(filterSpots(await this.loadSpots(), params), params?.page || 1, params?.limit || 12),
+      async () => paginateArray(filterSpots(await (params?.includeDrafts ? this.loadSpots() : this.loadSpotList()), params), params?.page || 1, params?.limit || 12),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }

@@ -2555,3 +2555,10 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Screen:** `ตั้งกลุ่ม` on `/events/[id]` shows the check first and opens the form once it passes. The dialog moved out of `CreateEventModal` into `components/auth/OrganizerGateDialog.tsx`, used by both.
 - **Words:** the refusal, the settings row and the terms and privacy text now name groups in an อีเวนต์.
 - **On a deployment with no SMS provider** the same fallback applies as for a ตี้: a confirmed email, and a LINE member is told plainly that creating is not open yet.
+
+### BE-230 · Less data out of the database (owner 2026-11-03)
+- **Why:** Supabase warned of egress over the free plan's 5.5 GB; restrictions may start 2026-12-03. Whole-table reads of `app.places` were about 7 GB of what `pg_stat_statements` shows since 2026-10-25, and `app.events` about 1.5 GB.
+- **Downloads only on change:** `readIfChanged` in `lib/db/adapters/postgresAdapter.ts` asks for a one-row fingerprint (row count and the sum of `updated_at`) when a cached list runs out, and reads the table again only if it moved. A new server still reads once.
+- **Lighter public list:** `findSpots` without `includeDrafts` reads the list without what only a place's page shows. Download 9.72 MB to 4.89 MB. With `includeDrafts` (staff screens, scrapers) it reads everything. `findSpotById` reads its own row, so a place's page keeps its gallery. Events read only the columns `rowToEvent` uses (0.78 MB to 0.52 MB).
+- **For anyone calling `db.findSpots` without `includeDrafts`:** `galleryImages` holds the first photo only; `contact`, `facilities`, `parkingInfo`, `reviews`, `tips`, `faq`, `website`, `phone`, `transitInfo`, `sourceName`, `sourceUrl` and `curation.reasons` are absent. Use `findSpotById` for them. No frontend action; `/api/spots` and list pages send the same as before.
+- **Checked on a production build:** all 2,179 list items and 261 events compare equal to the full read; a new server made one light download and no full one; no second download after the cache ran out with nothing changed; one fresh download after a change.
