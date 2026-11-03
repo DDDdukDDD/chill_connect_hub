@@ -2,17 +2,20 @@
  * Photos kept in /public are often ~1 MB originals, and organisers' posters (ThaiRun, IMPACT, QSNCC) are as big.
  * They go through the Next.js image optimizer at the width a card shows (AVIF/WebP, tens of KB).
  * Remote images are resized only from the hosts below (also `images.remotePatterns` in next.config.ts), so the
- * optimizer is never an open proxy; other links (Unsplash with its own sizes, member uploads) stay as they are.
+ * optimizer is never an open proxy; other links (Unsplash with its own sizes) stay as they are.
+ * Members' uploads on Vercel Blob are listed by our own store's host, not `*.blob.vercel-storage.com`, which would
+ * resize files from anyone's store on our quota. A new store needs its host here.
  * `width` must be one of the optimizer sizes: 96, 128, 256, 384, 640, 750, 828, 1080.
  */
 export const OPTIMIZED_REMOTE_IMAGES = [
+  { hostname: 'wf6n42ar74k77ycg.public.blob.vercel-storage.com', pathname: '/**' },
   { hostname: 'storage.googleapis.com', pathname: '/s.race.thai.run/**' },
   { hostname: 'www.impact.co.th', pathname: '/**' },
   { hostname: 'images.prismic.io', pathname: '/qsncc/**' },
   { hostname: 'cms-visit.bangkok.go.th', pathname: '/**' },
 ] as const;
 
-function isOptimizedRemote(src: string): boolean {
+export function isOptimizedRemote(src: string): boolean {
   try {
     const url = new URL(src);
     return url.protocol === 'https:' && OPTIMIZED_REMOTE_IMAGES.some((p) => url.hostname === p.hostname && url.pathname.startsWith(p.pathname.replace('/**', '/')));
@@ -34,6 +37,11 @@ export function optimizedImage(src: string | undefined, width: number): string {
   const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');
   if (local || isOptimizedRemote(src)) return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
   return encodeImageLink(unsplashAtWidth(src, width));
+}
+
+/** A member's face: shown at 48 px or less on most screens, while the file behind it can be 800 px (one was 1 MB, 2026-11-03) */
+export function avatarImage(src: string | null | undefined, width = 128): string | undefined {
+  return optimizedImage(src ?? undefined, width) || undefined;
 }
 
 /**

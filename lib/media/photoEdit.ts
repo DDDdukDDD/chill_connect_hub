@@ -4,6 +4,8 @@
  * because Safari's canvas has no `filter`. Every post shows in a square frame, so the result is always square.
  */
 
+import { encodeForUpload } from './compressor';
+
 export interface PhotoText {
   id: string;
   text: string;
@@ -248,7 +250,7 @@ export function hitOverlay(ctx: CanvasRenderingContext2D, photo: EditedPhoto, si
   return null;
 }
 
-/** The finished square, ready to upload: WebP, or JPEG where the browser cannot write WebP (Safari) */
+/** The finished square, ready to upload, within encodeForUpload's size limit */
 export async function exportPhoto(photo: EditedPhoto): Promise<Blob> {
   const size = Math.min(OUTPUT_SIZE, Math.round(Math.min(photo.image.naturalWidth, photo.image.naturalHeight) * photo.zoom));
   const canvas = document.createElement('canvas');
@@ -257,9 +259,7 @@ export async function exportPhoto(photo: EditedPhoto): Promise<Blob> {
   if (!ctx) throw new Error('no canvas');
   drawBase(ctx, photo, size);
   drawOverlays(ctx, photo, size);
-  const encode = (type: string) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.86));
-  const webp = await encode('image/webp');
-  const blob = webp?.type === 'image/webp' ? webp : await encode('image/jpeg');
+  const blob = await encodeForUpload(canvas);
   if (!blob) throw new Error('no blob');
   return blob;
 }

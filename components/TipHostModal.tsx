@@ -89,7 +89,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({ isOpen, onClose, eve
           <p role="alert" className="mt-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">{error}</p>
         )}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-2.5">
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <button type="button" className={dialogButton.quiet} onClick={onClose}>ไว้ทีหลัง</button>
           <button type="submit" className={dialogButton.primary} disabled={isSending}>{isSending ? 'กำลังส่ง…' : 'ส่งรีวิว'}</button>
         </div>

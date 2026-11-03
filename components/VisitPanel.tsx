@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Camera, Check, ChevronDown, Footprints, Loader2, Star } from 'lucide-react';
 import type { ChallengeQuest } from '@/data/mockData';
 import { ChallengeTile } from '@/components/ChallengeTile';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { MomentComposer, CountedQuestNotice, type CountedQuest } from '@/components/moments/MomentComposer';
 
 type TargetType = 'spot' | 'community' | 'fair';
@@ -269,7 +269,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
                     {proof.people.map((person, index) =>
                       person.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                        <img key={`${index}-${person.name}`} src={person.avatar} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
+                        <img key={`${index}-${person.name}`} src={avatarImage(person.avatar)} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
                       ) : (
                         <span key={`${index}-${person.name}`} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">
                           {person.name.slice(0, 1)}
@@ -291,7 +291,7 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
                       className="block w-[calc((100%-16px)/3)] max-w-28 aspect-square rounded-2xl overflow-hidden bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- member photos come from uploads */}
-                      <img src={photo.url} alt="โมเมนต์จากสมาชิก" loading="lazy" className="w-full h-full object-cover" />
+                      <img src={optimizedImage(photo.url, 256)} alt="โมเมนต์จากสมาชิก" loading="lazy" className="w-full h-full object-cover" />
                     </Link>
                   ))}
                 </div>

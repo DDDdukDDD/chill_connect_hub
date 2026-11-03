@@ -1,4 +1,4 @@
-# Design System: Chill & Connect Hub
+# Design System: Chillwaa
 
 The single source of truth for how the product looks and reads. It covers the public site and the admin console.
 
@@ -200,7 +200,8 @@ A slim horizontal strip, never a large box: `bg-slate-50/80 rounded-2xl p-4 sm:p
 - Overlay `bg-black/65`; panel white, up to `max-w-[520px]`, `max-h-[92vh] overflow-y-auto`.
 - The close button is a quiet round button in the top-right corner.
 - Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs.
-- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice.
+- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice. 
+- `DialogShell`'s heading is centered, so a dialog's buttons are never pushed to one side: two buttons take equal widths (`grid grid-cols-2 gap-3`), or `flex flex-wrap justify-center gap-2.5` when a label is too long for half the panel; one button is centered or full width.
 
 ### Short messages (toasts)
 - Use `<Toast message={…} />` from `components/Toast.tsx` on every member-facing page; never draw a new one. Light: white, thin slate border, soft shadow, top centre under the top bar (clear of the phone's bottom bar). Never black (owner 2026-10-25).
@@ -292,18 +293,9 @@ Measured on 2026-10-10 in user-facing files (`app/`, `components/`, admin exclud
 | No horizontal scroll at 360px | Fixed on 2026-10-10 (the header row in `components/Navbar.tsx` needed 429px). Keep checking new pages at 360px |
 | No looping decoration | 15 pulsing dots on the homepage, 16 on `/community` |
 
-**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing))
+**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing)): the list is stage 6 of [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).
 
-| Where | What |
-| :--- | :--- |
-| `components/EventGrid.tsx` | A host with no rating shows "4.9" |
-| Homepage "Member Privileges" | Sample offers: "ลด 10%", "จอยตี้ฟรี", "ลด 15%" |
-| `/moments` | The 24 seeded sample posts and their like counts (`isSample`) |
-| Community meetups | Sample events whose dates roll forward so the feed is never empty |
-| Host and member names on sample events and posts | Sample people |
-| `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` | 24 sample accounts (`isSample`, email `…@sample.invalid`, cannot sign in) that own the sample moments, with made-up profiles. Remove the two files, the `ensureSampleMembers()` calls, and delete the accounts and their moments. |
-
-A page-by-page audit with rendered counts is in [docs/HANDOFF.md](docs/HANDOFF.md) item BE-020.
+A page-by-page audit from 2026-10-10 is in [the archived board](docs/archive/handoff-until-2026-11-03.md), item BE-020.
 
 Compliant references to copy from: `components/auth/AuthPanel.tsx`, `app/onboarding/OnboardingFlow.tsx`.
 

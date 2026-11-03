@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Search } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { avatarImage } from '@/lib/optimizedImage';
 
 export type TagFriend = { id: string; name: string; avatar: string };
 
@@ -10,7 +11,7 @@ export const MAX_MOMENT_TAGS = 10;
 
 function Avatar({ name, src }: { name: string; src: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- a member's avatar from any allowed host
-  if (src) return <img src={src} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />;
+  if (src) return <img src={avatarImage(src)} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />;
   return <span aria-hidden="true" className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">{name.slice(0, 1)}</span>;
 }
 
@@ -86,7 +87,7 @@ export function FriendTagPicker({ value, onDone, onClose }: { value: TagFriend[]
           </ul>
         )}
         {isFull && <p role="status" className="text-xs font-medium text-slate-600">แท็กได้สูงสุด {MAX_MOMENT_TAGS} คนต่อโพสต์</p>}
-        <div className="flex justify-end gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           <button type="button" className={dialogButton.quiet} onClick={onClose}>ยกเลิก</button>
           <button type="button" className={dialogButton.primary} onClick={() => onDone(picked)}>{picked.length > 0 ? `แท็ก ${picked.length} คน` : 'เสร็จแล้ว'}</button>
         </div>

@@ -16,6 +16,7 @@ import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
 import { recall, remember } from '@/lib/clientMemory';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -62,7 +63,7 @@ export async function call(url: string, method: string, body?: unknown): Promise
 function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
+    <img src={avatarImage(src)} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
   ) : (
     <span className={`${className} rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center shrink-0`} aria-hidden="true">
       {nameInitial(name)}
@@ -820,8 +821,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
       {confirmDelete && (
         <DialogShell onClose={() => setConfirmDelete(null)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDelete(null)}>ยกเลิก</button>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" data-autofocus className={dialogButton.quiet} onClick={() => setConfirmDelete(null)}>ยกเลิก</button>
             <button type="button" className={dialogButton.danger} disabled={isBusy} onClick={() => deletePost(confirmDelete)}>
               {isBusy ? 'กำลังลบ…' : 'ลบโมเมนต์'}
             </button>
@@ -845,7 +846,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               </label>
             ))}
           </fieldset>
-          <div className="flex flex-wrap justify-end gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             <button type="button" className={dialogButton.quiet} onClick={() => setReporting(null)}>ยกเลิก</button>
             <button type="button" className={dialogButton.primary} disabled={!reporting.reason || isBusy} onClick={sendReport}>
               {isBusy ? 'กำลังส่ง…' : 'ส่งรายงาน'}
@@ -869,7 +870,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           <div className="mb-5">
             <PostOptionFields value={editing} onChange={(options) => setEditing({ ...editing, ...options })} />
           </div>
-          <div className="flex flex-wrap justify-end gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             <button type="button" className={dialogButton.quiet} onClick={() => setEditing(null)}>ยกเลิก</button>
             <button type="button" className={dialogButton.primary} disabled={isBusy} onClick={saveEdit}>
               {isBusy ? 'กำลังบันทึก…' : 'บันทึก'}

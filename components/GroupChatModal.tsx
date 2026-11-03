@@ -6,6 +6,7 @@ import { Flag, Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { ReportSafetyModal } from './ReportSafetyModal';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface ChatMessage {
   id: string;
@@ -157,7 +158,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
               {!m.isMine &&
                 (m.authorAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element -- member upload
-                  <img src={m.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
+                  <img src={avatarImage(m.authorAvatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
                 ) : (
                   <span className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(m.authorName)}</span>
                 ))}

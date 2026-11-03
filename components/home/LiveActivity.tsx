@@ -6,6 +6,7 @@ import { Camera, ChevronDown, Flag, MapPin, Tent, Trophy, Users } from 'lucide-r
 import type { LiveCounts, LiveItem, LiveKind } from '@/lib/social/liveActivity';
 import { nameInitial } from '@/lib/displayName';
 import { recall, remember } from '@/lib/clientMemory';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const POLL_MS = 30_000;
 const TICK_MS = 4_500;
@@ -108,7 +109,7 @@ export function liveHref(target: LiveItem['target']): string {
 function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
+    <img src={avatarImage(src)} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
   ) : (
     <span className={`${className} rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center shrink-0`} aria-hidden="true">
       {nameInitial(name)}

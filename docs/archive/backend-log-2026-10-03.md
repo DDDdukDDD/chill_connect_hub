@@ -1,6 +1,6 @@
 # Backend Implementation Log — Archive (up to 2026-10-03)
 
-Older entries moved out of [BACKEND_IMPLEMENTATION_LOG.md](../../BACKEND_IMPLEMENTATION_LOG.md) on 2026-10-06 to keep the active log short. Some statements here are superseded (for example, `data/discovery_content.json` is tracked in git again since 2026-10-04).
+Older entries moved out of [backend-log-2026-10-09.md](backend-log-2026-10-09.md) on 2026-10-06 to keep the active log short. Some statements here are superseded (for example, `data/discovery_content.json` is tracked in git again since 2026-10-04).
 
 ## Implemented (up to 2026-10-04 FE-002)
 

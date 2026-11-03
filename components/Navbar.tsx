@@ -20,6 +20,7 @@ import { BrandWordmark } from './BrandWordmark';
 import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
 import { useActivitySync } from '@/lib/useMyActivity';
+import { avatarImage } from '@/lib/optimizedImage';
 
 // The create dialog loads only when someone opens it from the profile menu
 const CreateEventModal = dynamic(() => import('./CreateEventModal').then((m) => m.CreateEventModal), { ssr: false });
@@ -182,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <img
-                    src={userProfile.avatar}
+                    src={avatarImage(userProfile.avatar)}
                     alt=""
                     className="w-full h-full object-cover"
                   />
@@ -199,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }}
                       className="mx-2 px-3 py-2.5 flex items-center gap-3 rounded-xl hover:bg-slate-100 transition-colors"
                     >
-                      <img src={userProfile.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-100 shrink-0" />
+                      <img src={avatarImage(userProfile.avatar)} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-100 shrink-0" />
                       <span className="min-w-0 flex-1">
                         <span className="block font-bold text-sm text-slate-900 truncate">{userProfile.name || userName}</span>
                         <span className="flex items-center gap-0.5 text-xs font-semibold text-slate-500">

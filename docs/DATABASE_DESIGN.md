@@ -1,6 +1,6 @@
-# Database Design — Chill & Connect Hub
+# Database Design — Chillwaa
 
-Status: **approved by owner** (2026-10-25, decisions in §9). Nothing is migrated yet.
+Status: **built** (design approved by owner 2026-10-25, decisions in §9; live on Postgres since 2026-11-02). This file explains why the design is what it is, and "today" below means 2026-10-25, when the data was still in JSON files. For the tables as they are now, read `db/migrations/`: for example, stories were removed in `0014_remove_stories.sql`.
 Target: Supabase Postgres 17 (Singapore), used as plain Postgres + Realtime. Our own member/staff auth stays; images stay in Vercel Blob.
 
 Goals, in order: **security**, **performance**, **scalability** — while staying simple enough for a prototype team.

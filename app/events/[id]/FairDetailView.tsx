@@ -77,6 +77,7 @@ import {
   CalendarPlus,
   Ticket
 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 // Helper to strip rogue emojis for clean, editorial typography
 const cleanText = (str?: string): string => {
@@ -226,7 +227,7 @@ export default function FairDetailPage({
       setIsRequireMembershipOpen(true);
       return;
     }
-    // Hearts are saved on the account, the same list My Hub shows under "งานที่บันทึกไว้"
+    // Hearts are saved on the account, the same list My Hub shows under "ที่บันทึก"
     const wasSaved = favorites.includes(eventId);
     void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
       if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
@@ -235,8 +236,8 @@ export default function FairDetailPage({
     });
   };
 
-  // "บันทึกงานนี้ลง MyHub": an upcoming fair joins the member's schedule in My Hub (the account's joined list);
-  // a fair that has ended can only be kept to follow its next round, which is a saved event
+  // "บันทึกงานนี้": the same saved list as the heart on the tile, so both say the same thing. A fair put on the schedule
+  // before 2026-11-03 still counts as saved here, and the button takes it off
   const toggleInHub = () => {
     if (!eventData) return;
     if (!isLoggedIn) {
@@ -245,12 +246,12 @@ export default function FairDetailPage({
       setIsRequireMembershipOpen(true);
       return;
     }
-    if (isEnded) return toggleFavorite(eventData.id);
     const id = eventData.id;
-    const wasIn = joinedEventIds.includes(id);
-    void (wasIn ? activityActions.leave(id) : activityActions.join(id)).then((result) => {
+    if (isEnded || !joinedEventIds.includes(id)) return toggleFavorite(id);
+    void activityActions.leave(id).then((result) => {
       if (!result.ok) return showToast(result.message);
-      showToast(wasIn ? 'นำออกจาก MyHub แล้ว' : 'บันทึกอีเวนต์นี้ใน MyHub เรียบร้อย');
+      if (favorites.includes(id)) void activityActions.setSaved('event', id, false);
+      showToast('เอาออกจากมายฮับแล้ว');
     });
   };
 
@@ -527,7 +528,7 @@ export default function FairDetailPage({
 
   const isEnded = isEventEnded(eventData);
   // In My Hub: on the schedule while the fair is ahead, kept to follow once it has ended
-  const isFav = isEnded ? favorites.includes(eventData.id) : joinedEventIds.includes(eventData.id);
+  const isFav = favorites.includes(eventData.id) || (!isEnded && joinedEventIds.includes(eventData.id));
   // Started and not ended: "กำลังจัดอยู่" (the landing's fair list uses the same rule)
   const isOngoing = !isEnded && parseEventDateToTimestamp(eventData.date) <= openedAt;
 
@@ -775,7 +776,7 @@ export default function FairDetailPage({
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <img
-                            src={sub.creatorAvatar}
+                            src={avatarImage(sub.creatorAvatar)}
                             alt={sub.creatorName}
                             className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
                           />

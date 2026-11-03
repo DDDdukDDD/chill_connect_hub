@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { CampaignStrip, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
-import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Stamp, Zap } from 'lucide-react';
+import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Zap } from 'lucide-react';
 import { MeetupTile } from '@/components/MeetupTile';
 import { FairTile } from '@/components/FairTile';
 import { SpotTile } from '@/components/SpotTile';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { meetupTimes, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { ALL_PROVINCES, discoverHref, eventInProvince } from '@/lib/discoverMatch';
 import { useAuth } from '@/lib/useAuth';
@@ -17,7 +17,6 @@ import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { PASSPORT_HREF } from '@/components/home/StampPassport';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import type { FeedCardKind } from '@/lib/homeInterests';
 import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
@@ -60,7 +59,6 @@ export interface MemberLiveHomeProps {
   cardKinds: FeedCardKind[];
   isSpotsLoaded: boolean;
   /** Finished challenges: the stamps in the passport, which lives in My Hub */
-  stampCount: number;
   /** Every meetup they joined or host, ended ones too: the slim line asks for a moment from one that just ended */
   mine: EventItem[];
 }
@@ -418,7 +416,7 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
       <div className="flex items-center gap-3">
         {event.hostAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.hostAvatar} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0" />
+          <img src={avatarImage(event.hostAvatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0" />
         ) : (
           <span className="w-10 h-10 rounded-full bg-[#FFF4EE] text-[#D04A1B] text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(event.hostName)}</span>
         )}
@@ -494,14 +492,13 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
 }
 
 /**
- * "ของฉัน": the four places a member goes back to, all outside this page. Own and saved moments are not here;
+ * "ของฉัน": the three places a member goes back to, all outside this page. Own and saved moments are not here;
  * they are views of the feed, in its ··· menu.
  */
-function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) {
+function Shortcuts({ savedCount, redeemable }: MemberLiveHomeProps) {
   const items: { href: string; label: string; Icon: typeof Gift; box: string; count?: number }[] = [
     // Each lands on its own section of My Hub, which scrolls there once the section has loaded
     { href: '/myhub#my-schedule', label: 'ตารางของฉัน', Icon: CalendarDays, box: 'bg-slate-100 text-slate-700' },
-    { href: PASSPORT_HREF, label: 'พาสปอร์ตของฉัน', Icon: Stamp, box: 'bg-[#F5F3FF] text-[#7C3AED]', count: stampCount },
     { href: '/myhub#my-saved', label: 'กิจกรรมที่บันทึก', Icon: Bookmark, box: 'bg-slate-100 text-slate-700', count: savedCount },
     { href: '/rewards', label: 'ของรางวัล', Icon: Gift, box: 'bg-amber-50 text-amber-600', count: redeemable },
   ];

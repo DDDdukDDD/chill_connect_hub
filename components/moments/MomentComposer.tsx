@@ -643,8 +643,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
       {confirmDiscard && (
         <DialogShell onClose={() => setConfirmDiscard(false)} title="ทิ้งโพสต์นี้ไหม" subtitle="รูปหรือคลิปและข้อความที่ทำไว้จะหายไป" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDiscard(false)}>ทำต่อ</button>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" data-autofocus className={dialogButton.quiet} onClick={() => setConfirmDiscard(false)}>ทำต่อ</button>
             <button type="button" className={dialogButton.danger} onClick={onClose}>ทิ้งโพสต์</button>
           </div>
         </DialogShell>

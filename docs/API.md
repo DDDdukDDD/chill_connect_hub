@@ -461,6 +461,7 @@ All writes are `POST` with an `action` field unless noted.
 ## Following and suggested members (added 2026-10-11)
 - `POST /api/members/{id}/actions` with `{ action: 'follow' | 'unfollow' }` → `{ success, following, followerCount }`. Signed-in members only; blocking a member also unfollows them.
 - `GET /api/members/{id}` and `GET /api/auth/member/profile` (`publicView`) now include `followerCount`, `followingCount`; `viewer.isFollowing` on another member's profile.
+- `GET /api/members/follows` (added 2026-11-03, BE-239) → `{ success, followers, following }`, each `[{ id, name, avatar, isFollowing, followsMe }]`: the signed-in member's own lists, active members only, nobody either side blocked. `401` signed out. Another member's lists are not available.
 - `GET /api/members/suggested` → `{ success, members: [{ id, displayName, avatarUrl, momentCount, trusted, approvedHost }] }`: up to 5 verified members with published moments, without the viewer, people they follow or blocked, and accounts with open risk flags.
 - `GET /api/members/interest-count?ids=cafe_social,running_fitness` (added 2026-10-23) → `{ success, people }`: how many active members picked at least one of these `communityCategories` ids in onboarding. A number only, never names (interests are private answers). Used by the onboarding "บอกสิ่งที่ชอบ" side panel.
 - `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).
@@ -505,7 +506,6 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `GET /api/events/{fairId}/groups` → `{ groups: [{ id, title, meetupPoint, time, note, maxMembers, currentMembers, creator: { id, displayName, avatarUrl }, isJoined, isMine }] }` (public).
 - `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Joining needs a verified account; creating also needs `organizerNeeds` to be `null` (403), the same check as a ตี้. At most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
-- **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.
   - _2026-10-26 (BE-153):_ `check_in` returns `409 "เช็กอินได้ตั้งแต่วันที่ตี้เริ่ม"` before the event's start date (opens 12 hours before that date's midnight, to cover the server time zone). Dates without a day number (a series) are not limited; `undo` is never limited.
 

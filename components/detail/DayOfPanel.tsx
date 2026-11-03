@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, MapPin, MessageCircle, QrCode } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const BANGKOK_MS = 7 * 60 * 60 * 1000;
 const bangkokDay = (ms: number) => new Date(ms + BANGKOK_MS).toISOString().slice(0, 10);
@@ -133,7 +134,7 @@ export function DayOfPanel({ event, onOpenTicket, onOpenChat, onCancel }: { even
               <li key={p.id} className={`flex flex-col items-center w-14 text-center text-[11px] ${p.arrived ? '' : 'opacity-40'}`}>
                 {p.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element -- member photos
-                  <img src={p.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-200" />
+                  <img src={avatarImage(p.avatar)} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-200" />
                 ) : (
                   <span className="w-11 h-11 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center font-bold" aria-hidden="true">{p.name.slice(0, 1)}</span>
                 )}

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface Participant {
   userId: string;
@@ -84,7 +85,7 @@ export function HostCheckIn({ eventId }: { eventId: string }) {
           <li key={p.userId} className="flex items-center gap-3 py-2.5">
             {p.userAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element -- member photos
-              <img src={p.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+              <img src={avatarImage(p.userAvatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
             ) : (
               <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold" aria-hidden="true">{p.userName.slice(0, 1)}</span>
             )}

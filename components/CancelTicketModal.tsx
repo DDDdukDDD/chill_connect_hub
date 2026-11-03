@@ -44,8 +44,8 @@ export const CancelTicketModal: React.FC<CancelTicketModalProps> = ({ isOpen, on
         <li>{isFair ? 'งานนี้จะไม่อยู่ในนัดหมายของคุณ บันทึกใหม่ได้ทุกเมื่อ' : 'ที่นั่งของคุณจะคืนให้คนอื่นทันที ถ้าเปลี่ยนใจต้องเข้าร่วมใหม่ และอาจเต็มแล้ว'}</li>
         {!isFair && policy && <li>{policy}</li>}
       </ul>
-      <div className="flex flex-wrap justify-end gap-2.5">
-        <button type="button" className={dialogButton.quiet} onClick={onClose}>
+      <div className="flex flex-wrap justify-center gap-2.5">
+        <button type="button" data-autofocus className={dialogButton.quiet} onClick={onClose}>
           {isFair ? 'เก็บไว้' : 'ไม่ยกเลิก'}
         </button>
         <button type="button" className={dialogButton.danger} disabled={isBusy} onClick={confirm}>

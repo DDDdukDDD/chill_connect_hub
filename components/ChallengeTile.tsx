@@ -100,7 +100,7 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
           src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE}
           alt=""
           loading="lazy"
-          className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'grayscale opacity-80' : ''} ${
+          className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'opacity-70' : ''} ${
             isJoined && !isEnded ? 'ring-2 ring-[#7C3AED] ring-offset-2' : ''
           }`}
         />
