@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
@@ -63,14 +63,13 @@ import {
   ListFilter,
   Award,
   Zap,
-  LogIn,
   MoreHorizontal,
   Copy,
   ExternalLink,
   ShieldCheck,
   User,
   Share2,
-  Ticket, Navigation,
+  Ticket,
   Layers,
   Camera,
   AlertCircle,
@@ -108,13 +107,6 @@ function placeLabel(location?: string): string {
   return (location || '').replace(/\s*\(ดูสถานที่[^)]*\)/, '').trim();
 }
 
-// Directions to an event's pin. Fairs without a pin only name a province ("เชียงใหม่ (จุดปล่อยตัวตามประกาศผู้จัด)"),
-// which would open a map of the whole province, so they get no link
-function directionsUrl(ev: EventItem): string | null {
-  if (ev.latitude == null || ev.longitude == null) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
-}
-
 /** A section reached from a home page link lights up for a moment, so it is clear where you landed */
 const SECTION_ARRIVED = ['ring-2', 'ring-[#2563EB]/40', 'ring-offset-4', 'rounded-2xl', 'transition-shadow'];
 
@@ -126,6 +118,14 @@ function MyHubContent() {
   const [activeSubTab, setActiveSubTab] = useState<'community' | 'trips' | 'fairs' | 'quests_rewards'>('community');
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  // My Hub is members only: a guest signs in and comes back. Someone who just logged out here goes home instead
+  const router = useRouter();
+  const justLoggedOut = useRef(false);
+  useEffect(() => {
+    if (!isAuthReady || isLoggedIn) return;
+    if (justLoggedOut.current) router.replace('/');
+    else router.replace(`/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`);
+  }, [isAuthReady, isLoggedIn, router]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [storedChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
@@ -1185,9 +1185,12 @@ function MyHubContent() {
   };
 
   const renderMasterCalendarView = () => {
+    // Before the account has answered, an empty schedule means nothing yet, not a new member
+    if (!activity.isLoaded) return <ScheduleLoading />;
     const savedCount = savedNotJoined.length + savedSpotsList.length;
     // Nothing anywhere yet: the first steps alone, no tabs full of zeros. A link to the saved tab still opens it
-    if (guestEvents.length === 0 && savedCount === 0 && scheduleWhen !== 'saved') return renderFirstSteps();
+    // Goes by the account's saved ids: this page's own copies and the details of what was saved arrive a moment later
+    if (guestEvents.length === 0 && activity.savedSpotIds.length === 0 && activity.savedEventIds.length === 0 && scheduleWhen !== 'saved') return renderFirstSteps();
     const activeRing = 'ring-2 ring-slate-900 bg-slate-50/80';
     const showingSaved = scheduleWhen === 'saved';
 
@@ -1674,7 +1677,7 @@ function MyHubContent() {
                   const rowBtn = 'h-8 px-3 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap';
                   const isQuest = meta.pillar === 'quests';
                   // Without a button the row keeps only ⋯, which stays on the same line on a phone
-                  const hasRowAction = !(isQuest || isCancelled || isMissed) && (isAttended || isHost || ev.eventType !== 'public_venue' || Boolean(directionsUrl(ev)));
+                  const hasRowAction = !(isQuest || isCancelled || isMissed) && (isAttended || isHost || ev.eventType !== 'public_venue');
                   const ts = scheduleTs(ev);
                   const when = Number.isFinite(ts) && ts > 0 ? new Date(ts) : null;
                   const monthOf = (item?: EventItem) => {
@@ -1734,7 +1737,7 @@ function MyHubContent() {
                         </div>
 
                         {/* Actions: at most one small white button; the photo and title open the event, the rest is under ⋯.
-                            The only solid button on the page is in "ถัดไปของคุณ", so this list stays quiet */}
+                            Solid black is kept for the ticket in "ถัดไปของคุณ" on the day, so this list stays quiet */}
                         <div className={`flex items-center justify-end gap-1.5 sm:pl-0 sm:w-auto sm:shrink-0 ml-auto ${hasRowAction ? 'w-full pl-[52px]' : ''}`}>
                           {isQuest || isCancelled || isMissed ? null : isAttended ? (
                             <button
@@ -1756,14 +1759,7 @@ function MyHubContent() {
                               <Crown className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
                               จัดการตี้
                             </Link>
-                          ) : ev.eventType === 'public_venue' ? (
-                            directionsUrl(ev) && (
-                              <a href={directionsUrl(ev)!} target="_blank" rel="noopener noreferrer" className={rowBtn}>
-                                <Navigation className="w-3.5 h-3.5" aria-hidden="true" />
-                                เส้นทาง
-                              </a>
-                            )
-                          ) : (
+                          ) : ev.eventType === 'public_venue' ? null : (
                             <button
                               type="button"
                               onClick={() => {
@@ -2023,90 +2019,10 @@ function MyHubContent() {
         {/* Toast Notification */}
         <Toast message={toastMessage} />
 
-        {/* Guest Guard: Requires Login (Global Showcase Teaser) */}
-        {!isLoggedIn ? (
-          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center animate-fade-in">
-            {/* An invitation, not a feature list: what free time could hold, and the two ways in */}
-            <div>
-              <p className="text-xs font-bold text-slate-500">มายฮับ</p>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight text-balance">Hub กิจกรรมและคอมมูนิตี้ สำหรับคนชอบออกไปใช้ชีวิต</h1>
-              <p className="mt-3 text-sm sm:text-base font-medium text-slate-600 leading-relaxed text-pretty">
-                เราคัดสรรและรวบรวมทุกมิติของการออกไปใช้ชีวิต ตั้งแต่ค้นหาพิกัดใจฟู ชวนเพื่อนรู้ใจ ชาเลนจ์สนุกๆ ไปจนถึงรับรางวัลพิเศษ ให้ทุกการพักผ่อนมีความหมาย
-              </p>
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="h-12 px-6 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  เข้าสู่ระบบ
-                </button>
-                <Link
-                  href="/onboarding"
-                  className="h-12 px-6 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-900 font-bold text-sm transition-colors flex items-center justify-center"
-                >
-                  สมัครสมาชิกฟรี
-                </Link>
-              </div>
-              <p className="mt-4 text-sm font-medium text-slate-600">
-                ยังไม่แน่ใจ{' '}
-                <Link href="/community" className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ลองดูก่อนว่าเพื่อนๆ ไปไหนกัน</Link>
-              </p>
-            </div>
-
-            {/* Real meetups that are open now and a real challenge, so the visitor sees what is on, not a mock-up */}
-            {(() => {
-              const liveQuest = questCatalog?.find((quest) => quest.status !== 'ended' && (quest.daysRemaining === undefined || quest.daysRemaining > 0) && Boolean(quest.rule));
-              const liveEvents = suggestedEvents.slice(0, liveQuest ? 3 : 4);
-              if (liveEvents.length === 0 && !liveQuest) return null;
-              const rowLink = 'shrink-0 hidden sm:inline-flex items-center h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-bold whitespace-nowrap';
-              return (
-                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
-                  <h2 className="text-sm font-bold text-slate-900">วันหยุดของคุณอาจเป็นแบบนี้</h2>
-                  <ul className="mt-2 divide-y divide-slate-100">
-                    {liveEvents.map((ev) => {
-                      const ts = parseEventDateToTimestamp(ev.date);
-                      const when = Number.isFinite(ts) && ts > 0 ? new Date(ts) : null;
-                      const href = `/community/${encodeURIComponent(ev.id)}`;
-                      return (
-                        <li key={ev.id} className="py-3 flex items-center gap-3">
-                          <div className="w-10 shrink-0 text-center">
-                            <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
-                            <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
-                          </div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
-                          <Link href={href} className="min-w-0 flex-1 group">
-                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-[#EBF3ED] text-[#2D5A3C] border-[#A3CEB0]">ตี้</span>
-                            <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{ev.title}</span>
-                            <span className="block text-xs font-medium text-slate-600 truncate tabular-nums">{[ev.time, ev.location].filter(Boolean).join(' · ')}</span>
-                          </Link>
-                          <Link href={href} className={rowLink} tabIndex={-1} aria-hidden="true">ดูรายละเอียด</Link>
-                        </li>
-                      );
-                    })}
-                    {liveQuest && (
-                      <li className="py-3 flex items-center gap-3">
-                        <div className="w-10 shrink-0 text-center">
-                          <span className="block text-sm font-bold text-[#7C3AED] leading-tight tabular-nums">+{liveQuest.rewardPoints}</span>
-                          <span className="block text-[11px] font-semibold text-slate-500">XP</span>
-                        </div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={liveQuest.image || liveQuest.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
-                        <Link href={`/challenges/${encodeURIComponent(liveQuest.id)}`} className="min-w-0 flex-1 group">
-                          <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200">ชาเลนจ์</span>
-                          <span className="mt-1 block text-sm font-bold text-slate-900 truncate group-hover:underline">{liveQuest.title}</span>
-                          <span className="block text-xs font-medium text-slate-600 truncate">{liveQuest.targetGoal}</span>
-                        </Link>
-                        <Link href={`/challenges/${encodeURIComponent(liveQuest.id)}`} className={rowLink} tabIndex={-1} aria-hidden="true">ดูชาเลนจ์</Link>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              );
-            })()}
-          </div>
+        {/* Until the session is known nobody counts as a guest: a member refreshing the page saw the sign-up invitation first.
+            A guest sees this only for the moment before going to the sign-in page */}
+        {!isAuthReady || !isLoggedIn ? (
+          <HubLoading />
         ) : (
           <>
             {/* ========================================================================= */}
@@ -2201,22 +2117,23 @@ function MyHubContent() {
                         <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
                           <h2 className="text-base font-bold text-slate-900">ถัดไปของคุณ</h2>
                           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
-                            <div className="w-12 shrink-0 text-center rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] py-1.5">
-                              <span className="block text-lg font-bold leading-tight tabular-nums">{when.getDate()}</span>
-                              <span className="block text-[11px] font-semibold text-[#1D4ED8]">{THAI_MONTH_SHORT[when.getMonth()]}</span>
-                            </div>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={nextEvent.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
-                            <div className="min-w-0 flex-1 basis-44">
-                              <Link href={`${isFair ? '/events' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="block text-sm sm:text-base font-bold text-slate-900 truncate hover:underline">
-                                {nextEvent.title}
-                              </Link>
-                              <p className="text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">
-                                {[THAI_DAY_SHORT[when.getDay()], knownTime(nextEvent.time), placeLabel(nextEvent.location)].filter(Boolean).join(' · ')}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1.5 w-full sm:w-auto sm:ml-auto">
-                              {!isFair && (
+                            <Link href={`${isFair ? '/events' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="group flex flex-1 basis-60 min-w-0 items-center gap-3">
+                              <span className="block w-12 shrink-0 text-center rounded-xl bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE] py-1.5">
+                                <span className="block text-lg font-bold leading-tight tabular-nums">{when.getDate()}</span>
+                                <span className="block text-[11px] font-semibold text-[#1D4ED8]">{THAI_MONTH_SHORT[when.getMonth()]}</span>
+                              </span>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={optimizedImage(nextEvent.image, 128) || undefined} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
+                              <span className="block min-w-0 flex-1">
+                                <span className="block text-sm sm:text-base font-bold text-slate-900 truncate group-hover:underline">{nextEvent.title}</span>
+                                <span className="block text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">
+                                  {[THAI_DAY_SHORT[when.getDay()], knownTime(nextEvent.time), placeLabel(nextEvent.location)].filter(Boolean).join(' · ')}
+                                </span>
+                              </span>
+                              {isFair && <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />}
+                            </Link>
+                            {!isFair && (
+                              <div className="flex items-center gap-1.5 w-full sm:w-auto sm:ml-auto">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2228,25 +2145,6 @@ function MyHubContent() {
                                   <MessageCircle className="w-4 h-4" aria-hidden="true" />
                                   แชต
                                 </button>
-                              )}
-                              {isFair && directionsUrl(nextEvent) ? (
-                                <a
-                                  href={directionsUrl(nextEvent)!}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
-                                >
-                                  <Navigation className="w-4 h-4" aria-hidden="true" />
-                                  เส้นทาง
-                                </a>
-                              ) : isFair ? (
-                                <Link
-                                  href={`/events/${encodeURIComponent(nextEvent.id)}`}
-                                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
-                                >
-                                  ดูรายละเอียด
-                                </Link>
-                              ) : (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2254,13 +2152,13 @@ function MyHubContent() {
                                     setSelectedTicketId('CCH-2026-0101');
                                     setIsETicketModalOpen(true);
                                   }}
-                                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap"
+                                  className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap ${when.toDateString() === new Date(openedAt).toDateString() ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:bg-slate-50 border border-slate-300 text-slate-800'}`}
                                 >
                                   <Ticket className="w-4 h-4" aria-hidden="true" />
                                   ดูบัตร
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </section>
                       );
@@ -2762,11 +2660,44 @@ function MyHubContent() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={() => {
+          justLoggedOut.current = true;
           handleSetIsLoggedIn(false);
           setIsLogoutModalOpen(false);
           showToast('ออกจากระบบเรียบร้อยแล้ว');
         }}
       />
+    </div>
+  );
+}
+
+function ScheduleLoading() {
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      <div className="h-6 w-64 max-w-full rounded-full bg-slate-100 animate-pulse" />
+      {[0, 1, 2].map((row) => (
+        <div key={row} className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="h-4 w-3/4 rounded-full bg-slate-100 animate-pulse" />
+            <div className="h-3 w-1/2 rounded-full bg-slate-100 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HubLoading() {
+  return (
+    <div role="status" aria-label="กำลังโหลดมายฮับ" className="w-full max-w-7xl mx-auto min-h-[60vh] px-4 sm:px-6 lg:px-8 py-6 grid gap-8 lg:grid-cols-[400px_minmax(0,1fr)]">
+      <div className="flex items-center gap-3" aria-hidden="true">
+        <div className="w-12 h-12 rounded-full bg-slate-100 animate-pulse shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-5 w-40 rounded-full bg-slate-100 animate-pulse" />
+          <div className="h-4 w-28 rounded-full bg-slate-100 animate-pulse" />
+        </div>
+      </div>
+      <ScheduleLoading />
     </div>
   );
 }

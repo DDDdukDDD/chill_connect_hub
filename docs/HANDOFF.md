@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-245 · My Hub: quiet "ถัดไปของคุณ", no links out for อีเวนต์, guests sign in (owner 2026-11-03)
+- **What changed:** the row opens the event's page. อีเวนต์ have no button there and no "เส้นทาง" in the list: people reach the map through the event's page and stay on the site (owner). A ตี้ keeps "แชต" and "ดูบัตร" as outline buttons; "ดูบัตร" is solid black only on the day.
+- **Guests:** `/myhub` goes to `/login?returnTo=...` and back. The old guest page is gone. Logging out on My Hub goes home.
+
+### BE-244 · My Hub no longer flashes the guest page on refresh (owner 2026-11-03)
+- **Bug:** until the session had loaded, `isLoggedIn` was false, so a signed-in member saw the sign-up invitation first. The same happened with "เริ่มที่ไหนดี" until their activity had loaded.
+- **What changed:** a loading state shows until `isAuthReady`, and the schedule waits for `activity.isLoaded`. Elsewhere, use `isAuthReady && !isLoggedIn` to mean a guest.
+
 ### BE-243 · My Hub tabs reordered; no empty chips (owner 2026-11-03)
 - **What changed:** tabs read กำลังจะมาถึง, ที่บันทึก, ที่ผ่านมา: what lies ahead first, history last. The "ชาเลนจ์" chip no longer shows at 0 in the list, where it looked like a wrong count next to the month view. Challenges under way stay in "กำลังทำอยู่" and return to the list in their last 7 days, as before.
 
