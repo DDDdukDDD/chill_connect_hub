@@ -1,6 +1,6 @@
 import { MemberAuthError } from '../members/accounts';
 import { addRiskFlags } from '../members/safety';
-import { containsContactInfo, makeFlag, NEW_ACCOUNT_DAYS, riskTermsIn, trustLevel } from '../members/trust';
+import { containsContactInfo, makeFlag, NEW_ACCOUNT_DAYS, riskTermsIn, trustLevel, verifyFirstMessage } from '../members/trust';
 import type { Member } from '../members/types';
 
 /**
@@ -10,7 +10,7 @@ import type { Member } from '../members/types';
  */
 export async function guardMemberText(member: Member, text: string, where: string): Promise<void> {
   const level = trustLevel(member);
-  if (level === 'new') throw new MemberAuthError('ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)', 403);
+  if (level === 'new') throw new MemberAuthError(verifyFirstMessage(member), 403);
   if (level !== 'trusted' && containsContactInfo(text)) {
     await addRiskFlags(member.id, [makeFlag('contact_info', `${where}: ${text.slice(0, 80)}`)]);
     throw new MemberAuthError(`บัญชีใหม่ยังส่งลิงก์ เบอร์โทร หรือไอดีไลน์ไม่ได้ในช่วง ${NEW_ACCOUNT_DAYS} วันแรก`, 403);

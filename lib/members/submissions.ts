@@ -10,7 +10,7 @@ import { isGoogleMapsUrl, resolveMapCoordinates } from '../mapLinks';
 import { coordinatesMapUrl, defaultSpotCategoryLabel, SPOT_CATEGORY_OPTIONS } from '../spotCategories';
 import { guardMemberText } from '../social/textRules';
 import { MemberAuthError } from './accounts';
-import { trustLevel } from './trust';
+import { organizerNeeds, trustLevel, verifyFirstMessage } from './trust';
 import type { Member } from './types';
 
 /**
@@ -39,7 +39,15 @@ function image(value: unknown): string {
 /** Only verified accounts create content; the same rule as chat and meet-up groups */
 export function guardCreator(member: Member): void {
   if (member.status !== 'active') throw new MemberAuthError('บัญชีนี้ยังใช้งานส่วนนี้ไม่ได้', 403);
-  if (trustLevel(member) === 'new') throw new MemberAuthError('ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)', 403);
+  if (trustLevel(member) === 'new') throw new MemberAuthError(verifyFirstMessage(member), 403);
+}
+
+/** Opening a ตี้, a challenge, a trip or a group inside an อีเวนต์ brings people out to meet, so it asks for more than posting does (owner 2026-11-02) */
+export function guardOrganizer(member: Member): void {
+  guardCreator(member);
+  const needs = organizerNeeds(member);
+  if (needs === 'phone') throw new MemberAuthError('ยืนยันเบอร์โทรก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้ (ดูที่หน้าโปรไฟล์)', 403);
+  if (needs === 'email') throw new MemberAuthError(member.email ? 'ยืนยันอีเมลก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้ (ดูที่หน้าโปรไฟล์)' : 'ตอนนี้การสร้างเปิดให้บัญชีที่ยืนยันอีเมลก่อน อีกไม่นานจะยืนยันด้วยเบอร์โทรได้', 403);
 }
 
 async function allSpots(): Promise<LifestyleSpotItem[]> {
@@ -116,7 +124,7 @@ export async function suggestSpot(member: Member, input: Record<string, unknown>
 }
 
 export async function proposeQuest(member: Member, input: Record<string, unknown>): Promise<ChallengeQuest> {
-  guardCreator(member);
+  guardOrganizer(member);
   const title = text(input.title, 100);
   const objective = text(input.objective, 600);
   const badgeLabel = text(input.badgeLabel, 40);

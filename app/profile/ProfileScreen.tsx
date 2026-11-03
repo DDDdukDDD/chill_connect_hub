@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, type LucideIcon
+  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, Phone, type LucideIcon
 } from 'lucide-react';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
@@ -13,6 +13,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
+import { PhoneVerifyForm } from '@/components/auth/PhoneVerifyForm';
 import { MOCK_PROFILES } from '@/data/profilesData';
 import { nameInitial } from '@/lib/displayName';
 import type { HostApplication, MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
@@ -43,7 +44,7 @@ interface PublicProfile {
   ageBand?: string;
   province?: string;
   interests?: MemberPreferences['interests'];
-  badges: { emailVerified: boolean; pledged: boolean; trusted: boolean; approvedHost: boolean; hostKind?: HostApplication['kind'] };
+  badges: { emailVerified: boolean; socialSignIn?: boolean; phoneVerified?: boolean; pledged: boolean; trusted: boolean; approvedHost: boolean; hostKind?: HostApplication['kind'] };
   isMe: boolean;
   viewer?: { isFollowing?: boolean; hasBlocked: boolean; hasReported: boolean };
   followerCount?: number;
@@ -182,10 +183,10 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
 
   const rows: { done: boolean; title: string; desc: string; action?: React.ReactNode }[] = [
     {
-      done: t.emailVerified,
-      title: 'ยืนยันอีเมล',
-      desc: t.emailVerified ? 'ยืนยันแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะเข้าร่วมตี้ โพสต์ และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
-      action: !t.emailVerified && t.hasEmail && (
+      done: t.identityConfirmed,
+      title: t.emailVerified || !t.identityConfirmed ? 'ยืนยันอีเมล' : 'ยืนยันตัวตน',
+      desc: t.emailVerified ? 'ยืนยันแล้ว' : t.identityConfirmed ? 'ยืนยันผ่านบัญชีโซเชียลที่ใช้เข้าสู่ระบบแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะเข้าร่วมตี้ โพสต์ และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
+      action: !t.identityConfirmed && t.hasEmail && (
         <button type="button" onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap disabled:opacity-60">
           {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
           ส่งลิงก์
@@ -198,6 +199,11 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
       desc: t.pledged ? 'รับแล้ว' : 'คำมั่น 4 ข้อที่สมาชิกทุกคนรับร่วมกัน',
       action: !t.pledged && <Link href="/onboarding?step=pledge&returnTo=%2Fprofile" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านและรับ</Link>,
     },
+    ...(t.phoneCheckOn ? [{
+      done: t.phoneVerified,
+      title: 'ยืนยันเบอร์โทร',
+      desc: t.phoneVerified ? 'ยืนยันแล้ว สร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้' : 'ต้องยืนยันก่อนสร้างตี้ ชาเลนจ์ ทริป หรือกลุ่มในอีเวนต์ เราไม่แสดงเบอร์ให้ใครเห็น',
+    }] : []),
     {
       done: t.level === 'trusted',
       title: `เป็นสมาชิกครบ ${NEW_ACCOUNT_DAYS} วัน`,
@@ -222,8 +228,9 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
           </li>
         ))}
       </ul>
+      {t.organizerNeeds === 'phone' && <div className="mt-4 pt-4 border-t border-slate-100"><PhoneVerifyForm /></div>}
       {note && <p className="mt-3 text-xs font-bold text-slate-600" role="status">{note}</p>}
-      {devUrl && !t.emailVerified && (
+      {devUrl && !t.identityConfirmed && (
         <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
           <p className="text-xs font-bold text-amber-900"><PhraseText text="โหมดพัฒนา: ยังไม่ได้ตั้งค่าระบบส่งอีเมล ลิงก์ยืนยันจึงแสดงตรงนี้แทน" /></p>
           <a href={devUrl} className="mt-1 block text-xs font-bold text-[#2563EB] underline break-all">{devUrl}</a>
@@ -319,7 +326,7 @@ export function HostCard({ member, application, onChanged }: { member: PublicMem
             <input id="host-link" type="url" inputMode="url" maxLength={200} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" className={inputClass} disabled={!canApply} />
           </div>
           <ErrorLine message={error} />
-          {!canApply && <p className="text-xs font-bold text-slate-500"><PhraseText text="ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะส่งคำขอได้" /></p>}
+          {!canApply && <p className="text-xs font-bold text-slate-500"><PhraseText text="ยืนยันตัวตนและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะส่งคำขอได้" /></p>}
           <button type="submit" disabled={busy || !canApply} className={dialogButton.secondary}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <CalendarPlus className="w-4 h-4" aria-hidden="true" />}
             ส่งคำขอให้ทีมงาน
@@ -686,7 +693,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
         { done: Boolean(viewOwn.details.bio), label: 'แนะนำตัวสั้นๆ', tab: 'me' as EditTab },
         { done: interestChips.length > 0, label: 'บอกสายที่ชอบ', tab: 'interests' as EditTab },
         { done: aboutRows.length >= 2, label: 'เล่าเกี่ยวกับตัวเอง', tab: 'about' as EditTab },
-        { done: viewOwn.member.trust.emailVerified, label: 'ยืนยันอีเมล', href: '/profile/settings' },
+        { done: viewOwn.member.trust.identityConfirmed, label: 'ยืนยันอีเมล', href: '/profile/settings' },
         { done: viewOwn.member.trust.pledged, label: 'รับคำมั่นของคอมมูนิตี้', href: '/onboarding?step=pledge&returnTo=%2Fprofile' },
       ]
     : [];
@@ -826,11 +833,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                   )}
 
                   {/* What the server checked */}
-                  {(profile.badges.emailVerified || profile.badges.pledged || profile.badges.trusted || profile.badges.approvedHost) && (
+                  {(profile.badges.emailVerified || profile.badges.socialSignIn || profile.badges.phoneVerified || profile.badges.pledged || profile.badges.trusted || profile.badges.approvedHost) && (
                     <ul className="mt-5 pt-5 border-t border-slate-200 space-y-2 text-sm font-medium text-slate-700">
                       {profile.badges.approvedHost && <li className="flex items-center gap-2.5"><BadgeCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />โฮสต์ที่ทีมงานตรวจแล้ว</li>}
                       {profile.badges.trusted && !profile.badges.approvedHost && <li className="flex items-center gap-2.5"><ShieldCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />สมาชิกที่เชื่อถือได้</li>}
                       {profile.badges.emailVerified && <li className="flex items-center gap-2.5"><MailCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />ยืนยันอีเมลแล้ว</li>}
+                      {profile.badges.socialSignIn && <li className="flex items-center gap-2.5"><BadgeCheck className="w-4 h-4 text-emerald-600" aria-hidden="true" />ยืนยันตัวตนผ่านบัญชีโซเชียล</li>}
+                      {profile.badges.phoneVerified && <li className="flex items-center gap-2.5"><Phone className="w-4 h-4 text-emerald-600" aria-hidden="true" />ยืนยันเบอร์โทรแล้ว</li>}
                       {profile.badges.pledged && <li className="flex items-center gap-2.5"><HandHeart className="w-4 h-4 text-emerald-600" aria-hidden="true" />รับคำมั่นของคอมมูนิตี้แล้ว</li>}
                     </ul>
                   )}
@@ -884,12 +893,12 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       <span className="block h-full rounded-full bg-[#2563EB]" style={{ width: `${strengthPercent}%` }} />
                     </span>
                     {strengthLeft[0].href ? (
-                      <Link href={strengthLeft[0].href} className="ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap">
+                      <Link href={strengthLeft[0].href} className="min-h-11 ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap">
                         {strengthLeft[0].label}
                         <ChevronRight className="w-4 h-4" aria-hidden="true" />
                       </Link>
                     ) : (
-                      <button type="button" onClick={() => setEditTab(strengthLeft[0].tab ?? 'me')} className="ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap cursor-pointer">
+                      <button type="button" onClick={() => setEditTab(strengthLeft[0].tab ?? 'me')} className="min-h-11 ml-auto sm:ml-0 inline-flex items-center gap-0.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] whitespace-nowrap cursor-pointer">
                         {strengthLeft[0].label}
                         <ChevronRight className="w-4 h-4" aria-hidden="true" />
                       </button>
@@ -902,7 +911,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                   <div className="flex items-baseline justify-between gap-3">
                     <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{profile.isMe ? 'เกี่ยวกับฉัน' : `เกี่ยวกับ ${profile.displayName}`}</h2>
                     {viewOwn && (
-                      <button type="button" onClick={() => setEditTab('about')} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
+                      <button type="button" onClick={() => setEditTab('about')} className="inline-flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
                     )}
                   </div>
                   {bio ? (
@@ -912,7 +921,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     </p>
                   ) : (
                     viewOwn && (
-                      <button type="button" onClick={() => setEditTab('me')} className="mt-4 text-base font-medium text-slate-400 hover:text-slate-600 cursor-pointer text-left">
+                      <button type="button" onClick={() => setEditTab('me')} className="inline-flex items-center min-h-11 mt-4 text-base font-medium text-slate-400 hover:text-slate-600 cursor-pointer text-left">
                         + เล่าเกี่ยวกับตัวเองสักประโยค ให้เพื่อนใหม่รู้จักคุณ
                       </button>
                     )
@@ -940,7 +949,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       <div className="flex items-baseline gap-3">
                         <h3 className="text-sm font-bold text-slate-900">{viewOwn && hiddenKeys.includes('interests') ? 'สายที่ชอบ (ซ่อนอยู่)' : 'สายที่ชอบ'}</h3>
                         {viewOwn && (
-                          <button type="button" onClick={() => setEditTab('interests')} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
+                          <button type="button" onClick={() => setEditTab('interests')} className="inline-flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">แก้ไข</button>
                         )}
                       </div>
                       <ul className="mt-2.5 flex flex-wrap gap-2">
@@ -954,7 +963,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     </div>
                   )}
                   {viewOwn && interestChips.length === 0 && (
-                    <button type="button" onClick={() => setEditTab('interests')} className="mt-6 block text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer">+ บอกสายที่ชอบ</button>
+                    <button type="button" onClick={() => setEditTab('interests')} className="mt-4 flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer">+ บอกสายที่ชอบ</button>
                   )}
                 </section>
 

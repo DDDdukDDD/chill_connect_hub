@@ -3,10 +3,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, Send, Share2, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { TaggedFriends } from '@/components/moments/TaggedFriends';
+import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentFeed';
@@ -39,11 +42,13 @@ interface DetailProps {
 
 function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, requireLogin, showToast }: DetailProps & MomentsChromeContext) {
   const router = useRouter();
+  const myId = useMemberSession().member?.id;
   const [moment, setMoment] = useState(initialMoment);
   const [viewer, setViewer] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [reportReason, setReportReason] = useState<string | null>(null);
   // Long threads open on the newest few; every comment is still in the server HTML
   const [showAllComments, setShowAllComments] = useState(false);
@@ -122,6 +127,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
   const url = `/api/moments/${encodeURIComponent(moment.id)}`;
   const title = momentTitle(moment.caption);
+  // A closed post keeps its link for the author only
+  const mayShare = !moment.sharesOff || moment.isMine;
   const rest = moment.caption.slice(moment.caption.indexOf(title) + title.length).trim();
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
@@ -165,14 +172,21 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const share = async () => {
     const link = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
     if (navigator.share) {
-      await navigator.share({ title: title || 'โมเมนต์', url: link }).catch(() => undefined);
-      return;
+      const shared = await navigator.share({ title: title || 'โมเมนต์', url: link }).then(() => true, (err: DOMException) => err.name === 'AbortError');
+      if (shared) return;
     }
     if (!navigator.clipboard) return showToast(link);
     navigator.clipboard.writeText(link).then(
       () => showToast('คัดลอกลิงก์แล้ว'),
       () => showToast(link)
     );
+  };
+
+  const removeMyTag = async () => {
+    const result = await call(`${url}/actions`, 'POST', { action: 'untag' });
+    if (!result.ok) return showToast(result.message);
+    setMoment((m) => ({ ...m, isTaggedMe: false, tagged: m.tagged?.filter((person) => person.id !== myId) }));
+    showToast('เอาแท็กของคุณออกแล้ว');
   };
 
   const deleteMoment = async () => {
@@ -213,10 +227,12 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
           >
             <ClipPlayer
               url={moment.video.url}
+              startS={moment.video.startS}
+              durationS={moment.video.durationS}
               poster={moment.images[0]}
-              label={title || `คลิปจาก ${place}`}
+              label={title || `คลิปจาก ${place || moment.userName}`}
               onTap={isFull ? undefined : () => setIsFull(true)}
-              onDoubleTap={() => !moment.isLiked && toggle('like')}
+              onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')}
               className="absolute inset-0"
             />
             {/* On a phone the clip shrinks above the comments, whole and still playing; a tap on it closes them */}
@@ -228,7 +244,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
             )}
 
             <div
-              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
+              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 sm:pb-6 sm:pl-6 sm:pr-28 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
                 besideClip ? 'lg:inset-x-auto lg:bottom-auto lg:top-4 lg:right-[calc(50%+var(--clip-w)/2+0.75rem)] lg:w-[min(20rem,calc(50%-var(--clip-w)/2-5rem))] lg:bg-none lg:p-0' : ''
               }`}
             >
@@ -242,15 +258,16 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   ) : (
                     <span className="block text-sm font-bold truncate">{moment.userName}</span>
                   )}
+                  <TaggedFriends people={moment.tagged} className="text-xs text-white" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-white/80">
                     {moment.timeAgo}
                   </time>
                 </div>
               </div>
               <div className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
-                <h1 className={`text-sm font-bold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}`}>{title || `โมเมนต์จาก ${place || 'เพื่อนๆ'}`}</h1>
+                <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}
-                {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}>{rest}</p>}
+                {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} linkClassName="underline" /></p>}
                 {(rest || title.length > 80) && (
                   <button type="button" onClick={() => setShowFullCaption((open) => !open)} className="mt-1 text-xs font-bold text-white/80 hover:text-white cursor-pointer">
                     {showFullCaption ? 'ย่อ' : 'ดูเพิ่มเติม'}
@@ -259,11 +276,14 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </div>
             </div>
 
-            <div className={`absolute right-1.5 bottom-3 z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+              {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
                 <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
                 {moment.likesCount.toLocaleString()}
               </button>
+              )}
+              {!moment.commentsOff && (
               <button
                 type="button"
                 onClick={() => {
@@ -278,29 +298,56 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 <MessageCircle className="w-7 h-7 drop-shadow" aria-hidden="true" />
                 {moment.commentsCount.toLocaleString()}
               </button>
+              )}
+              {mayShare && (
               <button type="button" onClick={share} aria-label="แชร์" className={railButton}>
                 <Share2 className="w-7 h-7 drop-shadow" aria-hidden="true" />
               </button>
+              )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
                 <Bookmark className={`w-7 h-7 drop-shadow ${moment.isSaved ? 'fill-white' : ''}`} aria-hidden="true" />
               </button>
-              {moment.isMine ? (
-                <button type="button" onClick={() => setConfirmDelete(true)} aria-label="ลบโมเมนต์" className={railButton}>
-                  <Trash2 className="w-6 h-6 drop-shadow" aria-hidden="true" />
+              {/* Delete or report stay one step away, so they are not pressed by mistake */}
+              <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
+                <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-label="ตัวเลือกเพิ่มเติม" aria-haspopup="menu" aria-expanded={moreOpen} className={railButton}>
+                  <MoreHorizontal className="w-7 h-7 drop-shadow" aria-hidden="true" />
                 </button>
-              ) : (
-                !moment.hasReported && (
-                  <button type="button" onClick={() => (isLoggedIn ? setReportReason('') : requireLogin('เพื่อรายงานโพสต์'))} aria-label="รายงานโพสต์นี้" className={railButton}>
-                    <Flag className="w-6 h-6 drop-shadow" aria-hidden="true" />
-                  </button>
-                )
-              )}
+                {moreOpen && (
+                  <>
+                    <button type="button" aria-label="ปิดเมนู" tabIndex={-1} onClick={() => setMoreOpen(false)} className="fixed inset-0 z-10 cursor-default" />
+                    <div role="menu" className="absolute right-full bottom-0 z-20 mr-2 w-max rounded-2xl bg-white p-1.5 shadow-lg">
+                      {moment.isTaggedMe && (
+                        <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); removeMyTag(); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-slate-800 hover:bg-slate-100 cursor-pointer">
+                          <UserMinus className="w-4 h-4" aria-hidden="true" />
+                          เอาแท็กของฉันออก
+                        </button>
+                      )}
+                      {moment.isMine ? (
+                        <button type="button" role="menuitem" autoFocus onClick={() => { setMoreOpen(false); setConfirmDelete(true); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-rose-600 hover:bg-rose-50 cursor-pointer">
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          ลบโมเมนต์
+                        </button>
+                      ) : moment.hasReported ? (
+                        <p role="menuitem" aria-disabled="true" className="flex min-h-11 items-center gap-2.5 px-3 text-sm font-medium text-slate-500">
+                          <Flag className="w-4 h-4" aria-hidden="true" />
+                          รายงานแล้ว ทีมงานกำลังดูให้
+                        </p>
+                      ) : (
+                        <button type="button" role="menuitem" autoFocus onClick={() => { setMoreOpen(false); if (isLoggedIn) setReportReason(''); else requireLogin('เพื่อรายงานโพสต์'); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-slate-800 hover:bg-slate-100 cursor-pointer">
+                          <Flag className="w-4 h-4" aria-hidden="true" />
+                          รายงานโพสต์นี้
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           // On a computer the photo stays in view while a long comment thread scrolls beside it
           <div className="-mx-4 sm:mx-0 sm:rounded-3xl overflow-hidden lg:sticky lg:top-24">
-            <MomentPhotos images={moment.images} alt={title || `โมเมนต์จาก ${place}`} onOpen={(index) => setViewer(index)} onDoubleTap={() => !moment.isLiked && toggle('like')} />
+            <MomentPhotos images={moment.images} alt={title || `โมเมนต์จาก ${place || moment.userName}`} onOpen={(index) => setViewer(index)} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')} />
           </div>
         )}
 
@@ -317,16 +364,25 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   ) : (
                     <span className="block text-sm font-bold text-slate-900 truncate">{moment.userName}</span>
                   )}
+                  <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-slate-500">
                     {moment.timeAgo}
                   </time>
                 </div>
                 {/* Share and report (or delete your own) sit with the author, away from the reactions */}
                 <div className="ml-auto flex items-center gap-0.5 shrink-0">
+                  {moment.isTaggedMe && (
+                    <button type="button" onClick={removeMyTag} className={`${iconButton} text-slate-500`}>
+                      <UserMinus className="w-4 h-4" aria-hidden="true" />
+                      <span className="sr-only sm:not-sr-only">เอาแท็กออก</span>
+                    </button>
+                  )}
+                  {mayShare && (
                   <button type="button" onClick={share} className={iconButton}>
                     <Link2 className="w-5 h-5" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">แชร์</span>
                   </button>
+                  )}
                   {moment.isMine ? (
                     <button type="button" onClick={() => setConfirmDelete(true)} className={`${iconButton} text-slate-500`}>
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -344,8 +400,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug tracking-tight">{title || `โมเมนต์จาก ${place || 'เพื่อนๆ'}`}</h1>
-                {rest && <p className="text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words">{rest}</p>}
+                <h1 className={!title ? 'sr-only' : title.length > LONG_HEADLINE ? 'text-[15px] font-medium text-slate-800 leading-relaxed break-words' : 'text-xl sm:text-2xl font-bold text-slate-900 leading-snug tracking-tight break-words'}>{title ? <CaptionText text={title} /> : `โมเมนต์จาก ${moment.userName}`}</h1>
+                {rest && <p className="text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words"><CaptionText text={rest} /></p>}
               </div>
             </>
           )}
@@ -374,16 +430,20 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
           {!moment.video && (
             <div className="flex flex-wrap items-center gap-1 border-y border-slate-100 py-1.5 -mx-1">
+              {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} className={iconButton}>
                 <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
                 {moment.likesCount.toLocaleString()}
                 <span className="sr-only">ถูกใจ</span>
               </button>
+              )}
+              {!moment.commentsOff && (
               <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('เพื่อร่วมคอมเมนต์'))} className={iconButton}>
                 <MessageCircle className="w-5 h-5" aria-hidden="true" />
                 {moment.commentsCount.toLocaleString()}
                 <span className="sr-only">ความคิดเห็น</span>
               </button>
+              )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} className={`${iconButton} ml-auto`}>
                 <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
                 <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
@@ -392,6 +452,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
           )}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
+          {!moment.commentsOff && (
           <section
             id="comments"
             aria-label="ความคิดเห็น"
@@ -483,6 +544,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               <p className="text-sm font-medium text-slate-500">ยังไม่มีความคิดเห็น ทักทายเป็นคนแรกเลย</p>
             )}
           </section>
+          )}
         </div>
       </article>
 
@@ -532,6 +594,9 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 }
 
 /** /moments/[id]: one moment, built on the server for search; likes, saves and comments work here */
+/** A first line longer than this reads as text, not as a headline */
+const LONG_HEADLINE = 60;
+
 export function MomentDetailView(props: DetailProps) {
   return <MomentsChrome>{(context) => <DetailBody {...props} {...context} />}</MomentsChrome>;
 }

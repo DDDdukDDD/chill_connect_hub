@@ -107,7 +107,7 @@ export function FriendsMomentsWall() {
           )}
 
           <blockquote className="mt-2 text-lg sm:text-xl font-bold text-slate-900 leading-snug tracking-tight line-clamp-3">
-            “{active.caption}”
+            {active.caption ? `“${active.caption}”` : null}
           </blockquote>
 
           <p className="mt-3 flex items-center gap-4 text-sm font-bold text-slate-500">

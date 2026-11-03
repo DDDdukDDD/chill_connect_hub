@@ -24,13 +24,13 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
   let mine = null;
   let next = null;
   if (member) {
-    const joined = joinedQuestIdsOf(member.id).includes(quest.id);
+    const joined = (await joinedQuestIdsOf(member.id)).includes(quest.id);
     const all = (await progressOf(member.id)).quests;
     await settleFinishes(member.id, all);
     const progress = all.find((entry) => entry.questId === quest.id);
     // The reward is the member's only when they joined and the server counted every visit
     const earned = Boolean(joined && progress?.completed);
-    const voucher = earned ? voucherOf(member.id, quest.id) : null;
+    const voucher = earned ? await voucherOf(member.id, quest.id) : null;
     mine = {
       joined,
       current: progress?.current ?? 0,
@@ -38,7 +38,7 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
       completed: earned,
       voucherCode: voucher?.code ?? null,
       voucherUsedAt: voucher?.usedAt ?? null,
-      finishedAt: earned ? finishedAtOf(member.id, quest.id) ?? null : null,
+      finishedAt: earned ? (await finishedAtOf(member.id, quest.id)) ?? null : null,
       memories: earned ? await memoriesOfQuest(quest, member.id) : [],
     };
 
@@ -57,8 +57,8 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
   }
 
   // A few more challenges to go on to: open, not this one, not already joined; the same category first, then the busiest
-  const joins = joinCounts();
-  const joinedIds = new Set(member ? joinedQuestIdsOf(member.id) : []);
+  const joins = await joinCounts();
+  const joinedIds = new Set(member ? await joinedQuestIdsOf(member.id) : []);
   const { items: openQuests } = await db.findQuests({ page: 1, limit: 200, status: 'active' });
   const related = openQuests
     .filter((entry) => entry.id !== quest.id && !joinedIds.has(entry.id) && entry.status !== 'ended' && (entry.daysRemaining ?? 1) > 0)
@@ -70,7 +70,7 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
 
   return {
     success: true,
-    quest: { ...quest, participantsCount: (quest.participantsCount ?? 0) + (joinCounts().get(quest.id) ?? 0) },
+    quest: { ...quest, participantsCount: (quest.participantsCount ?? 0) + ((await joinCounts()).get(quest.id) ?? 0) },
     /** False when the server cannot count this challenge: the member only notes progress for themselves */
     tracked: Boolean(quest.rule),
     minEvidence: quest.rule ? minEvidenceOf(quest) : null,

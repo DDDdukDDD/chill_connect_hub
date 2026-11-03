@@ -49,7 +49,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ อีเวนต์ ที่เที่ยว'}
-        className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className="h-full flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (
         <button type="button" onClick={() => onQueryChange('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 cursor-pointer">
@@ -62,7 +62,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         id={`${idPrefix}-province`}
         value={province}
         onChange={(e) => onProvinceChange(e.target.value)}
-        className="max-w-[9.5rem] bg-transparent text-sm font-semibold text-slate-900 focus:outline-none cursor-pointer truncate mr-1"
+        className="h-full max-w-[9.5rem] bg-transparent text-sm font-semibold text-slate-900 focus:outline-none cursor-pointer truncate mr-1"
       >
         <option value={ALL_PROVINCES}>ทั่วประเทศ</option>
         {kind === 'meetups' && <option value={ONLINE}>ออนไลน์</option>}

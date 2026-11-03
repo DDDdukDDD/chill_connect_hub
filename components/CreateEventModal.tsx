@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions } from '@/lib/useMyActivity';
 import { DialogShell, dialogButton } from './auth/DialogShell';
+import { OrganizerGateDialog } from './auth/OrganizerGateDialog';
 import { useMasterData } from '@/lib/useMasterData';
 import { LocationPinPicker, Pin } from './LocationPinPicker';
 import { SUBMISSION_SENT_EVENT } from './MySubmissions';
@@ -1419,6 +1420,12 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     );
   }
 
+  // Everything but a place suggestion waits for the organizer check, before any typing goes to waste
+  const organizerGate = isLoaded && type !== 'spot' && member?.trust?.organizerNeeds;
+  if (type && organizerGate) {
+    return <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={onClose} />;
+  }
+
   if (!type || !info) {
     const options: Array<{ id: CreationEntityType; note: string; locked?: boolean }> = [
       { id: 'community', note: isHost ? 'เผยแพร่ทันที' : 'ทีมงานตรวจก่อนเผยแพร่' },
@@ -1435,7 +1442,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
         <div className="px-5 sm:px-8 pb-6 sm:pb-8 overflow-y-auto flex-1 space-y-2.5">
           {isLoaded && !canCreate && (
             <div role="alert" className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm font-medium text-amber-900 leading-relaxed">
-              {member ? 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะสร้างได้ ' : 'เข้าสู่ระบบก่อน จึงจะสร้างได้ '}
+              {member ? `${member.trust.identityConfirmed ? 'รับคำมั่นของคอมมูนิตี้' : 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้'}ก่อน จึงจะสร้างได้ ` : 'เข้าสู่ระบบก่อน จึงจะสร้างได้ '}
               <a href={member ? '/profile/settings#trust' : '/login'} className="font-bold underline whitespace-nowrap">{member ? 'ไปที่ตั้งค่าบัญชี' : 'เข้าสู่ระบบ'}</a>
             </div>
           )}

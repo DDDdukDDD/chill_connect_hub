@@ -12,9 +12,9 @@ export async function GET(request: Request) {
   if (denied) return denied;
   // ?lite=1: names and challenges only (the challenges list groups by campaign), no stats
   if (new URL(request.url).searchParams.get('lite') === '1') {
-    return NextResponse.json({ success: true, campaigns: listCampaigns().map(({ id, name, questIds, extraQuestIds, published }) => ({ id, name, questIds, extraQuestIds, published })) });
+    return NextResponse.json({ success: true, campaigns: (await listCampaigns()).map(({ id, name, questIds, extraQuestIds, published }) => ({ id, name, questIds, extraQuestIds, published })) });
   }
-  const campaigns = await Promise.all(listCampaigns().map(async (campaign) => ({ ...campaign, live: isCampaignLive(campaign), stats: await campaignStats(campaign) })));
+  const campaigns = await Promise.all((await listCampaigns()).map(async (campaign) => ({ ...campaign, live: isCampaignLive(campaign), stats: await campaignStats(campaign) })));
   const { items } = await db.findQuests({ page: 1, limit: 500, status: 'all', includeDrafts: true });
   return NextResponse.json({
     success: true,
@@ -32,13 +32,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     if (body?.action === 'save' && body.campaign && typeof body.campaign === 'object') {
-      const isNew = !(typeof body.campaign.id === 'string' && findCampaign(body.campaign.id));
+      const isNew = !(typeof body.campaign.id === 'string' && (await findCampaign(body.campaign.id)));
       const campaign = await saveCampaign(body.campaign);
       recordAudit(actor, isNew ? 'campaign.create' : 'campaign.update', `${isNew ? 'สร้าง' : 'แก้ไข'}แคมเปญ ${campaign.name}`, { type: 'campaign', id: campaign.id });
       return NextResponse.json({ success: true, campaign });
     }
     if (body?.action === 'delete' && typeof body.id === 'string') {
-      const campaign = findCampaign(body.id);
+      const campaign = await findCampaign(body.id);
       await deleteCampaign(body.id);
       recordAudit(actor, 'campaign.delete', `ลบแคมเปญ ${campaign?.name ?? body.id}`, { type: 'campaign', id: body.id });
       return NextResponse.json({ success: true });

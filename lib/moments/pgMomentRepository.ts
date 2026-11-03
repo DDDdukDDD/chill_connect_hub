@@ -17,6 +17,7 @@ const hydrate = (tx: Sql, where: Fragment) => tx`
     array(select i.url from app.moment_images i where i.moment_id = m.id order by i.position) as images,
     array(select x.legacy_id from app.moment_likes l join app.members x on x.id = l.member_id where l.moment_id = m.id order by l.created_at) as liked_by,
     array(select x.legacy_id from app.moment_saves s join app.members x on x.id = s.member_id where s.moment_id = m.id order by s.created_at) as saved_by,
+    array(select x.legacy_id from app.moment_tags g join app.members x on x.id = g.member_id where g.moment_id = m.id order by g.created_at) as tagged_ids,
     (select coalesce(json_agg(json_build_object('id', coalesce(c.slug, c.id::text), 'author_id', x.legacy_id, 'author_name', coalesce(x.display_name, c.author_name),
         'author_avatar', coalesce(x.avatar_url, c.author_avatar), 'body', c.body, 'hidden', c.hidden, 'created_at', c.created_at) order by c.created_at, c.id), '[]')
        from app.moment_comments c left join app.members x on x.id = c.author_id where c.moment_id = m.id) as comments,
@@ -38,8 +39,12 @@ function rowToMoment(r: PgRow): Moment {
     caption: r.caption,
     images: r.images,
     imageRatio: orUndefined(r.image_ratio),
-    video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s } : undefined,
+    video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s, ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}) } : undefined,
+    ...(r.comments_off ? { commentsOff: true } : {}),
+    ...(r.likes_off ? { likesOff: true } : {}),
+    ...(r.shares_off ? { sharesOff: true } : {}),
     location: r.location_text,
+    ...(r.tagged_ids?.length ? { taggedIds: r.tagged_ids } : {}),
     category: orUndefined(r.category),
     targetType: r.target_type,
     targetId: orUndefined(r.target_ref),
@@ -107,6 +112,10 @@ const momentColumns = (m: Moment) => ({
   image_ratio: m.imageRatio ?? null,
   video_url: m.video?.url ?? null,
   video_duration_s: m.video?.durationS ?? null,
+  video_start_s: m.video?.startS ?? 0,
+  comments_off: Boolean(m.commentsOff),
+  likes_off: Boolean(m.likesOff),
+  shares_off: Boolean(m.sharesOff),
   like_count: m.likedBy.length,
   comment_count: m.comments.length,
   save_count: m.savedBy.length,
@@ -132,7 +141,7 @@ async function insertComments(tx: Sql, momentId: string, comments: MomentComment
 }
 
 /** Brings a likes or saves table in line with the moment's list */
-async function syncPeople(tx: Sql, table: 'moment_likes' | 'moment_saves', momentId: string, before: string[], after: string[]) {
+async function syncPeople(tx: Sql, table: 'moment_likes' | 'moment_saves' | 'moment_tags', momentId: string, before: string[], after: string[]) {
   const added = after.filter((id) => !before.includes(id));
   const removed = before.filter((id) => !after.includes(id));
   const members = await memberIdsOf(tx, [...added, ...removed]);
@@ -211,6 +220,7 @@ export const pgMomentRepository: MomentRepository = {
       await insertImages(tx, id, moment.images);
       await syncPeople(tx, 'moment_likes', id, [], moment.likedBy);
       await syncPeople(tx, 'moment_saves', id, [], moment.savedBy);
+      await syncPeople(tx, 'moment_tags', id, [], moment.taggedIds ?? []);
       await insertComments(tx, id, moment.comments);
       await syncReports(tx, id, [], moment.reports);
     });
@@ -231,6 +241,7 @@ export const pgMomentRepository: MomentRepository = {
       }
       await syncPeople(tx, 'moment_likes', locked.id, before.likedBy, after.likedBy);
       await syncPeople(tx, 'moment_saves', locked.id, before.savedBy, after.savedBy);
+      await syncPeople(tx, 'moment_tags', locked.id, before.taggedIds ?? [], after.taggedIds ?? []);
       await syncComments(tx, locked.id, before.comments, after.comments);
       await syncReports(tx, locked.id, before.reports, after.reports);
       return after;

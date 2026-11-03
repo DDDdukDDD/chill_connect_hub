@@ -4,11 +4,12 @@ import { createMoment, listMoments, loadPeople, MomentError, toFeedItem } from '
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { notify } from '@/lib/social/notifications';
 import { isRateLimited } from '@/lib/rateLimit';
 
 /**
  * Moments feed. ?tab=all|popular|following|saved|mine &author=<memberId> &category=heal|move|chill|learn
- * &location &targetType &targetId &q &page &limit(≤30)
+ * &location &targetType &targetId &q &tag &page &limit(≤30)
  * Posts by members the viewer has blocked are left out.
  * "saved", "mine" and "following" need a signed-in member (otherwise an empty list with requiresLogin).
  */
@@ -24,12 +25,13 @@ export async function GET(request: Request) {
     targetId: searchParams.get('targetId') ?? undefined,
     location: searchParams.get('location') ?? undefined,
     q: searchParams.get('q') ?? undefined,
+    tag: searchParams.get('tag') ?? undefined,
     page: Number.parseInt(searchParams.get('page') || '1', 10) || 1,
     limit: Number.parseInt(searchParams.get('limit') || '12', 10) || 12,
   });
   return NextResponse.json({ success: true, moments, ...(requiresLogin && { requiresLogin }), pagination }, { headers: { 'Cache-Control': 'no-store' } });
 }
-// Create a moment: { caption, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle? }
+// Create a moment: { caption?, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle? }
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
     // Trust rules: verified members only; new accounts have a daily limit and cannot post contact details
     await guardPosting(member, 'moment', typeof input?.caption === 'string' ? input.caption : '');
     const moment = await createMoment(member, input);
+    await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
     const people = await loadPeople([moment]);
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, people) }, { status: 201 });
   } catch (error) {

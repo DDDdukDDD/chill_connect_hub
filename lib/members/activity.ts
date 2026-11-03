@@ -6,7 +6,7 @@ import { addReview, hasReviewed, MAX_REVIEW_LENGTH, reviewedEventIdsOf } from '.
 import { MemberAuthError } from './accounts';
 import { guardPosting } from './safety';
 import { memberRepository } from './index';
-import { trustLevel } from './trust';
+import { hasConfirmedIdentity, trustLevel } from './trust';
 import { tidyDisplayName } from '../displayName';
 import { joinersOf } from '../social/questJoins';
 import type { Member } from './types';
@@ -34,7 +34,7 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
   if (isSeries(event)) {
     if (!date || !nextDatesOf(event).includes(date)) return { status: 'not_allowed', message: 'เลือกวันที่จะไปก่อนนะ' };
     if (isCommunity(event) && trustLevel(member) === 'new') {
-      return { status: 'not_allowed', message: member.emailVerified ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' };
+      return { status: 'not_allowed', message: hasConfirmedIdentity(member) ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' };
     }
     const instance = await ensureInstance(event, date);
     return joinEvent(member, instance.id);
@@ -48,7 +48,7 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
   if (isCommunity(event) && trustLevel(member) === 'new') {
     return {
       status: 'not_allowed',
-      message: member.emailVerified ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)',
+      message: hasConfirmedIdentity(member) ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)',
     };
   }
   const result = await db.atomicJoinEvent(eventId, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
@@ -115,7 +115,7 @@ export async function activityOf(member: Member) {
     joinedIds: [...joinedIds],
     savedSpotIds: member.savedSpotIds ?? [],
     savedEventIds: member.savedEventIds ?? [],
-    reviewedEventIds: reviewedEventIdsOf(member.id),
+    reviewedEventIds: await reviewedEventIdsOf(member.id),
     fairGroups: await myFairGroups(member.id),
   };
 }
@@ -177,7 +177,7 @@ export async function faceStacksOf(eventIds: string[], viewer: Member | null, pe
 export async function questMembersOf(questId: string, viewer: Member | null) {
   const quest = await db.findQuestById(questId);
   if (!quest) return null;
-  const people = await publicPeople(joinersOf(questId).map((join) => ({ userId: join.memberId, joinedAt: join.joinedAt })), viewer);
+  const people = await publicPeople((await joinersOf(questId)).map((join) => ({ userId: join.memberId, joinedAt: join.joinedAt })), viewer);
   // Sample challenges carry a starting count on top of real joins, as the list page shows
   return { total: (quest.participantsCount ?? 0) + people.length, attendees: people };
 }
@@ -193,7 +193,7 @@ async function publicPeople(records: { userId: string; userName?: string; userAv
       id: record.userId,
       name: tidyDisplayName(member?.displayName ?? record.userName ?? '').trim() || record.userName || 'สมาชิก',
       avatar: member?.avatarUrl ?? record.userAvatar ?? '',
-      verified: Boolean(member?.emailVerified && member.pledgeAcceptedAt),
+      verified: Boolean(member && hasConfirmedIdentity(member) && member.pledgeAcceptedAt),
       isHost: Boolean(hostId) && record.userId === hostId,
       isMe: record.userId === viewer?.id,
     }));
@@ -238,7 +238,7 @@ export async function reviewEvent(member: Member, eventId: string, input: Record
   if (hostOf(event) === member.id) throw new MemberAuthError('รีวิวตี้ของตัวเองไม่ได้');
   if (!record.checkedInAt && !isEventEnded(event)) throw new MemberAuthError('รีวิวได้หลังตี้จบ หรือหลังเช็กอินแล้ว');
   if (hostOf(event) && !record.checkedInAt) throw new MemberAuthError('รีวิวได้เฉพาะคนที่โฮสต์เช็กอินให้แล้ว', 403);
-  if (hasReviewed(member.id, eventId)) throw new MemberAuthError('คุณรีวิวตี้นี้ไปแล้ว', 409);
+  if (await hasReviewed(member.id, eventId)) throw new MemberAuthError('คุณรีวิวตี้นี้ไปแล้ว', 409);
   const rating = Math.round(Number(input.rating));
   if (!(rating >= 1 && rating <= 5)) throw new MemberAuthError('ให้คะแนน 1 ถึง 5 ดาว');
   const text = typeof input.text === 'string' ? input.text.replace(/\s+/g, ' ').trim().slice(0, MAX_REVIEW_LENGTH) : '';

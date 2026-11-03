@@ -248,7 +248,7 @@ export async function POST(request: Request) {
     // A reward code a member shows at a partner: look it up, or mark it used
     if (body.action === 'check_voucher' || body.action === 'use_voucher') {
       const code = typeof body.code === 'string' ? body.code.slice(0, 60) : '';
-      const voucher = body.action === 'use_voucher' ? await markVoucherUsed(code) : findVoucherByCode(code);
+      const voucher = body.action === 'use_voucher' ? await markVoucherUsed(code) : await findVoucherByCode(code);
       if (!voucher) return NextResponse.json({ success: false, error: 'ไม่พบรหัสนี้ ตรวจตัวสะกดอีกครั้ง' }, { status: 404 });
       const [quest, member] = await Promise.all([db.findQuestById(voucher.questId), memberRepository.findById(voucher.memberId)]);
       if (body.action === 'use_voucher') recordAudit(actor, 'quest.voucher_used', `ทำเครื่องหมายรหัสรางวัล ${voucher.code} ว่าใช้แล้ว`, { type: 'quest', id: voucher.questId });

@@ -285,7 +285,7 @@ Measured on 2026-10-10 in user-facing files (`app/`, `components/`, admin exclud
 
 | Rule | Current state |
 | :--- | :--- |
-| Minimum 11px | `text-[10px]` in 319 places, `text-[9px]` in 30 |
+| Minimum 11px | Fixed on 2026-11-03 (BE-228): none left on member-facing screens |
 | No gradients on UI surfaces | `bg-gradient-to-*` in 133 places (some are allowed photo overlays) |
 | No pillar color on buttons | Forest Green `bg-[#4A7C59]` in 52 places, many of them buttons |
 | No solid black for selected items | `bg-slate-900` in 198 places; those used as a selected state need the pillar tint |

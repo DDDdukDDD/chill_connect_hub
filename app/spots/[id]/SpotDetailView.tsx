@@ -504,7 +504,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                   ) : (
                     <span />
                   )}
-                  <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                  <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
                     <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                     แจ้งข้อมูลผิด
                   </button>

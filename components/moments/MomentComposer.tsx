@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Image as ImageIcon, MapPin, Navigation, Play, Search, Trophy, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
+import { PlacePicker } from '@/components/moments/PlacePicker';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
+import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { ClipTrimmer } from '@/components/moments/ClipTrimmer';
+import { PhotoEditor } from '@/components/moments/PhotoEditor';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { uploadPresigned } from '@vercel/blob/client';
-import { compressImage } from '@/lib/media/compressor';
-import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, VIDEO_TYPES } from '@/lib/moments/types';
+import { clipFrame, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
+import { drawBase, drawOverlays, exportPhoto, newPhoto, type EditedPhoto } from '@/lib/media/photoEdit';
+import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -17,6 +23,7 @@ import { useMyRewards } from '@/lib/useMyRewards';
 /**
  * The "แชร์โมเมนต์" form, shared by the home feed and /moments. Mount it only while it is open
  * (`{isOpen && <MomentComposer … />}`) so every opening starts clean.
+ * Steps, the way Instagram goes (owner 2026-11-02): choose photos or a clip, edit them, then the words and the place.
  * A member who has not verified their email and taken the pledge sees why they cannot post yet instead.
  */
 
@@ -39,7 +46,16 @@ export interface MomentComposerInitial {
   target?: MomentLinkTarget;
   caption?: string;
   location?: string;
-  image?: string;
+  /** Files already chosen from the feed's รูป or คลิป button; the form starts at their edit step */
+  photoFiles?: File[];
+  clipFile?: File;
+}
+
+/** What the author closes on a post */
+export interface PostOptions {
+  commentsOff: boolean;
+  likesOff: boolean;
+  sharesOff: boolean;
 }
 
 export interface MomentComposerProps {
@@ -51,7 +67,11 @@ export interface MomentComposerProps {
 }
 
 const LINK_TYPE_LABELS: Record<MomentLinkTarget['type'], string> = { community: 'ตี้', fair: 'อีเวนต์', spot: 'ที่เที่ยว' };
-const MINE_SHOWN = 4;
+const OPTION_ROWS: [keyof PostOptions, string][] = [
+  ['commentsOff', 'ปิดความคิดเห็น'],
+  ['likesOff', 'ปิดการกดถูกใจ'],
+  ['sharesOff', 'ปิดการแชร์'],
+];
 const isVisitTarget = (type?: string): type is 'spot' | 'community' | 'fair' => type === 'spot' || type === 'community' || type === 'fair';
 
 async function postJson(url: string, body: unknown): Promise<{ ok: boolean; message: string; moment?: { id: string } & Record<string, unknown> }> {
@@ -64,24 +84,54 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; mess
   }
 }
 
+/** The three switches, also used when editing a post later */
+export function PostOptionFields({ value, onChange }: { value: PostOptions; onChange: (value: PostOptions) => void }) {
+  return (
+    <div className="divide-y divide-slate-100">
+      {OPTION_ROWS.map(([key, label]) => (
+        <label key={key} className="flex items-center justify-between gap-3 py-2.5 cursor-pointer">
+          <span className="text-sm font-medium text-slate-800">{label}</span>
+          <input type="checkbox" checked={value[key]} onChange={(e) => onChange({ ...value, [key]: e.target.checked })} className="sr-only peer" />
+          <span aria-hidden="true" className="relative shrink-0 w-11 h-6 rounded-full bg-slate-200 peer-checked:bg-[#2563EB] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2563EB]/40 transition-colors after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/** A small picture of the edited photo, with everything on it */
+function EditedThumb({ photo }: { photo: EditedPhoto }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = canvas.current?.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    drawBase(ctx, photo, 200);
+    drawOverlays(ctx, photo, 200);
+  }, [photo]);
+  return <canvas ref={canvas} width={200} height={200} className="w-full h-full" aria-hidden="true" />;
+}
+
 export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
   const session = useMemberSession();
   const trust = session.member?.trust;
-  const needsVerification = Boolean(trust && !(trust.emailVerified && trust.pledged));
+  const needsVerification = Boolean(trust && !(trust.identityConfirmed && trust.pledged));
 
   const [isPosting, setIsPosting] = useState(false);
-  const [images, setImages] = useState<string[]>(initial?.image ? [initial.image] : []);
-  // A clip takes the photos' place: `images` then holds only its first frame as the cover
-  const [clip, setClip] = useState<{ file: File; durationS: number } | null>(null);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [step, setStep] = useState<'pick' | 'photos' | 'clip' | 'details'>('pick');
+  const [photos, setPhotos] = useState<EditedPhoto[]>([]);
+  const [clip, setClip] = useState<{ file: File; fullSeconds: number; startS: number; cover?: string } | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [uploadNote, setUploadNote] = useState('');
+  const [options, setOptions] = useState<PostOptions>({ commentsOff: false, likesOff: false, sharesOff: false });
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const captionInput = useRef<HTMLTextAreaElement>(null);
+  const photoUrls = useRef<string[]>([]);
+  const isOpen = useRef(true);
   const [caption, setCaption] = useState(initial?.caption ?? '');
   const [customLocation, setCustomLocation] = useState(initial?.location ?? '');
-  const [isLocating, setIsLocating] = useState(false);
   const [linkedTarget, setLinkedTarget] = useState<MomentLinkTarget | null>(initial?.target ?? null);
-  const [linkQuery, setLinkQuery] = useState('');
-  const [linkResults, setLinkResults] = useState<MomentLinkTarget[]>([]);
-  const [isLinkSearching, setIsLinkSearching] = useState(false);
-  const [showAllMine, setShowAllMine] = useState(false);
+  const [tagged, setTagged] = useState<TagFriend[]>([]);
+  const [pickerOpen, setPickerOpen] = useState<'place' | 'friends' | null>(null);
   const [targetQuests, setTargetQuests] = useState<Record<string, { questId: string; title: string }[]>>({});
   const [savedSpotTargets, setSavedSpotTargets] = useState<MomentLinkTarget[]>([]);
   const [savedEvents, setSavedEvents] = useState<EventItem[]>([]);
@@ -90,39 +140,31 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const { joinedQuestIds } = useMyRewards(true);
 
   // Something is filled in: a tap outside the form must not throw it away
-  const hasDraft = Boolean(caption.trim() || images.length > 0 || linkedTarget || customLocation.trim());
+  const hasDraft = Boolean(caption.trim() || photos.length > 0 || clip || customLocation.trim() || tagged.length > 0);
+  const placeChosen = Boolean(linkedTarget || customLocation.trim());
+  const leave = () => (hasDraft ? setConfirmDiscard(true) : onClose());
 
   // Esc closes the form unless a post is on its way
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !isPosting && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || isPosting || pickerOpen) return;
+      if (hasDraft) setConfirmDiscard(true);
+      else onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPosting, onClose]);
+  }, [isPosting, onClose, hasDraft, pickerOpen]);
 
-  // Search both catalogs once typing pauses
+  // The photo links go when the form really closes; React's test re-mount in development must not cut them while they load
   useEffect(() => {
-    const q = linkQuery.trim();
-    if (q.length < 2 || linkedTarget) return;
-    let active = true;
-    const timer = setTimeout(async () => {
-      setIsLinkSearching(true);
-      const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
-      const [events, spots] = await Promise.all([
-        get(`/api/events?q=${encodeURIComponent(q)}&limit=5&includeEnded=true`),
-        get(`/api/spots?q=${encodeURIComponent(q)}&limit=4`),
-      ]);
-      if (!active) return;
-      setLinkResults([
-        ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
-        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
-      ]);
-      setIsLinkSearching(false);
-    }, 300);
+    isOpen.current = true;
     return () => {
-      active = false;
-      clearTimeout(timer);
+      isOpen.current = false;
+      setTimeout(() => {
+        if (!isOpen.current) photoUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      });
     };
-  }, [linkQuery, linkedTarget]);
+  }, []);
 
   // Before the member types, offer what they joined or saved: the likeliest places a moment is from
   const savedSpotKey = activity.savedSpotIds.slice(0, 30).join(',');
@@ -169,14 +211,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     return all.filter((item, index) => all.findIndex((other) => other.type === item.type && other.id === item.id) === index);
   }, [activity.joined, savedSpotTargets, savedEvents, openedAt]);
 
-  // While typing, the member's own matches come before the catalog's
-  const linkMatches = useMemo(() => {
-    const q = linkQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    const mine = myLinkTargets.filter((item) => item.title.toLowerCase().includes(q) || item.location.toLowerCase().includes(q)).slice(0, 4);
-    return [...mine, ...linkResults.filter((r) => !mine.some((item) => item.type === r.type && item.id === r.id))];
-  }, [linkQuery, linkResults, myLinkTargets]);
-
   // Which challenges the picked place or event counts toward; the one the member is doing is named first
   const linkedKey = linkedTarget ? `${linkedTarget.type}:${linkedTarget.id}` : '';
   useEffect(() => {
@@ -200,99 +234,69 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     setCustomLocation('');
   };
 
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) return onToast('เบราว์เซอร์ไม่รองรับการระบุพิกัด GPS');
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setIsLocating(false);
-        setCustomLocation('ตำแหน่งปัจจุบันของฉัน (GPS)');
-      },
-      () => {
-        setIsLocating(false);
-        setCustomLocation('กรุงเทพมหานคร (พิกัดใกล้ฉัน)');
-      },
-      { timeout: 5000 }
-    );
-  };
-
-  const addImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const slots = MAX_MOMENT_IMAGES - images.length;
+  const addPhotos = async (files: File[]) => {
+    const slots = MAX_MOMENT_IMAGES - photos.length;
     if (slots <= 0) return onToast(`แชร์ได้สูงสุด ${MAX_MOMENT_IMAGES} รูปต่อโพสต์`);
-    setIsCompressing(true);
+    setIsPreparing(true);
+    const added: EditedPhoto[] = [];
+    let failed = 0;
+    for (const file of files.slice(0, slots)) {
+      const url = URL.createObjectURL(file);
+      photoUrls.current.push(url);
+      // A blob: link from the browser, which encodeURI leaves as it is; CodeQL needs it for text that started in a file input
+      const image = await new Promise<HTMLImageElement | null>((resolve) => {
+        const el = new window.Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => resolve(null);
+        el.src = encodeURI(url);
+      });
+      if (image) added.push(newPhoto(url, encodeURI(url), image));
+      else failed++;
+    }
+    setIsPreparing(false);
+    // A format the browser cannot show, such as HEIC on a computer
+    if (failed > 0) onToast(`เปิดไม่ได้ ${failed} รูป ลองใช้ไฟล์ JPG หรือ PNG นะ`);
+    else if (files.length > slots) onToast(`แชร์ได้สูงสุด ${MAX_MOMENT_IMAGES} รูปต่อโพสต์`);
+    if (added.length === 0) return;
+    setPhotos((prev) => [...prev, ...added]);
+    setStep('photos');
+  };
+
+  const addClip = async (picked: File) => {
+    const file = withClipType(picked);
+    if (!file) return onToast(`ยังไม่รองรับไฟล์ ${picked.name.split('.').pop()?.toUpperCase() ?? 'นี้'} ใช้คลิป MP4, MOV หรือ WEBM นะ`);
+    if (file.size > MAX_VIDEO_BYTES) return onToast(`คลิปนี้ ${Math.round(file.size / 1024 / 1024)}MB ใหญ่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองถ่ายที่ความละเอียดต่ำลงนะ`);
+    setIsPreparing(true);
     try {
-      const added: string[] = [];
-      for (const file of Array.from(files).slice(0, slots)) {
-        const compressed = await compressImage(file, { maxWidth: 1440, maxHeight: 1800, quality: 0.82, targetMimeType: 'image/webp' });
-        added.push(
-          await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(compressed);
-          })
-        );
-      }
-      setImages((prev) => [...prev, ...added].slice(0, MAX_MOMENT_IMAGES));
-    } catch (err) {
-      console.error('Error compressing images:', err);
-      onToast('เตรียมรูปไม่สำเร็จ ลองรูปอื่นนะ');
+      const fullSeconds = await readClipDuration(file);
+      setClip({ file, fullSeconds, startS: 0 });
+      setStep('clip');
+    } catch {
+      onToast('อุปกรณ์นี้เปิดคลิปนี้ไม่ได้ ลองเลือกจากมือถือ หรือแปลงเป็น MP4 นะ');
     } finally {
-      setIsCompressing(false);
-      e.target.value = '';
+      setIsPreparing(false);
     }
   };
 
-  /** Reads a clip's length and first frame on the phone, so a clip over the limit never starts uploading */
-  const readClip = (file: File) =>
-    new Promise<{ durationS: number; cover: string }>((resolve, reject) => {
-      const src = URL.createObjectURL(file);
-      const el = document.createElement('video');
-      el.muted = true;
-      el.playsInline = true;
-      el.preload = 'auto';
-      const finish = (done: () => void) => {
-        URL.revokeObjectURL(src);
-        done();
-      };
-      el.onerror = () => finish(() => reject(new Error('unreadable')));
-      el.onloadedmetadata = () => {
-        if (!Number.isFinite(el.duration)) return finish(() => reject(new Error('unreadable')));
-        if (el.duration > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) return finish(() => reject(new Error('too_long')));
-        el.currentTime = Math.min(0.1, el.duration / 2);
-      };
-      el.onseeked = () => {
-        const scale = Math.min(1, 1080 / Math.max(el.videoWidth, el.videoHeight, 1));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(el.videoWidth * scale);
-        canvas.height = Math.round(el.videoHeight * scale);
-        canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
-        const cover = canvas.toDataURL('image/webp', 0.82);
-        const durationS = el.duration;
-        finish(() => (canvas.width > 0 ? resolve({ durationS, cover }) : reject(new Error('unreadable'))));
-      };
-      // A blob: link from the browser, which encodeURI leaves as it is; CodeQL needs it for text that started in a file input
-      el.src = encodeURI(src);
-    });
+  // Files already chosen from the feed's buttons
+  const startedFromFiles = useRef(false);
+  useEffect(() => {
+    if (startedFromFiles.current) return;
+    startedFromFiles.current = true;
+    if (initial?.photoFiles?.length) void addPhotos(initial.photoFiles);
+    else if (initial?.clipFile) void addClip(initial.clipFile);
+    // once, on opening
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const addClip = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (!VIDEO_TYPES.includes(file.type as (typeof VIDEO_TYPES)[number])) return onToast('รองรับคลิป MP4, MOV และ WEBM นะ');
-    if (file.size > MAX_VIDEO_BYTES) return onToast('คลิปใหญ่เกิน 50MB ลองอัดสั้นลงหรือลดความละเอียดนะ');
-    setIsCompressing(true);
-    try {
-      const { durationS, cover } = await readClip(file);
-      setImages([cover]);
-      setClip({ file, durationS });
-    } catch (err) {
-      onToast(err instanceof Error && err.message === 'too_long' ? `คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาทีนะ` : 'เปิดคลิปนี้ไม่ได้ ลองคลิปอื่นนะ');
-    } finally {
-      setIsCompressing(false);
-    }
+  /** Leaving the clip step: the first frame of the chosen part becomes the cover every grid shows */
+  const finishClip = async () => {
+    if (!clip) return;
+    setIsPreparing(true);
+    const cover = (await clipFrame(clip.file, clip.startS)) ?? plainCover();
+    setClip({ ...clip, cover });
+    setIsPreparing(false);
+    setStep('details');
   };
 
   /** Sends the clip straight to storage when the site can sign that; a local server keeps it itself */
@@ -300,7 +304,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     const { mode } = await fetch('/api/upload/video', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ mode: 'off' }));
     if (mode === 'direct') {
       const name = `moments/clip.${file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'}`;
-      const blob = await uploadPresigned(name, file, { access: 'public', handleUploadUrl: '/api/upload/video', contentType: file.type });
+      const blob = await uploadPresigned(name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload/video',
+        contentType: file.type,
+        onUploadProgress: ({ percentage }) => setUploadNote(`กำลังอัปโหลดคลิป ${Math.round(percentage)}%`),
+      });
       return blob.url;
     }
     if (mode !== 'server') return null;
@@ -326,46 +335,50 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!caption.trim() || isPosting) return;
+    if (isPosting) return;
     // A moment is the member's own photo: no stock image is added on their behalf
-    if (images.length === 0) return onToast('เพิ่มรูปหรือคลิปก่อนนะ');
+    if (photos.length === 0 && !clip?.cover) return onToast('เพิ่มรูปหรือคลิปก่อนนะ');
     // The picked place or event decides the title and the place shown on the post; otherwise the typed name does
-    const location = linkedTarget ? linkedTarget.location || linkedTarget.title : customLocation.trim() || 'ไลฟ์สไตล์ทั่วไป';
+    const location = linkedTarget ? linkedTarget.location || linkedTarget.title : customLocation.trim();
 
     setIsPosting(true);
     try {
+      const pictures = clip?.cover ? [await (await fetch(clip.cover)).blob()] : await Promise.all(photos.map(exportPhoto));
       const imageUrls: string[] = [];
-      for (const image of images) {
-        if (!image.startsWith('data:')) {
-          imageUrls.push(image);
-          continue;
-        }
+      for (const [index, picture] of pictures.entries()) {
+        setUploadNote(pictures.length > 1 ? `กำลังอัปโหลดรูป ${index + 1}/${pictures.length}` : 'กำลังอัปโหลด…');
         const form = new FormData();
-        form.append('file', await (await fetch(image)).blob(), 'moment.webp');
+        form.append('file', picture, picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
         form.append('folder', 'moments');
         const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
         if (!upload?.success || !upload.url) return onToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
         imageUrls.push(upload.url);
       }
+      if (clip) setUploadNote('กำลังอัปโหลดคลิป…');
       const clipUrl = clip ? await uploadClip(clip.file).catch(() => null) : null;
       if (clip && !clipUrl) return onToast('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
-      const imageRatio = await new Promise<number | undefined>((resolve) => {
-        const probe = new window.Image();
-        probe.onload = () => resolve(probe.naturalHeight > 0 ? probe.naturalWidth / probe.naturalHeight : undefined);
-        probe.onerror = () => resolve(undefined);
-        probe.src = images[0];
-      });
+      setUploadNote('กำลังโพสต์…');
+      const imageRatio = clip?.cover
+        ? await new Promise<number | undefined>((resolve) => {
+            const probe = new window.Image();
+            probe.onload = () => resolve(probe.naturalHeight > 0 ? probe.naturalWidth / probe.naturalHeight : undefined);
+            probe.onerror = () => resolve(undefined);
+            probe.src = clip.cover as string;
+          })
+        : 1;
       const capture = linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') ? await currentPosition() : undefined;
       const result = await postJson('/api/moments', {
         caption: caption.trim(),
         images: imageUrls,
-        video: clip && clipUrl ? { url: clipUrl, durationS: clip.durationS } : undefined,
+        video: clip && clipUrl ? { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.fullSeconds - clip.startS), startS: clip.startS } : undefined,
+        ...options,
         imageRatio,
         location,
         category: 'chill',
         targetType: linkedTarget ? linkedTarget.type : 'general',
         targetId: linkedTarget?.id,
-        targetTitle: linkedTarget ? linkedTarget.title : location,
+        targetTitle: linkedTarget ? linkedTarget.title : location || undefined,
+        taggedIds: tagged.map((friend) => friend.id),
         capture,
       });
       if (!result.ok || !result.moment) return onToast(result.message);
@@ -380,24 +393,69 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         counted = ((mine.quests ?? []) as CountedQuest[]).find((q) => q.joined && q.current > 0 && hereIds.has(q.questId)) ?? null;
       }
       onPosted(result.moment, counted);
+    } catch (err) {
+      console.error('Moment post failed:', err);
+      onToast('โพสต์ไม่สำเร็จ ลองอีกครั้งนะ');
     } finally {
       setIsPosting(false);
+      setUploadNote('');
     }
   };
 
   if (needsVerification) return <VerifyToPostDialog onClose={onClose} />;
 
-  const renderLinkRow = (r: MomentLinkTarget) => (
-    <li key={`${r.type}-${r.id}`}>
-      <button type="button" onClick={() => pickTarget(r)} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-slate-50 cursor-pointer">
-        <span className="shrink-0 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full whitespace-nowrap">{LINK_TYPE_LABELS[r.type]}</span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-slate-900 truncate">{r.title}</span>
-          {r.location && <span className="block text-xs text-slate-500 truncate">{r.location}</span>}
+  // Where it is from, and who was there: one optional row each, like Instagram
+  const rowButton = 'w-full flex items-center gap-3 min-h-12 py-2 text-left cursor-pointer';
+  const placeField = (
+    <div className="divide-y divide-slate-100 border-y border-slate-100">
+      <div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setPickerOpen('place')} className={`${rowButton} flex-1 min-w-0`}>
+            <MapPin className={`w-5 h-5 shrink-0 ${placeChosen ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget?.title ?? (customLocation.trim() || 'เพิ่มสถานที่')}</span>
+              {linkedTarget && <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>}
+              {!placeChosen && <span className="block text-xs font-medium text-slate-500">ไม่บังคับ แต่ถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</span>}
+            </span>
+            {!placeChosen && <ChevronRight className="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true" />}
+          </button>
+          {placeChosen && (
+            <button
+              type="button"
+              onClick={() => {
+                setLinkedTarget(null);
+                setCustomLocation('');
+              }}
+              className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+              aria-label="เอาสถานที่ออก"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {linkedQuest && (
+          <p className="pb-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
+            <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
+          </p>
+        )}
+        {linkedQuest && linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
+          <p className="pb-2 text-xs text-slate-600 leading-relaxed">
+            โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
+          </p>
+        )}
+      </div>
+      <button type="button" onClick={() => setPickerOpen('friends')} className={rowButton}>
+        <UserPlus className={`w-5 h-5 shrink-0 ${tagged.length ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-hidden="true" />
+        <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 truncate">
+          {tagged.length ? `กับ ${tagged.slice(0, 2).map((friend) => friend.name).join(', ')}${tagged.length > 2 ? ` และอีก ${tagged.length - 2} คน` : ''}` : 'แท็กเพื่อน'}
         </span>
+        <ChevronRight className="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true" />
       </button>
-    </li>
+    </div>
   );
+  const placeTitle = linkedTarget?.title ?? (customLocation.trim() || null);
+  const isWide = step === 'photos' || step === 'clip';
 
   return (
     <div
@@ -406,223 +464,191 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         if (!hasDraft && !isPosting) onClose();
       }}
     >
-      {/* A sheet from the bottom on phones, a centred dialog on larger screens */}
+      {/* Full screen on phones, a centred dialog on larger screens */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-moment-title"
-        className="bg-white w-full sm:max-w-lg max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90"
+        className={`bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
+          isWide ? `h-dvh sm:h-[min(92dvh,720px)] ${step === 'photos' ? 'sm:max-w-4xl' : 'sm:max-w-lg'}` : step === 'details' ? 'h-dvh sm:h-auto sm:max-h-[92dvh] sm:max-w-lg' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 shrink-0">
-          <h3 id="create-moment-title" className="font-bold text-base sm:text-lg text-slate-900">แชร์โมเมนต์</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0"
-            aria-label="ปิด"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={submit} className="flex flex-col min-h-0 flex-1">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
-            {/* 1. Photos */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-slate-900">รูปหรือคลิป</span>
-                <span className="text-xs font-medium text-slate-500">{isCompressing ? 'กำลังเตรียม…' : clip ? `คลิป ${Math.round(clip.durationS)} วินาที` : `${images.length}/${MAX_MOMENT_IMAGES} รูป`}</span>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {images.map((img, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-                    <img src={img} alt={clip ? 'ปกคลิป' : `รูปที่ ${idx + 1}`} className="w-full h-full object-cover" />
-                    {clip && (
-                      <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white"><Play className="h-5 w-5 fill-current" /></span>
-                      </span>
-                    )}
-                    {idx === 0 && <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-md">ปก</span>}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setClip(null);
-                        setImages((prev) => prev.filter((_, i) => i !== idx));
-                      }}
-                      className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                      aria-label={clip ? 'ลบคลิป' : `ลบรูปที่ ${idx + 1}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                {!clip && images.length < MAX_MOMENT_IMAGES && (
-                  <label
-                    className={`${
-                      images.length === 0 ? 'col-span-3 sm:col-span-4 py-7' : 'aspect-square'
-                    } rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center gap-1.5 px-2`}
-                  >
-                    <ImageIcon className="w-6 h-6 text-slate-500" aria-hidden="true" />
-                    <span className="text-sm font-bold text-slate-800">{images.length === 0 ? 'เลือกรูป' : 'เพิ่มรูป'}</span>
-                    {images.length === 0 && <span className="text-xs text-slate-500">อย่างน้อย 1 รูป สูงสุด {MAX_MOMENT_IMAGES} รูป</span>}
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={isCompressing} onChange={addImages} className="hidden" />
-                  </label>
-                )}
-                {images.length === 0 && (
-                  <label className="col-span-3 sm:col-span-4 py-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors text-center cursor-pointer flex flex-col items-center justify-center gap-1 px-2">
-                    <Video className="w-6 h-6 text-slate-500" aria-hidden="true" />
-                    <span className="text-sm font-bold text-slate-800">หรือเลือกคลิปสั้น</span>
-                    <span className="text-xs text-slate-500">1 คลิป ไม่เกิน {MAX_VIDEO_SECONDS} วินาที และไม่เกิน 50MB</span>
-                    <input type="file" accept={VIDEO_TYPES.join(',')} disabled={isCompressing} onChange={addClip} className="hidden" />
-                  </label>
-                )}
-              </div>
+        {step === 'pick' && (
+          <>
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 shrink-0">
+              <h3 id="create-moment-title" className="font-bold text-base sm:text-lg text-slate-900">แชร์โมเมนต์</h3>
+              <button type="button" onClick={onClose} aria-label="ปิด" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-
-            {/* 2. Caption */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label htmlFor="moment-caption" className="text-sm font-bold text-slate-900">เล่าสั้นๆ</label>
-                <span className="text-xs font-medium text-slate-500">{caption.length}/500</span>
-              </div>
-              <textarea
-                id="moment-caption"
-                rows={3}
-                value={caption}
-                maxLength={500}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="วันนี้ไปไหนมา รู้สึกยังไง"
-                className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
-                required
-              />
-            </div>
-
-            {/* 3. What it is about: one optional choice */}
-            <div className="space-y-2">
-              <label htmlFor="moment-link" className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-slate-900">ไปที่ไหนมา</span>
-                <span className="text-xs font-medium text-slate-500 shrink-0">ไม่บังคับ</span>
-              </label>
-              {!linkedTarget && (
-                <p className="text-xs font-medium text-slate-600 leading-relaxed">เลือกที่เที่ยว ตี้ หรืองานที่ไปมา เพื่อนๆ จะตามไปได้ และถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</p>
-              )}
-              {linkedTarget ? (
-                <div>
-                  <div className="flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl border border-blue-200 bg-blue-50/60">
-                    <span className="min-w-0">
-                      <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget.title}</span>
-                      <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLinkedTarget(null);
-                        setLinkQuery('');
-                      }}
-                      className="shrink-0 w-9 h-9 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
-                      aria-label="เอารายการนี้ออก"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {linkedQuest && (
-                    <p className="mt-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
-                      <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
-                      <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
-                    </p>
-                  )}
-                  {linkedQuest && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
-                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                      โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
-                    </p>
-                  )}
-                </div>
+            <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3 overflow-y-auto">
+              {linkedTarget && <p className="text-sm font-medium text-slate-600 truncate">จาก {linkedTarget.title}</p>}
+              {isPreparing ? (
+                <p role="status" className="py-10 text-center text-sm font-semibold text-slate-600">กำลังเปิดไฟล์…</p>
               ) : (
-                <div>
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="rounded-2xl bg-[#FFF1F2] hover:bg-[#FFE4E6] transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-[#F43F5E]">
+                    <ImageIcon className="w-7 h-7 text-[#F43F5E]" aria-hidden="true" />
+                    <span className="text-base font-bold text-slate-900">โพสต์รูป</span>
+                    <span className="text-xs text-slate-600 leading-relaxed">สูงสุด {MAX_MOMENT_IMAGES} รูป แต่งรูปได้</span>
                     <input
-                      id="moment-link"
-                      type="search"
-                      value={linkQuery}
-                      onChange={(e) => setLinkQuery(e.target.value)}
-                      placeholder="ค้นหาที่เที่ยว ตี้ หรืออีเวนต์"
-                      autoComplete="off"
-                      className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        e.target.value = '';
+                        if (files.length) void addPhotos(files);
+                      }}
                     />
-                  </div>
-                  {linkQuery.trim().length < 2 && myLinkTargets.length > 0 && (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <p className="text-xs font-bold text-slate-600">ที่คุณเข้าร่วมหรือบันทึกไว้</p>
-                        {myLinkTargets.length > MINE_SHOWN && (
-                          <button type="button" onClick={() => setShowAllMine((open) => !open)} className="text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
-                            {showAllMine ? 'ย่อ' : `ดูทั้งหมด ${myLinkTargets.length}`}
-                          </button>
-                        )}
-                      </div>
-                      <ul className={`rounded-2xl border border-slate-200 divide-y divide-slate-100 ${showAllMine ? 'max-h-64 overflow-y-auto' : 'overflow-hidden'}`} aria-label="ที่คุณเข้าร่วมหรือบันทึกไว้">
-                        {(showAllMine ? myLinkTargets : myLinkTargets.slice(0, MINE_SHOWN)).map(renderLinkRow)}
-                      </ul>
-                    </div>
-                  )}
-                  {linkQuery.trim().length >= 2 && (
-                    <ul className="mt-2 rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden" aria-label="ผลการค้นหา">
-                      {linkMatches.map(renderLinkRow)}
-                      {linkMatches.length === 0 && (
-                        <li className="px-3.5 py-3 text-sm font-medium text-slate-500">{isLinkSearching ? 'กำลังค้นหา…' : 'ไม่พบรายการที่ตรง ลองคำอื่น หรือพิมพ์ชื่อสถานที่ด้านล่างแทน'}</li>
-                      )}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              {!linkedTarget && (
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 min-w-0">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
+                  </label>
+                  <label className="rounded-2xl bg-slate-100 hover:bg-slate-200 transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-slate-500">
+                    <Video className="w-7 h-7 text-slate-700" aria-hidden="true" />
+                    <span className="text-base font-bold text-slate-900">โพสต์คลิป</span>
+                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วง {MAX_VIDEO_SECONDS} วินาที ไฟล์ไม่เกิน {MAX_VIDEO_BYTES / 1024 / 1024}MB</span>
+                    {/* video/*, not a list of types: phones then open the gallery as well as the camera */}
                     <input
-                      type="text"
-                      value={customLocation}
-                      maxLength={80}
-                      onChange={(e) => setCustomLocation(e.target.value)}
-                      placeholder="หรือพิมพ์ชื่อสถานที่"
-                      aria-label="ชื่อสถานที่"
-                      className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
+                      type="file"
+                      accept="video/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) void addClip(file);
+                      }}
                     />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={useCurrentLocation}
-                    disabled={isLocating}
-                    className="shrink-0 w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-50"
-                    aria-label="ใช้ตำแหน่งปัจจุบัน"
-                    title="ใช้ตำแหน่งปัจจุบัน"
-                  >
-                    <Navigation className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} aria-hidden="true" />
-                  </button>
+                  </label>
                 </div>
               )}
             </div>
-          </div>
+          </>
+        )}
 
-          {/* Actions stay in view while the form scrolls */}
-          <div className="shrink-0 px-4 sm:px-6 py-3 border-t border-slate-100 flex items-center gap-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <button type="button" onClick={onClose} className="px-4 py-3 rounded-full text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer whitespace-nowrap">
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              disabled={!caption.trim() || images.length === 0 || isCompressing || isPosting}
-              className="flex-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none text-white px-6 py-3 rounded-full font-bold text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-            >
-              {isCompressing ? 'กำลังเตรียม…' : isPosting ? 'กำลังโพสต์…' : images.length === 0 ? 'เลือกรูปหรือคลิปก่อนนะ' : !caption.trim() ? 'เขียนเล่าสั้นๆ ก่อนนะ' : 'โพสต์'}
-            </button>
-          </div>
-        </form>
+        {step === 'photos' && (
+          <PhotoEditor
+            photos={photos}
+            onChange={(next) => {
+              setPhotos(next);
+              if (next.length === 0) setStep('pick');
+            }}
+            onAddFiles={(files) => void addPhotos(Array.from(files))}
+            maxPhotos={MAX_MOMENT_IMAGES}
+            placeTitle={placeTitle}
+            placeField={placeField}
+            onBack={leave}
+            onNext={() => setStep('details')}
+          />
+        )}
+
+        {step === 'clip' && clip && (
+          <ClipTrimmer file={clip.file} fullSeconds={clip.fullSeconds} startS={clip.startS} onStartChange={(startS) => setClip({ ...clip, startS })} isBusy={isPreparing} onBack={leave} onNext={() => void finishClip()} />
+        )}
+
+        {step === 'details' && (
+          <form onSubmit={submit} className="flex flex-col min-h-0 flex-1">
+            <div className="flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 border-b border-slate-100 shrink-0">
+              <button type="button" onClick={() => setStep(clip ? 'clip' : 'photos')} disabled={isPosting} aria-label="ย้อนกลับ" className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-700 flex items-center justify-center cursor-pointer disabled:opacity-50">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h3 id="create-moment-title" className="font-bold text-base text-slate-900">โพสต์ใหม่</h3>
+              <button type="submit" disabled={isPosting} className="h-10 px-5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 disabled:pointer-events-none text-white text-sm font-bold shadow-sm cursor-pointer whitespace-nowrap">
+                {isPosting ? 'กำลังโพสต์…' : 'โพสต์'}
+              </button>
+            </div>
+            {uploadNote && <p role="status" className="px-4 py-2 text-xs font-semibold text-[#1D4ED8] bg-blue-50 shrink-0">{uploadNote}</p>}
+
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5">
+              <div className="flex items-start gap-3">
+                <div className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100">
+                  {clip?.cover ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                      <img src={clip.cover} alt="ปกคลิป" className="w-full h-full object-cover" />
+                      <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"><Play className="h-4 w-4 fill-current" /></span>
+                      </span>
+                    </>
+                  ) : (
+                    photos[0] && <EditedThumb photo={photos[0]} />
+                  )}
+                  {photos.length > 1 && <span className="absolute top-1 right-1 rounded-full bg-black/60 px-1.5 text-[11px] font-bold text-white tabular-nums">{photos.length}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label htmlFor="moment-caption" className="sr-only">เล่าสั้นๆ</label>
+                  <textarea
+                    ref={captionInput}
+                    id="moment-caption"
+                    rows={4}
+                    value={caption}
+                    maxLength={500}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="เล่าสั้นๆ ว่าวันนี้เป็นยังไง (ไม่ใส่ก็ได้)"
+                    className="w-full bg-white border border-slate-300 rounded-2xl p-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
+                  />
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCaption((text) => `${text}${text && !/\s$/.test(text) ? ' ' : ''}#`);
+                        captionInput.current?.focus();
+                      }}
+                      className="h-8 pl-2 pr-3 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Hash className="w-3.5 h-3.5" aria-hidden="true" />
+                      แฮชแท็ก
+                    </button>
+                    <span className="text-xs font-medium text-slate-500 tabular-nums">{caption.length}/500</span>
+                  </div>
+                </div>
+              </div>
+
+              {placeField}
+
+              <div>
+                <p className="text-sm font-bold text-slate-900">ตั้งค่าโพสต์</p>
+                <PostOptionFields value={options} onChange={setOptions} />
+              </div>
+            </div>
+          </form>
+        )}
       </div>
+
+      {pickerOpen === 'place' && (
+        <PlacePicker
+          mine={myLinkTargets}
+          onClose={() => setPickerOpen(null)}
+          onPickTarget={(target) => {
+            pickTarget(target);
+            setPickerOpen(null);
+          }}
+          onPickName={(name) => {
+            setLinkedTarget(null);
+            setCustomLocation(name.slice(0, 80));
+            setPickerOpen(null);
+          }}
+        />
+      )}
+      {pickerOpen === 'friends' && (
+        <FriendTagPicker
+          value={tagged}
+          onClose={() => setPickerOpen(null)}
+          onDone={(friends) => {
+            setTagged(friends);
+            setPickerOpen(null);
+          }}
+        />
+      )}
+
+      {confirmDiscard && (
+        <DialogShell onClose={() => setConfirmDiscard(false)} title="ทิ้งโพสต์นี้ไหม" subtitle="รูปหรือคลิปและข้อความที่ทำไว้จะหายไป" size="sm">
+          <div className="flex flex-wrap justify-end gap-2.5">
+            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDiscard(false)}>ทำต่อ</button>
+            <button type="button" className={dialogButton.danger} onClick={onClose}>ทิ้งโพสต์</button>
+          </div>
+        </DialogShell>
+      )}
     </div>
   );
 }

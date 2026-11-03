@@ -7,16 +7,20 @@ import { Heart, Play, Volume2, VolumeX } from 'lucide-react';
  * A moment's clip, played the way Instagram plays one (owner 2026-11-02): it starts by itself once it is on screen,
  * silent and looping, and stops when it scrolls away. A tap pauses, a double tap likes, the speaker turns the sound on.
  * Only the topmost clip on screen plays, so a page of clips spends the data of one, and nothing loads before it plays.
+ * On a computer the clip under the mouse plays instead (owner 2026-11-02), and the topmost takes over when the mouse leaves.
  */
 
 /** How much of a clip must be on screen before it plays */
 const VISIBLE_SHARE = 0.6;
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;
+const SAME_ROW_PX = 24;
+const AUTOPLAY_REFUSED = 'clip-autoplay-refused';
 
 const onScreen = new Set<HTMLVideoElement>();
 const pausedByReader = new WeakSet<HTMLVideoElement>();
 let playing: HTMLVideoElement | null = null;
+let hovered: HTMLVideoElement | null = null;
 
 // The sound stays as the reader left it from clip to clip
 let soundOn = false;
@@ -41,16 +45,19 @@ function start(el: HTMLVideoElement) {
   el.muted = !soundOn;
   el.play().catch((err: DOMException) => {
     // A browser may refuse sound before the first tap on this page; silent is always allowed
-    if (err.name !== 'NotAllowedError' || el.muted) return;
+    if (err.name !== 'NotAllowedError') return;
+    // Refused even silent (a phone in low power mode): the player then shows its play button
+    if (el.muted) return void el.dispatchEvent(new Event(AUTOPLAY_REFUSED));
     setSound(false);
     el.play().catch(() => undefined);
   });
 }
 
 function settle() {
-  const next = [...onScreen].sort((a, b) => {
+  const next = hovered ?? [...onScreen].sort((a, b) => {
     const [boxA, boxB] = [a.getBoundingClientRect(), b.getBoundingClientRect()];
-    return boxA.top - boxB.top || boxA.left - boxB.left;
+    // Tiles in one row are not quite level while a hovered one still leans, so the row counts first, then the leftmost
+    return Math.abs(boxA.top - boxB.top) > SAME_ROW_PX ? boxA.top - boxB.top : boxA.left - boxB.left;
   })[0] ?? null;
   if (playing && playing !== next) playing.pause();
   playing = next;
@@ -59,6 +66,9 @@ function settle() {
 
 interface ClipPlayerProps {
   url: string;
+  /** The part of the file to play and loop, when the member picked one from a longer clip */
+  startS?: number;
+  durationS?: number;
   /** Left out where a photo already sits behind the clip */
   poster?: string;
   label?: string;
@@ -71,10 +81,12 @@ interface ClipPlayerProps {
   className?: string;
 }
 
-export function ClipPlayer({ url, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, className = '' }: ClipPlayerProps) {
+export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, className = '' }: ClipPlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(true);
+  // The big play button only when a tap is what it takes; a clip about to start by itself just shows its cover
+  const [needsTap, setNeedsTap] = useState(false);
   const [hearts, setHearts] = useState(0);
   const sound = useSyncExternalStore(subscribeSound, () => soundOn, () => false);
 
@@ -95,18 +107,49 @@ export function ClipPlayer({ url, poster, label, fit = 'contain', interactive = 
       { threshold: [0, VISIBLE_SHARE] }
     );
     observer.observe(el);
+    const onRefused = () => setNeedsTap(true);
+    el.addEventListener(AUTOPLAY_REFUSED, onRefused);
+    // Data saver and reduced motion start clips with a tap
+    const startsByItself = mayAutoplay();
+    if (!startsByItself) queueMicrotask(onRefused);
+    // A grid tile's player lets the pointer through to its link, so there the mouse is watched on the tile
+    const wrapper = el.parentElement;
+    const host = interactive ? wrapper : wrapper?.parentElement;
+    const onEnter = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      hovered = el;
+      settle();
+    };
+    const onLeave = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || hovered !== el) return;
+      hovered = null;
+      settle();
+    };
+    host?.addEventListener('pointerenter', onEnter);
+    host?.addEventListener('pointerleave', onLeave);
     return () => {
       observer.disconnect();
+      el.removeEventListener(AUTOPLAY_REFUSED, onRefused);
+      host?.removeEventListener('pointerenter', onEnter);
+      host?.removeEventListener('pointerleave', onLeave);
       onScreen.delete(el);
       el.pause();
+      if (hovered === el) hovered = null;
       if (playing === el) playing = null;
       settle();
     };
-  }, []);
+  }, [interactive]);
 
   useEffect(() => () => {
     if (tapTimer.current) clearTimeout(tapTimer.current);
   }, []);
+
+  // Stays inside the chosen part; a whole file (startS 0) just loops on its own
+  const keepInPart = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (startS <= 0 || !durationS) return;
+    const el = e.currentTarget;
+    if (el.currentTime < startS - 0.25 || el.currentTime >= startS + durationS) el.currentTime = startS;
+  };
 
   const togglePlay = () => {
     const el = video.current;
@@ -118,6 +161,7 @@ export function ClipPlayer({ url, poster, label, fit = 'contain', interactive = 
       start(el);
     } else {
       pausedByReader.add(el);
+      setNeedsTap(true);
       el.pause();
     }
   };
@@ -150,6 +194,8 @@ export function ClipPlayer({ url, poster, label, fit = 'contain', interactive = 
         playsInline
         preload="none"
         aria-label={label}
+        onLoadedMetadata={keepInPart}
+        onTimeUpdate={keepInPart}
         onPlay={() => setIsPaused(false)}
         onPause={() => setIsPaused(true)}
         className={`absolute inset-0 w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`}
@@ -162,7 +208,7 @@ export function ClipPlayer({ url, poster, label, fit = 'contain', interactive = 
             aria-label={onSingleTap ? 'ดูคลิปเต็มจอ' : isPaused ? 'เล่นคลิป' : 'หยุดคลิป'}
             className="absolute inset-0 flex items-center justify-center cursor-pointer select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
           >
-            {isPaused && (
+            {isPaused && needsTap && (
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white" aria-hidden="true">
                 <Play className="h-6 w-6 fill-current" />
               </span>

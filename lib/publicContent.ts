@@ -58,7 +58,7 @@ export const listPublicFairs = async () =>
 
 /** The /challenges list, with the members who really joined added to the written count (as `GET /api/quests`). */
 export const listPublicQuests = async () => {
-  const joins = joinCounts();
+  const joins = await joinCounts();
   const quests = await allPages((page) => db.findQuests({ page, limit: 100 }));
   return quests.map((quest) => ({ ...quest, participantsCount: (quest.participantsCount ?? 0) + (joins.get(quest.id) ?? 0) }));
 };

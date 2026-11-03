@@ -3,120 +3,83 @@ import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { thaiTimeAgo } from '../moments/service';
-import { createJsonStore } from './jsonStore';
+import { notificationStore, type NotificationMatch, type NotificationType } from './notificationStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined';
+export type { NotificationType };
 
-interface StoredNotification {
-  id: string;
-  /** Who receives it */
-  memberId: string;
-  type: NotificationType;
-  actorId: string;
-  momentId?: string;
-  /** Start of the comment, for 'comment' */
-  preview?: string;
-  /** For 'challenge': the challenge the member finished (actorId is the member themselves) */
-  questId?: string;
-  /** For 'match': the ตี้ where the two met */
-  eventId?: string;
-  /** For 'approved': the published page (/community/… or /events/…) */
-  path?: string;
-  createdAt: string;
-  read: boolean;
+/**
+ * Saving a notice must never undo the action behind it: the like, comment or join has already happened,
+ * so a database hiccup here only costs the notice.
+ */
+async function quietly(work: () => Promise<void>): Promise<void> {
+  try {
+    await work();
+  } catch (error) {
+    console.error('NOTIFICATION FAILED:', error);
+  }
 }
 
-const store = createJsonStore<StoredNotification>('notifications');
-const KEEP_PER_MEMBER = 60;
+const newId = () => `ntf_${randomUUID()}`;
+const now = () => new Date().toISOString();
+
+/** Takes back notices whose cause is gone: an unlike, an unfollow, a deleted comment or post, a block */
+export const removeNotifications = (match: NotificationMatch): Promise<void> => quietly(() => notificationStore.remove(match));
 
 /** Tells a member that someone followed them, liked or commented on their moment. Never notifies about one's own action. */
-export async function notify(recipientId: string | null | undefined, actor: Member, type: NotificationType, momentId?: string, preview?: string): Promise<void> {
+export async function notify(recipientId: string | null | undefined, actor: Member, type: NotificationType, momentId?: string, preview?: string, commentId?: string): Promise<void> {
   if (!recipientId || recipientId === actor.id) return;
-  await store.update((items) => {
-    // A repeated like or follow by the same person is one notification, not many
-    const rest = type === 'comment' ? items : items.filter((n) => !(n.memberId === recipientId && n.actorId === actor.id && n.type === type && n.momentId === momentId));
-    const next = [{ id: `ntf_${randomUUID()}`, memberId: recipientId, type, actorId: actor.id, momentId, preview: preview?.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== recipientId || ++kept <= KEEP_PER_MEMBER);
-  });
+  // A repeated like or follow by the same person is one notification, not many
+  const same = type === 'comment' ? undefined : { memberId: recipientId, actorId: actor.id, types: [type], momentId };
+  await quietly(() => notificationStore.add({ id: newId(), memberId: recipientId, type, actorId: actor.id, momentId, commentId, preview: preview?.slice(0, 80), createdAt: now() }, same));
 }
 
 /** Tells a member, once per challenge, that they finished it and the reward is waiting */
 export async function notifyChallengeFinished(memberId: string, questId: string, questTitle: string): Promise<void> {
-  await store.update((items) => {
-    if (items.some((n) => n.memberId === memberId && n.type === 'challenge' && n.questId === questId)) return items;
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'challenge' as const, actorId: memberId, questId, preview: questTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...items];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
+  await quietly(async () => {
+    if (await notificationStore.exists({ memberId, types: ['challenge'], questId })) return;
+    await notificationStore.add({ id: newId(), memberId, type: 'challenge', actorId: memberId, questId, preview: questTitle.slice(0, 80), createdAt: now() });
   });
 }
 
 /** Tells a member that staff looked at a moment's photo and did not count it as a visit (the reason is the preview) */
 export async function notifyEvidenceRejected(memberId: string, momentId: string, note: string): Promise<void> {
-  await store.update((items) => {
-    const rest = items.filter((n) => !(n.memberId === memberId && n.type === 'evidence' && n.momentId === momentId));
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'evidence' as const, actorId: memberId, momentId, preview: note.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'evidence', actorId: memberId, momentId, preview: note.slice(0, 80), createdAt: now() }, { memberId, types: ['evidence'], momentId }));
 }
 
 /** Tells a member that someone they picked after a ตี้ picked them too ("อยากเจออีก"), so they can talk now */
 export async function notifyMatch(memberId: string, actor: Member, eventId: string): Promise<void> {
-  await store.update((items) => {
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'match' as const, actorId: actor.id, eventId, createdAt: new Date().toISOString(), read: false }, ...items];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'match', actorId: actor.id, eventId, createdAt: now() }));
 }
 
 /** A seat opened in a full ตี้ the member queued for; it is held for them for a while (lib/social/waitlist.ts) */
 export async function notifySeat(memberId: string, eventId: string): Promise<void> {
-  await store.update((items) => {
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type: 'seat' as const, actorId: memberId, eventId, createdAt: new Date().toISOString(), read: false }, ...items];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'seat', actorId: memberId, eventId, createdAt: now() }));
 }
 
 /** Someone asked the host a question on their ตี้, or the host answered the member's question */
 export async function notifyQuestion(memberId: string, actor: Member, eventId: string, type: 'question' | 'answer', preview: string): Promise<void> {
   if (memberId === actor.id) return;
-  await store.update((items) => {
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type, actorId: actor.id, eventId, preview: preview.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...items];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId, type, actorId: actor.id, eventId, preview: preview.slice(0, 80), createdAt: now() }));
 }
 
 /** Tells a host that staff published or turned down their ตี้ (the preview is its title) */
 export async function notifyReview(memberId: string, eventId: string, eventTitle: string, type: 'approved' | 'rejected', path: string): Promise<void> {
-  await store.update((items) => {
-    const rest = items.filter((n) => !(n.memberId === memberId && n.eventId === eventId && (n.type === 'approved' || n.type === 'rejected')));
-    const next = [{ id: `ntf_${randomUUID()}`, memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== memberId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId, eventId, types: ['approved', 'rejected'] }));
 }
 
 /** Tells a host that someone joined their ตี้; joining again after leaving stays one notification */
 export async function notifyJoined(hostId: string, actor: Member, eventId: string, eventTitle: string): Promise<void> {
   if (hostId === actor.id) return;
-  await store.update((items) => {
-    const rest = items.filter((n) => !(n.memberId === hostId && n.type === 'joined' && n.actorId === actor.id && n.eventId === eventId));
-    const next = [{ id: `ntf_${randomUUID()}`, memberId: hostId, type: 'joined' as const, actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: new Date().toISOString(), read: false }, ...rest];
-    let kept = 0;
-    return next.filter((n) => n.memberId !== hostId || ++kept <= KEEP_PER_MEMBER);
-  });
+  await quietly(() => notificationStore.add({ id: newId(), memberId: hostId, type: 'joined', actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId: hostId, types: ['joined'], actorId: actor.id, eventId }));
 }
 
 /** Sent by the site itself, not by a person */
 const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected']);
 
-const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
 
 export async function notificationsFor(member: Member) {
-  const mine = store.read().filter((n) => n.memberId === member.id);
+  const mine = await notificationStore.list(member.id);
   const blocked = new Set(member.blockedIds ?? []);
   const actors = await memberRepository.findByIds(mine.map((n) => n.actorId));
   const items = mine
@@ -134,6 +97,8 @@ export async function notificationsFor(member: Member) {
           message: MESSAGES[n.type],
           preview: n.preview,
           timeAgo: thaiTimeAgo(n.createdAt),
+          createdAt: n.createdAt,
+          momentImage: n.momentImage,
           read: n.read,
         };
       }
@@ -149,6 +114,8 @@ export async function notificationsFor(member: Member) {
         message: MESSAGES[n.type],
         preview: n.preview,
         timeAgo: thaiTimeAgo(n.createdAt),
+        createdAt: n.createdAt,
+        momentImage: n.momentImage,
         read: n.read,
       };
     });
@@ -156,11 +123,10 @@ export async function notificationsFor(member: Member) {
 }
 
 export async function markNotificationsRead(memberId: string): Promise<void> {
-  if (!store.read().some((n) => n.memberId === memberId && !n.read)) return;
-  await store.update((items) => items.map((n) => (n.memberId === memberId && !n.read ? { ...n, read: true } : n)));
+  await notificationStore.markRead(memberId);
 }
 
 /** Account deletion: nothing addressed to, or caused by, the member stays behind */
 export async function removeNotificationsOf(memberId: string): Promise<void> {
-  await store.update((items) => items.filter((n) => n.memberId !== memberId && n.actorId !== memberId));
+  await notificationStore.removeInvolving(memberId);
 }

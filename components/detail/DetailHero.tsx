@@ -77,7 +77,7 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
           {style.name}
         </span>
         {onOpenPhotos && photoCount > 1 && (
-          <button type="button" onClick={onOpenPhotos} className={`absolute right-3 bottom-3 ${STICKER} cursor-pointer hover:bg-white`}>
+          <button type="button" onClick={onOpenPhotos} className={`absolute right-3 bottom-3 ${STICKER} min-h-9 cursor-pointer hover:bg-white`}>
             <Camera className="w-3.5 h-3.5" aria-hidden="true" />
             รูปทั้งหมด {photoCount}
           </button>

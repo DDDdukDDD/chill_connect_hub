@@ -1,4 +1,5 @@
-import type { Member, MemberTrust, RiskFlag, RiskFlagCode, TrustLevel } from './types';
+import { smsReady } from './sms';
+import type { Member, MemberTrust, OrganizerNeed, RiskFlag, RiskFlagCode, TrustLevel } from './types';
 
 /**
  * Trust and safety for member accounts.
@@ -6,9 +7,11 @@ import type { Member, MemberTrust, RiskFlag, RiskFlagCode, TrustLevel } from './
  * Idea: sign-up cannot stop a determined scammer, so a new account can do little, and earns more by
  * proving itself. Three levels:
  *   new      → just signed up
- *   verified → email verified and the community pledge accepted (may post and comment, with limits)
+ *   verified → identity confirmed and the community pledge accepted (may post, comment and join, with limits)
  *   trusted  → verified, at least NEW_ACCOUNT_DAYS old, and no open risk flag (normal limits, contact
  *              details allowed), or an approved host
+ * Identity is a confirmed email, or a sign-in with LINE, Google or Facebook (owner 2026-11-02; LINE gives no email).
+ * Opening ตี้, challenges, trips and groups inside an อีเวนต์ asks for more: a verified phone number, see organizerNeeds.
  * Badges on a profile come only from these facts; nothing is shown that was not checked.
  * This file has no server-only imports, so the browser may use it too.
  */
@@ -31,8 +34,34 @@ export function hasOpenRisk(member: Member): boolean {
   return newFlag || newReport;
 }
 
+export function hasConfirmedIdentity(member: Member): boolean {
+  return member.emailVerified || member.providers.length > 0;
+}
+
+/** The phone check runs where a code can reach the member: with an SMS provider, or on a local server that shows the code */
+export function phoneCheckIsOn(): boolean {
+  return smsReady() || !process.env.VERCEL;
+}
+
+/**
+ * What stands between a member and opening a ตี้, a challenge, a trip or a group inside an อีเวนต์. Until an SMS provider is connected,
+ * the live site asks for a confirmed email instead (docs/LAUNCH_CHECKLIST.md).
+ */
+export function organizerNeeds(member: Member): OrganizerNeed | null {
+  if (!hasConfirmedIdentity(member)) return 'identity';
+  if (!member.pledgeAcceptedAt) return 'pledge';
+  if (phoneCheckIsOn()) return member.phoneVerifiedAt ? null : 'phone';
+  return member.emailVerified ? null : 'email';
+}
+
+/** The refusal for a "new" account, naming only what is really missing */
+export function verifyFirstMessage(member: Member): string {
+  if (hasConfirmedIdentity(member)) return 'รับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)';
+  return member.pledgeAcceptedAt ? 'ยืนยันอีเมลก่อนนะ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อนนะ (ดูที่หน้าโปรไฟล์)';
+}
+
 export function trustLevel(member: Member): TrustLevel {
-  const verified = member.emailVerified && Boolean(member.pledgeAcceptedAt);
+  const verified = hasConfirmedIdentity(member) && Boolean(member.pledgeAcceptedAt);
   if (!verified) return 'new';
   if (hasOpenRisk(member)) return 'verified';
   if (member.hostApplication?.status === 'approved') return 'trusted';
@@ -44,6 +73,10 @@ export function trustOf(member: Member): MemberTrust {
     level: trustLevel(member),
     emailVerified: member.emailVerified,
     hasEmail: Boolean(member.email),
+    identityConfirmed: hasConfirmedIdentity(member),
+    phoneVerified: Boolean(member.phoneVerifiedAt),
+    phoneCheckOn: phoneCheckIsOn(),
+    organizerNeeds: organizerNeeds(member),
     pledged: Boolean(member.pledgeAcceptedAt),
     hostStatus: member.hostApplication?.status ?? 'none',
     hostKind: member.hostApplication?.status === 'approved' ? member.hostApplication.kind : undefined,

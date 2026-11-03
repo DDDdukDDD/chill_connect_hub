@@ -575,7 +575,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <span>ภาพบรรยากาศกิจกรรม</span>
                   <span className="text-slate-400 text-xs font-normal">({galleryList.length} รูป)</span>
                 </h4>
-                <span className="text-[10px] text-slate-400 font-medium">คลิกที่รูปเพื่อดูภาพใหญ่</span>
+                <span className="text-[11px] text-slate-400 font-medium">คลิกที่รูปเพื่อดูภาพใหญ่</span>
               </div>
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                 {galleryList.slice(0, 5).map((imgUrl: string, idx: number) => (
@@ -717,11 +717,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <h4 className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5 truncate">
                     <Users className="w-4 h-4 text-slate-600 shrink-0" />
                     <span>ชวนเพื่อนทำกิจกรรมในงาน ({subActivities.length})</span>
-                    <span className="text-[10px] font-bold text-slate-700 bg-slate-200/80 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-slate-700 bg-slate-200/80 px-2 py-0.5 rounded-full">
                       {isBuddyBoxOpen ? 'แตะเพื่อย่อ' : 'แตะเพื่อเปิดดู'}
                     </span>
                   </h4>
-                  <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-[11px] text-slate-500 truncate">
                     {isBuddyBoxOpen
                       ? 'หาเพื่อนร่วมเดินดูงาน หรือสร้างนัดหมายกลุ่มย่อยของคุณ'
                       : `มี ${subActivities.length} นัดหมายกลุ่มย่อยกำลังรอเพื่อนร่วมเดินงาน • คลิกเพื่อเปิดดูกลุ่ม`}
@@ -813,7 +813,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       <Sparkles className="w-3.5 h-3.5 text-[#F26430]" />
                       <span>ตั้งกลุ่มชวนเพื่อนเดินงานนี้</span>
                     </h5>
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                       นัดกลุ่มย่อย
                     </span>
                   </div>
@@ -912,7 +912,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <div className="space-y-1 pt-0.5">
                     <label className="text-[11px] font-bold text-[#1E293B] flex items-center justify-between">
                       <span>ช่วงอายุ (กำหนดเองได้อิสระ):</span>
-                      <span className="text-[10px] text-slate-500 font-normal">พิมพ์ระบุเองได้</span>
+                      <span className="text-[11px] text-slate-500 font-normal">พิมพ์ระบุเองได้</span>
                     </label>
                     <input
                       type="text"
@@ -927,7 +927,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           key={sug}
                           type="button"
                           onClick={() => setSubTargetAge(sug)}
-                          className={`text-[9px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          className={`text-[11px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
                             subTargetAge === sug
                               ? 'bg-[#4A7C59] text-white border-[#4A7C59] font-bold'
                               : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
@@ -1023,7 +1023,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                 e.stopPropagation();
                                 setReportModalTarget({ title: sub.title });
                               }}
-                              className="text-[10px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
+                              className="text-[11px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer"
                               title="รายงานความไม่ปลอดภัยของกลุ่มนี้"
                             >
                               <Flag className="w-3 h-3" />
@@ -1035,10 +1035,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         </div>
 
                         {/* Row 2: Host, Date, Time & Members Count */}
-                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-slate-500">
+                        <div className="flex items-center gap-1.5 flex-wrap text-[11px] sm:text-[11px] text-slate-500">
                           <span className="flex items-center gap-1">
                             <span>จัดโดย <strong className="text-slate-900">{sub.creatorName}</strong></span>
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                               <span>ยืนยันตัวตน</span>
                             </span>
@@ -1056,12 +1056,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           {/* Left: Criteria Badges */}
                           <div className="flex items-center gap-1 flex-wrap">
                             {sub.targetGender && (
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                                 {sub.targetGender === 'female_only' ? 'เฉพาะผู้หญิง' : sub.targetGender === 'male_only' ? 'เฉพาะผู้ชาย' : 'ทุกเพศ'}
                               </span>
                             )}
                             {sub.targetAge && sub.targetAge !== 'ไม่จำกัดอายุ' && (
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
                                 {sub.targetAge}
                               </span>
                             )}
@@ -1070,12 +1070,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           {/* Right: Action Buttons */}
                           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                             {isCreator ? (
-                              <span className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs select-none">
+                              <span className="text-[11px] sm:text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs select-none">
                                 คุณเป็นผู้สร้าง
                               </span>
                             ) : isSubJoined ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 select-none">
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 select-none">
                                   เข้าร่วมแล้ว
                                 </span>
                                 <button
@@ -1084,7 +1084,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                     e.stopPropagation();
                                     handleJoinSubActivity(sub.id);
                                   }}
-                                  className="text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-all shadow-2xs cursor-pointer active:scale-95 flex items-center gap-1"
+                                  className="text-[11px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-all shadow-2xs cursor-pointer active:scale-95 flex items-center gap-1"
                                   title="กดยกเลิกการเข้าร่วมกลุ่มนี้"
                                 >
                                   <X className="w-3 h-3" />
@@ -1093,7 +1093,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                 <Link
                                   href={`/myhub?chatSubId=${sub.id}&eventId=${event.id}`}
                                   onClick={onClose}
-                                  className="text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  className="text-[11px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white transition-all shrink-0 flex items-center gap-1 shadow-2xs"
                                   title="เปิดห้องแชตคุยกับโฮสต์และเพื่อนๆ ที่หน้ามายฮับ"
                                 >
                                   <span>คุยในแชต ➔</span>
@@ -1103,7 +1103,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                               <button
                                 type="button"
                                 disabled
-                                className="text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full border bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60 flex items-center gap-1 select-none"
+                                className="text-[11px] sm:text-[11px] font-bold px-3 py-1 rounded-full border bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60 flex items-center gap-1 select-none"
                                 title="คุณเข้าร่วมกลุ่มอื่นในงานนี้อยู่แล้ว กรุณายกเลิกกลุ่มเดิมก่อนเข้าร่วมกลุ่มใหม่"
                               >
                                 เข้าร่วม
@@ -1115,7 +1115,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                                   e.stopPropagation();
                                   handleJoinSubActivity(sub.id);
                                 }}
-                                className="text-[10px] sm:text-[11px] font-bold px-3.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                className="text-[11px] sm:text-[11px] font-bold px-3.5 py-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
                               >
                                 เข้าร่วม
                               </button>
@@ -1156,11 +1156,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <Users className="w-4 h-4 text-slate-500 shrink-0" />
                     <span>กลุ่มชวนเพื่อนที่เคยนัดหมาย ({subActivities.length} กิจกรรม)</span>
                   </h4>
-                  <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
+                  <p className="text-[11px] sm:text-[11px] text-slate-500 truncate">
                     สรุปนัดหมายกลุ่มย่อยที่เพื่อนๆ ได้ร่วมทำกิจกรรมในงานนี้
                   </p>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-200/90 px-2 py-0.5 rounded-md shrink-0 border border-slate-300/60">
+                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/90 px-2 py-0.5 rounded-md shrink-0 border border-slate-300/60">
                   🔒 ปิดรับสมัครแล้ว
                 </span>
               </div>
@@ -1175,7 +1175,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       <p className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
                         <span>🎯 {sub.title}</span>
                       </p>
-                      <p className="text-[10px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
                         <span>โดย <strong className="text-slate-700">{sub.creatorName}</strong></span>
                         <span>•</span>
                         <span>⏰ {sub.time}</span>
@@ -1183,7 +1183,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         <span className="font-semibold text-slate-600">({sub.membersCount})</span>
                       </p>
                     </div>
-                    <span className="text-[10px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-semibold shrink-0">
+                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200 font-semibold shrink-0">
                       ✓ เสร็จสิ้น
                     </span>
                   </div>
@@ -1375,7 +1375,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     {parsedPrice.tiers.map((t, idx) => (
                       <span
                         key={idx}
-                        className={`text-[10.5px] font-bold px-2 py-0.5 rounded-md border ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
                           t.isOnline
                             ? 'bg-amber-50 text-amber-900 border-amber-200'
                             : 'bg-white text-slate-800 border-slate-200 shadow-2xs'

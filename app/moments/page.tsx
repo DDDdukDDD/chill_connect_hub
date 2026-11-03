@@ -29,7 +29,8 @@ export default async function MomentsPage({ searchParams }: Props) {
   const targetType = one(params.targetType);
   const targetId = one(params.targetId);
   const location = one(params.location);
-  const place: ShowcasePlace | null = targetType && targetId ? { targetType, targetId, location: location || 'ที่นี่' } : location ? { location } : null;
+  const tag = one(params.tag);
+  const place: ShowcasePlace | null = tag ? { tag, location: `#${tag}` } : targetType && targetId ? { targetType, targetId, location: location || 'ที่นี่' } : location ? { location } : null;
   const type = one(params.type);
   const chip = !place && isMomentTarget(type) ? type : 'all';
 
@@ -37,7 +38,8 @@ export default async function MomentsPage({ searchParams }: Props) {
   const list = await listMoments(null, {
     targetType: place?.targetType ?? (chip === 'all' ? undefined : chip),
     targetId: place?.targetId,
-    location: place && !place.targetId ? place.location : undefined,
+    location: place && !place.targetId && !place.tag ? place.location : undefined,
+    tag,
     limit: 24,
   });
 

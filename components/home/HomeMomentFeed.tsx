@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Pencil, Plus, Send, Share2, Trash2, X } from 'lucide-react';
+import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
-import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
+import { saveFeedReturn, takeShowcase } from '@/components/moments/momentsReturn';
+import { CaptionText } from '@/components/moments/CaptionText';
+import { MomentComposer, CountedQuestNotice, PostOptionFields, type CountedQuest, type MomentComposerInitial, type PostOptions } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
@@ -16,6 +19,8 @@ import { recall, remember } from '@/lib/clientMemory';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
+/** A longer caption folds to two lines, so the reactions stay near the photo */
+const CAPTION_FOLD_CHARS = 90;
 export const REPORT_REASONS = ['ชวนลงทุน ขายของ หรือขายประกัน', 'หลอกลวงหรือขอข้อมูลส่วนตัว', 'เนื้อหาไม่เหมาะสม', 'คุกคามหรือพูดจาไม่ดี', 'อื่นๆ'];
 
 // Where the moment came from, in its pillar's colors, and what the reader can do there
@@ -71,6 +76,8 @@ interface PostHandlers {
   onDeleteComment: (id: string, commentId: string) => void;
   onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
   onPhotos: (images: string[], index: number) => void;
+  /** A clip is opening on its own page: keep the list and the place in it for the way back */
+  onLeaveToClip: (id: string) => void;
 }
 
 function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; handlers: PostHandlers; myAvatar?: string; myName: string }) {
@@ -79,6 +86,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showWholeCaption, setShowWholeCaption] = useState(false);
+  const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
   const shownComments = showComments ? moment.comments : moment.comments.slice(-1);
 
@@ -90,14 +99,16 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     setIsSending(false);
   };
 
+  // A closed post keeps its link for the author only
+  const mayShare = !moment.sharesOff || moment.isMine;
   const menuItems = moment.isMine
     ? ([
-        ['edit', 'แก้ไขข้อความ', Pencil],
+        ['edit', 'แก้ไขโพสต์', Pencil],
         ['copy', 'คัดลอกลิงก์', Link2],
         ['delete', 'ลบโมเมนต์', Trash2],
       ] as const)
     : ([
-        ['copy', 'คัดลอกลิงก์', Link2],
+        ...(mayShare ? ([['copy', 'คัดลอกลิงก์', Link2]] as const) : []),
         ['report', moment.hasReported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้', Flag],
       ] as const);
 
@@ -105,7 +116,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     <article id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
       <div className="flex items-center gap-2.5 min-w-0">
         {moment.authorId ? (
-          <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="shrink-0">
+          <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} aria-label={`โปรไฟล์ของ ${moment.userName}`} className="shrink-0">
             <Avatar name={moment.userName} src={moment.userAvatar} className="w-10 h-10 text-sm" />
           </Link>
         ) : (
@@ -113,6 +124,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         )}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 truncate">{moment.userName}</p>
+          <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
             {moment.timeAgo}
             {moment.location && ` · ${moment.location}`}
@@ -156,12 +168,23 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </div>
       </div>
 
-      {moment.images.length > 0 && <MomentPhotos images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => (moment.video ? router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`) : handlers.onPhotos(moment.images, index))} onDoubleTap={() => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
+      {moment.images.length > 0 && <MomentPhotos images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => {
+        if (!moment.video) return handlers.onPhotos(moment.images, index);
+        handlers.onLeaveToClip(moment.id);
+        router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`);
+      }} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
 
       {moment.caption && (
-        <p className="text-sm leading-relaxed text-slate-800 whitespace-pre-line">
-          <strong className="font-semibold text-slate-900">{moment.userName}</strong> {moment.caption}
-        </p>
+        <div>
+          <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} />
+          </p>
+          {foldsCaption && (
+            <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+              ดูเพิ่มเติม
+            </button>
+          )}
+        </div>
       )}
 
       {/* Where it was, in one slim line (owner 2026-10-29): the place, then what to do there */}
@@ -176,36 +199,42 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </Link>
       )}
 
-      <div className="flex items-center gap-5 text-[13px] font-medium text-slate-500">
+      <div className="-my-1.5 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
+        {!moment.likesOff && (
         <button
           type="button"
           onClick={() => handlers.onToggle(moment.id, moment.isLiked ? 'unlike' : 'like')}
           aria-pressed={moment.isLiked}
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
-          className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#F43F5E]' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#F43F5E]' : ''}`}
         >
           <Heart className={`w-[18px] h-[18px] ${moment.isLiked ? 'fill-current' : ''}`} />
           <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>
         </button>
+        )}
+        {!moment.commentsOff && (
         <button
           type="button"
           onClick={() => setShowComments((open) => !open)}
           aria-expanded={showComments}
           aria-label="ความคิดเห็น"
-          className={`inline-flex items-center gap-1.5 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
           <MessageCircle className="w-[18px] h-[18px]" />
           <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>
         </button>
-        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="cursor-pointer hover:text-slate-800">
+        )}
+        {mayShare && (
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
           <Share2 className="w-[18px] h-[18px]" />
         </button>
+        )}
         <button
           type="button"
           onClick={() => handlers.onToggle(moment.id, moment.isSaved ? 'unsave' : 'save')}
           aria-pressed={moment.isSaved}
           aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'}
-          className={`ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
+          className={`inline-flex items-center justify-center min-h-11 min-w-11 ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
         >
           <Bookmark className={`w-[18px] h-[18px] ${moment.isSaved ? 'fill-current' : ''}`} />
         </button>
@@ -215,7 +244,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         <ul className="space-y-2">
           {shownComments.map((comment) => (
             <li key={comment.id} className="flex items-start gap-2 text-[13px] text-slate-700">
-              <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[10px] mt-0.5" />
+              <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[11px] mt-0.5" />
               <span className="min-w-0 flex-1">
                 <strong className="font-semibold text-slate-900">{comment.userName}</strong> {comment.text}
                 <span className="block text-[11px] text-slate-400">{comment.timeAgo}</span>
@@ -235,11 +264,11 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </ul>
       )}
       {!showComments && moment.commentsCount > 1 && (
-        <button type="button" onClick={() => setShowComments(true)} className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+        <button type="button" onClick={() => setShowComments(true)} className="inline-flex items-center min-h-11 -my-2 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
           ดูความคิดเห็นทั้งหมด {moment.commentsCount} รายการ
         </button>
       )}
-      {showComments && (
+      {showComments && !moment.commentsOff && (
         <form onSubmit={send} className="flex items-center gap-2">
           <Avatar name={myName} src={myAvatar} className="w-7 h-7 text-[11px]" />
           <label htmlFor={`comment-${moment.id}`} className="sr-only">เขียนความคิดเห็น</label>
@@ -249,7 +278,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             maxLength={300}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="เขียนความคิดเห็น…"
-            className="flex-1 min-w-0 h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+            className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
           <button
             type="submit"
@@ -285,7 +314,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
       role="dialog"
       aria-modal="true"
       aria-label="ดูรูป"
-      className="fixed inset-0 z-[70] bg-black/95 flex items-center justify-center"
+      className="fixed inset-0 z-[70] bg-black flex items-center justify-center"
       onClick={onClose}
       onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
       onTouchEnd={(e) => {
@@ -374,7 +403,9 @@ function shareInitial(type: string, id: string, title: string, location: string)
  * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
  * photo showcase for browsing (no posting there).
  */
-export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
+export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
+  // Cards between the posts belong to ล่าสุด only (owner 2026-11-02): a chosen view shows just what was asked for
+  const inserts = sort === 'all' ? feedInserts : {};
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
   const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
@@ -391,7 +422,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [viewer, setViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
   const [reporting, setReporting] = useState<{ moment: FeedItem; reason: string } | null>(null);
-  const [editing, setEditing] = useState<{ id: string; caption: string } | null>(null);
+  const [editing, setEditing] = useState<({ id: string; caption: string } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -444,7 +475,30 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     [fetchPage]
   );
 
-  useEffect(() => reload(sort), [sort, reload]);
+  // Back from a clip: the same view, the posts loaded so far and the place in the list, before anything paints
+  const restored = useRef(false);
+  useLayoutEffect(() => {
+    const snapshot = takeShowcase(window.location.pathname);
+    if (!snapshot) return;
+    restored.current = true;
+    const view = (snapshot.view as FeedView | undefined) ?? sort;
+    if (view !== sort) setSort(view);
+    setMoments(snapshot.moments);
+    setPage(snapshot.page);
+    setHasMore(snapshot.hasMore);
+    setLoadedView(view);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: snapshot.scrollY, behavior: 'instant' })));
+    // once, on arriving at the page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (restored.current) {
+      restored.current = false;
+      return;
+    }
+    reload(sort);
+  }, [sort, reload]);
 
   // New moments: a quiet check every minute; the list itself never jumps while someone is reading
   useEffect(() => {
@@ -520,24 +574,30 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       replace(result.moment);
     },
     onMenu: (moment, choice) => {
-      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption });
+      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
       if (choice === 'copy' || choice === 'share') {
         const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
         // The phone's own share sheet where there is one; otherwise the link is copied
+        const copy = () => {
+          if (!navigator.clipboard) return showToast(url);
+          navigator.clipboard.writeText(url).then(
+            () => showToast('คัดลอกลิงก์โมเมนต์แล้ว'),
+            () => showToast(url)
+          );
+        };
         if (choice === 'share' && navigator.share) {
-          navigator.share({ title: 'โมเมนต์', url }).catch(() => undefined);
+          navigator.share({ title: 'โมเมนต์', url }).catch((err: DOMException) => {
+            if (err.name !== 'AbortError') copy();
+          });
           return;
         }
-        if (!navigator.clipboard) return showToast(url);
-        navigator.clipboard.writeText(url).then(
-          () => showToast('คัดลอกลิงก์โมเมนต์แล้ว'),
-          () => showToast(url)
-        );
+        copy();
       }
     },
     onPhotos: (images, index) => setViewer({ images, index }),
+    onLeaveToClip: (id) => saveFeedReturn({ url: window.location.pathname, momentId: id, moments, page, hasMore, scrollY: window.scrollY, view: sort }),
   };
 
   const deletePost = async (moment: FeedItem) => {
@@ -564,14 +624,22 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   };
 
   const saveEdit = async () => {
-    if (!editing?.caption.trim()) return;
+    if (!editing) return;
     setIsBusy(true);
-    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim() });
+    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim(), commentsOff: editing.commentsOff, likesOff: editing.likesOff, sharesOff: editing.sharesOff });
     setIsBusy(false);
     if (!result.ok || !result.moment) return showToast(result.message);
     replace(result.moment);
     setEditing(null);
-    showToast('แก้ไขข้อความแล้ว');
+    showToast('แก้ไขโพสต์แล้ว');
+  };
+
+  const openWithFiles = (e: React.ChangeEvent<HTMLInputElement>, kind: 'photos' | 'clip') => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    setComposerInitial(kind === 'photos' ? { photoFiles: files } : { clipFile: files[0] });
+    setIsComposerOpen(true);
   };
 
   const showNew = () => {
@@ -656,15 +724,23 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       </div>
 
       <div className="mt-3">
-        <button
-          type="button"
-          onClick={() => setIsComposerOpen(true)}
-          className="w-full min-w-0 flex items-center gap-3 rounded-full border border-slate-200 py-2 pl-2 pr-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
-        >
-          <Avatar name={name} src={avatar} className="w-9 h-9 text-sm" />
-          <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์โมเมนต์ให้เพื่อนๆ ดูหน่อย</span>
-          <Camera className="w-5 h-5 text-[#F43F5E] shrink-0" aria-hidden="true" />
-        </button>
+        {/* Photos and clips are two ways in (owner 2026-11-02); each button goes straight to the phone's picker */}
+        <div className="flex items-center gap-1 rounded-full border border-slate-200 p-1.5">
+          <button type="button" onClick={() => setIsComposerOpen(true)} className="flex-1 min-w-0 flex items-center gap-3 rounded-full py-0.5 pl-0.5 pr-2 text-left hover:bg-slate-50 transition-colors cursor-pointer">
+            <Avatar name={name} src={avatar} className="w-9 h-9 text-sm" />
+            <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์ให้เพื่อนๆ ดูหน่อย</span>
+          </button>
+          <label className="shrink-0 h-9 px-2.5 rounded-full hover:bg-slate-100 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-700 cursor-pointer focus-within:ring-2 focus-within:ring-[#F43F5E]">
+            <ImageIcon className="w-[18px] h-[18px] text-[#F43F5E]" aria-hidden="true" />
+            รูป
+            <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => openWithFiles(e, 'photos')} />
+          </label>
+          <label className="shrink-0 h-9 px-2.5 rounded-full hover:bg-slate-100 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-700 cursor-pointer focus-within:ring-2 focus-within:ring-[#F43F5E]">
+            <Video className="w-[18px] h-[18px] text-slate-700" aria-hidden="true" />
+            คลิป
+            <input type="file" accept="video/*" className="sr-only" onChange={(e) => openWithFiles(e, 'clip')} />
+          </label>
+        </div>
       </div>
 
       {/* The live line opens the feed: what friends are doing now, right before their moments */}
@@ -779,19 +855,23 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       )}
 
       {editing && (
-        <DialogShell onClose={() => setEditing(null)} title="แก้ไขข้อความ" size="sm">
+        <DialogShell onClose={() => setEditing(null)} title="แก้ไขโพสต์" size="sm">
           <label htmlFor="home-edit-caption" className="sr-only">ข้อความของโมเมนต์</label>
           <textarea
             id="home-edit-caption"
             rows={4}
             maxLength={500}
             value={editing.caption}
+            placeholder="เล่าสั้นๆ ว่าวันนี้เป็นยังไง (ไม่ใส่ก็ได้)"
             onChange={(e) => setEditing({ ...editing, caption: e.target.value })}
-            className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed mb-5"
+            className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed mb-3"
           />
+          <div className="mb-5">
+            <PostOptionFields value={editing} onChange={(options) => setEditing({ ...editing, ...options })} />
+          </div>
           <div className="flex flex-wrap justify-end gap-2.5">
             <button type="button" className={dialogButton.quiet} onClick={() => setEditing(null)}>ยกเลิก</button>
-            <button type="button" className={dialogButton.primary} disabled={!editing.caption.trim() || isBusy} onClick={saveEdit}>
+            <button type="button" className={dialogButton.primary} disabled={isBusy} onClick={saveEdit}>
               {isBusy ? 'กำลังบันทึก…' : 'บันทึก'}
             </button>
           </div>

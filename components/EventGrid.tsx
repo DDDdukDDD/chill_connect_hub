@@ -116,12 +116,12 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   {/* Top-Left Badges: Distance + Urgency Pill */}
                   <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 flex-wrap">
                     {event.distanceKm !== undefined && (
-                      <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                      <span className="text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
                         {event.distanceKm.toFixed(1)} กม.
                       </span>
                     )}
                     {event.eventType !== 'public_venue' && (isAlmostFull || isFull) && !isJoined && !isEnded && (
-                      <span className="text-[10px] font-bold bg-slate-900/85 backdrop-blur-md text-white px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 border border-white/10">
+                      <span className="text-[11px] font-bold bg-slate-900/85 backdrop-blur-md text-white px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 border border-white/10">
                         <span className={`w-1.5 h-1.5 rounded-full ${isFull ? 'bg-slate-400' : 'bg-amber-400 animate-pulse'}`} />
                         {isFull ? 'เต็มแล้ว' : `เหลือ ${event.maxParticipants - event.participantsCount} ที่`}
                       </span>
@@ -171,7 +171,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                         </span>
                         {event.eventType !== 'public_venue' && Boolean(event.hostRating || event.rating) && (
                           <span
-                            className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50/90 border border-amber-200/60 px-1 py-0.2 rounded shrink-0"
+                            className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 bg-amber-50/90 border border-amber-200/60 px-1 py-0.2 rounded shrink-0"
                             title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 0).toFixed(1)} / 5`}
                           >
                             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
@@ -326,7 +326,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
 
               {/* Distance Pill */}
               {event.distanceKm !== undefined && (
-                <span className="absolute bottom-1.5 left-1.5 text-[9px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-1.5 py-0.5 rounded-full shadow-2xs">
+                <span className="absolute bottom-1.5 left-1.5 text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-1.5 py-0.5 rounded-full shadow-2xs">
                   {event.distanceKm.toFixed(1)} กม.
                 </span>
               )}
@@ -369,7 +369,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   </span>
                   {event.eventType !== 'public_venue' && Boolean(event.hostRating || event.rating) && (
                     <span
-                      className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded shrink-0"
+                      className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded shrink-0"
                       title={`คะแนนโฮสต์ ${(event.hostRating || event.rating || 0).toFixed(1)} / 5`}
                     >
                       <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />

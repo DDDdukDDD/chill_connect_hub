@@ -238,7 +238,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
                           <div key={comment.id} className="bg-slate-50 p-2.5 rounded-xl text-xs space-y-0.5">
                             <div className="flex items-center justify-between font-bold text-[#1E293B]">
                               <span>{comment.userName}</span>
-                              <span className="text-[10px] text-[#94A3B8] font-normal">{comment.timeAgo}</span>
+                              <span className="text-[11px] text-[#94A3B8] font-normal">{comment.timeAgo}</span>
                             </div>
                             <p className="text-[#475569]">{comment.text}</p>
                           </div>
@@ -340,7 +340,7 @@ export const CommunityMoments: React.FC<CommunityMomentsProps> = ({
                   <ImageIcon className="w-4 h-4" />
                   <span>ภาพถ่ายบรรยากาศจะถูกแนบอัตโนมัติ</span>
                 </div>
-                <p className="text-[10px] text-[#94A3B8]">
+                <p className="text-[11px] text-[#94A3B8]">
                   (ระบบจำลองเลือกรูปถ่ายคุณภาพสูงจากกิจกรรม {events.find(ev => ev.id === selectedEventId)?.title})
                 </p>
               </div>

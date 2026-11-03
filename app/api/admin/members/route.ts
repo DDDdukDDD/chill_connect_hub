@@ -29,7 +29,7 @@ const STATUSES = new Set<MemberStatus | 'all'>(['all', 'active', 'suspended', 'b
 
 // Admin view of a member: no password hash or session version
 function toAdminMember(member: Member) {
-  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, signupIpHash: _ip, ...rest } = member;
+  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, signupIpHash: _ip, ...rest } = member;
   void _version;
   void _reset;
   void _verify;

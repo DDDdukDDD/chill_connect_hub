@@ -2456,21 +2456,137 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Data not changed:** Duke's `avatar_url` still holds the old `/uploads/...` link, so that photo stays missing on the live site until it is uploaded again.
 - **Still open:** a moment posted from a local server still points at that computer's disk, so its photos and clip will not show on the live site. Post test moments on the live site, or delete local ones afterwards.
 
-### BE-218 · 77 จังหวัด: a photo for every province (owner 2026-10-30)
+### BE-218 · Posting works like Instagram: choose, edit, then details (owner 2026-11-02)
+- **Steps:** `components/moments/MomentComposer.tsx` is now choose (photos or clip) → edit → details. Editing lives in `components/moments/PhotoEditor.tsx` and `lib/media/photoEdit.ts`: crop (drag, pinch, wheel, slider), 7 filters, light / contrast / colour, text on the photo (drag, colour, size, background) and a sticker of the place.
+- **Everything is baked into the picture**, so posts stay plain images and old screens need no change. The preview and the upload use one drawing routine. Output is always a square, because every post shows in a square frame. Colours are worked pixel by pixel because Safari's canvas has no `filter`; JPEG is the fallback where the browser cannot write WebP.
+- **Post switches:** `commentsOff`, `likesOff`, `sharesOff` on a moment (migration `0016`, applied to the shared database). The server refuses a like or comment on a closed post. The author can change them later in แก้ไขโพสต์ (was แก้ไขข้อความ).
+- **Sharing is closed in the UI only:** the buttons go for everyone but the author, but a public post's link can still be copied from the address bar.
+- **Hashtags:** `#word` in a caption links to `/moments?tag=word` (`lib/moments/hashtags.ts`, `components/moments/CaptionText.tsx`). Thai vowels and tone marks stay in the tag; a match is the whole tag. No new column. The grid header reads โมเมนต์จาก #word.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`.
+
+### BE-219 · Clips post on their own path, from the gallery too (owner 2026-11-02)
+- **Report:** a clip from the phone's files would not post, even a 5 second one; recording a new one worked. **The exact cause on the owner's phone is not confirmed**, because no real phone was available here.
+- **What changed for it:** `accept="video/*"` replaces a list of three types, so phones offer the gallery; a missing or odd file type is judged by the file name (`lib/media/clip.ts`); reading a clip times out after 15 seconds instead of waiting forever; a clip whose picture cannot be drawn gets a plain cover; each refusal names its reason (type, MB, cannot open).
+- **Separate paths:** the feed box has รูป and คลิป buttons, and the form's first step has โพสต์รูป and โพสต์คลิป.
+- **Longer clips:** `components/moments/ClipTrimmer.tsx` picks 15 seconds of a longer clip. `video.startS` holds the start; `components/moments/ClipPlayer.tsx` plays and loops only that part. The whole file still uploads, so the 50 MB limit stays and a viewer's browser may fetch more than the 15 seconds.
+- **Upload progress** shows as a percentage on the direct Blob path.
+
+### BE-220 · A clip plays under the mouse (owner 2026-11-02)
+- `components/moments/ClipPlayer.tsx`: on a computer the clip under the mouse plays, and the first on screen takes over when the mouse leaves. Touch is unchanged. Autoplay of the first clip on screen stays (BE-216), and a reader on a data saver or with reduced motion is still not started automatically.
+
+### BE-221 · Cards between posts show on ล่าสุด only (owner 2026-11-02)
+- `components/home/HomeMomentFeed.tsx` drops the suggestion cards on ติดตาม, ยอดฮิต, บันทึก and ของฉัน, including under an empty list.
+
+**Checked (BE-218..221):** 28 checks in Chrome against a local server: the whole photo and clip flows, 390x844, 568x320, 844x390 and 1280x800, server refusals, hashtag matching, hover and leaving. Test members and posts were deleted. Production build passes. One earlier run returned a 500 on a moment delete that a retry cleared; it did not repeat and its cause was not found.
+**Not checked:** real iPhone and Android, Safari, pinch with real fingers, the direct Blob upload path (local uses the server path).
+
+### BE-222 · Caption optional, and the fixes from a full posting and viewing walk (owner 2026-11-02)
+- **Caption is optional,** as on Instagram. `caption` may be empty on `POST` and `PATCH /api/moments`. A post without one shows no line under the author; its `<h1>` stays for search engines but is visually hidden, and reads โมเมนต์จาก plus the author's name.
+- **No made-up place:** a post without a place now has none, instead of "ไลฟ์สไตล์ทั่วไป". That text and the old GPS texts on existing posts are hidden when served (`realPlace` in `lib/moments/service.ts`); stored rows are unchanged.
+- **GPS button removed from the form:** it never read a real place and saved "กรุงเทพมหานคร (พิกัดใกล้ฉัน)" even when location was refused. Checking a visit at posting time (`capture`) is unchanged.
+- **Clips in the feed fill the same square as photos,** with no black bars. Full screen and the clip page still show the whole clip, so the sides or top of a clip are cut in the feed only.
+- **Back from a full screen clip** returns to the same post, tab and loaded list (`saveFeedReturn` in `components/moments/momentsReturn.ts`), and the clip plays again. The return window is now 15 seconds for both the feed and /moments.
+- **Long captions in the feed** fold to two lines with ดูเพิ่มเติม, so the reactions stay near the photo. On the moment page a first line over 60 characters reads as body text, not a large headline.
+- **Play button:** shows only when a tap is needed (reader paused, data saver, reduced motion, autoplay refused), not while a clip is about to start.
+- **Share:** when the phone's share sheet fails for a reason other than the reader cancelling, the link is copied instead of nothing happening.
+- **Clips this device cannot open still post:** `readContainerDuration` in `lib/media/clip.ts` reads the length from the MP4 or MOV header, so no decoder is needed. The clip step then says it cannot show a preview, and the post gets a plain cover. **Open:** a viewer whose device cannot play that format sees the plain cover only.
+- **Smaller:** the photo viewer is solid black, the editor hides the photo strip while typing on a phone, text on photos has a stronger shadow, and the hashtag page reads โมเมนต์ในแท็ก.
+- **Former Gemini files edited:** `components/home/HomeMomentFeed.tsx`, `components/FriendsMomentsWall.tsx`.
+
+**Checked:** 56 checks with two members and a guest on phone and computer sizes, in Chrome and the first part in WebKit 18.2: every kind of post, feed, swipe, viewer, like, double tap, comment, delete, save, share, report, hashtag, closed posts, full screen, sound, comments over a clip, edit, delete, profile. Another 10 checks on clips that cannot be decoded, both browsers. Screens were reviewed by eye. Every test account and post was deleted. Production build passes, but clip playback was walked on `next dev`, because `next start` does not serve files uploaded after the build.
+**Not checked:** real iPhone and Android, Safari itself, real fingers, the direct Blob upload, a real HEVC file (a made-up file with a real header stood in for it). One run reported a hydration warning that did not repeat, and its page was not identified.
+**Known, not changed:** a deleted comment's text stays in the author's notification. On a computer, with comments open beside an upright clip, the caption runs across the black side bars.
+
+### BE-223 · Notifications stay: moved to the database, with keep and delete rules, and a better list (owner 2026-11-02)
+- **Cause of "shows once, then gone":** notices lived in a file in `/tmp` on each Vercel server, so another server, or a restarted one, had none. The exact case the owner saw was not traced in the live logs.
+- **Now:** `lib/social/notificationStore.ts` keeps them in `app.notifications` with `DATA_STORE=postgres`, and in the JSON file otherwise. Migration `0017` adds the kinds `approved`, `rejected`, `joined`, and the columns `path` and `comment_ref`; it is already applied to the shared database. Old `/tmp` notices were not moved.
+- **Keep (owner):** read notices 30 days from being read, unread 90 days, at most 100 per member. Older ones stop being listed at once, and their rows go at the member's next new notice.
+- **Delete:** unlike, unfollow, deleted comment (only comments made from now on carry the link), deleted post, block, and account deletion. Opening the list marks notices read and does not delete them.
+- **A failed notice never fails the action:** the like or comment stays, and the error goes to the log.
+- **The list (`components/NotificationBell.tsx`):** groups วันนี้ / 7 วันที่ผ่านมา / ก่อนหน้านี้, the post's picture on the right, new ones tinted until the list closes, a comment notice opens at `#comments`, it fetches on opening, and it has its own loading and failed states with a retry.
+- **API:** `GET /api/notifications` items also carry `createdAt` and `momentImage`.
+- **Checked:** 28 checks in Chrome with throwaway members on `next dev`, phone and computer: each action and its take-back, the database rows, the time and number limits, popup states. Every test account was deleted. Production build passes.
+- **Not walked end to end:** `joined`, `approved`, `rejected`, `seat`, `question`, `answer`, `match`, `challenge`, `evidence` were inserted directly to check the table and the list, not triggered by their real actions. Real phones not checked.
+- **Other stores are still per-server files:** anything else built on `createJsonStore` can lose data on Vercel the same way (`lib/social/*`, sponsored slots); not audited here.
+
+### BE-224 · A social sign-in counts as identity; opening a ตี้ needs a phone check (owner 2026-11-02)
+- **Why:** every LINE account has no email and no screen adds one, so these members could not post or join. The owner chose: sign-in is enough to post, comment and join; opening something that brings people out to meet asks for more.
+- **Rule (`lib/members/trust.ts`):** `hasConfirmedIdentity` = confirmed email, or a linked LINE, Google or Facebook sign-in. `organizerNeeds` says what is missing before a member can create a ตี้, a challenge or a Spot Buddy trip (`guardOrganizer` in `lib/members/submissions.ts`, used by `POST /api/events` and `proposeQuest`). Suggesting a place and the invite link stay open, the owner kept the link open for the launch campaign.
+- **Phone check:** `POST /api/auth/member/phone` then `/confirm` (`docs/API.md`). 6 digits, 10 minutes, 5 tries, 60 seconds between sends, one verified number per account. Migration `0018`. The number never reaches a public profile; the member sees it only in their own data export, staff see it in the console.
+- **No SMS provider yet (`lib/members/sms.ts`):** a local server shows the code on screen. **The live site keeps the old rule, a confirmed email, so a LINE member cannot create there until SMS is connected.** On the launch checklist.
+- **Badges:** a sign-in shows "ยืนยันตัวตนผ่านบัญชีโซเชียล", never "ยืนยันอีเมล"; "ยืนยันเบอร์โทรแล้ว" is new. Terms and privacy text updated.
+- **Group inside an อีเวนต์:** the owner chose the same check as a ตี้ on 2026-11-03, see BE-229.
+
+### BE-225 · The last per-server stores moved to the database (owner 2026-11-02)
+- **Moved, order as agreed:** visits, challenge joins and finishes, reward codes, redemptions; then reviews, waiting list, questions, meet-again, groups in an อีเวนต์; then safety reports, campaigns, sponsored cards. `lib/social/stores.ts` holds the reads and writes; each feature keeps its rules. `createJsonStore` stays only as the path for a clone without `DATA_STORE=postgres`.
+- **Migration `0019`:** `quest_participants.left_at` (a badge stays after leaving), one of each reward per member at the database, `content_reports.closed_by_label`, new tables `event_waitlist` and `sponsored_slots`.
+- **Reads are now async:** `joinCounts`, `joinedQuestIdsOf`, `voucherOf`, `marksOf`, `markedVisitOf`, `liveCampaign`, `liveSponsoredId`, `listCampaigns`, `isMutual`, `fairGroupById`, `reviewById` and others. Without `await` they turn into `{}` in JSON with no type error.
+- **Removed:** `isFairGroupMember` (use `fairGroupById(id).memberIds`).
+- **Campaign and sponsored reads are cached 60 seconds per server**, because every list page reads them; a staff change reaches other servers within that time.
+- **Data:** what was in the local files for visits, joins and the campaign was already in the tables from the earlier import. What members did on the live site in `/tmp` could not be read and is not carried over.
+- **Checked:** two walks on `next build` + `next start` against the shared database, with throwaway members deleted afterwards: 78 checks passed; the 9 failures were all the test script itself (wrong request shape, a fair that had ended), each re-run correctly except that `GET /api/visits` needs `?mine=1` for marks, which the code shows. Also: account deletion clears the rows, pages `/`, `/challenges`, `/community`, `/events`, `/spots` and two detail pages return 200.
+- **Not walked end to end:** a review on a ตี้ that ended, a voucher issued from a really finished challenge, a redemption paid with real XP, sending a chat message in a group. The tables behind them were checked with direct rows or by reading the code.
+
+### BE-226 · Clip screen and phone menu (owner 2026-11-02)
+- **Clip buttons:** on a tablet or larger, like, comment, share and save sit 24px from the edge instead of 6px, and respect the safe area. Under save, a `...` menu: delete for the owner, report for everyone else (`components/moments/MomentDetailView.tsx`). Photo posts are unchanged.
+- **Phone and tablet menu (`components/MobileNav.tsx`):** see-through white glass with blur instead of black, active item in blue; solid white where the browser has no blur.
+- **Checked:** Chrome at 820, 390 and 344 wide, no sideways scroll. A real iPad and iPhone are still to try; the clip was measured outside full screen.
+
+### BE-227 · Place popup and friend tags on moments (owner 2026-11-03)
+- **Place (`components/moments/PlacePicker.tsx`):** one row in the composer opens a popup: what the member joined or saved, what is near them, and search. A place of ours, a ตี้ or an อีเวนต์ links the post; a general place is only its name on the post.
+- **Nearby (`GET /api/places/nearby`):** our own places first. `?general=1` then asks OpenStreetMap, as Google Places content may not be stored. Asked apart so our places show at once. The position is rounded to about 100 metres and not kept. The location question waits for a press unless already allowed.
+- **Known limit:** the public Overpass list of named places answered "at capacity" in every test here, so testers mostly see our places plus the area name. Named cafes and shops nearby need a paid or own service before launch. On the checklist.
+- **Tags (`components/moments/FriendTagPicker.tsx`, migration `0020`):** only people who follow each other, 10 at most, checked on the server: anyone else in the request is dropped. Notice type `tagged`. The tagged person removes themselves (`untag`), which also removes the notice. Tags give no XP. Shown on the post page, the clip and the Home feed, and in the server HTML.
+- **API:** `GET /api/members/friends`, `taggedIds` on `POST /api/moments`, `tagged` and `isTaggedMe` on feed items.
+
+### BE-228 · Production pass over every page (owner 2026-11-03)
+- **How checked:** a script on `next build` + `next start` walked 18 guest and 9 member pages at 390, 344, 673, 882×416, 820 and 1440 wide, measuring sideways scroll, broken images, JS errors, one `<h1>`, text under 11px, tap targets, unnamed buttons and unlabeled inputs. Screens were then read by eye.
+- **Already clean:** no sideways scroll, no broken images, no JS errors, one `<h1>` per page, security headers, private pages `noindex` and out of the sitemap, `npm audit` 0 for production packages.
+- **Fixed:** no `error.tsx` or `global-error.tsx` existed, so a crash gave a bare screen; 153 places under the 11px minimum; tap targets on the Home feed buttons, search bars, grid/list toggle, comment box and small links; `+375` spilling out of its dot; an empty "ดูทั้งหมด" on My Hub; author links with no name for screen readers; English in the toggle labels; no reduced-motion support and no shared keyboard focus style; the bottom menu ignoring the iPhone safe area; browser bar tint now white.
+- **Bug found by testing:** `parseEventDateToTimestamp` and its end-date twin read `2026-11-08` as September, so a ตี้ sent with an ISO date counted as ended and refused the waiting list. Both now read ISO dates (`lib/dateUtils.ts`, shared).
+- **Block:** someone who blocked you has no profile for you; reviews by people you blocked are left out of a host's summary.
+- **Lint error fixed:** `Date.now()` during render in `FairDetailView`.
+- **Live without SMS:** the phone row hides, and a LINE member who tries to create is told plainly instead of being sent to an email form they cannot use.
+- **Walked for real this time, closing the gaps in BE-225:** review after check-in, reporting a review and a chat message, staff removal, event, pair and group chat with outsiders refused, waiting list offer and held seat, a partner challenge finished by a real check-in giving XP, a code and one notice, staff marking the code used, a reward paid with real XP, a second one refused, the badge staying after leaving.
+- **Not tested:** real iPhone, iPad, Android and Safari (headless Chrome with device sizes only); real LINE sign-in (a provider row was added directly); real SMS; clip upload to Blob; load.
+
+### BE-229 · Opening a group inside an อีเวนต์ asks for the phone check, like a ตี้ (owner 2026-11-03)
+- **Rule:** `createFairGroup` calls `guardOrganizer`, so `POST /api/events/{fairId}/groups` with `action: 'create'` answers 403 until `organizerNeeds` is `null`. Joining a group stays open to verified accounts, the same as joining a ตี้.
+- **Screen:** `ตั้งกลุ่ม` on `/events/[id]` shows the check first and opens the form once it passes. The dialog moved out of `CreateEventModal` into `components/auth/OrganizerGateDialog.tsx`, used by both.
+- **Words:** the refusal, the settings row and the terms and privacy text now name groups in an อีเวนต์.
+- **On a deployment with no SMS provider** the same fallback applies as for a ตี้: a confirmed email, and a LINE member is told plainly that creating is not open yet.
+
+### BE-230 · Less data out of the database (owner 2026-11-03)
+- **Why:** Supabase warned of egress over the free plan's 5.5 GB; restrictions may start 2026-12-03. Whole-table reads of `app.places` were about 7 GB of what `pg_stat_statements` shows since 2026-10-25, and `app.events` about 1.5 GB.
+- **Downloads only on change:** `readIfChanged` in `lib/db/adapters/postgresAdapter.ts` asks for a one-row fingerprint (row count and the sum of `updated_at`) when a cached list runs out, and reads the table again only if it moved. A new server still reads once.
+- **Lighter public list:** `findSpots` without `includeDrafts` reads the list without what only a place's page shows. Download 9.72 MB to 4.89 MB. With `includeDrafts` (staff screens, scrapers) it reads everything. `findSpotById` reads its own row, so a place's page keeps its gallery. Events read only the columns `rowToEvent` uses (0.78 MB to 0.52 MB).
+- **For anyone calling `db.findSpots` without `includeDrafts`:** `galleryImages` holds the first photo only; `contact`, `facilities`, `parkingInfo`, `reviews`, `tips`, `faq`, `website`, `phone`, `transitInfo`, `sourceName`, `sourceUrl` and `curation.reasons` are absent. Use `findSpotById` for them. No frontend action; `/api/spots` and list pages send the same as before.
+- **Checked on a production build:** all 2,179 list items and 261 events compare equal to the full read; a new server made one light download and no full one; no second download after the cache ran out with nothing changed; one fresh download after a change.
+- **Second step, same day:** the public place list is now 3.41 MB (no drafts, descriptions stop at 281 characters, a gallery photo only for a place with no cover). Lists go through Next's data cache (`sharedAcrossServers`), read in parts of 500 places, with the table's fingerprint in the key, so a server that just started downloads nothing unless the table changed. Checked with a restart on `next start`: 0 parts downloaded; after a change, all 5 parts once. **Not yet seen on Vercel.**
+- **Search change to know about:** `GET /api/spots?q=` and the `/spots` search now read the first 281 characters of a description, plus title, province, district, tags and category as before.
+
+### BE-231 · A separate database for development (owner 2026-11-03)
+- **Why:** local servers and test walks used the live database, so they spent its egress quota and could change live data.
+- **How it works:** `next dev` reads `.env.development.local` (not in Git) before `.env.local`, so `npm run dev` uses the development database. The quota is per Supabase organization, so this database sits in its own organization.
+- **`npm run db:dev`** applies migrations there and sets the `app_runtime` login once. **`npm run db:dev -- --copy`** replaces its data with a copy of the live data, reading live on a read-only session. Phone numbers and the audit log are not copied. It refuses to run if the file points at the live project.
+- **Another computer:** `git pull`, copy `.env.local` and `.env.development.local` across by hand, then `npm run dev`. New migrations: `npm run db:dev` once from any computer.
+- **Still on live:** `next start` and `next build` read `.env.local`, so a production-build walk uses the live database unless `DATABASE_URL` is set in the environment. File uploads were not separated.
+
+### BE-232 · 77 จังหวัด: a photo for every province (owner 2026-10-30)
 Admin and data only; no frontend action. Only 12 provinces had a photo; all 77 do now. The 65 new ones are in `public/images/provinces/<name>.jpg` (1000 px, 24-212 KB), listed in `data/provincePhotos.ts` (seed) and written to `data/master_data.json`.
 - **Source:** each province's photo on Wikidata from Wikimedia Commons (open licences), every photo checked by eye. Weak or wrong ones were replaced with a well-known landmark: Thi Lo Su (ตาก), Wat Pho Prathap Chang (พิจิตร), Erawan Museum (สมุทรปราการ), Wat Phra Phutthabat (สระบุรี), Wat Phra That Nong Bua (อุบลราชธานี), Pha Lom Sak at Phu Kradueng (เลย), Mu Ko Chumphon (ชุมพร; the Wikidata photo was storm damage), a temple Buddha (อำนาจเจริญ).
 - **Credit kept:** provinces gain `imageCredit` (author · licence · Commons link), shown as "เครดิตรูป" in the admin province form. Today province photos show only in admin; anyone who puts them on a public page must show the credit with them.
 
-### BE-219 · Admin: "บทบาท & สิทธิ์" explains staff roles and member levels; Editors may edit master data (owner 2026-10-30)
+### BE-233 · Admin: "บทบาท & สิทธิ์" explains staff roles and member levels; Editors may edit master data (owner 2026-10-30)
 Admin console only; no frontend action.
 - **Page renamed** "ทีมงาน & สิทธิ์" → "บทบาท & สิทธิ์", two tabs. **ทีมงาน**: team list, a card per role (who it is for, which pages it can change), and "ดูรายละเอียดสิทธิ์รายหน้า": a table by sidebar page with แก้ไข / แก้บางส่วน / ดู / – per role, built from `MODULE_PERMISSIONS` and the new `MODULE_EDIT_PERMISSIONS` in `components/admin/AdminSidebar.tsx` (keep that map in step with the API checks). **สมาชิกบนเว็บไซต์**: the member ladder (guest → new → verified → trusted → ผู้จัดตี้ → ผู้จัดงาน/เจ้าของพื้นที่, plus suspended/banned) with what each step allows, read from `lib/members/trust.ts`, live counts (`overview.levels` on `/api/admin/members?view=overview`), and links to the host and flagged queues.
 - **Role names in Thai:** เจ้าของ, บรรณาธิการเนื้อหา, ผู้ดูแลชุมชน, ทีมข้อมูล (`ROLE_LABELS`); ids unchanged. Permission labels now say what they really cover (moments and reports under community.review; campaigns and sponsored cards under content.edit).
 - **Access change (owner):** new permission `master.edit` for `POST /api/admin/master` (categories, provinces and zones, venues, rails), given to Editor and Data Ops. `system.manage` keeps media, cache and `reset_and_seed`. Before, Editors could not fix a venue photo or a category.
 
 
-### BE-220 · Claude Code now builds the whole project, Antigravity tests it; office notebook works on `office-notebook` (owner 2026-11-02)
+### BE-234 · Claude Code now builds the whole project, Antigravity tests it; office notebook works on `office-notebook` (owner 2026-11-02)
 Docs only; no code change.
 - **Claude Code builds everything:** user-facing pages, admin and backend. The frontend/backend split in AGENTS.md section 0 (and FE-001) is retired.
 - **Antigravity is now the tester:** it tests the site and reports problems as `TR-###` items in `docs/TEST_REPORTS.md`, on its own `tester` branch. It changes only that file; Claude Code fixes the problems, and Antigravity confirms each fix before it is closed.
 - **Two clones, two branches:** the main computer keeps `claude`; the office notebook works on `office-notebook` and reaches `claude` by pull request. The owner still merges `claude` into `main`.
-- **Numbering:** both clones add `BE-###` items here; check the highest number on `origin/claude` before adding one. BE-218 and BE-219 came from the office notebook.
+- **Numbering:** both clones add `BE-###` items here; check the highest number on `origin/claude` before adding one. BE-232 to BE-234 came from the office notebook; its commits call them BE-218 to BE-220, numbers `claude` had already used.

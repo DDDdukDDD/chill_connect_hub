@@ -216,6 +216,13 @@ Response `200`:
 
 ### Member accounts — `/api/auth/member/*`
 
+**Moments: places and tags (BE-227).** `GET /api/places/nearby?lat=&lng=` → our places near the member; add `&general=1` for named places and the area from OpenStreetMap (signed in). `GET /api/members/friends` → people the member can tag. `POST /api/moments` takes `taggedIds` (anyone not a mutual follow is dropped, at most 10). Feed items carry `tagged: [{ id, name }]` and `isTaggedMe`. `POST /api/moments/[id]/actions` `{ action: "untag" }` removes the member's own tag.
+
+**Identity and phone check (BE-224).** `member.trust` also carries `identityConfirmed` (confirmed email, or a LINE, Google or Facebook sign-in; with the pledge this is enough to post, comment and join), `phoneVerified`, and `organizerNeeds`: `null`, or what is missing before creating a ตี้, a challenge, a trip or a group inside an อีเวนต์ (`identity`, `pledge`, `phone`, or `email` on a deployment with no SMS). `POST /api/events`, `POST /api/quests` and `action: 'create'` on `POST /api/events/{fairId}/groups` answer 403 until it is `null`. `GET /api/spots/[id]/trips` adds `host.needsPhone`.
+- `POST /api/auth/member/phone` `{ phone }` sends a code; `devCode` comes back only on a local server. 400 bad number, 409 number on another account, 429 too soon or too many.
+- `POST /api/auth/member/phone/confirm` `{ code }` → `{ member }`. 400 wrong or expired.
+- Public profile `badges` adds `socialSignIn` and `phoneVerified`. The number itself is never public.
+
 The server decides who is signed in through an httpOnly cookie (`cch_member_session`, 30 days). The client never sends a user id or name to identify itself. **Use `useMemberSession()` from `lib/useMemberSession.ts`.**
 
 | Method & path | Body | Response |
@@ -278,11 +285,12 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 
 | Method & path | Body / params | Response |
 |---|---|---|
-| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
-| `POST /api/moments` | `{ caption (1–500), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
+| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&tag&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
+| `POST /api/moments` | `{ caption? (0–500, optional since 2026-11-02), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
 | `POST /api/moments` with a clip (trial, 2026-11-02) | Add `video: { url, durationS }`, with `images` holding only the cover. `durationS` is at most 15 (15.5 with rounding); `url` must come from `/api/upload/video`. Feed items and moment pages carry `video`; `images[0]` is its cover, so grids keep working | `400` when a rule fails |
+| `POST /api/moments` options (2026-11-02) | Add `commentsOff?`, `likesOff?`, `sharesOff?` (booleans). `video` also takes `startS`, where in the file the post starts playing; the file may run longer than `durationS`, which stays at most 15 | Feed items always carry the three booleans. A closed post answers `400` to `like` or `comment`, shows `comments: []` and `likesCount: 0` |
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
-| `PATCH /api/moments/[id]` | `{ caption?, location? }` | own posts only (`403`) |
+| `PATCH /api/moments/[id]` | `{ caption?, location?, commentsOff?, likesOff?, sharesOff? }` | own posts only (`403`) |
 | `DELETE /api/moments/[id]` | — | own posts only |
 | `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300) }` · `{ action: 'delete_comment', commentId }` (commenter or post author) · `{ action: 'report', reason }` (once per member, not your own) | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
 
@@ -495,7 +503,7 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `GET /api/chat/{roomId}?after=<ISO time>` → `{ room: { title, members }, messages: [{ id, authorId, authorName, authorAvatar, text, createdAt, isMine }] }`. `roomId` is an event id (participants and the event's host) or a fair group id `grp_…` (group members). Others get 403. Up to 100 messages per call; poll with `after`.
 - `POST /api/chat/{roomId}` `{ text }` (≤500) → 201; `{ action: 'delete', id }` removes one's own message. Verified accounts only; accounts younger than 7 days cannot send links, phone numbers or LINE ids.
 - `GET /api/events/{fairId}/groups` → `{ groups: [{ id, title, meetupPoint, time, note, maxMembers, currentMembers, creator: { id, displayName, avatarUrl }, isJoined, isMine }] }` (public).
-- `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Verified accounts only; at most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
+- `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Joining needs a verified account; creating also needs `organizerNeeds` to be `null` (403), the same check as a ตี้. At most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
 - **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.

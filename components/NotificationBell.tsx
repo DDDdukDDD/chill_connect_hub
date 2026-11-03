@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { DialogShell } from '@/components/auth/DialogShell';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 interface NotificationItem {
   id: string;
@@ -14,33 +15,71 @@ interface NotificationItem {
   actorName: string;
   actorAvatar: string;
   momentId?: string;
+  /** The moment's first picture, so it is clear which post this is about */
+  momentImage?: string;
   /** Where a notification that is not about a person leads */
   href?: string;
   message: string;
   preview?: string;
   timeAgo: string;
+  createdAt: string;
   read: boolean;
 }
 
 const REFRESH_MS = 60_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const bangkokDay = (time: Date | string) => new Date(time).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
+function sectionsOf(items: NotificationItem[]): { title: string; items: NotificationItem[] }[] {
+  const now = new Date();
+  const today = bangkokDay(now);
+  const sections = [
+    { title: 'วันนี้', items: [] as NotificationItem[] },
+    { title: '7 วันที่ผ่านมา', items: [] as NotificationItem[] },
+    { title: 'ก่อนหน้านี้', items: [] as NotificationItem[] },
+  ];
+  for (const item of items) {
+    const at = bangkokDay(item.createdAt) === today ? 0 : now.getTime() - new Date(item.createdAt).getTime() < 7 * DAY_MS ? 1 : 2;
+    sections[at].items.push(item);
+  }
+  return sections.filter((section) => section.items.length > 0);
+}
+
+const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' ? '#comments' : ''}` : `/profile?id=${n.actorId}`);
 
 /**
  * Bell for the signed-in member: follows, likes and comments on their moments (GET /api/notifications).
- * Refreshes every minute and when the tab gets focus; opening the list marks everything as read.
- * Renders nothing for signed-out visitors.
+ * Refreshes every minute and when the tab gets focus; opening the list marks everything as read, and what was new
+ * stays marked as new until the list closes. Renders nothing for signed-out visitors.
  */
 export function NotificationBell() {
   const { member } = useMemberSession();
   const memberId = member?.id;
   const [data, setData] = useState<{ items: NotificationItem[]; unread: number }>({ items: [], unread: 0 });
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [isOpen, setIsOpen] = useState(false);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const listOpen = useRef(false);
+
+  const load = useCallback(async () => {
+    const res = await fetch('/api/notifications', { cache: 'no-store' });
+    const json = await res.json();
+    if (!res.ok || json.success === false) throw new Error('notifications');
+    return { items: (json.items ?? []) as NotificationItem[], unread: (json.unread ?? 0) as number };
+  }, []);
 
   const refresh = useCallback(() => {
-    fetch('/api/notifications', { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json) => setData({ items: json.items ?? [], unread: json.unread ?? 0 }))
-      .catch(() => undefined);
-  }, []);
+    // The list on screen is not swapped under the reader
+    if (listOpen.current) return;
+    load().then(
+      (next) => {
+        setData(next);
+        setStatus('ready');
+      },
+      () => setStatus((now) => (now === 'loading' ? 'failed' : now))
+    );
+  }, [load]);
 
   useEffect(() => {
     if (!memberId) return;
@@ -55,12 +94,31 @@ export function NotificationBell() {
 
   if (!memberId) return null;
 
+  const showNew = (next: { items: NotificationItem[]; unread: number }) => {
+    setData({ ...next, unread: 0 });
+    setStatus('ready');
+    setNewIds((before) => new Set([...before, ...next.items.filter((n) => !n.read).map((n) => n.id)]));
+    if (next.unread > 0) fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => undefined);
+  };
+
+  const fetchForList = () => {
+    if (data.items.length === 0) setStatus('loading');
+    load().then(showNew, () => setStatus((now) => (data.items.length > 0 ? now : 'failed')));
+  };
+
   const open = () => {
+    listOpen.current = true;
     setIsOpen(true);
-    if (data.unread > 0) {
-      fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => undefined);
-      setData((prev) => ({ ...prev, unread: 0 }));
-    }
+    // What is already here shows at once, while the newest arrives
+    showNew(data);
+    fetchForList();
+  };
+
+  const close = () => {
+    listOpen.current = false;
+    setIsOpen(false);
+    setNewIds(new Set());
+    setData((now) => ({ ...now, items: now.items.map((n) => ({ ...n, read: true })) }));
   };
 
   return (
@@ -81,38 +139,64 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <DialogShell onClose={() => setIsOpen(false)} title="การแจ้งเตือน" size="sm">
-          {data.items.length === 0 ? (
-            <p className="text-sm font-medium text-slate-600 py-4">ยังไม่มีการแจ้งเตือน เมื่อมีคนติดตาม ส่งหัวใจ <span className="whitespace-nowrap">หรือเข้าร่วมตี้ของคุณ</span> <span className="whitespace-nowrap">จะแสดงที่นี่</span></p>
-          ) : (
-            <ul className="-mx-2 max-h-[60vh] overflow-y-auto">
-              {data.items.map((n) => (
-                <li key={n.id}>
-                  <Link
-                    href={n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}` : `/profile?id=${n.actorId}`)}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-start gap-3 px-2 py-3 rounded-2xl hover:bg-slate-50"
-                  >
-                    {n.actorAvatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- member upload
-                      <img src={n.actorAvatar} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
-                    ) : (
-                      <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
-                        {nameInitial(n.actorName)}
-                      </span>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-slate-700 leading-snug">
-                        <span className="font-bold text-slate-900">{n.actorName}</span> {n.message}
-                      </span>
-                      {n.preview && <span className="block text-xs text-slate-500 mt-0.5 truncate">“{n.preview}”</span>}
-                      <span className="block text-xs font-medium text-slate-500 mt-0.5">{n.timeAgo}</span>
-                    </span>
-                    {!n.read && <span className="mt-2 w-2 h-2 rounded-full bg-[#2563EB] shrink-0" aria-label="ยังไม่ได้อ่าน" />}
-                  </Link>
-                </li>
+        <DialogShell onClose={close} title="การแจ้งเตือน" size="sm">
+          {data.items.length > 0 ? (
+            <div className="-mx-2 max-h-[60dvh] overflow-y-auto overscroll-contain space-y-3">
+              {sectionsOf(data.items).map((section) => (
+                <section key={section.title}>
+                  <h3 className="px-2 pb-1 text-xs font-bold text-slate-500">{section.title}</h3>
+                  <ul>
+                    {section.items.map((n) => {
+                      const isNew = newIds.has(n.id);
+                      return (
+                        <li key={n.id}>
+                          <Link href={hrefOf(n)} onClick={close} className={`flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
+                            {n.actorAvatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- member upload
+                              <img src={n.actorAvatar} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
+                            ) : (
+                              <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
+                                {nameInitial(n.actorName)}
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm text-slate-700 leading-snug">
+                                <span className="font-bold text-slate-900">{n.actorName}</span> {n.message}
+                                {isNew && <span className="sr-only"> (ใหม่)</span>}
+                              </span>
+                              {n.preview && <span className="block text-xs text-slate-500 mt-0.5 truncate">“{n.preview}”</span>}
+                              <span className="block text-xs font-medium text-slate-500 mt-0.5">{n.timeAgo}</span>
+                            </span>
+                            {n.momentImage && (
+                              // eslint-disable-next-line @next/next/no-img-element -- member upload
+                              <img src={optimizedImage(n.momentImage, 256)} alt="" loading="lazy" className="w-11 h-11 rounded-lg object-cover bg-slate-100 shrink-0" />
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
+          ) : status === 'loading' ? (
+            <div className="space-y-3 py-2" role="status" aria-label="กำลังโหลดการแจ้งเตือน">
+              {[0, 1, 2].map((row) => (
+                <div key={row} className="flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+                  <span className="h-4 flex-1 rounded bg-slate-100" />
+                </div>
+              ))}
+            </div>
+          ) : status === 'failed' ? (
+            <div className="py-3 space-y-3">
+              <p className="text-sm font-medium text-slate-600">โหลดการแจ้งเตือนไม่สำเร็จ ลองอีกครั้งนะ</p>
+              <button type="button" onClick={fetchForList} className="h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 cursor-pointer">
+                ลองอีกครั้ง
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm font-medium text-slate-600 py-4">ยังไม่มีการแจ้งเตือน เมื่อมีคนติดตาม ส่งหัวใจ <span className="whitespace-nowrap">หรือเข้าร่วมตี้ของคุณ</span> <span className="whitespace-nowrap">จะแสดงที่นี่</span></p>
           )}
         </DialogShell>
       )}

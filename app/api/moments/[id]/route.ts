@@ -3,6 +3,7 @@ import { momentRepository } from '@/lib/moments';
 import { deleteOwnMoment, editMoment, isPubliclyVisible, loadPeople, momentFiles, MomentError, toFeedItem } from '@/lib/moments/service';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { deleteMemberUploads } from '@/lib/media/cleanup';
+import { removeNotifications } from '@/lib/social/notifications';
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -45,6 +46,7 @@ export async function DELETE(request: Request, context: Context) {
   const { id } = await context.params;
   try {
     const images = await deleteOwnMoment(member, id);
+    await removeNotifications({ momentId: id });
     // The photo files go too (they stayed in storage before, 2026-11-01), unless another post still shows them
     const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
     await deleteMemberUploads(images, remaining.flatMap(momentFiles)).catch(() => 0);

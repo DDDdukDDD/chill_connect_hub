@@ -104,7 +104,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
                   {isSpotsMode ? 'ตัวกรองสถานที่ขั้นสูง' : 'ตัวกรองค้นหาขั้นสูง'}
                 </h3>
                 {activeCount > 0 && (
-                  <span className="text-[10px] font-bold bg-[#F26430] text-white px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-bold bg-[#F26430] text-white px-2 py-0.5 rounded-full">
                     ใช้งาน {activeCount}
                   </span>
                 )}

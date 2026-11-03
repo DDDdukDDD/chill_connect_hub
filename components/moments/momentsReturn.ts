@@ -9,7 +9,7 @@ import type { FeedItem } from '@/lib/moments/service';
 const SNAPSHOT_KEY = 'moments:showcase';
 const RETURNING_KEY = 'moments:returning';
 /** The "on the way back" mark only counts for a moment, so a later visit from the menu starts fresh */
-const RETURN_WINDOW_MS = 5000;
+const RETURN_WINDOW_MS = 15_000;
 
 export interface ShowcaseSnapshot {
   /** /moments with its tab, e.g. /moments?type=spot */
@@ -20,6 +20,8 @@ export interface ShowcaseSnapshot {
   page: number;
   hasMore: boolean;
   scrollY: number;
+  /** The Home feed's tab, when the snapshot comes from there */
+  view?: string;
 }
 
 function read(): ShowcaseSnapshot | null {
@@ -43,6 +45,9 @@ function write(snapshot: ShowcaseSnapshot) {
 export function saveShowcase(snapshot: ShowcaseSnapshot) {
   write({ ...snapshot, moments: snapshot.moments.map((moment) => ({ ...moment, comments: [] })) });
 }
+
+/** Called when the Home feed opens a clip; the feed shows comments, so they stay */
+export const saveFeedReturn = (snapshot: ShowcaseSnapshot) => write(snapshot);
 
 /** Where the moment page's back link goes: the tab it was opened from, or /moments when it was opened elsewhere */
 export function showcaseUrlFor(momentId: string): string | null {

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       searchQuery: searchParams.get('q'),
     });
 
-    const joins = joinCounts();
+    const joins = await joinCounts();
     return NextResponse.json(
       {
         success: true,

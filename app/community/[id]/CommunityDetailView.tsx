@@ -702,7 +702,7 @@ export default function CommunityDetailPage({
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
                 <Link href={profileHref} className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดูโปรไฟล์และรีวิว</Link>
                 <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
-                  <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                  <Flag className="inline-flex items-center min-h-11 w-3.5 h-3.5" aria-hidden="true" />
                   รายงาน
                 </button>
               </div>
@@ -1077,7 +1077,7 @@ export default function CommunityDetailPage({
                   {parsedPrice.tiers.map((t, idx) => (
                     <span
                       key={idx}
-                      className="text-[10.5px] font-bold px-2 py-0.5 rounded-md border bg-white text-slate-800 border-slate-200 shadow-2xs"
+                      className="text-[11px] font-bold px-2 py-0.5 rounded-md border bg-white text-slate-800 border-slate-200 shadow-2xs"
                     >
                       {t.label ? `${t.label}: ` : ''}{t.price}
                     </span>
