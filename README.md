@@ -39,6 +39,7 @@ npm run dev     # http://localhost:3000
 | [docs/PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md) | ทิศทางสินค้า ก่อนตัดสินใจว่าหน้าไหนควรมีอะไร |
 | [docs/API.md](docs/API.md) | สัญญาของ API |
 | [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) | เหตุผลการออกแบบฐานข้อมูล |
+| [docs/VIDEO_PLAN.md](docs/VIDEO_PLAN.md) | แนวทางเมื่อจะรองรับวิดีโอเต็มรูปแบบ |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | บันทึกการเปลี่ยนแปลงล่าสุด |
 | [docs/TEST_REPORTS.md](docs/TEST_REPORTS.md) | ปัญหาจากผู้ทดสอบ |
 | [docs/archive/](docs/archive/) | ประวัติเก่า ไม่ต้องอ่านประจำ |
