@@ -108,3 +108,23 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
+
+/* Keyboard users see where they are; a utility on the element still wins */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+}
+
+/* People who asked their device for less motion get it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

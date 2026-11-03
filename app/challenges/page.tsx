@@ -27,7 +27,7 @@ export default async function ChallengesPage({ searchParams }: Props) {
           )
         )}
       />
-      <ChallengesListView initialQuests={quests} initialQuery={typeof q === 'string' ? q : ''} campaign={liveCampaign({ home: true })} sponsoredId={liveSponsoredId('challenges')} />
+      <ChallengesListView initialQuests={quests} initialQuery={typeof q === 'string' ? q : ''} campaign={await liveCampaign({ home: true })} sponsoredId={await liveSponsoredId('challenges')} />
     </>
   );
 }

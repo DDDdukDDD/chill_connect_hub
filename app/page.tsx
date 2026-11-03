@@ -37,7 +37,7 @@ export default async function HomePage() {
   // The member home's cards show photos as sent (the visitor tiles size their own): resized here for members
   const shownEvents = member ? listed.map(sizedImage) : listed;
   // The prize sits in a box at most 144 px wide; the file is a 200 KB PNG
-  const campaign = liveCampaign({ home: true });
+  const campaign = await liveCampaign({ home: true });
   const shownCampaign = campaign?.prizeImage ? { ...campaign, prizeImage: optimizedImage(campaign.prizeImage, 384) } : campaign;
   const shownQuests = member
     ? quests.map((quest) => ({ ...sizedImage(quest), badgeCoverImg: quest.badgeCoverImg && optimizedImage(quest.badgeCoverImg, HOME_CARD_WIDTH) }))

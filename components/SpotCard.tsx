@@ -107,7 +107,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
         {/* Top Badges (Distance only if applicable) */}
         <div className="absolute top-2.5 left-2.5 right-11 flex items-center gap-1.5 flex-wrap z-10">
           {(spot as any).distanceKm !== undefined && (
-            <span className="text-[10px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+            <span className="text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-2xs">
               {((spot as any).distanceKm).toFixed(1)} กม.
             </span>
           )}
@@ -158,7 +158,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
               {spot.title}
             </h3>
             <span
-              className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 self-start ${
+              className={`text-[11px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 self-start ${
                 spot.price.includes('ฟรี')
                   ? 'bg-emerald-50 text-emerald-800'
                   : 'bg-slate-100 text-slate-700'

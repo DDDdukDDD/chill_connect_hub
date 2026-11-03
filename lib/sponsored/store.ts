@@ -1,17 +1,73 @@
 import { randomUUID } from 'node:crypto';
 import { bangkokToday } from '../campaigns/types';
+import { cacheManager } from '../cache';
+import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { createJsonStore } from '../social/jsonStore';
 import { SPONSOR_PILLARS, type SponsorPillar, type SponsoredSlot, isSlotLive } from './types';
 
-/** Sponsored cards (data/sponsored.json), set by staff in the admin console */
-const store = createJsonStore<SponsoredSlot>('sponsored');
+/** Sponsored cards (app.sponsored_slots, or data/sponsored.json without a database), set by staff in the admin console */
+const CACHE_KEY = 'sponsored:all';
+// Read on every list page; another server sees a staff change within this time
+const CACHE_MS = 60 * 1000;
 
-export const listSponsoredSlots = (): SponsoredSlot[] => [...store.read()].sort((a, b) => b.startDate.localeCompare(a.startDate));
+interface SponsoredStore {
+  all(): Promise<SponsoredSlot[]>;
+  save(slot: SponsoredSlot): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
+function jsonSponsored(): SponsoredStore {
+  const store = createJsonStore<SponsoredSlot>('sponsored');
+  return {
+    async all() {
+      return store.read();
+    },
+    async save(slot) {
+      await store.update((items) => [...items.filter((item) => item.id !== slot.id), slot]);
+    },
+    async remove(id) {
+      await store.update((items) => items.filter((item) => item.id !== id));
+    },
+  };
+}
+
+function pgSponsored(): SponsoredStore {
+  return {
+    async all() {
+      const rows = await sql()`select id, pillar, item_id, sponsor, note, starts_on::text, ends_on::text, published, created_at, updated_at from app.sponsored_slots`;
+      return rows.map((r) => ({
+        id: r.id,
+        pillar: r.pillar,
+        itemId: r.item_id,
+        sponsor: r.sponsor,
+        note: r.note ?? undefined,
+        startDate: r.starts_on,
+        endDate: r.ends_on,
+        published: r.published,
+        createdAt: new Date(r.created_at).toISOString(),
+        updatedAt: new Date(r.updated_at).toISOString(),
+      }));
+    },
+    async save(s) {
+      const db = sql();
+      const fields = { pillar: s.pillar, item_id: s.itemId, sponsor: s.sponsor, note: s.note ?? null, starts_on: s.startDate, ends_on: s.endDate, published: s.published, updated_at: s.updatedAt };
+      await db`insert into app.sponsored_slots ${db({ id: s.id, created_at: s.createdAt, ...fields })} on conflict (id) do update set ${db(fields)}`;
+    },
+    async remove(id) {
+      await sql()`delete from app.sponsored_slots where id = ${id}`;
+    },
+  };
+}
+
+const store: SponsoredStore = USE_POSTGRES ? pgSponsored() : jsonSponsored();
+
+export const listSponsoredSlots = async (): Promise<SponsoredSlot[]> =>
+  [...(await cacheManager.getOrSet(CACHE_KEY, () => store.all(), { ttlMs: CACHE_MS, tags: [CACHE_KEY] }))].sort((a, b) => b.startDate.localeCompare(a.startDate));
 
 /** The item a list page shows in its sponsored slot today: published, inside its dates, the latest start wins */
-export function liveSponsoredId(pillar: SponsorPillar): string | null {
+export async function liveSponsoredId(pillar: SponsorPillar): Promise<string | null> {
   const today = bangkokToday();
-  return listSponsoredSlots().find((slot) => slot.pillar === pillar && isSlotLive(slot, today))?.itemId ?? null;
+  return (await listSponsoredSlots()).find((slot) => slot.pillar === pillar && isSlotLive(slot, today))?.itemId ?? null;
 }
 
 export class SponsoredError extends Error {}
@@ -34,7 +90,7 @@ export async function saveSponsoredSlot(input: Record<string, unknown>, knownIds
 
   const now = new Date().toISOString();
   const id = text(input.id, 60);
-  const existing = id ? store.read().find((slot) => slot.id === id) : undefined;
+  const existing = id ? (await listSponsoredSlots()).find((slot) => slot.id === id) : undefined;
   const slot: SponsoredSlot = {
     id: existing?.id ?? `sponsored-${randomUUID().slice(0, 8)}`,
     pillar,
@@ -47,12 +103,14 @@ export async function saveSponsoredSlot(input: Record<string, unknown>, knownIds
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };
-  await store.update((items) => [...items.filter((item) => item.id !== slot.id), slot]);
+  await store.save(slot);
+  cacheManager.invalidateTags([CACHE_KEY]);
   return slot;
 }
 
 export async function deleteSponsoredSlot(id: string): Promise<SponsoredSlot | null> {
-  const slot = store.read().find((item) => item.id === id) ?? null;
-  await store.update((items) => items.filter((item) => item.id !== id));
+  const slot = (await listSponsoredSlots()).find((item) => item.id === id) ?? null;
+  await store.remove(id);
+  cacheManager.invalidateTags([CACHE_KEY]);
   return slot;
 }

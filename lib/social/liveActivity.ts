@@ -77,12 +77,12 @@ async function collectFresh(): Promise<RawItem[]> {
   }
 
   const quests = new Map((await db.findQuests({ page: 1, limit: 500 })).items.map((q) => [q.id, q.title]));
-  for (const join of allQuestJoins()) {
+  for (const join of await allQuestJoins()) {
     const title = quests.get(join.questId);
     if (!title) continue;
     items.push({ id: `qj:${join.questId}:${join.memberId}`, kind: 'quest_join', at: join.joinedAt, memberId: join.memberId, fallback: { name: '' }, target: { type: 'challenge', id: join.questId, title } });
   }
-  for (const finish of allQuestFinishes()) {
+  for (const finish of await allQuestFinishes()) {
     const title = quests.get(finish.questId);
     if (!title) continue;
     items.push({ id: `qf:${finish.questId}:${finish.memberId}`, kind: 'quest_finish', at: finish.finishedAt, memberId: finish.memberId, fallback: { name: '' }, target: { type: 'challenge', id: finish.questId, title } });

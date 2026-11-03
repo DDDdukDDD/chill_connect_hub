@@ -187,7 +187,7 @@ export const TopCommunityRail: React.FC<TopCommunityRailProps> = ({
         <div>
           <h3 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2">
             <span>ชมรมและคลับคอมมูนิตี้ยอดนิยม</span>
-            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider hidden sm:inline">
+            <span className="text-[11px] sm:text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider hidden sm:inline">
               Top Community Circles & Clubs
             </span>
           </h3>
@@ -283,7 +283,7 @@ export const TopCommunityRail: React.FC<TopCommunityRailProps> = ({
                   )}
 
                   {/* Bottom Info inside Image: Live Active Meetups Count / Members */}
-                  <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-xs text-[9px] sm:text-[10px] font-bold text-white tracking-tight flex items-center gap-1 pointer-events-none">
+                  <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-xs text-[11px] sm:text-[11px] font-bold text-white tracking-tight flex items-center gap-1 pointer-events-none">
                     {eventCount > 0 ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -307,7 +307,7 @@ export const TopCommunityRail: React.FC<TopCommunityRailProps> = ({
                   >
                     {club.nameEn}
                   </p>
-                  <p className="text-[9.5px] sm:text-[10px] font-medium text-slate-500 truncate mt-0.5">
+                  <p className="text-[9.5px] sm:text-[11px] font-medium text-slate-500 truncate mt-0.5">
                     {club.nameTh}
                   </p>
                 </div>

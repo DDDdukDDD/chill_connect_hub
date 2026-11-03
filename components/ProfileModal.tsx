@@ -86,7 +86,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div className="flex items-center gap-1.5">
               <h3 className="font-bold text-base text-[#1E293B]">{profile.name}</h3>
               {profile.isVerified && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200" title="ยืนยันตัวตนผ่านเบอร์โทรและบัตรประชาชนแล้ว (KYC 100%)">
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200" title="ยืนยันตัวตนผ่านเบอร์โทรและบัตรประชาชนแล้ว (KYC 100%)">
                   ยืนยันตัวตนแล้ว
                 </span>
               )}
@@ -130,15 +130,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* Quick Metrics */}
           <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 text-center">
             <div>
-              <span className="text-[10px] text-slate-400 font-bold block">Connects</span>
+              <span className="text-[11px] text-slate-400 font-bold block">Connects</span>
               <span className="text-sm font-bold text-[#1E293B]">{profile.connectsCount.toLocaleString()}</span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold block">จัดกิจกรรม</span>
+              <span className="text-[11px] text-slate-400 font-bold block">จัดกิจกรรม</span>
               <span className="text-sm font-bold text-[#1E293B]">{profile.hostedCount} ครั้ง</span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold block">รีวิว</span>
+              <span className="text-[11px] text-slate-400 font-bold block">รีวิว</span>
               <span className="text-sm font-bold text-amber-600 flex items-center justify-center gap-0.5">
                 <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                 <span>{profile.rating}</span>

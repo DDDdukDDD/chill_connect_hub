@@ -100,7 +100,7 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
                 {/* How many the tab holds, as a sticker on the corner like the landing's cards (owner 2026-11-01) */}
                 {count !== undefined && count > 0 && (
                   <span
-                    className={`absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[10px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform tabular-nums ${id === null ? 'bg-slate-500 text-white' : STICKER[kind]}`}
+                    className={`absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[11px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform tabular-nums ${id === null ? 'bg-slate-500 text-white' : STICKER[kind]}`}
                     aria-hidden="true"
                   >
                     {count >= 1000 ? `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : count}

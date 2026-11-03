@@ -6,7 +6,7 @@ import { hasAdminCredentials } from '@/lib/adminApiAuth';
 import { joinEvent } from '@/lib/members/activity';
 import { getSessionMember } from '@/lib/members/session';
 import { MemberAuthError } from '@/lib/members/accounts';
-import { guardCreator } from '@/lib/members/submissions';
+import { guardOrganizer } from '@/lib/members/submissions';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
 import { checkedEventCategories } from '@/lib/eventCategories';
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
     if (!isAdmin) {
       if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
       try {
-        guardCreator(member);
+        guardOrganizer(member);
       } catch (error) {
         if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
         throw error;

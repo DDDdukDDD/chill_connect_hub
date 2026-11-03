@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   if (denied) return denied;
   try {
     const [community, events, spots, challenges] = await Promise.all([optionsOf('community'), optionsOf('events'), optionsOf('spots'), optionsOf('challenges')]);
-    return NextResponse.json({ success: true, slots: listSponsoredSlots(), options: { community, events, spots, challenges } });
+    return NextResponse.json({ success: true, slots: await listSponsoredSlots(), options: { community, events, spots, challenges } });
   } catch (error) {
     console.error('Sponsored slots load failed:', error);
     return NextResponse.json({ success: false, error: 'โหลดการ์ดสนับสนุนไม่สำเร็จ' }, { status: 500 });

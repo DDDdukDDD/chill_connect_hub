@@ -27,7 +27,7 @@ export function ChallengeSearch({ query, onQueryChange, idPrefix, className = ''
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder="ค้นหาชาเลนจ์ เช่น คาเฟ่ วิ่ง ไหว้พระ"
-        className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className="h-full flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (
         <button type="button" onClick={() => onQueryChange('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 cursor-pointer">

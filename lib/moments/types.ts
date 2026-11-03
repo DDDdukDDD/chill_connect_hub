@@ -52,6 +52,8 @@ export interface Moment {
   likesOff?: boolean;
   sharesOff?: boolean;
   location: string;
+  /** Friends who were there too; each can take themselves off */
+  taggedIds?: string[];
   category?: MomentCategory;
   targetType: MomentTargetType;
   targetId?: string;

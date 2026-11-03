@@ -57,7 +57,7 @@ function Section({
     <section className={`${className} space-y-4`} aria-label={title}>
       <div className="flex items-end justify-between gap-3">
         <h2 className={titleClassName}>{title}</h2>
-        {allHref && <Link href={allHref} className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">{allLabel}</Link>}
+        {allHref && <Link href={allHref} className="inline-flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">{allLabel}</Link>}
       </div>
       <ul className={`grid ${gridClassName} gap-x-4 sm:gap-x-6 gap-y-8 pt-1`}>{tiles}</ul>
     </section>

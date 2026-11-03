@@ -10,6 +10,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const viewer = await getSessionMember(request);
   const member = await memberRepository.findById(id);
-  if (!member || (member.status !== 'active' && viewer?.id !== member.id)) return NextResponse.json({ success: false, message: 'ไม่พบสมาชิก' }, { status: 404 });
-  return NextResponse.json({ success: true, reviews: await hostReviewSummary(member.id, MAX_REVIEWS) }, { headers: { 'Cache-Control': 'no-store' } });
+  if (!member || (member.status !== 'active' && viewer?.id !== member.id) || (viewer && member.blockedIds?.includes(viewer.id))) return NextResponse.json({ success: false, message: 'ไม่พบสมาชิก' }, { status: 404 });
+  return NextResponse.json({ success: true, reviews: await hostReviewSummary(member.id, MAX_REVIEWS, viewer) }, { headers: { 'Cache-Control': 'no-store' } });
 }

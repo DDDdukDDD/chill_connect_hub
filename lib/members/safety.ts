@@ -1,10 +1,11 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { tidyDisplayName } from '../displayName';
 import { momentRepository } from '../moments';
 import { MemberAuthError } from './accounts';
 import { memberRepository } from './index';
+import { sendSms, smsReady } from './sms';
 import {
-  NEW_ACCOUNT_DAYS, NEW_ACCOUNT_LIMITS, PLEDGE_VERSION, accountAgeDays, containsContactInfo, hasOpenRisk, isDisposableEmail, makeFlag, riskTermsIn, trustLevel, trustOf,
+  NEW_ACCOUNT_DAYS, NEW_ACCOUNT_LIMITS, PLEDGE_VERSION, accountAgeDays, containsContactInfo, hasConfirmedIdentity, hasOpenRisk, isDisposableEmail, makeFlag, phoneCheckIsOn, riskTermsIn, trustLevel, trustOf, verifyFirstMessage,
 } from './trust';
 import {
   PROFILE_FIELD_KEYS, PROFILE_HIDDEN_BY_DEFAULT, PROFILE_TEXT_FIELDS,
@@ -86,18 +87,66 @@ export async function verifyEmailWithToken(tokenInput: unknown): Promise<Member>
   return memberRepository.update(member.id, { emailVerified: true, emailVerification: undefined });
 }
 
+/* ---------- Phone check ---------- */
+
+const PHONE_CODE_MINUTES = 10;
+const PHONE_RESEND_SECONDS = 60;
+const PHONE_CODE_TRIES = 5;
+
+const hashPhoneCode = (memberId: string, phone: string, code: string) => hashToken(`${memberId}:${phone}:${code}`);
+
+/** A Thai mobile number as 0XXXXXXXXX, or null */
+function normalizePhone(input: unknown): string | null {
+  const digits = typeof input === 'string' ? input.replace(/[\s()-]/g, '').replace(/^\+?66/, '0') : '';
+  return /^0[689]\d{8}$/.test(digits) ? digits : null;
+}
+
+/** Sends a code. `devCode` comes back only on a local server, which has no SMS to send it with */
+export async function requestPhoneCode(member: Member, phoneInput: unknown): Promise<{ devCode?: string }> {
+  const phone = normalizePhone(phoneInput);
+  if (!phone) throw new MemberAuthError('ใส่เบอร์มือถือไทย 10 หลัก เช่น 0812345678');
+  if (!phoneCheckIsOn()) throw new MemberAuthError('ระบบส่ง SMS ยังไม่พร้อม ลองใหม่ภายหลังนะ', 503);
+  const owner = await memberRepository.findByVerifiedPhone(phone);
+  if (owner) throw new MemberAuthError(owner.id === member.id ? 'เบอร์นี้ยืนยันแล้ว' : 'เบอร์นี้ใช้ยืนยันกับบัญชีอื่นแล้ว', 409);
+  const last = member.phoneVerification?.sentAt;
+  if (last && Date.now() - new Date(last).getTime() < PHONE_RESEND_SECONDS * 1000) throw new MemberAuthError('เพิ่งส่งรหัสไป รอสักครู่แล้วลองใหม่นะ', 429);
+  const code = String(randomInt(100000, 1000000));
+  if (smsReady()) await sendSms(phone, `รหัสยืนยัน Chillwaa ของคุณคือ ${code} (ใช้ได้ ${PHONE_CODE_MINUTES} นาที)`);
+  const now = Date.now();
+  await memberRepository.update(member.id, {
+    phoneVerification: { phone, codeHash: hashPhoneCode(member.id, phone, code), expiresAt: new Date(now + PHONE_CODE_MINUTES * 60 * 1000).toISOString(), sentAt: new Date(now).toISOString(), attempts: 0 },
+  });
+  return smsReady() ? {} : { devCode: code };
+}
+
+export async function confirmPhoneCode(member: Member, codeInput: unknown): Promise<Member> {
+  const pending = member.phoneVerification;
+  if (!pending || new Date(pending.expiresAt).getTime() < Date.now() || pending.attempts >= PHONE_CODE_TRIES) {
+    throw new MemberAuthError('รหัสหมดอายุแล้ว ขอรหัสใหม่อีกครั้งนะ');
+  }
+  const given = Buffer.from(hashPhoneCode(member.id, pending.phone, typeof codeInput === 'string' ? codeInput.trim() : ''));
+  const stored = Buffer.from(pending.codeHash);
+  if (given.length !== stored.length || !timingSafeEqual(given, stored)) {
+    await memberRepository.update(member.id, { phoneVerification: { ...pending, attempts: pending.attempts + 1 } });
+    throw new MemberAuthError('รหัสไม่ถูกต้อง ลองอีกครั้งนะ');
+  }
+  const owner = await memberRepository.findByVerifiedPhone(pending.phone);
+  if (owner && owner.id !== member.id) throw new MemberAuthError('เบอร์นี้ใช้ยืนยันกับบัญชีอื่นแล้ว', 409);
+  return memberRepository.update(member.id, { phone: pending.phone, phoneVerifiedAt: new Date().toISOString(), phoneVerification: undefined });
+}
+
 /* ---------- Posting rules ---------- */
 
 /**
  * Called before a member posts a moment or a comment.
- * - Must be at least "verified" (email confirmed and pledge accepted).
+ * - Must be at least "verified" (identity confirmed and pledge accepted).
  * - Until trusted: a daily comment limit, and no contact details (links, phone numbers, LINE ids). Moments have no daily limit.
  * - Sales, investment and loan words are allowed through but flag the account for staff.
  */
 export async function guardPosting(member: Member, kind: 'moment' | 'comment', text: string): Promise<void> {
   const level = trustLevel(member);
   if (level === 'new') {
-    if (!member.emailVerified) throw new MemberAuthError('ยืนยันอีเมลก่อนนะ แล้วจะโพสต์และคอมเมนต์ได้ (ดูที่หน้าโปรไฟล์)', 403);
+    if (!hasConfirmedIdentity(member)) throw new MemberAuthError('ยืนยันอีเมลก่อนนะ แล้วจะโพสต์และคอมเมนต์ได้ (ดูที่หน้าโปรไฟล์)', 403);
     throw new MemberAuthError('รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะโพสต์และคอมเมนต์ได้ (ดูที่หน้าโปรไฟล์)', 403);
   }
   if (level !== 'trusted') {
@@ -174,6 +223,9 @@ export function publicProfileOf(member: Member, viewer: Member | null) {
     // Badges: each one is a fact the server checked
     badges: {
       emailVerified: trust.emailVerified,
+      // Own badges: a sign-in is not a confirmed email
+      socialSignIn: !trust.emailVerified && trust.identityConfirmed,
+      phoneVerified: trust.phoneVerified,
       pledged: trust.pledged,
       trusted: trust.level === 'trusted',
       approvedHost: trust.hostStatus === 'approved',
@@ -191,7 +243,7 @@ export function publicProfileOf(member: Member, viewer: Member | null) {
 /* ---------- Host applications ---------- */
 
 export async function submitHostApplication(member: Member, input: unknown): Promise<Member> {
-  if (trustLevel(member) === 'new') throw new MemberAuthError('ยืนยันอีเมลและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะส่งคำขอได้', 403);
+  if (trustLevel(member) === 'new') throw new MemberAuthError(verifyFirstMessage(member), 403);
   if (member.hostApplication?.status === 'approved') throw new MemberAuthError('คุณได้รับอนุมัติแล้ว');
   if (member.hostApplication?.status === 'pending') throw new MemberAuthError('คำขอของคุณกำลังรอทีมงานตรวจ');
   const raw = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
@@ -217,7 +269,7 @@ export const MEMBER_REPORT_REASONS = ['ชวนลงทุน ขายขอ�
 
 export async function reportMember(reporter: Member, targetId: string, reasonInput: unknown): Promise<void> {
   if (reporter.id === targetId) throw new MemberAuthError('รายงานตัวเองไม่ได้');
-  if (trustLevel(reporter) === 'new') throw new MemberAuthError('ยืนยันอีเมลและรับคำมั่นก่อน จึงจะรายงานสมาชิกได้', 403);
+  if (trustLevel(reporter) === 'new') throw new MemberAuthError(verifyFirstMessage(reporter), 403);
   const target = await memberRepository.findById(targetId);
   if (!target) throw new MemberAuthError('ไม่พบสมาชิก', 404);
   if (target.reportsReceived?.some((r) => r.byId === reporter.id)) throw new MemberAuthError('คุณรายงานสมาชิกคนนี้ไปแล้ว ทีมงานกำลังตรวจสอบ', 409);

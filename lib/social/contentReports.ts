@@ -1,10 +1,9 @@
-import { randomUUID } from 'node:crypto';
 import { db } from '../db';
 import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
 import { chatMessageForReport, chatRoomForStaff, removeChatMessageAsStaff } from './chat';
-import { createJsonStore } from './jsonStore';
+import { contentReportStore } from './stores';
 import { removeReview, reviewById } from './reviews';
 
 /**
@@ -46,7 +45,6 @@ export interface ContentReport {
   note?: string;
 }
 
-const store = createJsonStore<ContentReport>('content_reports');
 const MAX_PER_DAY = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -66,7 +64,7 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
   let excerpt: string | undefined;
   let roomId: string | undefined;
   if (targetType === 'review') {
-    const review = reviewById(targetId);
+    const review = await reviewById(targetId);
     if (!review) throw new MemberAuthError('ไม่พบรีวิวนี้ อาจถูกลบไปแล้ว', 404);
     targetTitle = `รีวิวของตี้ "${review.eventTitle}"`;
     hostMemberId = review.authorId;
@@ -88,20 +86,20 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
   if (!targetTitle) throw new MemberAuthError('ไม่พบสิ่งที่ต้องการรายงาน', 404);
   if (hostMemberId === reporter.id) throw new MemberAuthError('รายงานสิ่งที่ตัวเองสร้างไม่ได้', 400);
 
-  const mine = store.read().filter((report) => report.reporterId === reporter.id);
+  const everything = await contentReportStore.all();
+  const mine = everything.filter((report) => report.reporterId === reporter.id);
   if (mine.some((report) => report.targetId === targetId && report.status === 'open')) throw new MemberAuthError('คุณรายงานเรื่องนี้ไปแล้ว ทีมงานกำลังตรวจ', 409);
   if (mine.filter((report) => Date.now() - new Date(report.createdAt).getTime() < DAY_MS).length >= MAX_PER_DAY) {
     throw new MemberAuthError('วันนี้ส่งรายงานครบจำนวนแล้ว ลองใหม่พรุ่งนี้', 429);
   }
 
-  const saved: ContentReport = { id: `rep_${randomUUID()}`, targetType, targetId, targetTitle, hostMemberId, excerpt, roomId, reason, details, reporterId: reporter.id, createdAt: new Date().toISOString(), status: 'open' };
-  await store.update((items) => [saved, ...items]);
-  return saved;
+  return contentReportStore.add({ targetType, targetId, targetTitle, hostMemberId, excerpt, roomId, reason, details, reporterId: reporter.id });
 }
 
 /** For the admin console: reports with the names staff need to act */
 export async function listContentReports(status: 'open' | 'closed' | 'all') {
-  const reports = store.read().filter((report) => status === 'all' || report.status === status);
+  const everything = await contentReportStore.all();
+  const reports = everything.filter((report) => status === 'all' || report.status === status);
   const ids = [...new Set(reports.flatMap((report) => [report.reporterId, report.hostMemberId].filter((value): value is string => Boolean(value))))];
   const people = await memberRepository.findByIds(ids);
   const names = new Map(ids.map((id) => [id, people.get(id)?.displayName ?? 'บัญชีที่ลบแล้ว']));
@@ -111,20 +109,14 @@ export async function listContentReports(status: 'open' | 'closed' | 'all') {
     reporterName: names.get(report.reporterId) ?? '',
     hostName: report.hostMemberId ? names.get(report.hostMemberId) : undefined,
     // How many open reports the same target has: several people reporting one event is the strongest signal
-    sameTargetOpen: store.read().filter((other) => other.targetId === report.targetId && other.status === 'open').length,
+    sameTargetOpen: everything.filter((other) => other.targetId === report.targetId && other.status === 'open').length,
   }));
 }
 
-export const openContentReportCount = () => store.read().filter((report) => report.status === 'open').length;
+export const openContentReportCount = async () => (await contentReportStore.all()).filter((report) => report.status === 'open').length;
 
 export async function closeContentReport(id: string, closedBy: string, note: string): Promise<ContentReport | null> {
-  let closed: ContentReport | null = null;
-  await store.update((items) => items.map((report) => {
-    if (report.id !== id || report.status === 'closed') return report;
-    closed = { ...report, status: 'closed', closedAt: new Date().toISOString(), closedBy, note: note || undefined };
-    return closed;
-  }));
-  return closed;
+  return contentReportStore.close(id, closedBy, note || undefined);
 }
 
 /**
@@ -132,7 +124,7 @@ export async function closeContentReport(id: string, closedBy: string, note: str
  * staff do not browse members' chats. Returns null when the report is not about a chat message.
  */
 export async function chatRoomOfReport(id: string) {
-  const report = store.read().find((item) => item.id === id);
+  const report = (await contentReportStore.all()).find((item) => item.id === id);
   if (!report || report.targetType !== 'chat_message' || !report.roomId) return null;
   return { report, messages: await chatRoomForStaff(report.roomId) };
 }
@@ -151,19 +143,17 @@ export async function removeChatMessageOfReport(id: string, messageId: string): 
  * Returns null when the report is not about a review or a message, or is already closed.
  */
 export async function removeReportedContent(id: string, closedBy: string, note: string): Promise<ContentReport | null> {
-  const report = store.read().find((item) => item.id === id && item.status === 'open');
+  const report = (await contentReportStore.all()).find((item) => item.id === id && item.status === 'open');
   if (!report || (report.targetType !== 'review' && report.targetType !== 'chat_message')) return null;
   if (report.targetType === 'review') await removeReview(report.targetId);
   else await removeChatMessageAsStaff(report.targetId);
   const closedAt = new Date().toISOString();
   const closingNote = ['ลบเนื้อหาที่ถูกรายงานแล้ว', note].filter(Boolean).join(' · ');
-  await store.update((items) => items.map((item) => (
-    item.targetId === report.targetId && item.status === 'open' ? { ...item, status: 'closed' as const, closedAt, closedBy, note: closingNote } : item
-  )));
+  await contentReportStore.closeTarget(report.targetId, closedBy, closingNote);
   return { ...report, status: 'closed', closedAt, closedBy, note: closingNote };
 }
 
 /** Account deletion: reports the member sent go with them */
 export async function removeContentReportsBy(memberId: string): Promise<void> {
-  await store.update((items) => items.filter((report) => report.reporterId !== memberId));
+  await contentReportStore.removeBy(memberId);
 }

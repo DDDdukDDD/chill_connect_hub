@@ -1,6 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
-import { createJsonStore } from './jsonStore';
+import { redemptionStore } from './stores';
 import { joinedQuestIdsOf } from './questJoins';
 import { finishesOf, settleFinishes } from './questFinishes';
 import { progressOf } from './questProgress';
@@ -24,28 +23,24 @@ export class RewardError extends Error {
   }
 }
 
-const store = createJsonStore<Redemption>('redemptions');
-
 /** A draw entry gets its own code from the redemption id; a voucher keeps the partner's code (null here) */
 const entryCodeOf = (redemptionId: string, rewardId: string): string | null =>
   REWARD_SHOP_ITEMS.find((item) => item.id === rewardId)?.drawEntry ? `CC-${redemptionId.replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase()}` : null;
 
-const redemptionsOf = (memberId: string) => store.read().filter((r) => r.memberId === memberId);
-
 /** How many times a reward was redeemed (prize entries, for campaign stats) */
-export const redemptionCountOf = (rewardId: string) => store.read().filter((r) => r.rewardId === rewardId).length;
+export const redemptionCountOf = (rewardId: string) => redemptionStore.countOf(rewardId);
 
 /** Points, challenge progress and redeemed rewards of one member */
 export async function rewardsOf(memberId: string) {
   const progress = await progressOf(memberId);
   // A challenge finished since the last read is recorded now: notification, reward code, badge
   await settleFinishes(memberId, progress.quests);
-  const redemptions = redemptionsOf(memberId);
+  const redemptions = await redemptionStore.ofMember(memberId);
   const spent = redemptions.reduce((sum, r) => sum + r.cost, 0);
   return {
     points: { ...progress.points, earned: progress.points.total, spent, balance: Math.max(0, progress.points.total - spent) },
     quests: progress.quests,
-    joinedQuestIds: joinedQuestIdsOf(memberId),
+    joinedQuestIds: await joinedQuestIdsOf(memberId),
     /** Challenges the member finished: the badge, and the code when a partner gives the reward */
     finished: await finishesOf(memberId),
     redeemedRewardIds: redemptions.map((r) => r.rewardId),
@@ -62,12 +57,12 @@ export async function redeemReward(memberId: string, rewardId: string) {
   if (current.points.balance < reward.costXp) {
     throw new RewardError(`XP ไม่พอ ต้องการอีก ${(reward.costXp - current.points.balance).toLocaleString()} XP`);
   }
-  const saved: Redemption = { id: `red_${randomUUID()}`, memberId, rewardId, cost: reward.costXp, createdAt: new Date().toISOString() };
-  await store.update((items) => [saved, ...items]);
+  // The database refuses a second one, should two requests pass the check above together
+  if (!(await redemptionStore.add({ memberId, rewardId, cost: reward.costXp }))) throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
   return rewardsOf(memberId);
 }
 
 /** Account deletion */
 export async function removeRedemptionsBy(memberId: string): Promise<void> {
-  await store.update((items) => items.filter((r) => r.memberId !== memberId));
+  await redemptionStore.removeBy(memberId);
 }

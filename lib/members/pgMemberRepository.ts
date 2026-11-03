@@ -240,6 +240,9 @@ export const pgMemberRepository: MemberRepository = {
   async findByEmail(email) {
     return findOne(sql(), sql()`m.email = ${email.trim().toLowerCase()}`);
   },
+  async findByVerifiedPhone(phone) {
+    return findOne(sql(), sql()`m.phone = ${phone} and m.phone_verified_at is not null`);
+  },
   async findByProvider(provider: OAuthProvider, subject: string) {
     return findOne(sql(), sql()`m.id = (select member_id from app.member_auth_providers where provider = ${provider} and subject = ${subject})`);
   },

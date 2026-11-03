@@ -2508,3 +2508,66 @@ Walked on `next build` + `next start` (port 3100, throwaway AUTH_SECRET/ADMIN_PA
 - **Checked:** 28 checks in Chrome with throwaway members on `next dev`, phone and computer: each action and its take-back, the database rows, the time and number limits, popup states. Every test account was deleted. Production build passes.
 - **Not walked end to end:** `joined`, `approved`, `rejected`, `seat`, `question`, `answer`, `match`, `challenge`, `evidence` were inserted directly to check the table and the list, not triggered by their real actions. Real phones not checked.
 - **Other stores are still per-server files:** anything else built on `createJsonStore` can lose data on Vercel the same way (`lib/social/*`, sponsored slots); not audited here.
+
+### BE-224 · A social sign-in counts as identity; opening a ตี้ needs a phone check (owner 2026-11-02)
+- **Why:** every LINE account has no email and no screen adds one, so these members could not post or join. The owner chose: sign-in is enough to post, comment and join; opening something that brings people out to meet asks for more.
+- **Rule (`lib/members/trust.ts`):** `hasConfirmedIdentity` = confirmed email, or a linked LINE, Google or Facebook sign-in. `organizerNeeds` says what is missing before a member can create a ตี้, a challenge or a Spot Buddy trip (`guardOrganizer` in `lib/members/submissions.ts`, used by `POST /api/events` and `proposeQuest`). Suggesting a place and the invite link stay open, the owner kept the link open for the launch campaign.
+- **Phone check:** `POST /api/auth/member/phone` then `/confirm` (`docs/API.md`). 6 digits, 10 minutes, 5 tries, 60 seconds between sends, one verified number per account. Migration `0018`. The number never reaches a public profile; the member sees it only in their own data export, staff see it in the console.
+- **No SMS provider yet (`lib/members/sms.ts`):** a local server shows the code on screen. **The live site keeps the old rule, a confirmed email, so a LINE member cannot create there until SMS is connected.** On the launch checklist.
+- **Badges:** a sign-in shows "ยืนยันตัวตนผ่านบัญชีโซเชียล", never "ยืนยันอีเมล"; "ยืนยันเบอร์โทรแล้ว" is new. Terms and privacy text updated.
+- **Group inside an อีเวนต์:** the owner chose the same check as a ตี้ on 2026-11-03, see BE-229.
+
+### BE-225 · The last per-server stores moved to the database (owner 2026-11-02)
+- **Moved, order as agreed:** visits, challenge joins and finishes, reward codes, redemptions; then reviews, waiting list, questions, meet-again, groups in an อีเวนต์; then safety reports, campaigns, sponsored cards. `lib/social/stores.ts` holds the reads and writes; each feature keeps its rules. `createJsonStore` stays only as the path for a clone without `DATA_STORE=postgres`.
+- **Migration `0019`:** `quest_participants.left_at` (a badge stays after leaving), one of each reward per member at the database, `content_reports.closed_by_label`, new tables `event_waitlist` and `sponsored_slots`.
+- **Reads are now async:** `joinCounts`, `joinedQuestIdsOf`, `voucherOf`, `marksOf`, `markedVisitOf`, `liveCampaign`, `liveSponsoredId`, `listCampaigns`, `isMutual`, `fairGroupById`, `reviewById` and others. Without `await` they turn into `{}` in JSON with no type error.
+- **Removed:** `isFairGroupMember` (use `fairGroupById(id).memberIds`).
+- **Campaign and sponsored reads are cached 60 seconds per server**, because every list page reads them; a staff change reaches other servers within that time.
+- **Data:** what was in the local files for visits, joins and the campaign was already in the tables from the earlier import. What members did on the live site in `/tmp` could not be read and is not carried over.
+- **Checked:** two walks on `next build` + `next start` against the shared database, with throwaway members deleted afterwards: 78 checks passed; the 9 failures were all the test script itself (wrong request shape, a fair that had ended), each re-run correctly except that `GET /api/visits` needs `?mine=1` for marks, which the code shows. Also: account deletion clears the rows, pages `/`, `/challenges`, `/community`, `/events`, `/spots` and two detail pages return 200.
+- **Not walked end to end:** a review on a ตี้ that ended, a voucher issued from a really finished challenge, a redemption paid with real XP, sending a chat message in a group. The tables behind them were checked with direct rows or by reading the code.
+
+### BE-226 · Clip screen and phone menu (owner 2026-11-02)
+- **Clip buttons:** on a tablet or larger, like, comment, share and save sit 24px from the edge instead of 6px, and respect the safe area. Under save, a `...` menu: delete for the owner, report for everyone else (`components/moments/MomentDetailView.tsx`). Photo posts are unchanged.
+- **Phone and tablet menu (`components/MobileNav.tsx`):** see-through white glass with blur instead of black, active item in blue; solid white where the browser has no blur.
+- **Checked:** Chrome at 820, 390 and 344 wide, no sideways scroll. A real iPad and iPhone are still to try; the clip was measured outside full screen.
+
+### BE-227 · Place popup and friend tags on moments (owner 2026-11-03)
+- **Place (`components/moments/PlacePicker.tsx`):** one row in the composer opens a popup: what the member joined or saved, what is near them, and search. A place of ours, a ตี้ or an อีเวนต์ links the post; a general place is only its name on the post.
+- **Nearby (`GET /api/places/nearby`):** our own places first. `?general=1` then asks OpenStreetMap, as Google Places content may not be stored. Asked apart so our places show at once. The position is rounded to about 100 metres and not kept. The location question waits for a press unless already allowed.
+- **Known limit:** the public Overpass list of named places answered "at capacity" in every test here, so testers mostly see our places plus the area name. Named cafes and shops nearby need a paid or own service before launch. On the checklist.
+- **Tags (`components/moments/FriendTagPicker.tsx`, migration `0020`):** only people who follow each other, 10 at most, checked on the server: anyone else in the request is dropped. Notice type `tagged`. The tagged person removes themselves (`untag`), which also removes the notice. Tags give no XP. Shown on the post page, the clip and the Home feed, and in the server HTML.
+- **API:** `GET /api/members/friends`, `taggedIds` on `POST /api/moments`, `tagged` and `isTaggedMe` on feed items.
+
+### BE-228 · Production pass over every page (owner 2026-11-03)
+- **How checked:** a script on `next build` + `next start` walked 18 guest and 9 member pages at 390, 344, 673, 882×416, 820 and 1440 wide, measuring sideways scroll, broken images, JS errors, one `<h1>`, text under 11px, tap targets, unnamed buttons and unlabeled inputs. Screens were then read by eye.
+- **Already clean:** no sideways scroll, no broken images, no JS errors, one `<h1>` per page, security headers, private pages `noindex` and out of the sitemap, `npm audit` 0 for production packages.
+- **Fixed:** no `error.tsx` or `global-error.tsx` existed, so a crash gave a bare screen; 153 places under the 11px minimum; tap targets on the Home feed buttons, search bars, grid/list toggle, comment box and small links; `+375` spilling out of its dot; an empty "ดูทั้งหมด" on My Hub; author links with no name for screen readers; English in the toggle labels; no reduced-motion support and no shared keyboard focus style; the bottom menu ignoring the iPhone safe area; browser bar tint now white.
+- **Bug found by testing:** `parseEventDateToTimestamp` and its end-date twin read `2026-11-08` as September, so a ตี้ sent with an ISO date counted as ended and refused the waiting list. Both now read ISO dates (`lib/dateUtils.ts`, shared).
+- **Block:** someone who blocked you has no profile for you; reviews by people you blocked are left out of a host's summary.
+- **Lint error fixed:** `Date.now()` during render in `FairDetailView`.
+- **Live without SMS:** the phone row hides, and a LINE member who tries to create is told plainly instead of being sent to an email form they cannot use.
+- **Walked for real this time, closing the gaps in BE-225:** review after check-in, reporting a review and a chat message, staff removal, event, pair and group chat with outsiders refused, waiting list offer and held seat, a partner challenge finished by a real check-in giving XP, a code and one notice, staff marking the code used, a reward paid with real XP, a second one refused, the badge staying after leaving.
+- **Not tested:** real iPhone, iPad, Android and Safari (headless Chrome with device sizes only); real LINE sign-in (a provider row was added directly); real SMS; clip upload to Blob; load.
+
+### BE-229 · Opening a group inside an อีเวนต์ asks for the phone check, like a ตี้ (owner 2026-11-03)
+- **Rule:** `createFairGroup` calls `guardOrganizer`, so `POST /api/events/{fairId}/groups` with `action: 'create'` answers 403 until `organizerNeeds` is `null`. Joining a group stays open to verified accounts, the same as joining a ตี้.
+- **Screen:** `ตั้งกลุ่ม` on `/events/[id]` shows the check first and opens the form once it passes. The dialog moved out of `CreateEventModal` into `components/auth/OrganizerGateDialog.tsx`, used by both.
+- **Words:** the refusal, the settings row and the terms and privacy text now name groups in an อีเวนต์.
+- **On a deployment with no SMS provider** the same fallback applies as for a ตี้: a confirmed email, and a LINE member is told plainly that creating is not open yet.
+
+### BE-230 · Less data out of the database (owner 2026-11-03)
+- **Why:** Supabase warned of egress over the free plan's 5.5 GB; restrictions may start 2026-12-03. Whole-table reads of `app.places` were about 7 GB of what `pg_stat_statements` shows since 2026-10-25, and `app.events` about 1.5 GB.
+- **Downloads only on change:** `readIfChanged` in `lib/db/adapters/postgresAdapter.ts` asks for a one-row fingerprint (row count and the sum of `updated_at`) when a cached list runs out, and reads the table again only if it moved. A new server still reads once.
+- **Lighter public list:** `findSpots` without `includeDrafts` reads the list without what only a place's page shows. Download 9.72 MB to 4.89 MB. With `includeDrafts` (staff screens, scrapers) it reads everything. `findSpotById` reads its own row, so a place's page keeps its gallery. Events read only the columns `rowToEvent` uses (0.78 MB to 0.52 MB).
+- **For anyone calling `db.findSpots` without `includeDrafts`:** `galleryImages` holds the first photo only; `contact`, `facilities`, `parkingInfo`, `reviews`, `tips`, `faq`, `website`, `phone`, `transitInfo`, `sourceName`, `sourceUrl` and `curation.reasons` are absent. Use `findSpotById` for them. No frontend action; `/api/spots` and list pages send the same as before.
+- **Checked on a production build:** all 2,179 list items and 261 events compare equal to the full read; a new server made one light download and no full one; no second download after the cache ran out with nothing changed; one fresh download after a change.
+- **Second step, same day:** the public place list is now 3.41 MB (no drafts, descriptions stop at 281 characters, a gallery photo only for a place with no cover). Lists go through Next's data cache (`sharedAcrossServers`), read in parts of 500 places, with the table's fingerprint in the key, so a server that just started downloads nothing unless the table changed. Checked with a restart on `next start`: 0 parts downloaded; after a change, all 5 parts once. **Not yet seen on Vercel.**
+- **Search change to know about:** `GET /api/spots?q=` and the `/spots` search now read the first 281 characters of a description, plus title, province, district, tags and category as before.
+
+### BE-231 · A separate database for development (owner 2026-11-03)
+- **Why:** local servers and test walks used the live database, so they spent its egress quota and could change live data.
+- **How it works:** `next dev` reads `.env.development.local` (not in Git) before `.env.local`, so `npm run dev` uses the development database. The quota is per Supabase organization, so this database sits in its own organization.
+- **`npm run db:dev`** applies migrations there and sets the `app_runtime` login once. **`npm run db:dev -- --copy`** replaces its data with a copy of the live data, reading live on a read-only session. Phone numbers and the audit log are not copied. It refuses to run if the file points at the live project.
+- **Another computer:** `git pull`, copy `.env.local` and `.env.development.local` across by hand, then `npm run dev`. New migrations: `npm run db:dev` once from any computer.
+- **Still on live:** `next start` and `next build` read `.env.local`, so a production-build walk uses the live database unless `DATABASE_URL` is set in the environment. File uploads were not separated.

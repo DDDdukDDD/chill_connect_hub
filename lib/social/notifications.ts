@@ -76,7 +76,7 @@ export async function notifyJoined(hostId: string, actor: Member, eventId: strin
 /** Sent by the site itself, not by a person */
 const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected']);
 
-const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย' };
 
 export async function notificationsFor(member: Member) {
   const mine = await notificationStore.list(member.id);

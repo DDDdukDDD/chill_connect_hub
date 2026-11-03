@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
   const moments = ownMoments.map((m) => ({ id: m.id, caption: m.caption, images: m.images, location: m.location, status: m.status, createdAt: m.createdAt, likes: m.likedBy.length, comments: m.comments.length }));
   return NextResponse.json(
-    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: marksOf(member.id), joinedChallenges: joinsOf(member.id), challengeRewardCodes: vouchersOf(member.id) },
+    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: await marksOf(member.id), joinedChallenges: await joinsOf(member.id), challengeRewardCodes: await vouchersOf(member.id) },
     { headers: { 'Content-Disposition': `attachment; filename="chill-connect-account-${member.id}.json"`, 'Cache-Control': 'no-store' } }
   );
 }

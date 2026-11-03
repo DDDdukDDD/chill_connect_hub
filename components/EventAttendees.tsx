@@ -18,7 +18,7 @@ const DESKTOP_SHOWN = 5;
 const FACE_COLORS = ['bg-violet-500', 'bg-cyan-600', 'bg-pink-500', 'bg-orange-500', 'bg-emerald-600', 'bg-blue-600', 'bg-fuchsia-600', 'bg-slate-600'];
 
 function Face({ name, avatar, verified, size = 'lg' }: { name: string; avatar: string; verified?: boolean; size?: 'lg' | 'sm' }) {
-  const box = size === 'lg' ? 'w-12 h-12 text-base' : 'w-5 h-5 text-[9px]';
+  const box = size === 'lg' ? 'w-12 h-12 text-base' : 'w-5 h-5 text-[11px]';
   const color = FACE_COLORS[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % FACE_COLORS.length];
   return (
     <span className="relative inline-block shrink-0">
@@ -93,7 +93,7 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
           ? <span key={t.key} className="blur-[0.5px]"><Face name={t.name} avatar={t.avatar} size="sm" /></span>
           : <span key={t.key} className="w-5 h-5 rounded-full bg-slate-200" />)}
         {rest.length > 3 && (
-          <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">+{rest.length - 3}</span>
+          <span className="h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center tabular-nums">+{rest.length - 3 > 99 ? '99' : rest.length - 3}</span>
         )}
       </span>
       <span className="text-xs font-bold text-slate-800">อีก {rest.length} คน</span>
@@ -128,7 +128,7 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
-            className="text-xs sm:text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer"
+            className="inline-flex items-center min-h-11 text-xs sm:text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer"
           >
             {showAll ? 'ย่อ' : 'ดูทั้งหมด'}
           </button>

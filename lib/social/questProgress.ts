@@ -395,7 +395,7 @@ export async function progressOf(memberId: string) {
     return special.get(key) as Visit[];
   };
 
-  const joined = new Set(joinedQuestIdsOf(memberId));
+  const joined = new Set(await joinedQuestIdsOf(memberId));
   const quests: QuestProgress[] = [];
   for (const quest of await questsWithRules()) {
     const counted: Visit[] = [];

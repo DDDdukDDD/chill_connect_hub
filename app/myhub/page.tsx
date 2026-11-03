@@ -1036,7 +1036,7 @@ function MyHubContent() {
         <section aria-label="ที่เที่ยวที่บันทึก">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-slate-900">ที่เที่ยว</h2>
-            <button type="button" onClick={() => openView('scrapbook')} className={openLink}>ดูทั้งหมด</button>
+            {savedSpotIds.length > 0 && <button type="button" onClick={() => openView('scrapbook')} className={openLink}>ดูทั้งหมด</button>}
           </div>
           {savedSpotIds.length > 0 ? (
             <ul className="mt-3 space-y-3">
@@ -2093,7 +2093,7 @@ function MyHubContent() {
                           setActiveSubTab('quests_rewards');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
+                        className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
                       >
                         {userXp} XP · ชาเลนจ์ของฉัน ›
                       </button>

@@ -32,7 +32,7 @@ export default async function CommunityPage({ searchParams }: Props) {
           meetupCollectionJsonLd(upcoming, '/community', 'ตี้หาเพื่อนไปทำกิจกรรมด้วยกัน', 'รวมตี้ที่เปิดรับอยู่ วิ่ง คาเฟ่ บอร์ดเกม เวิร์กช็อป ฮีลใจ และอีกมาก เลือกตามสายที่ชอบ แล้วไปเจอเพื่อนใหม่ที่งานจริง')
         )}
       />
-      <CommunityListView initialEvents={live} initialCounts={initialCounts} sponsoredId={liveSponsoredId('community')} />
+      <CommunityListView initialEvents={live} initialCounts={initialCounts} sponsoredId={await liveSponsoredId('community')} />
     </>
   );
 }

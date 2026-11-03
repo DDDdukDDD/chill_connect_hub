@@ -13,7 +13,7 @@ import { memberActions } from '@/lib/useMemberSession';
  */
 export function joinBlocker(member: PublicMember | null | undefined): 'email' | 'pledge' | null {
   if (!member) return null;
-  if (!member.trust.emailVerified) return 'email';
+  if (!member.trust.identityConfirmed) return 'email';
   if (!member.trust.pledged) return 'pledge';
   return null;
 }
