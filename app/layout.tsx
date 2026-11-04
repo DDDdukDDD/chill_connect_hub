@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AppSetup } from "@/components/AppSetup";
+import { SkipToContent } from '@/components/SkipToContent';
 import { InviteRefCapture } from "@/components/InviteRefCapture";
 import { OnboardingResume } from "@/components/OnboardingResume";
 
@@ -142,6 +143,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
+        <SkipToContent />
         <AppSetup />
         <InviteRefCapture />
         <OnboardingResume />

@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
@@ -42,7 +43,7 @@ const IMAGE_STATUS_META: Record<ImageStatus, { label: string; className: string;
   ok: { label: 'รูปใช้ได้', className: 'text-emerald-700', icon: CheckCircle2 },
   broken: { label: 'รูปเสีย', className: 'text-rose-700', icon: ImageOff },
   missing: { label: 'ไม่มีรูป', className: 'text-amber-700', icon: AlertTriangle },
-  unchecked: { label: 'ยังไม่ตรวจ', className: 'text-slate-400', icon: HelpCircle },
+  unchecked: { label: 'ยังไม่ตรวจ', className: 'text-slate-500', icon: HelpCircle },
 };
 
 interface SpotsManagerViewProps {
@@ -153,8 +154,8 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
     );
   };
 
-  const deleteSpot = (spot: AdminSpot) => {
-    if (!confirm(`ยืนยันการลบ "${spot.title}"? การลบไม่สามารถย้อนกลับได้`)) return;
+  const deleteSpot = async (spot: AdminSpot) => {
+    if (!await askConfirm(`ยืนยันการลบ "${spot.title}"? การลบไม่สามารถย้อนกลับได้`)) return;
     return postAction(`del:${spot.id}`, { action: 'delete', spotId: spot.id }, `ลบ "${spot.title}" แล้ว`);
   };
 
@@ -232,9 +233,10 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px]">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="text"
+            aria-label="ค้นหาชื่อ จังหวัด อำเภอ หรือคำอธิบาย"
             placeholder="ค้นหาชื่อ จังหวัด อำเภอ หรือคำอธิบาย..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -314,8 +316,8 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
                     <p className="text-slate-700 font-semibold text-sm truncate">{spot.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-slate-500 text-xs">{spot.province}</span>
-                      {spot.district && <span className="text-slate-400 text-xs">· {spot.district}</span>}
-                      <span className="px-1.5 py-0.5 bg-[#EBF3ED] text-[#2D5A3C] border border-[#4A7C59]/20 rounded text-[10px] font-semibold truncate">
+                      {spot.district && <span className="text-slate-500 text-xs">· {spot.district}</span>}
+                      <span className="px-1.5 py-0.5 bg-[#EBF3ED] text-[#2D5A3C] border border-[#4A7C59]/20 rounded text-[11px] font-semibold truncate">
                         {spot.categoryLabel || defaultSpotCategoryLabel(spot.category)}
                       </span>
                     </div>
@@ -326,7 +328,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
                       <AdminStatusChip status={spot.reviewRejectedAt ? 'rejected' : isDraft ? 'draft' : 'published'} />
                       <span
                         title={quality.requiredFailures ? `ขาดข้อบังคับ ${quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
-                        className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                        className={`rounded-full border px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                           quality.requiredFailures ? 'border-rose-200 bg-rose-50 text-rose-700' : quality.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                         }`}
                       >

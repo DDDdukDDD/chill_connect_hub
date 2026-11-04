@@ -21,7 +21,7 @@ type Props = {
 
 /** The picked tab: the pillar's dark text over a line in the pillar color (DESIGN_SYSTEM.md, selected state) */
 const PICKED: Record<Props['kind'], string> = {
-  meetups: 'border-[#F26430] text-[#D04A1B]',
+  meetups: 'border-[#F26430] text-[#C2410C]',
   fairs: 'border-[#2B527A] text-[#1F3D5C]',
   spots: 'border-[#4A7C59] text-[#2D5A3C]',
   challenges: 'border-[#7C3AED] text-[#5B21B6]',
@@ -29,7 +29,7 @@ const PICKED: Record<Props['kind'], string> = {
 
 /** The count sticker on each icon, in the pillar color like the landing's category cards ("ทั้งหมด" in grey there too) */
 const STICKER: Record<Props['kind'], string> = {
-  meetups: 'bg-[#F26430] text-white',
+  meetups: 'bg-[#C2410C] text-white',
   fairs: 'bg-[#2B527A] text-white',
   spots: 'bg-[#4A7C59] text-white',
   challenges: 'bg-[#7C3AED] text-white',

@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Zap,
@@ -73,7 +74,7 @@ export function SystemCacheView() {
   }, [fetchCacheData]);
 
   const handleFlushAll = async () => {
-    if (!confirm('ยืนยันล้าง L1 Memory Cache ทั้งหมดในระบบ? (ระบบจะโหลดข้อมูลใหม่เมื่อมีผู้เข้าชมครั้งถัดไป)')) return;
+    if (!await askConfirm('ยืนยันล้างแคชในหน่วยความจำ ทั้งหมดในระบบ? (ระบบจะโหลดข้อมูลใหม่เมื่อมีผู้เข้าชมครั้งถัดไป)')) return;
     try {
       setFlushingTag('all');
       const res = await fetch('/api/admin/cache', {
@@ -124,8 +125,8 @@ export function SystemCacheView() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={Zap}
-        title="Cache & Performance"
-        description="แคช L1 ในหน่วยความจำของ server: อัตรา hit/miss และการล้างแคชรายหมวด"
+        title="แคชและประสิทธิภาพ"
+        description="แคชในหน่วยความจำของเซิร์ฟเวอร์: อัตราเจอในแคช และการล้างแคชรายหมวด"
         actions={
           <>
             <button onClick={fetchCacheData} disabled={isLoading} className={adminButton.secondary}>
@@ -143,47 +144,47 @@ export function SystemCacheView() {
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold">แคชในหน่วยความจำ</span>
             <Database size={16} className="text-[#4A7C59]" />
           </div>
           <p className="text-2xl font-bold text-slate-800">
-            {stats ? stats.size.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-400">รายการ</span>
+            {stats ? stats.size.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-500">รายการ</span>
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">L1 Memory Cache Store</p>
+          <p className="text-[11px] text-slate-500 mt-1">แคชในหน่วยความจำของเซิร์ฟเวอร์</p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-semibold">Hit Ratio</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-xs font-semibold">อัตราเจอในแคช</span>
             <Activity size={16} className="text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-emerald-600">
             {stats ? `${(stats.hitRatio * 100).toFixed(1)}%` : '...'}
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Hits: {stats ? stats.hits : 0} / Misses: {stats ? stats.misses : 0}
           </p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-semibold">TTL Default</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-xs font-semibold">อายุแคชเริ่มต้น</span>
             <Clock size={16} className="text-sky-500" />
           </div>
           <p className="text-2xl font-bold text-slate-800">
-            60 <span className="text-sm font-normal text-slate-400">วินาที</span>
+            60 <span className="text-sm font-normal text-slate-500">วินาที</span>
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">Auto-refresh background</p>
+          <p className="text-[11px] text-slate-500 mt-1">รีเฟรชเองอยู่เบื้องหลัง</p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-semibold">Policy Eviction</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-xs font-semibold">วิธีล้างแคช</span>
             <ShieldCheck size={16} className="text-indigo-500" />
           </div>
           <p className="text-2xl font-bold text-slate-800">LRU + Tags</p>
-          <p className="text-[11px] text-slate-400 mt-1">Max 1,000 Entries</p>
+          <p className="text-[11px] text-slate-500 mt-1">เก็บได้สูงสุด 1,000 รายการ</p>
         </div>
       </div>
 
@@ -191,7 +192,7 @@ export function SystemCacheView() {
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">1-Click Tag-Based Invalidation</h3>
+            <h3 className="text-sm font-bold text-slate-800">ล้างแคชทีละหมวด</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               เลือกเคลียร์แคชเฉพาะส่วนที่ต้องการ โดยไม่กระทบต่อผู้ใช้งานในส่วนอื่น
             </p>
@@ -212,13 +213,13 @@ export function SystemCacheView() {
                 <div className="min-w-0 flex-1 mr-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                    <span className="px-1.5 py-0.5 bg-slate-200/70 text-slate-600 rounded text-[10px] font-mono">
+                    <span className="px-1.5 py-0.5 bg-slate-200/70 text-slate-600 rounded text-[11px] font-mono">
                       tag: {item.tag}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5 truncate">{item.description}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">{item.description}</p>
                   <p className="text-[11px] text-[#4A7C59] font-medium mt-1">
-                    Cached entries: <span className="font-bold">{count}</span>
+                    รายการในแคช: <span className="font-bold">{count}</span>
                   </p>
                 </div>
 
@@ -242,7 +243,7 @@ export function SystemCacheView() {
         </div>
         <div className="text-xs text-slate-600 space-y-1">
           <p className="font-semibold text-slate-800">
-            ระบบแคชแบบ Multi-Tier (Memory L1 + Stale-While-Revalidate)
+            ระบบแคชสองชั้น: ในหน่วยความจำ และรีเฟรชอยู่เบื้องหลัง
           </p>
           <p>
             เมื่อมีการอัปเดตข้อมูลสถานที่, กิจกรรม, หรืออีเวนต์ผ่านหน้า Admin ระบบจะทำการ Invalidate แท็กที่เกี่ยวข้องอัตโนมัติ 

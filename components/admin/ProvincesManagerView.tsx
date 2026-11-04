@@ -39,7 +39,7 @@ function ProvinceEditor({ entry, onClose, onSave, isSaving }: { entry: MasterPro
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
             <div className="absolute bottom-3 left-3 right-3 text-white">
-              <p className="text-[10px] font-bold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
               <p className="text-base font-bold leading-tight">{form.displayName || entry.id}</p>
               {form.tagline && <p className="mt-0.5 line-clamp-2 text-[11px] opacity-90">{form.tagline}</p>}
             </div>
@@ -186,8 +186,8 @@ export function ProvincesManagerView() {
         <>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:w-56">
-              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ค้นหาจังหวัด" className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20" />
+              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="ค้นหาจังหวัด" placeholder="ค้นหาจังหวัด" className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20" />
             </div>
             <select aria-label="ภาค" value={region} onChange={(e) => setRegion(e.target.value as 'all' | Region)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
               <option value="all">ทุกภาค</option>
@@ -211,7 +211,7 @@ export function ProvincesManagerView() {
               leading: province.image
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={province.image} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
-                : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-400">ไม่มีรูป</span>,
+                : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-500">ไม่มีรูป</span>,
               extra: (
                 <>
                   <span className="w-20 text-right text-xs tabular-nums text-slate-500" title="สถานที่ที่เผยแพร่">{spotCounts[province.id] ?? '–'} สถานที่</span>
@@ -221,7 +221,7 @@ export function ProvincesManagerView() {
                     onClick={() => toggleFeatured(province)}
                     aria-pressed={province.featured}
                     title={province.featured ? 'นำออกจากจังหวัดยอดนิยม' : 'ตั้งเป็นจังหวัดยอดนิยม'}
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${province.featured ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold ${province.featured ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-600'}`}
                   >
                     <Star size={11} className={province.featured ? 'fill-amber-400 text-amber-500' : ''} /> ยอดนิยม
                   </button>

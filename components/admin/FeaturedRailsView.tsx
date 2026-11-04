@@ -26,10 +26,10 @@ function RailCardPreview({ form }: { form: GroupForm }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
       {form.badgeLabel && (
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-800">{form.badgeLabel}</span>
+        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-slate-800">{form.badgeLabel}</span>
       )}
       <div className="absolute bottom-3 left-3 right-3 text-white">
-        <p className="text-[10px] font-bold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{form.nameEn || ' '}</p>
         <p className="text-sm font-bold leading-tight">{form.name || 'ชื่อการ์ด'}</p>
         {form.subtitle && <p className="mt-0.5 line-clamp-1 text-[11px] opacity-90">{form.subtitle}</p>}
       </div>
@@ -105,7 +105,7 @@ export function FeaturedRailsView() {
     <div className="space-y-5">
       <AdminPageHeader
         icon={GalleryHorizontal}
-        title="การ์ดแนะนำ (rail)"
+        title="การ์ดแนะนำ"
         description="การ์ดรูปที่หน้าเว็บใช้เป็นทางลัดของแต่ละเสา แก้ข้อความ รูป คำค้น ลำดับ และเปิด/ปิดได้ (จังหวัดยอดนิยมตั้งที่หน้า 77 จังหวัด)"
         actions={admin.canEdit && (
           <button type="button" onClick={() => setEditing(null)} className={adminButton.primary}>
@@ -119,7 +119,7 @@ export function FeaturedRailsView() {
             key={collection}
             type="button"
             onClick={() => setTab(collection)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${tab === collection ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${tab === collection ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {COLLECTION_LABELS[collection]} {admin.data && <span className="opacity-70">{admin.data[collection].length}</span>}
           </button>
@@ -141,7 +141,7 @@ export function FeaturedRailsView() {
             leading: group.image
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={group.image} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-              : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[10px] font-semibold text-slate-400">ไม่มีรูป</span>,
+              : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-semibold text-slate-500">ไม่มีรูป</span>,
           }))}
         />
       )}

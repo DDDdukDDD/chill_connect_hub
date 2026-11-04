@@ -404,7 +404,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
         ) : (
           <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-400 flex items-center justify-center shrink-0 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-500 flex items-center justify-center shrink-0 shadow-2xs">
                 <Search className="w-4 h-4 text-slate-400" />
               </div>
               <div className="min-w-0">
@@ -484,7 +484,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 /** `initial` (the first places, from the server page) is in the HTML search engines read; the browser asks for the rest. */
 export default function SpotsPage(props: ServerProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดข้อมูลสถานที่...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500 text-sm">กำลังโหลดข้อมูลสถานที่...</div>}>
       <SpotsPageContent {...props} />
     </Suspense>
   );

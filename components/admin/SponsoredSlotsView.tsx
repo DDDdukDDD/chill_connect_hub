@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BadgeDollarSign, Loader2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { bangkokToday, campaignDay } from '@/lib/campaigns/types';
@@ -78,7 +79,7 @@ function SlotEditor({ entry, options, onClose, onSaved }: { entry: SponsoredSlot
                 type="button"
                 aria-pressed={form.pillar === pillar}
                 onClick={() => setForm((current) => ({ ...current, pillar, itemId: pillar === current.pillar ? current.itemId : '' }))}
-                className={form.pillar === pillar ? adminButton.dark : adminButton.secondary}
+                className={form.pillar === pillar ? `${adminButton.secondary} !bg-blue-50 !text-[#1D4ED8] ring-1 ring-[#2563EB]` : adminButton.secondary}
               >
                 {SPONSOR_PILLAR_LABELS[pillar]}
               </button>
@@ -169,7 +170,7 @@ export function SponsoredSlotsView() {
   }, [load]);
 
   const remove = async (slot: SponsoredSlot) => {
-    if (!window.confirm(`ลบการ์ดสนับสนุนของ "${slot.sponsor}"? รายการนั้นยังอยู่บนหน้า แค่ไม่ขึ้นเป็นการ์ดสนับสนุน`)) return;
+    if (!await askConfirm(`ลบการ์ดสนับสนุนของ "${slot.sponsor}"? รายการนั้นยังอยู่บนหน้า แค่ไม่ขึ้นเป็นการ์ดสนับสนุน`)) return;
     const res = await fetch('/api/admin/sponsored', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: slot.id }) });
     const json = await res.json();
     if (!json.success) setError(json.error || 'ลบไม่สำเร็จ');

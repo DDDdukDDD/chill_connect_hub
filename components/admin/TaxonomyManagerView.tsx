@@ -96,7 +96,7 @@ function CategoryEditor({
               {form.nameEn && <p className="truncate text-[11px] text-slate-500">{form.nameEn}</p>}
             </div>
           </div>
-          <span className={`inline-block rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${color.badgeBg} ${color.badgeText} ${color.border}`}>{form.name || 'ป้ายหมวด'}</span>
+          <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold ${color.badgeBg} ${color.badgeText} ${color.border}`}>{form.name || 'ป้ายหมวด'}</span>
           {form.image && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={form.image} alt="" className="h-32 w-full rounded-xl object-cover" />
@@ -152,7 +152,7 @@ function CategoryEditor({
                 aria-checked={form.iconKey === key}
                 aria-label={key}
                 onClick={() => set('iconKey', key)}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl border ${form.iconKey === key ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-xl border ${form.iconKey === key ? 'border-[#2563EB] ring-1 ring-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 <Icon size={15} />
               </button>
@@ -216,7 +216,7 @@ export function TaxonomyManagerView() {
             key={collection}
             type="button"
             onClick={() => setTab(collection)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${tab === collection ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${tab === collection ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {COLLECTION_LABELS[collection]} {admin.data && <span className="opacity-70">{(admin.data[collection] as MasterCategory[]).length}</span>}
           </button>

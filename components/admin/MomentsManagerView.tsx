@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Camera, CheckCircle2, Flag, Heart, Loader2, MessageCircle, RefreshCw, Search, Trophy, X } from 'lucide-react';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
@@ -89,7 +90,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
           <AdminStatusChip status={statusOf(moment)} />
           {moment.hiddenBy && <span>{moment.hiddenBy === 'reports' ? `ซ่อนอัตโนมัติจากการรายงาน` : `ซ่อนโดยแอดมิน${moment.moderationNote ? ` · ${moment.moderationNote}` : ''}`}</span>}
           {moment.isSample && <span>ข้อมูลตัวอย่าง</span>}
-          <span className="text-slate-400">{moment.timeAgo}</span>
+          <span className="text-slate-500">{moment.timeAgo}</span>
         </span>
       }
       onClose={onClose}
@@ -99,7 +100,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
           <button type="button" onClick={onClose} className={adminButton.secondary}>ปิด</button>
           {canModerate && (
             <>
-              <button type="button" disabled={Boolean(busy)} onClick={() => { if (confirm('ลบโมเมนต์นี้ถาวร?')) act({ action: 'remove', note }, 'ลบโมเมนต์แล้ว', 'remove'); }} className={adminButton.danger}>ลบถาวร</button>
+              <button type="button" disabled={Boolean(busy)} onClick={() => { void askConfirm('ลบโมเมนต์นี้ถาวร?').then((ok) => { if (ok) act({ action: 'remove', note }, 'ลบโมเมนต์แล้ว', 'remove'); }); }} className={adminButton.danger}>ลบถาวร</button>
               {moment.reports.length > 0 && moment.status === 'published' && (
                 <button type="button" disabled={Boolean(busy)} onClick={() => act({ action: 'dismiss_reports' }, 'ยกรายงานแล้ว', 'dismiss')} className={adminButton.secondary}>ยกรายงาน</button>
               )}
@@ -144,7 +145,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
             {moment.reports.map((report, index) => (
               <li key={index} className="flex items-center gap-2">
                 <Flag size={12} className="shrink-0 text-rose-500" /> {report.reason}
-                <span className="text-slate-400">· {new Date(report.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                <span className="text-slate-500">· {new Date(report.createdAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
               </li>
             ))}
           </ul>
@@ -159,7 +160,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
             {moment.comments.map((comment) => (
               <li key={comment.id} className={`flex items-start gap-2 py-2 text-xs ${comment.hidden ? 'opacity-50' : ''}`}>
                 <div className="min-w-0 flex-1">
-                  <span className="font-bold text-slate-800">{comment.authorName}</span> <span className="text-slate-400">· {comment.timeAgo}</span>
+                  <span className="font-bold text-slate-800">{comment.authorName}</span> <span className="text-slate-500">· {comment.timeAgo}</span>
                   <p className="text-slate-700">{comment.text}</p>
                 </div>
                 {canModerate && (
@@ -183,7 +184,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
               {moment.countsToward.map((quest) => (
                 <li key={quest.questId} className="flex items-center gap-2">
                   <Trophy size={12} className="shrink-0 text-violet-600" /> {quest.title}
-                  {quest.needsPhoto && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">รางวัลจากแบรนด์</span>}
+                  {quest.needsPhoto && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">รางวัลจากแบรนด์</span>}
                 </li>
               ))}
             </ul>
@@ -298,7 +299,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
             key={f.id}
             type="button"
             onClick={() => refetch(() => { setFilter(f.id); setPage(1); })}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === f.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === f.id ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {f.label}
             {f.count && counts && (
@@ -307,11 +308,12 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-64">
-          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="search"
             value={query}
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
+            aria-label="ค้นหาคำบรรยาย ผู้โพสต์ หรือสถานที่"
             placeholder="ค้นหาคำบรรยาย ผู้โพสต์ หรือสถานที่"
             className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
           />
@@ -347,12 +349,12 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
                     <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                       <AdminStatusChip status={statusOf(moment)} />
                       {moment.reports.length > 0 && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white"><Flag size={10} />{moment.reports.length}</span>
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[11px] font-bold text-white"><Flag size={10} />{moment.reports.length}</span>
                       )}
-                      {moment.evidenceRejected && <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">ไม่นับ</span>}
-                      {!moment.evidenceRejected && moment.evidence?.status === 'pending' && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">รอตรวจ</span>}
+                      {moment.evidenceRejected && <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-[11px] font-bold text-white">ไม่นับ</span>}
+                      {!moment.evidenceRejected && moment.evidence?.status === 'pending' && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900">รอตรวจ</span>}
                     </div>
-                    {moment.images.length > 1 && <span className="absolute right-2 top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">{moment.images.length} รูป</span>}
+                    {moment.images.length > 1 && <span className="absolute right-2 top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[11px] font-bold text-white">{moment.images.length} รูป</span>}
                   </div>
                   <div className="space-y-1 p-2.5">
                     <p className="line-clamp-2 h-10 overflow-hidden text-xs font-semibold leading-5 text-slate-800">{moment.caption}</p>
@@ -363,7 +365,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
                     <p className="flex items-center gap-2 text-[11px] text-slate-500">
                       <span className="inline-flex items-center gap-0.5"><Heart size={11} /> {moment.likesCount}</span>
                       <span className="inline-flex items-center gap-0.5"><MessageCircle size={11} /> {moment.comments.length}</span>
-                      {moment.isSample && <span className="text-slate-400">ตัวอย่าง</span>}
+                      {moment.isSample && <span className="text-slate-500">ตัวอย่าง</span>}
                     </p>
                   </div>
                 </button>

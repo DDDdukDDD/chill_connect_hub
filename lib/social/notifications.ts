@@ -64,15 +64,28 @@ export async function notifyQuestion(memberId: string, actor: Member, eventId: s
   await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: actor.id, eventId, preview: preview.slice(0, 80), createdAt: now() }));
 }
 
-/** Tells a host that staff published or turned down their ตี้ (the preview is its title) */
-export async function notifyReview(memberId: string, eventId: string, eventTitle: string, type: 'approved' | 'rejected', path: string): Promise<void> {
-  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId, eventId, types: ['approved', 'rejected'] }));
+/** The title, then why when staff said no, so a member knows what to change */
+const decisionPreview = (title: string, reason?: string) => (reason ? `${title.slice(0, 60)} · เหตุผล: ${reason}`.slice(0, 160) : title.slice(0, 80));
+
+/** Tells a host that staff published or turned down their ตี้ or อีเวนต์ */
+export async function notifyReview(memberId: string, eventId: string, eventTitle: string, type: 'approved' | 'rejected', path: string, reason?: string): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: memberId, eventId, path, preview: decisionPreview(eventTitle, reason), createdAt: now() }, { memberId, eventId, types: ['approved', 'rejected'] }));
+}
+
+/** The same, for what has no event behind it: a proposed challenge, a suggested place, a request to become a host */
+export async function notifyDecision(memberId: string, type: 'approved' | 'rejected', title: string, path: string, reason?: string, questId?: string): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: memberId, path, questId, preview: decisionPreview(title, reason), createdAt: now() }, questId ? { memberId, questId, types: ['approved', 'rejected'] } : undefined));
 }
 
 /** Tells a host that someone joined their ตี้; joining again after leaving stays one notification */
 export async function notifyJoined(hostId: string, actor: Member, eventId: string, eventTitle: string): Promise<void> {
   if (hostId === actor.id) return;
   await quietly(() => saveAndPush({ id: newId(), memberId: hostId, type: 'joined', actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId: hostId, types: ['joined'], actorId: actor.id, eventId }));
+}
+
+/** The host moved the date, time or place of a ตี้ the member is in or queued for; a newer change replaces the older notice */
+export async function notifyTeeChanged(memberId: string, actor: Member, eventId: string, summary: string): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'tee_changed', actorId: actor.id, eventId, preview: summary.slice(0, 160), createdAt: now() }, { memberId, eventId, types: ['tee_changed'] }));
 }
 
 /** The member was drawn in a campaign's prize draw; `path` opens the campaign's popup, where they claim */
@@ -93,12 +106,12 @@ export async function notifyDrawResult(memberIds: string[], path: string, headli
 const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected', 'draw_won', 'draw_result']);
 
 /** Where a notice from the site leads; undefined means its moment */
-const systemHref = (n: StoredNotification) => (n.type === 'evidence' ? undefined : n.type === 'rejected' ? '/myhub' : n.type === 'approved' || n.type === 'draw_won' || n.type === 'draw_result' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`);
+const systemHref = (n: StoredNotification) => (n.type === 'evidence' ? undefined : n.type === 'rejected' ? (n.eventId ? '/myhub' : n.path ?? '/myhub') : n.type === 'approved' || n.type === 'draw_won' || n.type === 'draw_result' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`);
 
 /** Where a notice about a person leads; undefined means their moment or, without one, their profile */
-const personHref = (n: StoredNotification) => (n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : n.type === 'joined' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : undefined);
+const personHref = (n: StoredNotification) => (n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : (n.type === 'joined' || n.type === 'tee_changed') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : undefined);
 
-const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย' };
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม' };
 
 /** The same words and destination as the bell (components/NotificationBell.tsx) */
 function pushMessage(n: StoredNotification, actor?: Member): PushMessage {

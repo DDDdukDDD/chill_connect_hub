@@ -4,7 +4,8 @@ import { recordAudit } from '@/lib/auditLog';
 import { checkEventQuality, checkQuestQuality, checkSpotQuality, QualityReport } from '@/lib/contentQuality';
 import { db, paginateArray } from '@/lib/db';
 import { isEventEnded, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
-import { AdminEventItem, listAdminEvents } from '@/lib/eventsStore';
+import { AdminEventItem, listAdminEvents, tellHost } from '@/lib/eventsStore';
+import { notifyDecision } from '@/lib/social/notifications';
 import { getAllDataSources } from '@/lib/sourcesStore';
 import { isThaiCoordinate } from '@/lib/scrapers/tourismDirectory';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
@@ -251,6 +252,17 @@ export async function POST(request: Request) {
     await db.updateQuest(quest.id, action === 'approve'
       ? { status: 'active' }
       : { reviewRejectedAt: new Date(moderatedAt).toISOString(), rejectionReason: reason || undefined });
+  }
+
+  // Whoever sent it in hears the answer, with the reason when staff gave one. A failed notice never undoes the decision
+  const status = action === 'approve' ? 'approved' : 'rejected';
+  const why = action === 'reject' ? reason || undefined : undefined;
+  for (const event of events) await tellHost(event, status, why);
+  for (const spot of spots) {
+    if (spot.suggestedByMemberId) await notifyDecision(spot.suggestedByMemberId, status, spot.title, action === 'approve' ? `/spots/${encodeURIComponent(spot.id)}` : '/myhub', why);
+  }
+  for (const quest of quests) {
+    if (quest.createdByMemberId) await notifyDecision(quest.createdByMemberId, status, quest.title, action === 'approve' ? `/challenges/${encodeURIComponent(quest.id)}` : '/myhub', why, quest.id);
   }
 
   const verb = action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ';

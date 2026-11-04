@@ -102,7 +102,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
                       isDisabled
-                        ? 'bg-slate-100 text-slate-400'
+                        ? 'bg-slate-100 text-slate-500'
                         : isSelected
                         ? 'bg-[#F26430] text-white shadow-xs'
                         : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105`
@@ -114,13 +114,13 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   {count > 0 ? (
                     <span
                       className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
+                        isSelected ? 'bg-orange-200/70 text-[#C2410C]' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {count}
                     </span>
                   ) : (
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100/80 text-slate-500">
                       0
                     </span>
                   )}
@@ -128,12 +128,12 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
 
                 <div className="space-y-0.5 w-full">
                   <span className={`font-bold text-xs sm:text-sm truncate block leading-snug ${
-                    isDisabled ? 'text-slate-400' : isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
+                    isDisabled ? 'text-slate-500' : isSelected ? 'text-[#C2410C]' : 'text-slate-900'
                   }`}>
                     {cat.name}
                   </span>
                   <p className={`text-[11px] font-medium truncate leading-normal ${
-                    isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#F26430]' : 'text-slate-400'
+                    isDisabled ? 'text-slate-500/80' : isSelected ? 'text-[#F26430]' : 'text-slate-500'
                   }`}>
                     {cat.nameEn}
                   </p>
@@ -208,7 +208,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
             {eventCounts['all'] !== undefined && (
               <span
                 className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
-                  selectedCategoryId === null ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
+                  selectedCategoryId === null ? 'bg-orange-200/70 text-[#C2410C]' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {eventCounts['all']}
@@ -217,12 +217,12 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
           </div>
           <div className="text-left leading-tight">
             <span className={`block text-xs font-bold ${
-              selectedCategoryId === null ? 'text-[#D04A1B]' : 'text-slate-900'
+              selectedCategoryId === null ? 'text-[#C2410C]' : 'text-slate-900'
             }`}>
               ทั้งหมด
             </span>
             <span className={`block text-[11px] font-medium ${
-              selectedCategoryId === null ? 'text-[#F26430]' : 'text-slate-400'
+              selectedCategoryId === null ? 'text-[#F26430]' : 'text-slate-500'
             }`}>
               {allLabelEn}
             </span>
@@ -260,7 +260,7 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                 <div
                   className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform ${
                     isDisabled
-                      ? 'bg-slate-100 text-slate-400'
+                      ? 'bg-slate-100 text-slate-500'
                       : isSelected
                       ? 'bg-[#F26430] text-white shadow-xs'
                       : `${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor} group-hover:scale-105`
@@ -273,13 +273,13 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
                   {count > 0 ? (
                     <span
                       className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isSelected ? 'bg-orange-200/70 text-[#D04A1B]' : 'bg-slate-100 text-slate-600'
+                        isSelected ? 'bg-orange-200/70 text-[#C2410C]' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {count}
                     </span>
                   ) : (
-                    <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-400">
+                    <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100/80 text-slate-500">
                       0
                     </span>
                   )}
@@ -288,13 +288,13 @@ export const CommunityCategoryRail: React.FC<CommunityCategoryRailProps> = ({
 
               <div className="text-left w-full pr-1 space-y-0.5">
                 <span className={`block text-xs font-bold truncate leading-snug ${
-                  isDisabled ? 'text-slate-400' : isSelected ? 'text-[#D04A1B]' : 'text-slate-900'
+                  isDisabled ? 'text-slate-500' : isSelected ? 'text-[#C2410C]' : 'text-slate-900'
                 }`}>
                   {cat.name}
                 </span>
                 <span
                   className={`block text-[11px] font-medium truncate leading-normal ${
-                    isDisabled ? 'text-slate-400/80' : isSelected ? 'text-[#F26430]' : 'text-slate-400'
+                    isDisabled ? 'text-slate-500/80' : isSelected ? 'text-[#F26430]' : 'text-slate-500'
                   }`}
                 >
                   {cat.nameEn}

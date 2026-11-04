@@ -222,7 +222,7 @@ export function EditProfileDialog({
           {tab === 'me' && (
             <>
               <div className="flex items-center gap-4">
-                <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-2xl font-bold">
+                <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-slate-100 text-slate-600 text-2xl font-bold">
                   {photo || member.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- member photo (local preview or uploaded file)
                     <img src={safeImageSrc(photo?.preview ?? member.avatarUrl)} alt="" className="w-full h-full object-cover" />

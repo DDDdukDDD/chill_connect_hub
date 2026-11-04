@@ -48,7 +48,7 @@ Work from the other clone only becomes visible after it is pushed and you pull. 
 - **Use shared types, never copies:** `EventItem` / `ChallengeQuest` from `@/data/mockData`, `LifestyleSpotItem` from `@/data/spotsData`, query and pagination types from `@/lib/db/types`.
 - **Never send roles or permissions from the client.** The server decides admin access from its own session (`/api/auth/admin`).
 - **Live data is in Postgres,** not in `data/*.json` (seed data and the no-database mode). Do not hand-edit those files to change what the site shows.
-- **`npm run dev` uses the development database. Never write test data to the live one,** and never burst-test the live site.
+- **`npm run dev` uses the development database. Never write test data to the live one,** and never burst-test the live site. `next build` and `next start` read `.env.local`, which is the live database: pass the dev `DATABASE_URL` in the environment when testing locally.
 - **The goal since 2026-11-03 is production at quality 9.5** (still seed data, no real users yet). Prefer clear, simple solutions; postponed work goes in `docs/LAUNCH_CHECKLIST.md`.
 
 ---

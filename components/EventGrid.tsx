@@ -123,7 +123,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     )}
                     {event.eventType !== 'public_venue' && (isAlmostFull || isFull) && !isJoined && !isEnded && (
                       <span className="text-[11px] font-bold bg-slate-900/85 backdrop-blur-md text-white px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 border border-white/10">
-                        <span className={`w-1.5 h-1.5 rounded-full ${isFull ? 'bg-slate-400' : 'bg-amber-400 animate-pulse'}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${isFull ? 'bg-slate-400' : 'bg-amber-400'}`} />
                         {isFull ? 'เต็มแล้ว' : `เหลือ ${event.maxParticipants - event.participantsCount} ที่`}
                       </span>
                     )}
@@ -140,11 +140,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full shadow-xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer ${
                         isFav
                           ? event.eventType === 'public_venue'
-                            ? 'bg-[#2B527A] text-white shadow-md shadow-sky-900/30 ring-1 ring-white/30'
-                            : 'bg-[#F26430] text-white shadow-md shadow-orange-500/30 ring-1 ring-white/30'
+                            ? 'bg-[#2B527A] text-white shadow-sm ring-1 ring-white/30'
+                            : 'bg-[#F26430] text-white shadow-sm ring-1 ring-white/30'
                           : event.eventType === 'public_venue'
-                          ? 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#2B527A]'
-                          : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#F26430]'
+                          ? 'bg-white/90 backdrop-blur-md text-slate-500 hover:text-[#2B527A]'
+                          : 'bg-white/90 backdrop-blur-md text-slate-500 hover:text-[#F26430]'
                       }`}
                       title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                     >
@@ -162,11 +162,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     {/* Top Row: Host Info + Price */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <img
-                          src={avatarImage(event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80')}
-                          alt={event.hostName}
-                          className="w-4 h-4 rounded-full object-cover shrink-0"
-                        />
+                        {event.hostAvatar ? (
+                          <img src={avatarImage(event.hostAvatar)} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full bg-slate-100 text-[11px] leading-none text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">{[...(event.hostName || '?')][0]}</span>
+                        )}
                         <span className="text-[11px] font-medium text-slate-500 truncate">
                           {event.hostName}
                         </span>
@@ -253,7 +253,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                           <span>เข้าร่วมแล้ว</span>
                         </span>
                       ) : isEnded ? (
-                        <span className="text-[11px] font-medium text-slate-400">จบกิจกรรมแล้ว</span>
+                        <span className="text-[11px] font-medium text-slate-500">จบกิจกรรมแล้ว</span>
                       ) : isFull ? (
                         <span className="text-[11px] font-semibold text-slate-500">เต็มแล้ว</span>
                       ) : isAlmostFull ? (
@@ -264,7 +264,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     </div>
                   ) : isEnded ? (
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-end text-xs">
-                      <span className="text-[11px] font-medium text-slate-400">จัดเสร็จสิ้นแล้ว</span>
+                      <span className="text-[11px] font-medium text-slate-500">จัดเสร็จสิ้นแล้ว</span>
                     </div>
                   ) : null}
                 </div>
@@ -346,7 +346,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                       ? event.eventType === 'public_venue'
                         ? 'bg-[#2B527A] text-white'
                         : 'bg-[#F26430] text-white'
-                      : 'bg-white/90 text-slate-400'
+                      : 'bg-white/90 text-slate-500'
                   }`}
                   title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}
                 >
@@ -360,11 +360,11 @@ export const EventGrid: React.FC<EventGridProps> = ({
               {/* Metadata Row: Host / Venue + Date/Time */}
               <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <img
-                    src={avatarImage(event.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80')}
-                    alt={event.hostName}
-                    className="w-4 h-4 rounded-full object-cover shrink-0"
-                  />
+                  {event.hostAvatar ? (
+                          <img src={avatarImage(event.hostAvatar)} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full bg-slate-100 text-[11px] leading-none text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">{[...(event.hostName || '?')][0]}</span>
+                        )}
                   <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[120px]">
                     {event.hostName}
                   </span>
@@ -456,7 +456,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                     <span>เข้าร่วมแล้ว</span>
                   </span>
                 ) : isEnded ? (
-                  <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">จบแล้ว</span>
+                  <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">จบแล้ว</span>
                 ) : isFull ? (
                   <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">เต็มแล้ว</span>
                 ) : isAlmostFull ? (
@@ -466,7 +466,7 @@ export const EventGrid: React.FC<EventGridProps> = ({
                 )}
               </div>
             ) : isEnded ? (
-              <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">จัดเสร็จสิ้น</span>
+              <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">จัดเสร็จสิ้น</span>
             ) : null}
 
             {/* Desktop Favorite Button */}
@@ -482,8 +482,8 @@ export const EventGrid: React.FC<EventGridProps> = ({
                   className={`w-7 h-7 rounded-full shadow-2xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer ${
                     isFav
                       ? event.eventType === 'public_venue'
-                        ? 'bg-[#2B527A] text-white shadow-sky-900/20'
-                        : 'bg-[#F26430] text-white shadow-orange-500/20'
+                        ? 'bg-[#2B527A] text-white'
+                        : 'bg-[#F26430] text-white'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
                   }`}
                   title={isFav ? 'ยกเลิกถูกใจ' : 'บันทึกกิจกรรม'}

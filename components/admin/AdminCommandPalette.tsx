@@ -153,7 +153,7 @@ export function AdminCommandPalette({ onClose, onNavigate }: { onClose: () => vo
       <button type="button" aria-label="ปิด" onClick={onClose} className="absolute inset-0 bg-slate-950/40" />
       <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" onKeyDown={onKeyDown}>
         <div className="flex items-center gap-3 border-b border-slate-200 px-4">
-          <Search size={16} className="shrink-0 text-slate-400" />
+          <Search size={16} className="shrink-0 text-slate-500" />
           <input
             ref={inputRef}
             value={query}
@@ -166,10 +166,10 @@ export function AdminCommandPalette({ onClose, onNavigate }: { onClose: () => vo
             aria-label="คำค้น"
             aria-controls="admin-palette-results"
             aria-activedescendant={results[safeIndex] ? `admin-palette-${results[safeIndex].key}` : undefined}
-            className="h-12 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            className="h-12 flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none"
           />
-          {isSearching && <Loader2 size={15} className="shrink-0 animate-spin text-slate-400" />}
-          <kbd className="hidden rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 sm:block">Esc</kbd>
+          {isSearching && <Loader2 size={15} className="shrink-0 animate-spin text-slate-500" />}
+          <kbd className="hidden rounded-md border border-slate-200 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500 sm:block">Esc</kbd>
         </div>
 
         <ul id="admin-palette-results" ref={listRef} role="listbox" className="max-h-[60vh] overflow-y-auto py-2 [scrollbar-width:thin]">
@@ -179,7 +179,7 @@ export function AdminCommandPalette({ onClose, onNavigate }: { onClose: () => vo
             const startsGroup = index === 0 || results[index - 1].group !== result.group;
             return (
               <React.Fragment key={result.key}>
-                {startsGroup && <li role="presentation" className="px-4 pb-1 pt-2 text-[11px] font-semibold text-slate-400">{result.group}</li>}
+                {startsGroup && <li role="presentation" className="px-4 pb-1 pt-2 text-[11px] font-semibold text-slate-500">{result.group}</li>}
                 <li
                   id={`admin-palette-${result.key}`}
                   role="option"
@@ -192,7 +192,7 @@ export function AdminCommandPalette({ onClose, onNavigate }: { onClose: () => vo
                   {Icon ? <Icon size={15} className="shrink-0 text-slate-500" /> : result.pillar ? <PillarBadge pillar={result.pillar} /> : null}
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{result.title}</span>
                   {result.meta && <span className="max-w-[40%] shrink-0 truncate text-[11px] text-slate-500">{result.meta}</span>}
-                  {isActive && <CornerDownLeft size={13} className="shrink-0 text-slate-400" />}
+                  {isActive && <CornerDownLeft size={13} className="shrink-0 text-slate-500" />}
                 </li>
               </React.Fragment>
             );

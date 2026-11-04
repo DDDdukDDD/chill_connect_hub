@@ -1,5 +1,6 @@
 'use client';
 
+import { optimizedImage } from '@/lib/optimizedImage';
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -95,7 +96,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
       {/* Image */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
         <img
-          src={spot.image}
+          src={optimizedImage(spot.image, 384)}
           alt={spot.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
@@ -124,7 +125,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
           className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full shadow-xs flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer ${
             isFavorite
               ? 'bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/30 ring-1 ring-white/30'
-              : 'bg-white/90 backdrop-blur-md text-slate-400 hover:text-[#4A7C59]'
+              : 'bg-white/90 backdrop-blur-md text-slate-500 hover:text-[#4A7C59]'
           }`}
           title={isFavorite ? 'นำออกจากสมุดท่องเที่ยว' : 'บันทึกลงสมุดท่องเที่ยว'}
         >
@@ -173,7 +174,7 @@ export const SpotCard: React.FC<SpotCardProps> = ({
             <p className="truncate text-[11px] sm:text-xs font-medium text-slate-600">
               {spot.district}, {spot.province}
             </p>
-            <p className="truncate text-[11px] sm:text-xs text-slate-400">
+            <p className="truncate text-[11px] sm:text-xs text-slate-500">
               {spot.openHours}
             </p>
           </div>

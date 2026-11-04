@@ -7,7 +7,7 @@ import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagP
 import { PlacePicker } from '@/components/moments/PlacePicker';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { DialogShell, dialogButton, useDialogBehavior } from '@/components/auth/DialogShell';
 import { ClipTrimmer } from '@/components/moments/ClipTrimmer';
 import { PhotoEditor } from '@/components/moments/PhotoEditor';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
@@ -145,15 +145,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const leave = () => (hasDraft ? setConfirmDiscard(true) : onClose());
 
   // Esc closes the form unless a post is on its way
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || isPosting || pickerOpen) return;
-      if (hasDraft) setConfirmDiscard(true);
-      else onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isPosting, onClose, hasDraft, pickerOpen]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, () => {
+    if (isPosting || pickerOpen) return;
+    if (hasDraft) setConfirmDiscard(true);
+    else onClose();
+  }, { focusField: false });
 
   // The photo links go when the form really closes; React's test re-mount in development must not cut them while they load
   useEffect(() => {
@@ -466,10 +463,13 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     >
       {/* Full screen on phones, a centred dialog on larger screens */}
       <div
+        ref={panelRef}
+        data-dialog-shell
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-moment-title"
-        className={`bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
+        className={`focus:outline-hidden bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
           isWide ? `h-dvh sm:h-[min(92dvh,720px)] ${step === 'photos' ? 'sm:max-w-4xl' : 'sm:max-w-lg'}` : step === 'details' ? 'h-dvh sm:h-auto sm:max-h-[92dvh] sm:max-w-lg' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -585,7 +585,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                     maxLength={500}
                     onChange={(e) => setCaption(e.target.value)}
                     placeholder="เล่าสั้นๆ ว่าวันนี้เป็นยังไง (ไม่ใส่ก็ได้)"
-                    className="w-full bg-white border border-slate-300 rounded-2xl p-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
+                    className="w-full bg-white border border-slate-300 rounded-2xl p-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-500"
                   />
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <button

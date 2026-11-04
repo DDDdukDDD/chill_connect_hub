@@ -14,7 +14,7 @@ import { optimizedImage } from '@/lib/optimizedImage';
 type Face = { id: string; name: string; avatar: string };
 
 const FACES_SHOWN = 3;
-const FACE_COLORS = ['bg-violet-500', 'bg-cyan-600', 'bg-pink-500', 'bg-orange-500', 'bg-emerald-600', 'bg-blue-600'];
+const FACE_COLORS = ['bg-violet-600', 'bg-cyan-700', 'bg-pink-700', 'bg-orange-700', 'bg-emerald-700', 'bg-blue-600'];
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -197,7 +197,7 @@ export function MeetupTile({
         ) : isJoined ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#C2410C] whitespace-nowrap shadow-sm">ร่วมแล้ว</span>
         ) : (
-          <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${seatsLine(event) === 'เต็มแล้ว' ? 'bg-slate-700 text-white' : 'bg-[#F26430] text-white'}`}>
+          <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${seatsLine(event) === 'เต็มแล้ว' ? 'bg-slate-700 text-white' : 'bg-[#C2410C] text-white'}`}>
             {seatsLine(event)}
           </span>
         )}

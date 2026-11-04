@@ -619,7 +619,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
 /** `initialEvents` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
 export default function FairsPage(props: ServerProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดอีเวนต์...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500 text-sm">กำลังโหลดอีเวนต์...</div>}>
       <FairsPageContent {...props} />
     </Suspense>
   );

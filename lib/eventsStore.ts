@@ -154,10 +154,10 @@ export async function updateEventApproval(id: string, status: 'approved' | 'reje
 }
 
 /** The member who made a ตี้ hears when staff publish or turn it down */
-async function tellHost(event: EventItem, status: 'approved' | 'rejected' | 'pending') {
+export async function tellHost(event: EventItem, status: 'approved' | 'rejected' | 'pending', reason?: string) {
   const host = (event as { createdByMemberId?: string }).createdByMemberId;
   const path = `/${event.eventType === 'public_venue' ? 'events' : 'community'}/${encodeURIComponent(event.id)}`;
-  if (host && status !== 'pending') await notifyReview(host, event.id, event.title, status, path);
+  if (host && status !== 'pending') await notifyReview(host, event.id, event.title, status, path, reason);
 }
 
 export async function approveAllPendingEvents(): Promise<AdminEventItem[]> {

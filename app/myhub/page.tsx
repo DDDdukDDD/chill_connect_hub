@@ -178,7 +178,6 @@ function MyHubContent() {
   const [savedSpotIds, setSavedSpotIds] = useState<string[]>([]);
   const [savedFilter, setSavedFilter] = useState<'all' | 'community' | 'fairs' | 'spots'>('all');
 
-  const [checkedInTicketIds, setCheckedInTicketIds] = useState<string[]>([]);
 
   // Joined Events & Sub-activities
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
@@ -210,7 +209,6 @@ function MyHubContent() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isETicketModalOpen, setIsETicketModalOpen] = useState(false);
   const [selectedTicketEvent, setSelectedTicketEvent] = useState<EventItem | null>(null);
-  const [selectedTicketId, setSelectedTicketId] = useState<string>('CCH-2026-0089');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [chatTargetEvent, setChatTargetEvent] = useState<EventItem | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -425,7 +423,7 @@ function MyHubContent() {
           price: sub.eventPrice || 'เข้าชมฟรี!',
           description: sub.description || `กิจกรรมที่คุณลงทะเบียนเข้าร่วม: ${sub.subTitle || sub.eventTitle}`,
           hostName: sub.creatorName || 'โฮสต์ผู้จัด',
-          hostAvatar: sub.creatorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+          hostAvatar: sub.creatorAvatar || '',
           eventType: sub.eventType || 'public_venue',
           participantsCount: sub.participantsCount || 4,
           maxParticipants: sub.maxParticipants || 10,
@@ -457,7 +455,7 @@ function MyHubContent() {
           price: `+${q.rewardPoints} XP`,
           description: q.objective || q.targetGoal || 'รายละเอียดชาเลนจ์ประจำเดือน',
           hostName: 'ระบบชาเลนจ์ทางการ',
-          hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+          hostAvatar: '/brand-logo.svg',
           eventType: 'challenge' as any,
           participantsCount: q.participantsCount || 300,
           maxParticipants: 1000,
@@ -616,7 +614,7 @@ function MyHubContent() {
   };
 
   // Cancel Event (Marks as cancelled in history rather than wiping out)
-  const handleConfirmCancel = async (ticketId: string, _reason: string) => {
+  const handleConfirmCancel = async () => {
     if (!cancelTargetEvent) return;
     const result = await activityActions.leave(cancelTargetEvent.id);
     if (!result.ok) {
@@ -628,7 +626,7 @@ function MyHubContent() {
     showToast(
       cancelTargetEvent.eventType === 'public_venue'
         ? `ยกเลิกการเข้าร่วม "${cancelTargetEvent.title}" เรียบร้อย (ย้ายไปยังประวัติที่ยกเลิก)`
-        : `ยกเลิกตั๋ว ${ticketId} สำเร็จ (คืนที่นั่งให้เพื่อนสมาชิกแล้ว)`
+        : `ยกเลิกการเข้าร่วม "${cancelTargetEvent.title}" สำเร็จ (คืนที่นั่งให้เพื่อนสมาชิกแล้ว)`
     );
     setIsCancelModalOpen(false);
   };
@@ -691,15 +689,6 @@ function MyHubContent() {
     });
   };
 
-  const handleCheckIn = (ticketId: string) => {
-    if (!checkedInTicketIds.includes(ticketId)) {
-      setCheckedInTicketIds((prev) => [...prev, ticketId]);
-      showToast('ลองเช็กอินแล้ว XP จริงจะได้เมื่อโฮสต์เช็กอินให้ที่งาน');
-    } else {
-      setCheckedInTicketIds((prev) => prev.filter((id) => id !== ticketId));
-      showToast('ยกเลิกการจำลองเช็คอินแล้ว');
-    }
-  };
 
 
   const handleCopyVoucher = (code: string) => {
@@ -751,10 +740,10 @@ function MyHubContent() {
         label: 'ทริปชวนเพื่อน',
         dotColor: 'bg-[#F26430]',
         badgeBg: 'bg-[#FEF3EE]',
-        badgeText: 'text-[#D04A1B]',
+        badgeText: 'text-[#C2410C]',
         badgeBorder: 'border-[#FCD5C5]',
         cardHover: 'hover:border-[#FCD5C5]',
-        titleHover: 'group-hover:text-[#D04A1B]',
+        titleHover: 'group-hover:text-[#C2410C]',
         btnBg: 'bg-slate-900',
         btnHover: 'hover:bg-slate-800',
         btnText: 'text-white',
@@ -907,7 +896,7 @@ function MyHubContent() {
     const row = (ev: EventItem, ended: boolean) => (
       <li key={ev.id} className="py-3 first:pt-0 last:pb-0 flex flex-wrap items-center gap-x-4 gap-y-2.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ev.image} alt="" className={`w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0`} />
+        <img src={optimizedImage(ev.image, 128)} alt="" className={`w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0`} />
         <div className="min-w-0 flex-1 basis-40">
           <Link href={`/community/${encodeURIComponent(ev.id)}`} className="block text-sm font-bold text-slate-900 truncate hover:underline">{ev.title}</Link>
           <p className="text-xs font-medium text-slate-600 mt-0.5 truncate tabular-nums">{[thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · ')}</p>
@@ -1054,7 +1043,7 @@ function MyHubContent() {
                       <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ev.image} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
+                    <img src={optimizedImage(ev.image, 128)} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
                     <div className="min-w-0 flex-1 basis-44">
                       <p className="text-sm font-bold text-slate-900 truncate" title={ev.title}>{ev.title}</p>
                       <p className="text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">{[ev.time, ev.location].filter(Boolean).join(' · ')}</p>
@@ -1388,7 +1377,7 @@ function MyHubContent() {
                   onClick={() => setCalendarCategoryFilter('spots')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
                     calendarCategoryFilter === 'spots'
-                      ? 'bg-[#FEF3EE] text-[#D04A1B] border border-[#FCD5C5] shadow-2xs'
+                      ? 'bg-[#FEF3EE] text-[#C2410C] border border-[#FCD5C5] shadow-2xs'
                       : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -1416,7 +1405,7 @@ function MyHubContent() {
 
           {/* Quest Span Mode Informational Banner */}
           {scheduleView === 'month' && calendarCategoryFilter === 'quests' && (
-            <div className="bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-200/90 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950 animate-fade-in shadow-2xs">
+            <div className="bg-[#F5F3FF] border border-purple-200/90 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950 animate-fade-in shadow-2xs">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
@@ -1504,7 +1493,7 @@ function MyHubContent() {
                           ? 'bg-[#7C3AED] text-white shadow-2xs'
                           : eventsOnDay.length > 0
                           ? 'text-slate-900 font-bold'
-                          : 'text-slate-400'
+                          : 'text-slate-500'
                       }`}>
                         {day}
                       </span>
@@ -1605,7 +1594,7 @@ function MyHubContent() {
 
             {/* Ongoing Quests Notification Banner in 'all' view when day selected */}
             {scheduleView === 'month' && calendarCategoryFilter === 'all' && ongoingQuestsForSelectedDay.length > 0 && (
-              <div className="p-3.5 bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-transparent rounded-2xl border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fade-in shadow-2xs">
+              <div className="p-3.5 bg-[#F5F3FF] rounded-2xl border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-fade-in shadow-2xs">
                 <div className="flex items-center gap-2.5 text-purple-900 font-bold min-w-0">
                   <div className="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
                     <Zap className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
@@ -1632,7 +1621,7 @@ function MyHubContent() {
 
             {scheduleRows.length === 0 ? (
               <div className="bg-slate-50/80 rounded-2xl p-6 sm:p-8 border border-dashed border-slate-200 text-center space-y-3 max-w-lg mx-auto">
-                <div className="w-10 h-10 rounded-xl bg-white text-slate-400 flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-white text-slate-500 flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
                   <CalendarDays className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
@@ -1670,9 +1659,7 @@ function MyHubContent() {
               <div>
                 {scheduleRows.map((ev, idx) => {
                   const meta = getEventPillarMeta(ev);
-                  const ticketId = ev.eventType === 'public_venue'
-                    ? `CCH-FAIR-${(idx + 201).toString().padStart(4, '0')}`
-                    : `CCH-2026-${(idx + 101).toString().padStart(4, '0')}`;
+                  const ticketId = ev.id;
                   const fallbackImg = 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
                   const status = getEventAttendanceStatus(ev);
                   const isCancelled = status === 'cancelled';
@@ -1771,7 +1758,6 @@ function MyHubContent() {
                               type="button"
                               onClick={() => {
                                 setSelectedTicketEvent(ev);
-                                setSelectedTicketId(ticketId);
                                 setIsETicketModalOpen(true);
                               }}
                               className={rowBtn}
@@ -1792,7 +1778,7 @@ function MyHubContent() {
                                   e.stopPropagation();
                                   setActiveMenuId(isMenuOpen ? null : `cal-${ev.id}`);
                                 }}
-                                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                                 title="ตัวเลือกเพิ่มเติม"
                               >
                                 <MoreHorizontal className="w-4 h-4" />
@@ -1823,7 +1809,7 @@ function MyHubContent() {
                                     }}
                                     className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                                   >
-                                    <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                                    <Share2 className="w-3.5 h-3.5 text-slate-500" />
                                     <span>แชร์นัดหมาย</span>
                                   </button>
                                   {/* Moved here from the row: chat before the day, the host's list and the review after it */}
@@ -1893,7 +1879,7 @@ function MyHubContent() {
                                         }}
                                         className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-500" />
                                         <span>ลบออกจากประวัติ</span>
                                       </button>
                                     </>
@@ -1918,7 +1904,7 @@ function MyHubContent() {
                                         }}
                                         className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                                        <Trash2 className="w-3.5 h-3.5 text-slate-500" />
                                         <span>ลบออกจากประวัติ</span>
                                       </button>
                                     </>
@@ -2158,7 +2144,6 @@ function MyHubContent() {
                                   type="button"
                                   onClick={() => {
                                     setSelectedTicketEvent(nextEvent);
-                                    setSelectedTicketId('CCH-2026-0101');
                                     setIsETicketModalOpen(true);
                                   }}
                                   className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full text-xs sm:text-sm font-bold cursor-pointer whitespace-nowrap ${when.toDateString() === new Date(openedAt).toDateString() ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:bg-slate-50 border border-slate-300 text-slate-800'}`}
@@ -2374,10 +2359,10 @@ function MyHubContent() {
                             >
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="text-[11px] font-bold text-[#D04A1B] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
+                                  <span className="text-[11px] font-bold text-[#C2410C] bg-[#FEF3EE] px-2 py-0.5 rounded-md border border-[#FCD5C5]/70">
                                     {item.discountValue}
                                   </span>
-                                  <span className="text-[11px] text-slate-400 font-medium">
+                                  <span className="text-[11px] text-slate-500 font-medium">
                                     ถึง {item.validUntil}
                                   </span>
                                 </div>
@@ -2450,11 +2435,6 @@ function MyHubContent() {
         isOpen={isETicketModalOpen}
         onClose={() => setIsETicketModalOpen(false)}
         event={selectedTicketEvent}
-        ticketId={selectedTicketId}
-        isCheckedIn={checkedInTicketIds.includes(selectedTicketId)}
-        onCheckIn={(tId) => {
-          handleCheckIn(tId);
-        }}
         onOpenCancel={(ev, tId) => {
           setCancelTargetEvent(ev);
           setCancelTargetTicketId(tId);
@@ -2498,7 +2478,7 @@ function MyHubContent() {
               onChange={(e) => setCheckInCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
               placeholder="รหัสบัตร 6 ตัว"
               autoComplete="off"
-              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 font-mono text-base tracking-widest text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:font-sans placeholder:tracking-normal placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 font-mono text-base tracking-widest text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:font-sans placeholder:tracking-normal placeholder:text-slate-500"
             />
             <button type="submit" disabled={checkInCode.trim().length < 6} className={dialogButton.primary}>เช็กอิน</button>
           </form>

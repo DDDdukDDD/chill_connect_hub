@@ -6,7 +6,7 @@ import { optimizedImage } from '@/lib/optimizedImage';
 export const MOMENT_TARGETS = {
   spot: { label: 'สถานที่', go: 'ไปที่นี่บ้าง', Icon: MapPin, box: 'bg-[#EBF3ED] text-[#2D5A3C]', ink: 'text-[#2D5A3C]', icon: 'text-[#4A7C59]', base: '/spots' },
   fair: { label: 'อีเวนต์', go: 'ดูงานนี้', Icon: Tent, box: 'bg-[#EEF4FA] text-[#1F3D5C]', ink: 'text-[#1F3D5C]', icon: 'text-[#2B527A]', base: '/events' },
-  community: { label: 'ตี้', go: 'ดูตี้นี้', Icon: Users, box: 'bg-[#FFF4EE] text-[#D04A1B]', ink: 'text-[#D04A1B]', icon: 'text-[#F26430]', base: '/community' },
+  community: { label: 'ตี้', go: 'ดูตี้นี้', Icon: Users, box: 'bg-[#FFF4EE] text-[#C2410C]', ink: 'text-[#C2410C]', icon: 'text-[#F26430]', base: '/community' },
   challenge: { label: 'ชาเลนจ์', go: 'ทำชาเลนจ์นี้', Icon: Flag, box: 'bg-[#F5F3FF] text-[#6D28D9]', ink: 'text-[#6D28D9]', icon: 'text-[#7C3AED]', base: '/challenges' },
 } as const;
 

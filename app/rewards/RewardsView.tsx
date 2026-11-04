@@ -173,7 +173,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
       {myCampaigns.dialog}
 
       <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 xl:pb-16">
-        <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
           {/* Wallet, shaped like a ticket: what I have and the next reward on top, how to get more below the tear line */}
           <aside className="lg:sticky lg:top-24">
             <section className="relative rounded-3xl bg-[#FFF4D6] text-slate-900">
@@ -271,7 +271,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                           type="button"
                           onClick={() => setSelectedCategory(cat.id)}
                           aria-pressed={selected}
-                          className={`${CHIP} ${selected ? 'bg-slate-900 text-white' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                          className={`${CHIP} ${selected ? 'bg-amber-50 border border-amber-400 text-amber-900' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
                         >
                           {cat.label}
                         </button>

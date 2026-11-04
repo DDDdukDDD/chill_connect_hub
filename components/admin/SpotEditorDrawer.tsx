@@ -182,7 +182,7 @@ export function SpotEditorDrawer({ spot, onClose, onSaved }: SpotEditorDrawerPro
         <span className="inline-flex items-center gap-2 flex-wrap">
           {!isNew && <AdminStatusChip status={isDraft ? 'draft' : 'published'} />}
           {isImported && <span>ข้อมูลจาก {spot!.sourceName}</span>}
-          {!isNew && <span className="text-slate-400">id: {spot!.id}</span>}
+          {!isNew && <span className="text-slate-500">id: {spot!.id}</span>}
         </span>
       }
       onClose={onClose}

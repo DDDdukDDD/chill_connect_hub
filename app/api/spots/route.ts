@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MemberAuthError } from '@/lib/members/accounts';
-import { getSessionMember } from '@/lib/members/session';
+import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { spotsSuggestedBy, suggestSpot } from '@/lib/members/submissions';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { effectiveTier } from '@/lib/spotCuration';
@@ -88,6 +88,7 @@ export async function GET(request: Request) {
  * A signed-in, verified member suggests a place. It is saved as a draft and published by staff after review.
  */
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   try {
     const member = await getSessionMember(request);
     if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });

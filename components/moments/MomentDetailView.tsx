@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
@@ -418,7 +418,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   <span className="block text-[11px] font-medium opacity-80">{target.label}</span>
                   <span className="block text-[13px] font-semibold truncate">{place}</span>
                 </span>
-                <span className="text-xs font-semibold whitespace-nowrap">{target.go} →</span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
               </Link>
             ) : (
               <p className="flex items-center gap-2.5 rounded-2xl bg-slate-100 text-slate-700 pl-2 pr-3 py-2">
@@ -445,7 +445,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 <span className="sr-only">ความคิดเห็น</span>
               </button>
               )}
-              <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} className={`${iconButton} ml-auto`}>
+              <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'} className={`${iconButton} ml-auto`}>
                 <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
                 <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
               </button>

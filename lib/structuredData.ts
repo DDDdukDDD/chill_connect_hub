@@ -167,6 +167,16 @@ export function meetupCollectionJsonLd(events: { id: string; title: string; imag
   );
 }
 
+/** /spots: a collection page listing the places on the first screen, each pointing to its own page. */
+export function spotCollectionJsonLd(spots: { id: string; title: string; image?: string }[], path: string, name: string, description: string): JsonLd {
+  return collectionJsonLd(
+    spots.map((spot) => ({ path: `/spots/${encodeURIComponent(spot.id)}`, name: spot.title, image: spot.image })),
+    path,
+    name,
+    description
+  );
+}
+
 /** /events: a collection page listing the upcoming อีเวนต์, each pointing to its own page (where the full Event data is). */
 export function fairCollectionJsonLd(events: { id: string; title: string; image?: string }[], path: string, name: string, description: string): JsonLd {
   return collectionJsonLd(

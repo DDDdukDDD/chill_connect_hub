@@ -131,7 +131,7 @@ export function VenuesManagerView() {
             leading: venue.image
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={venue.image} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
-              : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400"><Building2 size={16} /></span>,
+              : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><Building2 size={16} /></span>,
           }))}
         />
       )}

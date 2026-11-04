@@ -60,7 +60,7 @@ export function ResetPasswordScreen({ token }: { token: string }) {
               <label htmlFor="new-password" className="block text-sm font-bold text-slate-800">รหัสผ่านใหม่</label>
               <div className="relative">
                 <input id="new-password" type={visible ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={(submitted && tooShort) || undefined} className={input} />
-                <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={visible} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+                <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={visible} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
                   {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>

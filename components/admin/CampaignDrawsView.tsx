@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Gift, Loader2, RefreshCw } from 'lucide-react';
 import { type DrawCampaign, type WinnerStatus, RESULTS_PATH, campaignDay } from '@/lib/campaigns/types';
@@ -48,7 +49,7 @@ export function CampaignDrawsView() {
   }, [load]);
 
   const act = async (key: string, payload: Record<string, string>, confirmText: string, done: string) => {
-    if (!window.confirm(confirmText)) return;
+    if (!await askConfirm(confirmText)) return;
     setBusy(key);
     setError(null);
     setNotice(null);

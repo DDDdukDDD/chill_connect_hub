@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { askConfirm } from '@/components/admin/adminConfirm';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Trophy, X, Zap } from 'lucide-react';
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
@@ -272,6 +274,8 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
   };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const questPanelRef = useRef<HTMLElement>(null);
+  useDialogBehavior(questPanelRef, () => setIsDialogOpen(false), { active: isDialogOpen, focusField: false });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestDraft>(EMPTY_DRAFT);
   // Categories are managed under "หมวดหมู่" in this console
@@ -457,7 +461,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
   };
 
   const deleteQuest = async (quest: ChallengeQuest) => {
-    if (!window.confirm(`ลบภารกิจ "${quest.title}"?`)) return;
+    if (!await askConfirm(`ลบภารกิจ "${quest.title}"?`)) return;
     setError(null);
     try {
       const response = await fetch('/api/admin/quests', {
@@ -568,8 +572,9 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
             </select>
           )}
           <label className="relative block w-full sm:w-72">
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="ค้นหาภารกิจหรือเหรียญตรา" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} aria-label="ค้นหาภารกิจหรือเหรียญตรา"
+            placeholder="ค้นหาภารกิจหรือเหรียญตรา" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
           </label>
         </div>
 
@@ -601,21 +606,21 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
                   <p className="mt-1 line-clamp-2 pl-[22px] text-xs leading-5 text-slate-600">{quest.targetGoal || 'ยังไม่มีคำอธิบายเป้าหมาย'}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-[22px]">
                     {quest.brandReward ? (
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${quest.brandReward.type === 'brand_partner' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-purple-200 bg-purple-50 text-purple-800'}`}>
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${quest.brandReward.type === 'brand_partner' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-purple-200 bg-purple-50 text-purple-800'}`}>
                         Official • {quest.brandReward.type === 'brand_partner' ? quest.brandReward.partnerName : 'Chillwaa'}
                       </span>
                     ) : (
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-500">ยังไม่ระบุประเภทรางวัล</span>
                     )}
                     {(() => {
                       const group = campaignOf(quest.id);
                       return group && (
-                        <span className="rounded-full border border-amber-300 bg-[#FFF4C7] px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                        <span className="rounded-full border border-amber-300 bg-[#FFF4C7] px-2 py-0.5 text-[11px] font-bold text-amber-900">
                           {group.campaign.name} · {group.isStep ? 'ขั้นตอนหลัก' : 'สะสมเพิ่ม'}
                         </span>
                       );
                     })()}
-                    {ruleKind(quest.rule) && <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">{ruleKind(quest.rule)}</span>}
+                    {ruleKind(quest.rule) && <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600">{ruleKind(quest.rule)}</span>}
                     {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
                   </div>
                 </div>
@@ -644,7 +649,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
 
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsDialogOpen(false); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="quest-dialog-title" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl">
+          <section ref={questPanelRef} data-dialog-shell tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="quest-dialog-title" className="focus:outline-hidden max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
               <div>
                 <h2 id="quest-dialog-title" className="text-lg font-bold text-slate-950">{editingId ? 'แก้ไขภารกิจ' : 'สร้างภารกิจแบบร่าง'}</h2>

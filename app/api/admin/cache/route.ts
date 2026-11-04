@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
       activeTags,
       timestamp: new Date().toISOString(),
       supportedTags: [
-        { tag: 'spots', label: 'Lifestyle Spots (77 จังหวัด)', description: 'แคชรายการจุดเที่ยวและหมวดหมู่ไลฟ์สไตล์' },
-        { tag: 'events', label: 'Community Meetups', description: 'แคชตี้ สมาชิก และสถานะสมัคร' },
-        { tag: 'fairs', label: 'Fairs & Public Venues', description: 'แคชอีเวนต์ และศูนย์จัดแสดง' },
-        { tag: 'taxonomy', label: 'Master Taxonomy Hub', description: 'แคชโครงสร้างหมวดหมู่, Mood/Vibe, แท็กกลาง' },
-        { tag: 'venues', label: 'Venue Hub Master', description: 'แคชศูนย์ประชุมและจุดจัดแสดงหลัก' },
+        { tag: 'spots', label: 'สถานที่ 77 จังหวัด', description: 'แคชรายการจุดเที่ยวและหมวดหมู่ไลฟ์สไตล์' },
+        { tag: 'events', label: 'ตี้', description: 'แคชตี้ สมาชิก และสถานะสมัคร' },
+        { tag: 'fairs', label: 'อีเวนต์', description: 'แคชอีเวนต์ และศูนย์จัดแสดง' },
+        { tag: 'taxonomy', label: 'หมวดหมู่และแท็ก', description: 'แคชโครงสร้างหมวดหมู่, Mood/Vibe, แท็กกลาง' },
+        { tag: 'venues', label: 'สถานที่จัดงาน', description: 'แคชศูนย์ประชุมและจุดจัดแสดงหลัก' },
       ],
     });
   } catch (error) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       cacheManager.clear();
       return NextResponse.json({
         success: true,
-        message: '⚡ เคลียร์ L1 Memory Cache ทั้งหมดในระบบเรียบร้อยแล้ว',
+        message: 'เคลียร์แคชในหน่วยความจำทั้งหมดในระบบเรียบร้อยแล้ว',
         stats: cacheManager.getStats(),
       });
     }

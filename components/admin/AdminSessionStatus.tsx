@@ -65,7 +65,7 @@ export function AdminSessionStatus({ variant }: { variant: 'header' | 'sidebar' 
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-semibold text-slate-700 truncate">{label}</p>
-        <p className="text-[10px] text-slate-400 truncate" title={detail}>{detail}</p>
+        <p className="text-[11px] text-slate-500 truncate" title={detail}>{detail}</p>
       </div>
     </div>
   );

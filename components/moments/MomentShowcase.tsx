@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
+import { ArrowRight, Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
@@ -126,7 +126,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
             <span className="hidden lg:block text-[11px] font-medium opacity-80">{target.label}</span>
             <span className="block text-[11px] lg:text-[13px] font-semibold truncate">{place}</span>
           </span>
-          <span className="hidden lg:inline text-xs font-semibold whitespace-nowrap">{target.go} →</span>
+          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
         </Link>
       ) : (
         place && (
@@ -395,7 +395,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                         requireLogin('เพื่อแชร์โมเมนต์ของคุณ');
                       }
                     }}
-                    className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-7 rounded-full bg-[#F43F5E] hover:bg-[#E11D48] text-white text-base font-semibold shadow-[0_8px_20px_rgba(244,63,94,0.28)] whitespace-nowrap transition-colors"
+                    className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-7 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white text-base font-semibold shadow-sm whitespace-nowrap transition-colors"
                   >
                     <Camera className="w-5 h-5" aria-hidden="true" />
                     แชร์โมเมนต์ของคุณ
@@ -441,7 +441,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                       />
                       <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} aria-hidden="true" />
                       <span>{tab.label}</span>
-                      {counts && <span className="text-xs sm:text-[13px] font-medium text-slate-400 tabular-nums">{counts[tab.chip].toLocaleString()}</span>}
+                      {counts && <span className="text-xs sm:text-[13px] font-medium text-slate-500 tabular-nums">{counts[tab.chip].toLocaleString()}</span>}
                     </a>
                   );
                 })}
@@ -469,7 +469,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
                 </button>
               </div>
             )}
-            {!hasMore && moments.length > PAGE_SIZE && <p className="py-8 text-center text-[13px] font-medium text-slate-400">ดูครบทุกโมเมนต์แล้ว</p>}
+            {!hasMore && moments.length > PAGE_SIZE && <p className="py-8 text-center text-[13px] font-medium text-slate-500">ดูครบทุกโมเมนต์แล้ว</p>}
           </div>
         </main>
       )}
