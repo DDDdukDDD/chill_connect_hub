@@ -82,6 +82,9 @@ const cleanText = (str?: string): string => {
     .trim();
 };
 
+// Most visitors never edit a ตี้, so the dialog and the form pieces it borrows load on the first open
+const EditTeeDialog = dynamic(() => import('@/components/EditTeeDialog').then((m) => m.EditTeeDialog), { ssr: false });
+
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
 export default function CommunityDetailPage({
   initialEvent = null,
@@ -106,6 +109,7 @@ export default function CommunityDetailPage({
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isEditTeeOpen, setIsEditTeeOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   // Sign-up from "ลงทะเบียนเข้าร่วม" comes back here with ?join=1 (through onboarding and the email link),
@@ -570,6 +574,10 @@ export default function CommunityDetailPage({
               <button type="button" onClick={() => setIsCancelModalOpen(true)} className="font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
                 ไปไม่ได้แล้ว? ยกเลิกการเข้าร่วม
               </button>
+            ) : isHost && memberHost && !isEnded && !isStarted && !isSeriesPage && !eventData.seriesId && !eventData.spotId ? (
+              <button type="button" onClick={() => setIsEditTeeOpen(true)} className="font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
+                แก้วัน เวลา หรือสถานที่
+              </button>
             ) : undefined
           }
           actions={
@@ -990,6 +998,17 @@ export default function CommunityDetailPage({
           showToast('ออกจากระบบเรียบร้อยแล้ว');
         }}
       />
+      {isEditTeeOpen && (
+        <EditTeeDialog
+          event={eventData}
+          onClose={() => setIsEditTeeOpen(false)}
+          onSaved={({ event, changed, notified }) => {
+            setEventData(event);
+            setIsEditTeeOpen(false);
+            showToast(!changed ? 'ยังไม่มีอะไรเปลี่ยนนะ' : notified > 0 ? `แก้แล้ว แจ้งเพื่อนๆ ${notified} คนให้แล้ว` : 'แก้เรียบร้อยแล้ว');
+          }}
+        />
+      )}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         onClose={() => setIsCreateEventModalOpen(false)}

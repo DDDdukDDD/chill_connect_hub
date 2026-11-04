@@ -167,6 +167,14 @@ Response `200`: `{ success: true, meetupAllowed: boolean, trips: EventItem[], ho
 - `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount >= minParticipants` (`isTripConfirmed` in `lib/spotTripRules.ts`).
 - `host`: only for a signed-in viewer. `canHost: false` comes with a Thai `reason` to show next to the disabled button.
 
+### `POST /api/events` with `action: "edit_tee"` — the host moves their own ตี้
+
+```ts
+{ action: 'edit_tee', eventId: string, edit: { date: 'YYYY-MM-DD', startTime: 'HH:MM', endTime: 'HH:MM', province, district, locationName, meetingPoint, placeId? } }
+```
+
+Returns `{ success, event, changed, notified }`. Other fields in `edit` are ignored; an online ตี้ changes date and time only. 401 signed out, 403 other site, 404 not the host, 409 started, ended, rejected, recurring or a trip, 400 bad values, 429 after 10 real changes in an hour. Notification type `tee_changed`.
+
 ### Spot Buddy trips — `POST /api/events` with `eventData.spotId`
 
 Sending `spotId` makes the event a Spot Buddy trip, and the server applies these rules (`lib/social/spotTrips.ts`). A refusal answers `{ success: false, message }` with `400`, `403` or `404`.

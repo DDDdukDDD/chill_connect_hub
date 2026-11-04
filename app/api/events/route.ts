@@ -7,6 +7,7 @@ import { joinEvent, nightlifeAgeBlock } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardOrganizer } from '@/lib/members/submissions';
+import { BANNED_KEYWORDS, editTee } from '@/lib/social/editTee';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
 import type { EventItem } from '@/data/mockData';
 import { checkedEventCategories } from '@/lib/eventCategories';
@@ -144,11 +145,6 @@ export async function GET(request: Request) {
   }
 }
 
-// Banned / Safety Keywords Filter
-const BANNED_KEYWORDS = [
-  'เว็บพนัน', 'คาสิโน', 'บาคาร่า', 'สล็อต', 'ลูกโซ่', 'เงินกู้', 'ดอกเบี้ยโหด', 'ยาเสพติด', 'ขายตัว', 'หลอกลวง'
-];
-
 /** Set by the server or staff only. A member's request never brings these, even when a ตี้ goes live without review */
 const SERVER_OWNED_EVENT_FIELDS = ['hostId', 'hostBadge', 'isTrending', 'isHost', 'rating', 'reviewsCount', 'hostHostedCount', 'hostRating', 'hostReviewsCount', 'hostBadgeTier', 'reviews', 'buddyCount', 'source', 'sourceUrl', 'status', 'seriesId', 'rejectionReason', 'moderatedAt'];
 /** Links a visitor opens: https only, so a request cannot plant a javascript: or data: link */
@@ -170,6 +166,21 @@ export async function POST(req: Request) {
       const joinResult = await joinEvent(joiner, body.eventId);
       const joined = joinResult.status === 'joined' || joinResult.status === 'already_joined';
       return NextResponse.json({ success: joined, ...joinResult, updatedEvent: joinResult.event }, { status: joined ? 200 : joinResult.status === 'not_allowed' ? 403 : 409 });
+    }
+
+    // ── Action: The host moves the date, time or place of their own ตี้ ──
+    if (body.action === 'edit_tee') {
+      const host = await getSessionMember(req);
+      if (!host) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      if (typeof body.eventId !== 'string' || !body.eventId || !body.edit || typeof body.edit !== 'object') {
+        return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' }, { status: 400 });
+      }
+      try {
+        return NextResponse.json({ success: true, ...(await editTee(host, body.eventId, body.edit)) });
+      } catch (error) {
+        if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+        throw error;
+      }
     }
 
     // ── Action: Create Event ──
