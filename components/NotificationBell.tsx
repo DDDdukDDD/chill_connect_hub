@@ -2,8 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import { DialogShell } from '@/components/auth/DialogShell';
+import { readPushStatus } from '@/lib/appClient';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
@@ -60,6 +61,7 @@ export function NotificationBell() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [isOpen, setIsOpen] = useState(false);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [canTurnOnPush, setCanTurnOnPush] = useState(false);
   const listOpen = useRef(false);
 
   const load = useCallback(async () => {
@@ -109,6 +111,7 @@ export function NotificationBell() {
   const open = () => {
     listOpen.current = true;
     setIsOpen(true);
+    readPushStatus().then((push) => setCanTurnOnPush(push === 'off' || push === 'needs-install'), () => undefined);
     // What is already here shows at once, while the newest arrives
     showNew(data);
     fetchForList();
@@ -140,6 +143,12 @@ export function NotificationBell() {
 
       {isOpen && (
         <DialogShell onClose={close} title="การแจ้งเตือน" size="sm">
+          {canTurnOnPush && (
+            <Link href="/profile/settings#app" onClick={close} className="mb-3 flex items-center justify-between gap-2 min-h-10 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700">
+              ไม่พลาดอะไร เปิดแจ้งเตือนบนเครื่องนี้เลย
+              <ChevronRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+            </Link>
+          )}
           {data.items.length > 0 ? (
             <div className="-mx-2 max-h-[60dvh] overflow-y-auto overscroll-contain space-y-3">
               {sectionsOf(data.items).map((section) => (

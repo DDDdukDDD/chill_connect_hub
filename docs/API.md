@@ -467,6 +467,11 @@ All writes are `POST` with an `action` field unless noted.
 - `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).
 - `GET /api/moments/journey` (added 2026-10-23) → `{ success, following, reacted, posted }`: the signed-in member's steps on the moments path of the home journey band (people followed; has liked or commented on someone else's published moment; has posted one). `401` signed out.
 
+## Push notifications (added 2026-11-04, BE-258)
+- `POST /api/push` with a browser `PushSubscription` as JSON (`{ endpoint, keys: { p256dh, auth } }`) → `{ success }`. Needs a session and the same origin. This device now receives the member's notifications; a device already saved moves to this member. `400` when the endpoint is not a known push service (Google, Apple, Mozilla, Microsoft), so the server never posts to an address a member made up. A member keeps at most 10 devices, newest first.
+- `DELETE /api/push` with `{ endpoint }` → `{ success }`. Same origin, no session: a device whose session ended can still leave.
+- The push payload (read by `public/sw.js`) is `{ title, body, url, tag }`. Words and `url` match the bell's; a newer push with the same `tag` replaces the older one on the device.
+
 ## Notifications (added 2026-10-11)
 Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stories` no longer exist.
 - `GET /api/notifications` → `{ success, items: [{ id, type, actorId, actorName, actorAvatar, momentId?, href?, message, preview?, timeAgo, read }], unread }`. `POST /api/notifications` marks all as read. Types: `follow`, `like`, `comment`, `challenge`, `evidence`, `match`, `seat`, `question`, `answer`, and since 2026-10-26 (BE-154) for hosts: `approved` (staff published their ตี้ or อีเวนต์; `href` is its page), `rejected` (`href` is `/myhub`), `joined` (someone joined their ตี้; the actor is that person, `href` is the ตี้). The preview of these three is the ตี้'s title. Site notices (`challenge`, `evidence`, `seat`, `approved`, `rejected`) carry `actorName: 'Chill & Connect Hub'`.

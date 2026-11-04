@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-258 · Install as an app + push notifications (owner 2026-11-04)
+- **What changed:** the site is a PWA: `app/manifest.ts`, `public/icons/`, `public/sw.js` (push, tap, offline page), `public/offline.html`. Pages are never cached by the worker. Every notice saved through `lib/social/notifications.ts` is also pushed to the member's devices after the response (`lib/social/push.ts`, table `app.push_subscriptions`, migration 0024), with the bell's words and links and its block and closed-account rules. Likes on one moment collapse into one notification. Settings has a new card (`components/AppSettingsCard.tsx`); the bell links to it while push is off. Signing out takes the device off.
+- **What to do about it:** add new notice types through the helpers in `notifications.ts` so they push too. Without `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` nothing is sent and the switch is hidden. Before merging to live: run 0024 on live and set both keys on Vercel; changing the keys later strands every device. Tests in headless Chrome only: real iPhone and Android, and LINE/Facebook login inside the installed iPhone app, are still untested (`docs/LAUNCH_CHECKLIST.md`).
+
 ### BE-257 · Moment photos sharper (owner 2026-11-04)
 - **Why:** photos were squeezed twice: to 500 KB when sent, with quality down to 0.62 and size down to 800 px, then again at quality 75 when shown. Busy photos like food came out softer than calm ones.
 - **What changed:** `encodeForUpload` aims for 1 MB, with a floor of quality 0.82 and 1080 px (a very busy photo goes over 1 MB, under the 5 MB upload limit). `MomentPhotos` asks the optimizer for quality 85, listed in `images.qualities` in `next.config.ts`. A new quality must be added there or the optimizer answers 400. This replaces the 500 KB in BE-236 and also covers other uploads through `compressImage`.

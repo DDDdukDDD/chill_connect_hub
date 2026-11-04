@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { AppSetup } from "@/components/AppSetup";
 import { InviteRefCapture } from "@/components/InviteRefCapture";
 import { OnboardingResume } from "@/components/OnboardingResume";
 
@@ -45,6 +46,8 @@ export const metadata: Metadata = {
     "Chill & Connect",
     "คอมมูนิตี้คนชอบทำกิจกรรม",
   ],
+  applicationName: "Chillwaa",
+  appleWebApp: { capable: true, title: "Chillwaa", statusBarStyle: "default" },
   authors: [{ name: "Chillwaa Team" }],
   creator: "Chillwaa",
   openGraph: {
@@ -139,6 +142,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
+        <AppSetup />
         <InviteRefCapture />
         <OnboardingResume />
         {children}
