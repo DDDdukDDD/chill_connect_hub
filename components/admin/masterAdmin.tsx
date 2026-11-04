@@ -4,6 +4,7 @@ import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { compressImage } from '@/lib/media/compressor';
+import { safeImageSrc } from '@/lib/optimizedImage';
 import type { MasterCollection, MasterData, MasterEntry } from '@/lib/masterData';
 import { fieldInputClass } from './AdminDrawer';
 import { adminButton } from './AdminUI';
@@ -119,7 +120,7 @@ export function ImageField({ id, value, onChange, folder }: { id: string; value:
       {uploadError && <p className="text-[11px] font-semibold text-rose-600">{uploadError}</p>}
       {value && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={value} alt="" className="h-28 w-full max-w-xs rounded-xl border border-slate-200 object-cover" />
+        <img src={safeImageSrc(value)} alt="" className="h-28 w-full max-w-xs rounded-xl border border-slate-200 object-cover" />
       )}
     </div>
   );

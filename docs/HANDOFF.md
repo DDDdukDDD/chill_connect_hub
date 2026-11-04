@@ -22,7 +22,7 @@ Item template:
 
 ### BE-262 · A host can move their own ตี้ (owner 2026-11-05)
 - **What changed:** the host of a one-off ตี้ can change its date, time and place until it starts: `POST /api/events { action: "edit_tee" }` (`lib/social/editTee.ts`), link on the ตี้ page, `components/EditTeeDialog.tsx`. Title and description stay as staff saw them. People in the ตี้ and its waiting line get a `tee_changed` notice; a newer change replaces the older notice. Not for recurring ตี้, Spot Buddy trips or rejected ตี้. 10 real changes per hour.
-- **What to do about it:** run migration `0025_tee_changed_notice.sql` on live before merging; run on dev already. Without it the edit still saves but the notice is lost. Members with no year of birth stay blocked from bar ตี้ (owner confirmed). A ตี้ still waiting for review has no page, so it has no edit link yet.
+- **What to do about it:** migration `0025_tee_changed_notice.sql` is already on live and dev (2026-11-05). Members with no year of birth stay blocked from bar ตี้ (owner confirmed). A ตี้ still waiting for review has no page, so it has no edit link yet.
 
 ### BE-261 · API checks, honest tickets, 20+ check (owner 2026-11-05)
 - **What changed:** `POST /api/events` no longer takes server-owned fields from a member (rating, reviews, source, status and others), and a ตี้ always carries the member's own name and face. Links must be https. The event, quest, spot, report and upload POST routes reject other sites (`isSameOrigin`). Made-up `CCH-2026-…` ticket numbers and the pretend check-in are gone; the ticket shows the real code. Stock photos no longer stand in for a host without a photo. Joining or hosting a nightlife ตี้ needs a year of birth at 20 or more (`nightlifeAgeBlock`, `lib/members/activity.ts`).
