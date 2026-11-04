@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const param = params.get('status');
   const status = param === 'closed' || param === 'all' ? param : 'open';
   return NextResponse.json(
-    { success: true, reports: await listContentReports(status), counts: { open: openContentReportCount() } },
+    { success: true, reports: await listContentReports(status), counts: { open: await openContentReportCount() } },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }
