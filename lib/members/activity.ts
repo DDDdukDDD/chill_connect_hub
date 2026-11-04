@@ -10,6 +10,7 @@ import { hasConfirmedIdentity, trustLevel } from './trust';
 import { tidyDisplayName } from '../displayName';
 import { joinersOf } from '../social/questJoins';
 import type { Member } from './types';
+import { getCommunityEventCategory } from '@/data/masterHub';
 import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
@@ -25,10 +26,20 @@ const MAX_CANCELLED_HISTORY = 100;
 export type JoinStatus = 'joined' | 'already_joined' | 'event_full' | 'event_ended' | 'not_found' | 'not_allowed';
 
 const isCommunity = (event: EventItem) => event.eventType !== 'public_venue';
+
+/** Thai law sets 20 for drinking venues. The year of birth is what the member told us, so this is a check, not proof */
+export function nightlifeAgeBlock(member: Member, event: Pick<EventItem, 'eventType' | 'lifestyleCategory' | 'category' | 'title' | 'tag'>): string | null {
+  if (event.eventType === 'public_venue' || getCommunityEventCategory(event as Parameters<typeof getCommunityEventCategory>[0]) !== 'bars_nightlife') return null;
+  const year = member.preferences?.birthYear;
+  if (!year) return 'ตี้หมวดบาร์สำหรับอายุ 20 ปีขึ้นไป บอกปีเกิดของคุณในหน้าเริ่มต้นก่อนนะ';
+  return new Date().getFullYear() - year < 20 ? 'ตี้หมวดบาร์สำหรับอายุ 20 ปีขึ้นไป' : null;
+}
 const hostOf = (event: EventItem) => (event as { createdByMemberId?: string }).createdByMemberId;
 
 export async function joinEvent(member: Member, eventId: string, date?: string): Promise<{ status: JoinStatus; message: string; event?: EventItem }> {
   const event = await db.findEventById(eventId);
+  const ageBlock = event ? nightlifeAgeBlock(member, event) : null;
+  if (ageBlock) return { status: 'not_allowed', message: ageBlock };
   if (!event || event.approvalStatus !== 'approved') return { status: 'not_found', message: 'ไม่พบตี้นี้ หรือตี้ยังไม่เปิดให้เข้าร่วม' };
   // A recurring ตี้ is joined one date at a time: the date's own event is created on first join (lib/social/recurring.ts)
   if (isSeries(event)) {

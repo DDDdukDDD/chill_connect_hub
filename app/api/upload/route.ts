@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { mediaStorage } from '@/lib/media';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
-import { getSessionMember } from '@/lib/members/session';
+import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
@@ -36,6 +36,7 @@ function detectImageType(buffer: Buffer): string | null {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   if (!hasAdminCredentials(request) && !(await getSessionMember(request))) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดรูป' }, { status: 401 });
   }

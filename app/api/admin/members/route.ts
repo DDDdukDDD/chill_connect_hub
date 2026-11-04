@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { notifyDecision } from '@/lib/social/notifications';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeMeetAgainOf } from '@/lib/social/meetAgain';
 import { removeWaitlistOf } from '@/lib/social/waitlist';
@@ -211,6 +212,7 @@ export async function POST(request: Request) {
     const updated = await memberRepository.update(member.id, {
       hostApplication: { ...application, status: approve ? 'approved' : 'rejected', reviewedAt: new Date().toISOString(), reviewedBy: actor?.name, note: note || undefined },
     });
+    await notifyDecision(member.id, approve ? 'approved' : 'rejected', 'คำขอเปิดกิจกรรมของคุณ', '/profile/settings', approve ? undefined : note || undefined);
     recordAudit(actor, approve ? 'member.host_approve' : 'member.host_reject', `${approve ? 'อนุมัติ' : 'ไม่อนุมัติ'}คำขอเป็นโฮสต์ของ ${member.displayName}${note ? ` · ${note}` : ''}`, { type: 'member', id: member.id });
     return NextResponse.json({ success: true, member: toAdminMember(updated) });
   }

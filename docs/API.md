@@ -299,7 +299,6 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 
 - **Author details are live:** `userName` and `userAvatar` follow the author's current profile.
 - **Samples:** the 24 bundled `MOCK_POSTS` are seeded as `isSample: true`, with their illustrative like counts. 20 of them are tied to a real place or event in the stores (BE-042); on start, a stored sample takes `targetType`, `targetId`, `targetTitle` and `location` from the bundled one, and nothing else.
-- **Homepage row:** `components/CommunityMomentsStrip.tsx` shows the 12 newest from `GET /api/moments?tab=all&limit=12` and the full count from `pagination.totalCount`.
 - **Account deletion** removes the member's moments, comments, likes, saves and reports.
 
 ### `GET /api/master` — master data (admin-managed)
@@ -312,7 +311,7 @@ Cache: `public, s-maxage=60`.
 - **Venues:** `{ id, name, venueTag, province, location, transitHint, latitude?, longitude?, website?, image? }`.
 - **Provinces:** `{ id (stored province name, e.g. "กรุงเทพฯ"), displayName, nameEn, region, tagline, description, image?, featured }`.
 - **Zones:** `{ id, name, province }`.
-- **Rail cards** (`communityClubs` for TopCommunityRail, `venueGroups` for TopVenuesRail): `{ id, name, nameEn, subtitle, image?, badgeLabel?, keywords[] }`.
+- **Rail cards** (`communityClubs`, `venueGroups`): `{ id, name, nameEn, subtitle, image?, badgeLabel?, keywords[] }`.
 
 Icons and colors are keys. **Use `useMasterData()` from `lib/useMasterData.ts`.** It fetches this endpoint once, falls back to the bundled defaults, and returns lists in the old constant shapes (`spotVibes` like `MASTER_SPOT_CATEGORIES`, `venues` like `MASTER_VENUE_OPTIONS`, …) plus `featuredProvinces`, `zonesFor(province)`, `communityClubs` (`TOP_COMMUNITY_CLUBS` shape) and `venueGroups` (`TOP_VENUES` shape).
 

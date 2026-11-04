@@ -3,8 +3,8 @@ import { defaultEventImage } from '@/lib/eventImageResolver';
 import { createAdminEvent } from '@/lib/eventsStore';
 import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
-import { joinEvent } from '@/lib/members/activity';
-import { getSessionMember } from '@/lib/members/session';
+import { joinEvent, nightlifeAgeBlock } from '@/lib/members/activity';
+import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardOrganizer } from '@/lib/members/submissions';
 import { prepareSpotTrip } from '@/lib/social/spotTrips';
@@ -149,7 +149,13 @@ const BANNED_KEYWORDS = [
   'เว็บพนัน', 'คาสิโน', 'บาคาร่า', 'สล็อต', 'ลูกโซ่', 'เงินกู้', 'ดอกเบี้ยโหด', 'ยาเสพติด', 'ขายตัว', 'หลอกลวง'
 ];
 
+/** Set by the server or staff only. A member's request never brings these, even when a ตี้ goes live without review */
+const SERVER_OWNED_EVENT_FIELDS = ['hostId', 'hostBadge', 'isTrending', 'isHost', 'rating', 'reviewsCount', 'hostHostedCount', 'hostRating', 'hostReviewsCount', 'hostBadgeTier', 'reviews', 'buddyCount', 'source', 'sourceUrl', 'status', 'seriesId', 'rejectionReason', 'moderatedAt'];
+/** Links a visitor opens: https only, so a request cannot plant a javascript: or data: link */
+const MEMBER_LINK_FIELDS = ['externalUrl', 'link', 'onlineJoinUrl'];
+
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   try {
     const body = await req.json();
 
@@ -221,6 +227,9 @@ export async function POST(req: Request) {
         if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
         throw error;
       }
+      // A ตี้ in the nightlife category is hosted by someone old enough for it too
+      const hostAgeBlock = nightlifeAgeBlock(member, eventData);
+      if (hostAgeBlock) return NextResponse.json({ success: false, message: hostAgeBlock }, { status: 403 });
       // Fairs come from approved organizers and venues only
       if (isPublicVenue && !(member.hostApplication?.status === 'approved' && ['organizer', 'venue'].includes(member.hostApplication.kind))) {
         return NextResponse.json({ success: false, message: 'อีเวนต์สร้างได้เฉพาะผู้จัดงานหรือเจ้าของพื้นที่ที่ทีมงานอนุมัติแล้ว' }, { status: 403 });
@@ -231,7 +240,13 @@ export async function POST(req: Request) {
     const approvalStatus = isAdmin || (!isPublicVenue && isApprovedHost && !eventData.spotId) ? 'approved' : 'pending';
 
     // Members' events carry no private contact channel: people talk in the event's group chat
-    if (!isAdmin) delete eventData.contactChannel;
+    if (!isAdmin) {
+      delete eventData.contactChannel;
+      for (const field of SERVER_OWNED_EVENT_FIELDS) delete eventData[field];
+      for (const field of MEMBER_LINK_FIELDS) {
+        if (eventData[field] !== undefined && !(typeof eventData[field] === 'string' && /^https:\/\//.test(eventData[field]))) delete eventData[field];
+      }
+    }
 
     // Spot Buddy trip: the place must be open for meet-ups and the server sets where, when and how many.
     // Without a spotId these fields are dropped, so a free-form event cannot pose as a trip to a place.
@@ -258,7 +273,8 @@ export async function POST(req: Request) {
       ...placeFields,
       // Only a real, active group is kept; a meetup's mood follows its category
       ...checkedEventCategories(eventData),
-      id: eventData.id || `user-event-${Date.now()}`,
+      // The client's id is only a suggestion: it must look like one of ours, and a taken one is changed when saved
+      id: (typeof eventData.id === 'string' && /^[a-z][a-z-]*-\d{10,}$/.test(eventData.id) && eventData.id) || `user-event-${Date.now()}`,
       approvalStatus,
       source: isAdmin ? 'Chill & Connect Official' : 'Community Member',
       // Server-verified creator, for staff reviewing the queue (the client cannot set this)
@@ -266,8 +282,9 @@ export async function POST(req: Request) {
       ...(member && { createdByMemberId: member.id, participantsCount: 0 }),
       // Every screen shows the host's name and face; a request without them gets the member's own (a ตี้ without
       // hostName crashed the member home, 2026-10-25)
-      ...(member && !(typeof eventData.hostName === 'string' && eventData.hostName.trim()) && { hostName: member.displayName }),
-      ...(member && !eventData.hostAvatar && member.avatarUrl && { hostAvatar: member.avatarUrl }),
+      // A ตี้ is always hosted under the member's own name and face; an อีเวนต์ names its organizer, which staff review
+      ...(member && (!isPublicVenue || !(typeof eventData.hostName === 'string' && eventData.hostName.trim())) && { hostName: member.displayName }),
+      ...(member && (!isPublicVenue || !eventData.hostAvatar) && { hostAvatar: member.avatarUrl }),
       // Every card and page shows a cover; without one the ตี้ page showed a broken image (E2E walk 2026-10-25)
       ...(!(typeof eventData.image === 'string' && eventData.image.trim()) && { image: defaultEventImage(eventData.category, isPublicVenue) }),
       createdAt: new Date().toISOString(),
