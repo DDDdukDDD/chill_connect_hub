@@ -44,7 +44,7 @@ import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
-import { FIRST_STEP_KEY, FollowRow, flavourFromGoals, isSocialOnly, type FirstStep } from '@/components/home/JourneyBand';
+import { FIRST_STEP_KEY, FollowRow, flavourFromGoals, isSocialOnly, type FirstStep } from '@/components/home/onboardingFirstStep';
 
 /**
  * Onboarding for new members, continuing the landing hero ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต").
@@ -834,7 +834,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
             <li key={label} aria-current={i === current ? 'step' : undefined} className="min-w-0">
               <span className={`block h-1.5 rounded-full transition-colors duration-300 ${i <= current ? 'bg-[#2563EB]' : 'bg-slate-200'}`} aria-hidden="true" />
               {/* Names under each bar where they fit; phones get the one line below instead */}
-              <span className={`mt-2 hidden sm:flex items-center gap-1 text-xs leading-tight transition-colors ${i === current ? 'font-bold text-slate-900' : i < current ? 'font-semibold text-[#2563EB]' : 'font-semibold text-slate-400'}`}>
+              <span className={`mt-2 hidden sm:flex items-center gap-1 text-xs leading-tight transition-colors ${i === current ? 'font-bold text-slate-900' : i < current ? 'font-semibold text-[#2563EB]' : 'font-semibold text-slate-500'}`}>
                 {i < current && <Check className="w-3 h-3 stroke-[3] shrink-0" aria-hidden="true" />}
                 <span className="truncate">{label}</span>
               </span>
@@ -1001,7 +1001,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                           )}
                         </span>
                         <span className="min-w-0">
-                          <span className={`block text-sm font-bold truncate ${firstName ? 'text-slate-900' : 'text-slate-400'}`}>{firstName || 'ชื่อของคุณ'}</span>
+                          <span className={`block text-sm font-bold truncate ${firstName ? 'text-slate-900' : 'text-slate-500'}`}>{firstName || 'ชื่อของคุณ'}</span>
                           <span className="block text-xs text-slate-500 truncate">เพิ่งแชร์{provinceName ? ` · ${provinceName}` : ''}</span>
                         </span>
                       </div>
@@ -1043,7 +1043,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                             <span className="min-w-0 text-sm font-bold truncate">{POST_SAMPLE.name}</span>
                             <span className="shrink-0 text-[11px] text-slate-500">{POST_SAMPLE.time}</span>
                           </p>
-                          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#D04A1B] min-w-0">
+                          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#C2410C] min-w-0">
                             <MapPin className="w-3.5 h-3.5 shrink-0" />
                             <span className="truncate">ไปที่ {POST_SAMPLE.place}</span>
                           </p>
@@ -1260,7 +1260,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     <img src={firstMoment.image} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
                     <span className="min-w-0">
                       <span className="block text-[11px] font-semibold text-slate-500">โมเมนต์แรกของคุณ จะหน้าตาแบบนี้</span>
-                      <span className={`block text-sm font-bold truncate ${firstName ? 'text-slate-900' : 'text-slate-400'}`}>{firstName || 'ชื่อของคุณ'}{provinceName && <span className="font-medium text-slate-500"> · {provinceName}</span>}</span>
+                      <span className={`block text-sm font-bold truncate ${firstName ? 'text-slate-900' : 'text-slate-500'}`}>{firstName || 'ชื่อของคุณ'}{provinceName && <span className="font-medium text-slate-500"> · {provinceName}</span>}</span>
                       <span className="block text-xs text-slate-600 line-clamp-1">{firstMoment.caption}</span>
                     </span>
                   </div>
@@ -1271,7 +1271,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                           // eslint-disable-next-line @next/next/no-img-element -- picked photo, or the account picture from LINE, Google or Facebook
                           <img src={shownPhoto} alt="รูปที่เลือก" className="w-full h-full object-cover" />
                         ) : isCompressing ? (
-                          <Loader2 className="w-6 h-6 text-slate-400 animate-spin" aria-hidden="true" />
+                          <Loader2 className="w-6 h-6 text-slate-500 animate-spin" aria-hidden="true" />
                         ) : (
                           <Camera className="w-7 h-7 text-slate-400" aria-hidden="true" />
                         )}
@@ -1309,7 +1309,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                       <div className="grid grid-cols-1 gap-5">
                       <div className="space-y-1.5">
                         <label htmlFor="onb-birth-year" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">เกิดปีไหน {Boolean(birthYear) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
-                        <select id="onb-birth-year" value={birthYear} onChange={(e) => { setBirthYear(e.target.value); setBirthYearMissing(false); setError(''); }} aria-invalid={birthYearMissing || undefined} aria-describedby={birthYearMissing ? 'onb-birth-year-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${birthYear ? '' : 'text-slate-400'}`}>
+                        <select id="onb-birth-year" value={birthYear} onChange={(e) => { setBirthYear(e.target.value); setBirthYearMissing(false); setError(''); }} aria-invalid={birthYearMissing || undefined} aria-describedby={birthYearMissing ? 'onb-birth-year-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${birthYear ? '' : 'text-slate-500'}`}>
                           <option value="" disabled>เลือกปีเกิด (พ.ศ.)</option>
                           {birthYears.map((y) => (
                             <option key={y} value={y} className="text-slate-800">พ.ศ. {y}</option>
@@ -1321,7 +1321,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                       {/* One list, popular provinces first so most people pick without scrolling (owner 2026-10-23: no photos, no extra buttons) */}
                       <div className="space-y-1.5">
                         <label htmlFor="onb-province" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">ปกติอยู่แถวไหน {Boolean(province) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
-                        <select id="onb-province" value={province} onChange={(e) => { setProvince(e.target.value); setProvinceMissing(false); setError(''); }} aria-invalid={provinceMissing || undefined} aria-describedby={provinceMissing ? 'onb-province-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${province ? '' : 'text-slate-400'}`}>
+                        <select id="onb-province" value={province} onChange={(e) => { setProvince(e.target.value); setProvinceMissing(false); setError(''); }} aria-invalid={provinceMissing || undefined} aria-describedby={provinceMissing ? 'onb-province-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${province ? '' : 'text-slate-500'}`}>
                           <option value="" disabled>เลือกจังหวัด</option>
                           <optgroup label="ยอดนิยม">
                             {featuredProvinces.map((p) => (
@@ -1377,7 +1377,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   <div className="lg:hidden -mt-2" aria-hidden="true">
                     <p className="text-sm font-semibold text-slate-700 leading-snug">
                       {samePeople !== null && samePeople > SAME_PEOPLE_MIN ? (
-                        <>เพื่อนสายเดียวกัน <span className="text-[#D04A1B] font-bold tabular-nums">{samePeople.toLocaleString()}</span> คน รออยู่ที่นี่แล้ว</>
+                        <>เพื่อนสายเดียวกัน <span className="text-[#C2410C] font-bold tabular-nums">{samePeople.toLocaleString()}</span> คน รออยู่ที่นี่แล้ว</>
                       ) : (
                         <PhraseText text="มาร่วมเป็นส่วนหนึ่งของคอมมูนิตี้สำหรับคุณรุ่นใหม่ แล้วออกไปใช้ชีวิตกัน" />
                       )}
