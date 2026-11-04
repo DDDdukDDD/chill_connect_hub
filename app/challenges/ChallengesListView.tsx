@@ -15,8 +15,9 @@ import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
 import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
-import { LaunchCampaignBanner } from '@/components/LaunchCampaignBanner';
-import type { Campaign } from '@/lib/campaigns/types';
+import { PromoBoard } from '@/components/campaigns/PromoBoard';
+import { useCampaigns } from '@/components/campaigns/useCampaigns';
+import type { CampaignView } from '@/lib/campaigns/types';
 import { ChallengeList } from '@/components/ChallengeList';
 import { FilterMenu, challengePillClass } from '@/components/ChallengeFilters';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
@@ -63,7 +64,7 @@ const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
   image: quest.badgeCoverImg || quest.image });
 
 /** `initialQuests` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
-export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaign = null, sponsoredId = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaign?: Campaign | null; sponsoredId?: string | null }) {
+export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaigns = [], sponsoredId = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaigns?: CampaignView[]; sponsoredId?: string | null }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('challenges');
   // Filters folded into pills: when it runs, how it is done, what it gives, and only the member's own
@@ -157,6 +158,9 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
 
 
   const showToast = (message: string) => setToast({ message, at: Date.now() });
+  const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
+  // Campaigns this visitor has not joined; a joined one lives in My Hub. All of them until the list loads, so the server HTML has them
+  const campaignsToJoin = campaigns.filter((item) => !myCampaigns.mine.some((entry) => entry.campaign.id === item.id));
   // Each new message gets its own full three seconds, even when one comes right after another
   useEffect(() => {
     if (!toast) return;
@@ -241,6 +245,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
 
       {/* Toast Notification */}
       <Toast message={toast?.message ?? null} />
+      {myCampaigns.dialog}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 pb-28 sm:pt-4 xl:pb-12 space-y-4 sm:space-y-5 w-full">
@@ -292,16 +297,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
           )}
         </header>
 
-        {/* The running campaign (admin ?m=campaigns): its challenges toward the prize draw */}
-        <LaunchCampaignBanner
-          campaign={campaign}
-          quests={questList}
-          isLoggedIn={isLoggedIn}
-          balance={userXp}
-          progress={myRewards.quests}
-          redeemedRewardIds={myRewards.redeemedRewardIds}
-          onSignUp={() => setIsAuthModalOpen(true)}
-        />
+        <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} redeemedRewardIds={myRewards.redeemedRewardIds} balance={isLoggedIn ? myRewards.balance : undefined} />
 
         {/* 2. Choosing, laid out like the ค้นพบ pages: filters on the left, what is mine and how to view on the right,
             then the category tabs right above the list (owner 2026-10-19) */}

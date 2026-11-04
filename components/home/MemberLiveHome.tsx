@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CampaignStrip, type CampaignMemberState } from '@/components/CampaignStrip';
+import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
 import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Zap } from 'lucide-react';
@@ -21,14 +21,14 @@ import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import type { FeedCardKind } from '@/lib/homeInterests';
 import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 
-const MY_MONTH_HREF = '/myhub#my-month';
 
 export interface MemberLiveHomeProps {
   name: string;
-  /** The running campaign (server, liveCampaign({ home: true })); shown again with the member's own progress */
-  campaign?: Campaign | null;
-  /** Where the member stands in it (null until their rewards load) */
-  campaignMember?: CampaignMemberState | null;
+  /** The running campaigns (server, homeCampaigns()); shown again with the member's own progress */
+  campaigns?: Campaign[];
+  /** Where the member stands in one; undefined until their rewards and joined campaigns load */
+  campaignMemberOf?: (campaign: Campaign) => CampaignMemberState;
+  onOpenCampaign?: (id: string) => void;
   avatar?: string;
   now: number;
   xp: number;
@@ -39,7 +39,7 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** This month's count behind "ตี้ · ที่เที่ยว"; null until it loads */
+  /** This month's count, to tell a member who has not been out yet; null until it loads */
   month: { chill: number; connect: number } | null;
   savedCount: number;
   likedCategories: string[];
@@ -92,8 +92,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
       {/* Wide screens (2xl) add a right column (owner 2026-11-01): the 600px feed left ~290px empty on each side */}
       <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_340px] lg:gap-14">
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
-          {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello with
-              this month's counts, then one slim line when there is something to do next. Laptops have both beside the feed */}
+          {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
+              one slim line when there is something to do next. Laptops have both beside the feed */}
           <div className="lg:hidden mb-6">
             <Greeting {...props} layout="row" />
           </div>
@@ -117,22 +117,21 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           {/* ของฉัน before the plans (owner 2026-10-31): the shortcuts keep one place however many plans there are */}
           <Shortcuts {...props} />
           <NextUp {...props} />
-          {/* The campaign sits beside the feed, not above it (owner 2026-10-30): you and your plans come first.
-              Loud only when there is a decision (start, enter); CampaignStrip has the states */}
-          {props.campaign && props.campaignMember && (
+          {/* Campaigns sit beside the feed, not above it (owner 2026-10-30): you and your plans come first */}
+          {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
             <div className="empty:hidden 2xl:hidden">
-              <CampaignStrip campaign={props.campaign} member={props.campaignMember} layout="side" />
+              <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
         </aside>
 
         {/* Wide screens: what to go to next as folded lines (owner 2026-11-01, as on the ตี้ pages), so the feed there is only
-            moments; the campaign stays its own line under them */}
-        <aside className="hidden 2xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
+            moments; campaigns are one more line under them */}
+        <aside className="hidden 2xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-3 pb-4">
           <SideFolds {...props} />
-          {props.campaign && props.campaignMember && (
+          {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
             <div className="empty:hidden">
-              <CampaignStrip campaign={props.campaign} member={props.campaignMember} layout="side" />
+              <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
         </aside>
@@ -142,20 +141,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 }
 
 /**
- * "สวัสดี Duke" with this month's ตี้ and places, which open the month in My Hub. Plain Thai words since the name
- * became Chillwaa (they were "Chill · Connect", owner 2026-10-31); before anything counts, one line says how the first one comes.
+ * "สวัสดี Duke" and the XP. This month's counts left for My Hub (owner 2026-11-04: "ของฉัน" already leads there);
+ * before anything counts, one line says how the first one comes.
  */
 function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   const isNew = month !== null && month.chill + month.connect === 0;
-  const counter = month && (
-    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปตี้ ${month.connect} ครั้ง ไปที่เที่ยว ${month.chill} แห่ง ดูในมายฮับ`}>
-      {/* People first: ตี้ leads */}
-      <span className="font-medium text-slate-500">ตี้</span> <span className="tabular-nums">{month.connect}</span>
-      <span className="mx-1.5 font-normal text-slate-300" aria-hidden="true">·</span>
-      <span className="font-medium text-slate-500">ที่เที่ยว</span> <span className="tabular-nums">{month.chill}</span>
-      {layout === 'row' && <span className="ml-1 font-normal text-slate-400" aria-hidden="true">›</span>}
-    </Link>
-  );
   const nudge = isNew && plans.length === 0 && (
     <p className="mt-1 text-[13px] text-slate-600">
       ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
@@ -166,10 +156,7 @@ function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps &
     return (
       <div className="min-w-0">
         <p className="text-xs text-slate-500">{dayPart(now)}</p>
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-[22px] sm:text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
-          {counter}
-        </div>
+        <h1 className="text-[22px] sm:text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
         {nudge}
       </div>
     );
@@ -179,7 +166,6 @@ function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps &
       <p className="text-xs text-slate-500">{dayPart(now)}</p>
       {/* One <h1> per page: the phone copy is the h1 */}
       <p role="heading" aria-level={1} className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</p>
-      <div className="mt-2">{counter}</div>
       {nudge || (
         // XP only: the way to the rewards is "ของรางวัล" in ของฉัน below
         <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
@@ -396,12 +382,12 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     );
   }
   // Phones have no side column: the campaign comes between the posts, after the first cards, never on top
-  if (props.campaign && props.campaignMember) {
+  if (props.campaigns && props.campaignMemberOf && props.onOpenCampaign) {
     cards[PHONE_CAMPAIGN_SLOT] = (
       <>
         {cards[PHONE_CAMPAIGN_SLOT]}
         <section className="lg:hidden py-5 border-b border-slate-200 empty:hidden">
-          <CampaignStrip campaign={props.campaign} member={props.campaignMember} />
+          <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} />
         </section>
       </>
     );

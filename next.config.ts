@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ['image/avif', 'image/webp'],
+    // 75 for cards, 85 for a moment's own photos (components/moments/MomentPhotos.tsx)
+    qualities: [75, 85],
     // Organisers' posters resized for cards (lib/optimizedImage.ts); only these hosts, never any URL
     remotePatterns: OPTIMIZED_REMOTE_IMAGES.map((p) => ({ protocol: 'https' as const, hostname: p.hostname, pathname: p.pathname })),
   },

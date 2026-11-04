@@ -3,6 +3,8 @@ import { LAUNCH_CAMPAIGN } from '@/data/launchCampaign';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { db } from '../db';
 import { memberRepository } from '../members';
+import type { Member } from '../members/types';
+import { hasConfirmedIdentity } from '../members/trust';
 import { cacheManager } from '../cache';
 import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { createJsonStore } from '../social/jsonStore';
@@ -10,7 +12,11 @@ import { progressOf } from '../social/questProgress';
 import { allQuestJoins } from '../social/questJoins';
 import { redemptionCountOf } from '../social/rewardsLedger';
 import { wentTogether } from '../social/friends';
-import { type Campaign, type CampaignStats, bangkokToday, homeCampaignOf, isCampaignLive } from './types';
+import { QuestJoinError, joinQuest } from '../social/questJoins';
+import { redemptionStore } from '../social/stores';
+import { campaignMemberStore } from './members';
+import { type Campaign, type CampaignStats, type CampaignView, type MyCampaign, RESULTS_SHOWN_DAYS, bangkokToday, homeCampaignsOf, isCampaignLive } from './types';
+import { winnerStore } from './winners';
 
 /**
  * Campaigns: app.campaigns, or data/campaigns.json for a clone without a database. An empty store starts from the
@@ -106,14 +112,74 @@ export const listCampaigns = async (): Promise<Campaign[]> => [...(await campaig
 
 export const findCampaign = async (id: string) => (await campaigns()).find((c) => c.id === id) ?? null;
 
-/** The campaign public pages show today: published, inside its dates, the latest start wins; `home` asks for the strip (home page and /challenges, staff turn it off together) */
-export async function liveCampaign({ home = false } = {}): Promise<Campaign | null> {
-  const today = bangkokToday();
-  const list = await listCampaigns();
-  return home ? homeCampaignOf(list, today) : (list.find((c) => isCampaignLive(c, today)) ?? null);
+/** Every campaign with the challenges behind its steps; read on the home page, so kept as long as the list */
+const campaignViews = (): Promise<CampaignView[]> =>
+  cacheManager.getOrSet(
+    `${CACHE_KEY}:views`,
+    async () => {
+      const { items: quests } = await db.findQuests({ page: 1, limit: 500, status: 'all' });
+      return (await listCampaigns()).map((campaign) => ({
+        ...campaign,
+        steps: campaign.questIds.flatMap((id) => {
+          const quest = quests.find((q) => q.id === id);
+          return quest ? [{ id, title: quest.title, image: quest.badgeCoverImg, total: Number(quest.total) || 1, rewardPoints: quest.rewardPoints ?? 0 }] : [];
+        }),
+      }));
+    },
+    { ttlMs: CACHE_MS, tags: [CACHE_KEY] }
+  );
+
+/** The campaigns the home page and /challenges show today (staff turn the strip off for both together) */
+export const homeCampaigns = async (): Promise<CampaignView[]> => homeCampaignsOf(await campaignViews());
+
+export class CampaignError extends Error {
+  constructor(message: string, public status = 400) {
+    super(message);
+  }
 }
 
-export class CampaignError extends Error {}
+/**
+ * The campaigns My Hub lists: joined ones while they run, and after the end only for a member holding a draw entry,
+ * until the results have been out for a while (owner 2026-11-04). A winner keeps theirs until the prize is settled.
+ * Redeeming the prize counts as joining: the shop has no sign-up step.
+ */
+export async function campaignsOfMember(memberId: string): Promise<MyCampaign[]> {
+  const today = bangkokToday();
+  const entries = await campaignMemberStore.ofMember(memberId);
+  const redemptions = await redemptionStore.ofMember(memberId);
+  const announced = (await winnerStore.all()).filter((w) => w.announcedAt);
+  return (await campaignViews())
+    .flatMap((campaign): MyCampaign[] => {
+      const redeemedAt = redemptions.find((r) => r.rewardId === campaign.rewardId)?.createdAt;
+      const enrolledAt = entries.find((e) => e.campaignId === campaign.id)?.enrolledAt ?? redeemedAt;
+      if (!enrolledAt || !campaign.published) return [];
+      const rows = announced.filter((w) => w.campaignId === campaign.id);
+      const mine = rows.find((w) => w.memberId === memberId);
+      const firstOut = rows.map((w) => Date.parse(w.announcedAt as string)).sort((a, b) => a - b)[0];
+      const isDraw = Boolean(REWARD_SHOP_ITEMS.find((item) => item.id === campaign.rewardId)?.drawEntry);
+      const stillShown = firstOut === undefined || Date.now() - firstOut < RESULTS_SHOWN_DAYS * DAY;
+      const shown = isCampaignLive(campaign, today) || (redeemedAt && isDraw && stillShown) || mine?.status === 'pending' || mine?.status === 'claimed';
+      if (!shown) return [];
+      return [{ campaign, enrolledAt, resultsOut: firstOut !== undefined, win: mine && { status: mine.status, code: mine.code, claimBy: mine.claimBy, expired: mine.status === 'pending' && Boolean(mine.claimBy) && Date.parse(mine.claimBy as string) < Date.now() } }];
+    })
+    .sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt));
+}
+
+/** Signs up for a running campaign and starts its step challenges, so the progress counts at once; a second time changes nothing */
+export async function enrollInCampaign(memberId: string, campaignId: string): Promise<void> {
+  const campaign = (await campaignViews()).find((c) => c.id === campaignId);
+  if (!campaign || !campaign.published) throw new CampaignError('ไม่พบแคมเปญนี้', 404);
+  if (!isCampaignLive(campaign)) throw new CampaignError('แคมเปญนี้ไม่ได้เปิดรับอยู่ตอนนี้', 409);
+  await campaignMemberStore.add(memberId, campaign.id);
+  for (const step of campaign.steps) {
+    try {
+      await joinQuest(memberId, step.id);
+    } catch (error) {
+      // A step that has ended stays out; the member is still in the campaign
+      if (!(error instanceof QuestJoinError)) throw error;
+    }
+  }
+}
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
@@ -169,8 +235,32 @@ export async function saveCampaign(input: Record<string, unknown>): Promise<Camp
 
 export async function deleteCampaign(id: string): Promise<void> {
   if (!(await findCampaign(id))) throw new CampaignError('ไม่พบแคมเปญนี้');
+  if ((await winnerStore.all()).some((w) => w.campaignId === id)) throw new CampaignError('แคมเปญนี้จับรางวัลแล้ว เก็บไว้เป็นหลักฐาน ลบไม่ได้ ซ่อนแถบแทนได้');
   await store.remove(id, await campaigns());
   cacheManager.invalidateTags([CACHE_KEY]);
+}
+
+/** Leaves a campaign to swap to another. The challenges stay: they count on their own. An entry already redeemed cannot be undone */
+export async function leaveCampaign(memberId: string, campaignId: string): Promise<void> {
+  const campaign = await findCampaign(campaignId);
+  if (!campaign) throw new CampaignError('ไม่พบแคมเปญนี้', 404);
+  if ((await redemptionStore.ofMember(memberId)).some((r) => r.rewardId === campaign.rewardId)) throw new CampaignError('คุณแลกสิทธิ์ลุ้นแคมเปญนี้แล้ว จึงออกไม่ได้', 409);
+  await campaignMemberStore.remove(memberId, campaignId);
+}
+
+/** Why this member cannot redeem this reward now, or null. A draw needs a real person, and a campaign's prize closes with the campaign */
+export async function redeemRefusal(member: Member, rewardId: string): Promise<{ message: string; status: number } | null> {
+  const reward = REWARD_SHOP_ITEMS.find((item) => item.id === rewardId);
+  if (!reward) return null;
+  const owners = (await campaigns()).filter((c) => c.rewardId === rewardId && c.published);
+  if (owners.length === 0) return reward.campaignOnly ? { message: 'ไม่พบของรางวัลนี้', status: 404 } : null;
+  if (!owners.some((c) => isCampaignLive(c))) return { message: 'แคมเปญนี้ปิดแลกสิทธิ์แล้ว', status: 409 };
+  if (!reward.drawEntry) return null;
+  if (!hasConfirmedIdentity(member)) return { message: 'ยืนยันตัวตนก่อนนะ แล้วค่อยแลกสิทธิ์ลุ้น', status: 403 };
+  // XP alone is not going out: marking places earns it with nothing checked (E2E 2026-11-04)
+  const { quests } = await progressOf(member.id);
+  const done = owners.some((c) => isCampaignLive(c) && c.questIds.every((id) => quests.some((q) => q.questId === id && q.completed && q.joined)));
+  return done ? null : { message: 'ทำชาเลนจ์ในแคมเปญให้ครบก่อน แล้วค่อยแลกสิทธิ์ลุ้นนะ', status: 409 };
 }
 
 /** What the campaign brought in; worked out from the stores on each read */
@@ -214,6 +304,7 @@ export async function campaignStats(campaign: Campaign): Promise<CampaignStats> 
   });
 
   return {
+    enrolled: await campaignMemberStore.countOf(campaign.id),
     signups: joined.length,
     firstTeeWithin14Days,
     invited: invited.length,

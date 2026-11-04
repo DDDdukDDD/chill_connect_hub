@@ -647,6 +647,26 @@ Every filter given must match. `categories` is a place's `category` (`cafe`, `pa
 ### Account deletion and export
 Deleting an account removes the member's marks. `GET /api/auth/member/account` (export) includes them as `visits`.
 
+## Campaigns for members (added 2026-11-04, BE-247)
+
+### `GET /api/campaigns/mine`
+`{ success, campaigns: MyCampaign[] }`, newest first; a guest gets an empty list. `MyCampaign` = `{ campaign: CampaignView, enrolledAt }` (`lib/campaigns/types.ts`); `CampaignView` is a `Campaign` plus `steps: [{ id, title, image?, total, rewardPoints }]`. Lists what the member joined while it runs, and after the end only one whose prize they redeemed, until `drawEntry.drawDate`. Redeeming a campaign's prize counts as joining.
+
+### `POST /api/campaigns/mine` — `{ campaignId, action?: 'leave' | 'claim' }`
+Signed-in, active member, same origin; 30 per hour. Joining also joins its step challenges (one that has ended is skipped) and twice changes nothing; 404 unknown, 409 not running. Leaving keeps the challenges; 409 once its prize is redeemed. Answers with the same list.
+
+`claim` (BE-250): the member's announced win moves to `claimed`; 404 no win, 409 past `claimBy`, and a second time changes nothing. `MyCampaign` also carries `resultsOut?: boolean` and `win?: { status: 'pending' | 'claimed' | 'confirmed' | 'forfeited', code, claimBy? }`, the latter only once announced. An entry holder's campaign stays listed until 30 days after the results; a winner's while `pending` or `claimed`.
+
+### `GET /api/admin/campaigns/draws` (`members.manage`)
+`{ success, campaigns: DrawCampaign[] }` (`lib/campaigns/types.ts`): every campaign whose prize is a draw, with entries that can be drawn, `refusal` (why not today) and winners with contact details.
+
+### `POST /api/admin/campaigns/draws` (`members.manage` and `content.edit`)
+`{ action: 'draw', campaignId }` draws until the prize count stands; 409 with the reason when it may not. `{ action: 'announce', campaignId }` publishes and notifies; 409 with nobody waiting. `{ action: 'confirm' | 'forfeit', winnerId, campaignId }` settles a winner: `confirm` only from `claimed`, `forfeit` from `pending` or `claimed`; 409 otherwise.
+
+The public result is the page `/campaigns/results` (server HTML, in the sitemap): entry code and masked name only.
+
+Any page opens the popup with `?campaign=ID`. Home and `/challenges` read `homeCampaigns()` on the server: live, `showOnHome`, latest start first, at most 10.
+
 ## Points and rewards (added 2026-10-13, BE-040)
 
 A member's points are no longer kept in the browser. The balance is what the member earned from visits and finished challenges (see "Visits") minus what they spent on rewards. Only the spending is stored (`data/redemptions.json`, gitignored). Code: `lib/social/rewardsLedger.ts`. Client hook: `useMyRewards(isLoggedIn)` in `lib/useMyRewards.ts`.
@@ -655,9 +675,13 @@ A member's points are no longer kept in the browser. The balance is what the mem
 `{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, joined, rewardPoints }], joinedQuestIds, redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
 
 ### `POST /api/rewards` — `{ rewardId }`
+Refused before the balance check when the reward belongs to a campaign: 409 no campaign with it is running; 403 a draw entry without a confirmed identity (email or social sign-in); 409 a draw entry whose running campaign still has unfinished steps; 404 a `campaignOnly` reward with no campaign. Rewards outside a campaign are unchanged.
+
 Redeems a reward of the catalog (`REWARD_SHOP_ITEMS` in `data/rewardsData.ts`). One of each reward per member. _2026-10-25 (BE-132):_ a catalog item with `drawEntry: { drawLabel, prizeCount }` is a prize-draw entry: `redemptions[]` carries `code` (`CC-XXXXXX`, the member's own entry code; `null` for vouchers, which use the catalog `voucherCode`). `/rewards?reward=ID` opens a reward. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
 
 ### Joining a challenge — `POST /api/quests/join` (added 2026-10-13, BE-043)
+XP from visits: a host check-in 50, a moment that passed 30; "มาที่นี่แล้ว" and a moment still waiting for staff earn 0 (BE-249).
+Leaving a finished challenge keeps its XP, and `joined` stays true for it in `quests` (BE-247).
 Body `{ questId, action: 'join' | 'leave', reason? }`; signed-in, active member, same origin. `reason` (leave only, up to 200 characters, optional) is why the member stops; it is written to the audit log as `quest.leave` without the member's name (BE-064). The answer has the same fields as `GET /api/rewards`. Joins are stored in `data/quest_joins.json` (gitignored); code in `lib/social/questJoins.ts`. Errors: 404 unknown or draft challenge, 409 the challenge has ended, 401 signed out, 429 more than 60 an hour. Joining twice changes nothing.
 - **What joining does:** the challenge appears in My Hub, the member counts among its participants, and its reward points are theirs when they finish. Progress is counted from visits whether or not the member joined, so visits made before joining still count; the reward points are added only while the member is joined (`quests[].joined`).
 - **`participantsCount` in `GET /api/quests`** is the number the quest was written with (sample data for seed quests, 0 for new ones) plus the members who joined.

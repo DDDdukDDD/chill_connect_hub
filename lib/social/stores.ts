@@ -337,6 +337,8 @@ export const voucherStore: VoucherStore = USE_POSTGRES ? pgVouchers() : jsonVouc
 interface RedemptionStore {
   ofMember(memberId: string): Promise<Redemption[]>;
   countOf(rewardId: string): Promise<number>;
+  /** Every entry of one reward, for the prize draw */
+  ofReward(rewardId: string): Promise<Redemption[]>;
   /** False when the member already has this reward */
   add(redemption: Omit<Redemption, 'id' | 'createdAt'>): Promise<boolean>;
   removeBy(memberId: string): Promise<void>;
@@ -350,6 +352,9 @@ function jsonRedemptions(): RedemptionStore {
     },
     async countOf(rewardId) {
       return store.read().filter((r) => r.rewardId === rewardId).length;
+    },
+    async ofReward(rewardId) {
+      return store.read().filter((r) => r.rewardId === rewardId);
     },
     async add(redemption) {
       let added = false;
@@ -380,6 +385,13 @@ function pgRedemptions(): RedemptionStore {
       const [row] = await sql()`
         select count(*)::int as n from app.reward_redemptions x join app.rewards w on w.id = x.reward_id where w.slug = ${rewardId}`;
       return row.n;
+    },
+    async ofReward(rewardId) {
+      const rows = await sql()`
+        select x.id::text, m.legacy_id as member, x.cost_xp, x.created_at
+        from app.reward_redemptions x join app.rewards w on w.id = x.reward_id join app.members m on m.id = x.member_id
+        where w.slug = ${rewardId}`;
+      return rows.map((r) => ({ id: r.id, memberId: r.member, rewardId, cost: r.cost_xp, createdAt: iso(r.created_at) }));
     },
     async add(redemption) {
       const db = sql();

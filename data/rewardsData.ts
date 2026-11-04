@@ -21,7 +21,9 @@ export interface RewardShopItem {
   image?: string;
   featured?: boolean;
   /** A prize draw entry instead of a voucher: each member gets their own entry code, and no stock runs out */
-  drawEntry?: { drawLabel: string; prizeCount: number };
+  drawEntry?: { drawLabel: string; prizeCount: number; drawDate?: string };
+  /** Reached only through its campaign's popup, not listed in the shop */
+  campaignOnly?: boolean;
 }
 
 export const REWARD_CATEGORIES = [
@@ -32,6 +34,32 @@ export const REWARD_CATEGORIES = [
   { id: 'workshop', label: 'เวิร์กช็อป & งานคราฟต์', icon: '🎨' },
   { id: 'merch', label: 'ของที่ระลึกพิเศษ', icon: '🎽' },
 ] as const;
+
+const sampleFlight = (id: string, image: string, place: string, costXp: number): RewardShopItem => ({
+  id,
+  image,
+  title: `สิทธิ์ลุ้นตั๋วเครื่องบินไป${place}`,
+  category: 'merch',
+  categoryLabel: 'ของรางวัลพิเศษ',
+  costXp,
+  iconName: 'Gift',
+  emoji: '✈️',
+  description: `ใช้ ${costXp} XP แลกสิทธิ์ลุ้นตั๋วเครื่องบินไปกลับ${place} 1 ที่นั่ง สะสม XP ได้จากชาเลนจ์ในแคมเปญ`,
+  partner: 'Chillwaa',
+  partnerLocation: 'ประกาศผลบนเว็บไซต์และแจ้งเตือนในแอป',
+  voucherCode: 'FLIGHT-DRAW',
+  stockCount: 1,
+  discountValue: `ตั๋วเครื่องบินไปกลับ${place} 1 ที่นั่ง`,
+  validUntil: '31 ธ.ค. 2569',
+  terms: [
+    'แลกสิทธิ์ได้ 1 ครั้งต่อบัญชี ภายใน 31 ธ.ค. 2569',
+    'จับรางวัล 15 ม.ค. 2570 จากรหัสสิทธิ์ของสมาชิกทุกคนที่แลกไว้',
+    'ผู้โชคดีต้องยืนยันตัวตนกับทีมงานภายใน 7 วัน ไม่เช่นนั้นจะจับรางวัลใหม่',
+    'ของรางวัลเปลี่ยนเป็นเงินสดหรือโอนสิทธิ์ให้ผู้อื่นไม่ได้',
+  ],
+  drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1, drawDate: '2027-01-15' },
+  campaignOnly: true,
+});
 
 export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
   {
@@ -58,8 +86,12 @@ export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
       'ของรางวัลเปลี่ยนเป็นเงินสดหรือโอนสิทธิ์ให้ผู้อื่นไม่ได้',
     ],
     featured: true,
-    drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1 },
+    drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1, drawDate: '2027-01-15' },
   },
+  // SAMPLE flight prizes, for the sample campaigns in db/seed-sample-campaigns.mjs (development database only); remove before launch
+  sampleFlight('reward-flight-phuket', '/campaign/flight-phuket.png', 'ภูเก็ต', 500),
+  sampleFlight('reward-flight-japan', '/campaign/flight-japan.png', 'ญี่ปุ่น', 800),
+  sampleFlight('reward-flight-china', '/campaign/flight-china.png', 'จีน', 850),
   {
     id: 'reward-1',
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',

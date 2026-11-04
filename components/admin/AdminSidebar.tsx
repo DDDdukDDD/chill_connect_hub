@@ -25,6 +25,7 @@ import {
   UserRound,
   Megaphone,
   BadgeDollarSign,
+  Gift,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/permissions';
 import { AdminSessionStatus } from './AdminSessionStatus';
@@ -38,6 +39,7 @@ export type AdminModuleId =
   | 'spots'
   | 'quests'
   | 'campaigns'
+  | 'draws'
   | 'sponsored'
   | 'moments'
   | 'reports'
@@ -89,6 +91,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
       { id: 'campaigns', label: 'แคมเปญ', icon: Megaphone },
+      { id: 'draws', label: 'จับรางวัล', icon: Gift },
       { id: 'sponsored', label: 'การ์ดสนับสนุน', icon: BadgeDollarSign },
       { id: 'moments', label: 'โมเมนต์', icon: Camera },
     ],
@@ -135,6 +138,8 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   spots: 'content.view',
   quests: 'content.view',
   campaigns: 'content.view',
+  // Winners' contact details are member data; the buttons also need content.edit
+  draws: 'members.manage',
   sponsored: 'content.view',
   moments: 'content.view',
   reports: 'content.view',
@@ -164,6 +169,7 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   spots: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   quests: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าแรก' }],
+  draws: [{ permission: 'content.edit', what: 'สุ่ม ประกาศผล และบันทึกการส่งมอบรางวัล' }],
   sponsored: [{ permission: 'content.edit', what: 'เพิ่ม แก้ไข และลบการ์ดสนับสนุน' }],
   moments: [{ permission: 'community.review', what: 'ซ่อนและตรวจโมเมนต์และหลักฐาน' }],
   scraper: [{ permission: 'sources.run', what: 'จัดการแหล่งข้อมูลและรันการดึงข้อมูล' }],

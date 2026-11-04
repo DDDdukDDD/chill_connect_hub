@@ -26,9 +26,12 @@ interface MomentPhotosProps {
   onDoubleTap?: () => void;
 }
 
-/** Uploads are served through the image optimizer in three widths; others at one width (Unsplash samples were full JPEGs) */
+/**
+ * Uploads are served through the image optimizer in three widths; others at one width (Unsplash samples were full JPEGs).
+ * Quality 85, above the site's 75: these are the page's whole point (owner 2026-11-04). It must be in images.qualities in next.config.ts
+ */
 const FRAME_WIDTHS = [640, 828, 1200];
-const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
+const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=85`;
 const responsive = (src: string) =>
   src.startsWith('/uploads/') || isOptimizedRemote(src) ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
 

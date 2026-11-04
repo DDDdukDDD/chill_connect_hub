@@ -36,8 +36,73 @@ export interface Campaign {
   updatedAt: string;
 }
 
+/** A campaign with what its popup lists: the challenges behind the steps */
+export interface CampaignView extends Campaign {
+  steps: { id: string; title: string; image?: string; total: number; rewardPoints: number }[];
+}
+
+/** A winner's way: drawn or announced and waiting for them, they pressed claim, staff gave the prize, or it was lost */
+export type WinnerStatus = 'pending' | 'claimed' | 'confirmed' | 'forfeited';
+
+/** How long a winner has to press claim (the terms of a draw prize say the same) */
+export const CLAIM_DAYS = 7;
+/** How long after the results a member who holds an entry still sees the campaign in My Hub */
+export const RESULTS_SHOWN_DAYS = 30;
+export const RESULTS_PATH = '/campaigns/results';
+
+/** A campaign a member joined (My Hub), or whose prize entry they redeemed */
+export interface MyCampaign {
+  campaign: CampaignView;
+  enrolledAt: string;
+  /** The results are public */
+  resultsOut?: boolean;
+  /** This member was drawn, and it was announced */
+  win?: { status: WinnerStatus; code: string; claimBy?: string; expired: boolean };
+}
+
+/** One campaign on the staff draw page */
+export interface DrawCampaign {
+  id: string;
+  name: string;
+  endDate: string;
+  prizeTitle: string;
+  drawLabel: string;
+  prizeCount: number;
+  /** Entries that can be drawn now */
+  entries: number;
+  /** Why it cannot be drawn today */
+  refusal: string | null;
+  winners: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    code: string;
+    status: WinnerStatus;
+    poolSize: number;
+    drawnBy: string;
+    drawnAt: string;
+    announcedAt?: string;
+    claimBy?: string;
+    claimedAt?: string;
+  }[];
+}
+
+/** One announced campaign on the public results page */
+export interface CampaignResult {
+  id: string;
+  headline: string;
+  image?: string;
+  prizeTitle: string;
+  announcedAt: string;
+  entries: number;
+  winners: { code: string; name: string }[];
+}
+
 /** What one campaign brought in, for the admin page */
 export interface CampaignStats {
+  /** Members who signed up for it from its popup */
+  enrolled: number;
   /** Accounts created during the campaign */
   signups: number;
   /** Of those, how many were checked in at a ตี้ within 14 days of signing up */
@@ -57,9 +122,15 @@ export const bangkokToday = () => new Date(Date.now() + 7 * 3600 * 1000).toISOSt
 export const isCampaignLive = (campaign: Campaign, today = bangkokToday()) =>
   campaign.published && campaign.startDate <= today && today <= campaign.endDate;
 
-/** The one campaign the home strip shows: live, marked for the home page, the latest start wins (the admin list warns about the others) */
-export const homeCampaignOf = <T extends Campaign>(campaigns: T[], today = bangkokToday()): T | null =>
-  [...campaigns].sort((a, b) => b.startDate.localeCompare(a.startDate)).find((c) => isCampaignLive(c, today) && c.showOnHome) ?? null;
+/** About ten can run at once (owner 2026-11-04); the admin list warns about the ones past this */
+export const MAX_HOME_CAMPAIGNS = 10;
+
+/** The campaigns the home page and /challenges show: live, marked for the home page, the latest start first */
+export const homeCampaignsOf = <T extends Campaign>(campaigns: T[], today = bangkokToday()): T[] =>
+  campaigns
+    .filter((c) => isCampaignLive(c, today) && c.showOnHome)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))
+    .slice(0, MAX_HOME_CAMPAIGNS);
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 

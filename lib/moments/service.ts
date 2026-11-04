@@ -153,6 +153,9 @@ const pagination = (totalCount: number, page: number, limit: number) => {
   return { totalCount, page, limit, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
 };
 
+/** Belongs under "สถานที่": tied to a place, or a post with a place typed by hand and nothing else to file it under (owner 2026-11-04) */
+const isPlaceMoment = (moment: Pick<Moment, 'targetType' | 'location'>) => moment.targetType === 'spot' || (moment.targetType === 'general' && realPlace(moment.location).trim() !== '');
+
 /**
  * One page of published moments the viewer may see (GET /api/moments and the server-rendered /moments).
  * Posts by members the viewer has blocked are left out; "saved", "mine" and "following" need a viewer.
@@ -164,7 +167,10 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   if ((tab === 'saved' || tab === 'mine' || tab === 'following') && !viewer) {
     return { moments: [] as FeedItem[], requiresLogin: true, pagination: pagination(0, 1, limit) };
   }
-  const targetType = options.targetType && TARGET_TYPES.has(options.targetType as MomentTargetType) ? (options.targetType as MomentTargetType) : undefined;
+  const asked = options.targetType && TARGET_TYPES.has(options.targetType as MomentTargetType) ? (options.targetType as MomentTargetType) : undefined;
+  // The "สถานที่" tab, not one place's own page: that one asks by targetId
+  const placeTab = asked === 'spot' && !options.targetId;
+  const targetType = placeTab ? undefined : asked;
   const category = options.category && CATEGORIES.has(options.category as MomentCategory) ? options.category : undefined;
   const result = await momentRepository.query({
     statuses: ['published'],
@@ -184,6 +190,7 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   const visible = result.items.filter(
     (moment) =>
       isPubliclyVisible(moment, people) &&
+      (!placeTab || isPlaceMoment(moment)) &&
       !(moment.authorId && blocked.has(moment.authorId)) &&
       (!following || (moment.authorId !== null && following.has(moment.authorId))) &&
       (!category || moment.category === category) &&
@@ -204,7 +211,8 @@ export async function countMomentsByType(): Promise<{ all: number; spot: number;
   for (const moment of result.items) {
     if (!isPubliclyVisible(moment, people)) continue;
     counts.all++;
-    if (moment.targetType in counts) counts[moment.targetType as keyof typeof counts]++;
+    if (isPlaceMoment(moment)) counts.spot++;
+    else if (moment.targetType in counts) counts[moment.targetType as keyof typeof counts]++;
   }
   return counts;
 }

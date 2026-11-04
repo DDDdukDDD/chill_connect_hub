@@ -20,6 +20,50 @@ Item template:
 
 ---
 
+### BE-257 · Moment photos sharper (owner 2026-11-04)
+- **Why:** photos were squeezed twice: to 500 KB when sent, with quality down to 0.62 and size down to 800 px, then again at quality 75 when shown. Busy photos like food came out softer than calm ones.
+- **What changed:** `encodeForUpload` aims for 1 MB, with a floor of quality 0.82 and 1080 px (a very busy photo goes over 1 MB, under the 5 MB upload limit). `MomentPhotos` asks the optimizer for quality 85, listed in `images.qualities` in `next.config.ts`. A new quality must be added there or the optimizer answers 400. This replaces the 500 KB in BE-236 and also covers other uploads through `compressImage`.
+- **What to do about it:** new photos take more storage on Vercel Blob. Photos already stored get the better showing, not a better file.
+
+### BE-256 · "สถานที่" tab on /moments counts a place typed by hand (owner 2026-11-04)
+- **What changed:** a general moment with a real location text (`realPlace`, not the placeholders) is filed under "สถานที่" in the tab and its count. It stays `targetType: 'general'`, so XP and challenges are unchanged. A post with no place at all is only under "ทั้งหมด". `GET /api/moments?targetType=spot` without `targetId` means this tab.
+
+### BE-255 · Campaigns on /rewards, rewards in My Hub, "แลกได้แล้ว" on the card (owner 2026-11-04)
+- **What changed:** `/rewards` lists campaigns not yet joined, because draw prizes are not in the shop; its screen moved to `app/rewards/RewardsView.tsx` and `page.tsx` reads the campaigns on the server. The "XP · ชาเลนจ์ของฉัน" tab in My Hub shows the reward row in place of the banner to `/rewards`. `PromoBoard` takes `balance`: a reward the member's XP covers comes first with a "แลกได้แล้ว" badge. `rewardsOnPhone` keeps the row on phones. On `/rewards` the big prize card is gone, as draw prizes are reached through the campaign row (`?reward=ID` still opens one, and the wallet's next goal skips them), and the wallet is the soft `#FFF4D6`.
+
+### BE-254 · Campaigns and rewards as one board on /challenges and the landing (owner 2026-11-04, after Trip.com)
+- **What changed:** new `components/campaigns/PromoBoard.tsx`: the campaign on the left half, rewards as a sideways row on the right, and only rewards at full width when no campaign is left to show. Flat tints, no borders or headings, one card height (`CARD_HEIGHT`), photos as tilted stickers, and a small joke per reward category (`QUIPS`), after the owner asked for minimal and funny. Cards are 108 to 128 px tall, rewards are hidden on phones, and `CampaignStrip` on the member home has the same look. Quick repeated drags are covered in `useDragRail`: a press stops the glide and the snapping timer. It replaces the strip on `/challenges` and the visitor landing; the landing shows campaigns only (`withRewards={false}`, two at a time), because rewards belong where XP is earned. Member home keeps `CampaignShelf`. The drag code moved to `components/campaigns/useDragRail.ts`. The row lists `REWARD_SHOP_ITEMS` without draw entries and `campaignOnly`.
+
+### BE-253 · Member home quieter: no month counts, campaigns as one folded line (owner 2026-11-04)
+- **What changed:** the "ตี้ · ที่เที่ยว" counts under the greeting are gone on every size; the month stays in My Hub. Beside the feed, `CampaignShelf` with `layout="side"` is one folded line like `SideFolds`, closed at first; its line says what can be redeemed or how many are joined, and it opens to plain rows. On phones the swipe row in the feed is unchanged.
+
+### BE-252 · Campaign row: the next card's edge instead of a count (owner 2026-11-04)
+- **What changed:** Several in `CampaignShelf` show the next card's edge: phones swipe, a mouse drags or presses that edge (it brings the card in and does not open it). The "1/4" count, arrows and dots are gone. This replaces the look in BE-247; BE-254 has the colours now.
+
+### BE-251 · Admin home no longer crashes (owner 2026-11-04)
+- **Bug:** `/api/admin/reports` sent `counts.open` as an unresolved promise (`{}`) since the reports store became async, and the "ภาพรวมวันนี้" tile tried to show it, so `/admin` fell to the error page. Other modules opened by link kept working. The route now awaits the count.
+
+### BE-250 · Prize draw: staff draw, announce, winner claims, public results (owner 2026-11-04)
+- **What changed:** new admin page "จับรางวัล" (`?m=draws`, `components/admin/CampaignDrawsView.tsx`). Staff draw after the campaign ends and on or after the prize's `drawEntry.drawDate`; `lib/campaigns/draw.ts` picks with `crypto.randomInt` from active real members holding an entry. Nobody hears until staff press announce. Then the winner gets a `draw_won` notice and an email (a confirmed address, and only with `RESEND_API_KEY`), everyone else holding an entry gets `draw_result`, and `/campaigns/results` shows the entry code and a masked name. A winner has 7 days to press claim in the campaign popup; staff then check who they are and mark the prize given, or mark it forfeited and draw again (never the same person; the new winner is told at once).
+- **Rules:** a draw needs both `members.manage` (contact details) and `content.edit`; in practice the owner role. A campaign with a winner cannot be deleted. Account deletion gives a prize not yet taken back and keeps only the entry code. An entry holder sees the campaign in My Hub until 30 days after the results, a winner until the prize is settled.
+- **What to do about it:** before `main` gets this, run `npm run db:migrate` on live for `0023_campaign_winners` (required, with 0021 and 0022). A new prize still means a code change in `data/rewardsData.ts`: the catalog is not editable in admin.
+
+### BE-249 · XP counts proof only (owner 2026-11-04)
+- **What changed:** "มาที่นี่แล้ว" earns 0 XP (it keeps its rating and review), and a moment waiting for staff earns its 30 XP only once it passes. `VISIT_POINTS.marked` is 0; `progressOf` skips `pending` visits.
+- **What to do about it:** balances are worked out on each read, so live members who marked places or have moments in the queue drop by that XP on the day this is merged, and a balance already spent stops at 0. Vouchers already redeemed stay. More XP now waits on the moment queue in "คิวตรวจ".
+
+### BE-248 · Campaign popup wider, My Hub "ดูทั้งหมด" back past two (owner 2026-11-04)
+- **What changed:** the popup is `size="lg"` with the picture beside the words from `sm`, step names are `text-xs`, and an ended campaign shows no steps. "กำลังทำอยู่" shows "ดูทั้งหมด N" only with more than 2 challenges (reverses part of BE-246, owner).
+
+### BE-247 · Campaigns: sign up from a popup, several at once, My Hub list (owner 2026-11-04)
+- **What changed:** pressing a campaign on the landing, member home or `/challenges` opens one popup (`components/campaigns/`). A guest is asked to sign up and is joined on the way back (`?campaign=ID` plus a wish in `sessionStorage`); a member joins there, which also starts its step challenges. Members can leave. Joined campaigns are in My Hub ("แคมเปญของฉัน"), and after the end only for a member holding an entry, until the draw. `/challenges` shows one campaign the visitor has not joined.
+- **Look:** `CampaignStrip` is one calm cream line of a fixed height for every state; several become one long strip to swipe (`CampaignShelf`). `LaunchCampaignBanner` and the big yellow card are gone. Up to 10 show at once (`MAX_HOME_CAMPAIGNS`).
+- **Rules from the E2E walk:** a draw entry needs a confirmed identity, every step of a running campaign done, and the XP; a campaign's prize closes with the campaign. Leaving a finished challenge keeps its XP and its campaign step (`questProgress`). See `docs/API.md`.
+- **What to do about it:** before `main` gets this, run `npm run db:migrate` on live for `0021_campaign_members` (required) and `0022_launch_campaign_brand`. The three flight campaigns are in the development database only (`node db/seed-sample-campaigns.mjs`, `--remove` takes them out); their rewards are `campaignOnly`, so the shop never lists them.
+
+### BE-246 · My Hub: no link beside "กำลังทำอยู่", empty month only without a plan (owner 2026-11-04)
+- **What changed:** the "ชาเลนจ์ทั้งหมด" / "ดูทั้งหมด N" link is gone; "XP · ชาเลนจ์ของฉัน" under the title opens the same tab. "เดือนนี้ของฉัน" with nothing this month is hidden when the member has a next plan, and invites them to find a ตี้ only when they have none.
+
 ### BE-245 · My Hub: quiet "ถัดไปของคุณ", no links out for อีเวนต์, guests sign in (owner 2026-11-03)
 - **What changed:** the row opens the event's page. อีเวนต์ have no button there and no "เส้นทาง" in the list: people reach the map through the event's page and stay on the site (owner). A ตี้ keeps "แชต" and "ดูบัตร" as outline buttons; "ดูบัตร" is solid black only on the day.
 - **Guests:** `/myhub` goes to `/login?returnTo=...` and back. The old guest page is gone. Logging out on My Hub goes home.
