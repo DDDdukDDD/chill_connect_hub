@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
@@ -201,8 +202,8 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
     return runAction(ev.id, { action: 'update_status', id: ev.id, status }, messages[status]);
   };
 
-  const deleteEvent = (ev: AdminEventItem) => {
-    if (!confirm(`ยืนยันการลบกิจกรรม "${ev.title}"? การลบไม่สามารถย้อนกลับได้`)) return;
+  const deleteEvent = async (ev: AdminEventItem) => {
+    if (!await askConfirm(`ยืนยันการลบกิจกรรม "${ev.title}"? การลบไม่สามารถย้อนกลับได้`)) return;
     return runAction(ev.id, { action: 'delete', id: ev.id }, `ลบ "${ev.title}" แล้ว`);
   };
 
@@ -289,9 +290,10 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
       {/* Filters */}
       <div className="flex items-center justify-between gap-3 flex-wrap bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="text"
+            aria-label="ค้นหาชื่อกิจกรรม, สถานที่, หรือผู้จัด"
             placeholder="ค้นหาชื่อกิจกรรม, สถานที่, หรือผู้จัด..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -376,59 +378,59 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
                         <AdminStatusChip status={eventStatus(ev)} />
                         <span
                           title={quality.requiredFailures ? `ขาดข้อบังคับ ${quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
-                          className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                          className={`rounded-full border px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                             quality.requiredFailures ? 'border-rose-200 bg-rose-50 text-rose-700' : quality.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                           }`}
                         >
                           {quality.score}%
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600">
                           {ev.tag || ev.category}
                         </span>
                         {recurring && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
                             <Repeat size={10} />
                             {ev.recurrence?.frequency === 'monthly' ? 'รายเดือน' : 'ทุกสัปดาห์'}
                           </span>
                         )}
                         {online && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-[#2B527A] border border-sky-200 flex items-center gap-1">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-[#2B527A] border border-sky-200 flex items-center gap-1">
                             <Globe size={10} />
                             ออนไลน์{ev.onlinePlatform ? `: ${ev.onlinePlatform}` : ''}
                           </span>
                         )}
                         {online && ev.onlineJoinUrl && (
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
                               linkCheck.isSafe ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
                             }`}
                           >
                             {linkCheck.label}
                           </span>
                         )}
-                        {ev.source && <span className="text-[10px] text-slate-400 font-medium">แหล่งที่มา: {ev.source}</span>}
+                        {ev.source && <span className="text-[11px] text-slate-500 font-medium">แหล่งที่มา: {ev.source}</span>}
                       </div>
 
                       <h3 className="text-slate-800 font-bold text-sm leading-tight mb-1">{ev.title}</h3>
 
                       <div className="flex items-center gap-x-3 gap-y-1 text-xs text-slate-500 flex-wrap">
                         <span className="flex items-center gap-1">
-                          <MapPin size={11} className="text-slate-400" /> {ev.location}
+                          <MapPin size={11} className="text-slate-500" /> {ev.location}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Calendar size={11} className="text-slate-400" /> {ev.date}
+                          <Calendar size={11} className="text-slate-500" /> {ev.date}
                         </span>
                         {ev.price && <span className="text-[#4A7C59] font-medium">{ev.price}</span>}
                         {isCommunity && ev.participantsCount !== undefined && (
-                          <span className="text-[#D04A1B] font-medium">
+                          <span className="text-[#C2410C] font-medium">
                             {ev.participantsCount}/{ev.maxParticipants || 10} คน
                           </span>
                         )}
-                        {ev.hostName && <span className="text-slate-400">โดย: {ev.hostName}</span>}
+                        {ev.hostName && <span className="text-slate-500">โดย: {ev.hostName}</span>}
                       </div>
 
                       {ev.description && (
-                        <p className="text-slate-400 text-xs mt-1.5 line-clamp-1">{stripHtmlToPlainText(ev.description)}</p>
+                        <p className="text-slate-500 text-xs mt-1.5 line-clamp-1">{stripHtmlToPlainText(ev.description)}</p>
                       )}
                     </div>
                   </div>

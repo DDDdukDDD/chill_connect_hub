@@ -77,7 +77,7 @@ export function ChallengeChecklist({ questId }: { questId: string }) {
           );
         })}
         {Array.from({ length: left }).map((_, i) => (
-          <li key={`empty-${i}`} className="flex items-center gap-3 text-sm text-slate-400">
+          <li key={`empty-${i}`} className="flex items-center gap-3 text-sm text-slate-500">
             <span className="w-7 h-7 rounded-full border-2 border-dashed border-violet-200 shrink-0" aria-hidden="true" />
             ยังไม่ได้ไป
           </li>

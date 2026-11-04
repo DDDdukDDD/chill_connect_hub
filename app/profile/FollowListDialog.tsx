@@ -90,7 +90,7 @@ export function FollowListDialog({ initialTab, onClose }: { initialTab: FollowTa
             className={`pb-3 -mb-px min-h-11 text-sm sm:text-base font-bold border-b-2 whitespace-nowrap cursor-pointer ${tab === item.key ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
           >
             {item.label}
-            {lists && <span className="ml-1.5 text-xs sm:text-sm font-medium text-slate-400 tabular-nums">{lists[item.key].length.toLocaleString()}</span>}
+            {lists && <span className="ml-1.5 text-xs sm:text-sm font-medium text-slate-500 tabular-nums">{lists[item.key].length.toLocaleString()}</span>}
           </button>
         ))}
       </div>
@@ -100,7 +100,7 @@ export function FollowListDialog({ initialTab, onClose }: { initialTab: FollowTa
           <p role="alert" className="py-10 text-center text-sm font-medium text-slate-600">โหลดรายชื่อไม่สำเร็จ ปิดแล้วลองเปิดใหม่อีกครั้งนะ</p>
         ) : !lists ? (
           <div role="status" aria-label="กำลังโหลด" className="py-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" aria-hidden="true" />
+            <Loader2 className="w-6 h-6 animate-spin text-slate-500" aria-hidden="true" />
           </div>
         ) : people.length === 0 ? (
           <p className="py-10 text-center text-sm font-medium text-slate-500 leading-relaxed">{TABS.find((t) => t.key === tab)?.empty}</p>

@@ -23,7 +23,7 @@ const PARTS = [
     key: 'tee',
     label: 'ตี้',
     Icon: Users,
-    tone: 'bg-[#FFF4EE] text-[#D04A1B]',
+    tone: 'bg-[#FFF4EE] text-[#C2410C]',
     title: 'ชวนก๊วนไปด้วยกัน',
     text: 'เปิดตี้ชวนเพื่อนสนิทไปวิ่ง นั่งคาเฟ่ เล่นบอร์ดเกม หรือดูคอนเสิร์ตด้วยกัน หรือเข้าตี้ของคนสายเดียวกันที่เปิดไว้ อยากได้เพื่อนใหม่ก็มี อยากไปกับแก๊งเดิมก็ได้',
     image: '/event-board-games.png',
@@ -56,7 +56,7 @@ const PARTS = [
     key: 'moment',
     label: 'โมเมนต์',
     Icon: Camera,
-    tone: 'bg-[#FFF1F2] text-[#E11D48]',
+    tone: 'bg-[#FFF1F2] text-[#BE123C]',
     title: 'มีเรื่องเล่ากลับมา',
     text: 'แชร์รูปและเรื่องราวจากทุกการออกไป ดูว่าเพื่อนๆ ไปไหนกันมา ส่งหัวใจ คุยกันต่อ และโมเมนต์ของคุณยังนับเป็นการไปในชาเลนจ์ได้ด้วย',
     image: '/hero-bkk-park-sunny.jpg',
@@ -123,9 +123,9 @@ export default function AboutPage() {
       <main className="flex-1 pb-24 xl:pb-12">
         {/* 1. Who we are */}
         <section className="bg-[#FFF8F1]">
-          <div className={`${WRAP} py-12 sm:py-16 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center`}>
+          <div className={`${WRAP} py-12 sm:py-16 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center`}>
             <div className="space-y-5 text-center lg:text-left">
-              <p className="text-sm font-semibold text-[#D04A1B]">เกี่ยวกับ Chillwaa</p>
+              <p className="text-sm font-semibold text-[#C2410C]">เกี่ยวกับ Chillwaa</p>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
                 คอมมูนิตี้ของคน
                 <br />

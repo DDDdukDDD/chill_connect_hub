@@ -16,7 +16,7 @@ type Tile =
 
 const MOBILE_SHOWN = 3;
 const DESKTOP_SHOWN = 5;
-const FACE_COLORS = ['bg-violet-500', 'bg-cyan-600', 'bg-pink-500', 'bg-orange-500', 'bg-emerald-600', 'bg-blue-600', 'bg-fuchsia-600', 'bg-slate-600'];
+const FACE_COLORS = ['bg-violet-600', 'bg-cyan-700', 'bg-pink-700', 'bg-orange-700', 'bg-emerald-700', 'bg-blue-600', 'bg-fuchsia-700', 'bg-slate-600'];
 
 function Face({ name, avatar, verified, size = 'lg' }: { name: string; avatar: string; verified?: boolean; size?: 'lg' | 'sm' }) {
   const box = size === 'lg' ? 'w-12 h-12 text-base' : 'w-5 h-5 text-[11px]';

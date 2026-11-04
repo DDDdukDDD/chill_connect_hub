@@ -226,7 +226,7 @@ function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare:
         <button
           type="button"
           onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
-          className="shrink-0 font-semibold text-[#E11D48] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+          className="shrink-0 font-semibold text-[#BE123C] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
         >
           แชร์เลย ›
         </button>
@@ -237,10 +237,10 @@ function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare:
   if (!next) return null;
   return (
     <Link href={eventHref(next)} className={`${LINE} lg:hidden group`}>
-      <CalendarDays className="w-4 h-4 shrink-0 text-[#D04A1B]" aria-hidden="true" />
-      <span className="shrink-0 font-semibold text-[#D04A1B] tabular-nums whitespace-nowrap">{awayLabel(next, now) ?? dayLine(next)}</span>
+      <CalendarDays className="w-4 h-4 shrink-0 text-[#C2410C]" aria-hidden="true" />
+      <span className="shrink-0 font-semibold text-[#C2410C] tabular-nums whitespace-nowrap">{awayLabel(next, now) ?? dayLine(next)}</span>
       <span className="min-w-0 flex-1 truncate text-slate-800 group-hover:underline underline-offset-4">{plainTitle(next.title)}</span>
-      <span className="shrink-0 text-slate-400" aria-hidden="true">›</span>
+      <span className="shrink-0 text-slate-500" aria-hidden="true">›</span>
     </Link>
   );
 }
@@ -289,8 +289,8 @@ function PlanRow({ event, countdown, hostedIds, savedIds, fairWhen }: MemberLive
         <img src={event.image || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 min-w-0">
-            {countdown && <span className="shrink-0 rounded-full bg-[#FFF4EE] px-2 py-0.5 text-[11px] font-semibold text-[#D04A1B] tabular-nums whitespace-nowrap">{countdown}</span>}
-            <span className={`text-xs truncate ${countdown ? 'text-slate-500' : isFair ? 'font-semibold text-[#2B527A]' : 'font-semibold text-[#D04A1B]'}`}>{when}</span>
+            {countdown && <span className="shrink-0 rounded-full bg-[#FFF4EE] px-2 py-0.5 text-[11px] font-semibold text-[#C2410C] tabular-nums whitespace-nowrap">{countdown}</span>}
+            <span className={`text-xs truncate ${countdown ? 'text-slate-500' : isFair ? 'font-semibold text-[#2B527A]' : 'font-semibold text-[#C2410C]'}`}>{when}</span>
           </span>
           <span className="block mt-0.5 text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{event.title}</span>
           {isFair ? (
@@ -404,7 +404,7 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarImage(event.hostAvatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0" />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-[#FFF4EE] text-[#D04A1B] text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(event.hostName)}</span>
+          <span className="w-10 h-10 rounded-full bg-[#FFF4EE] text-[#C2410C] text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(event.hostName)}</span>
         )}
         <div className="min-w-0">
           <p className="text-sm text-slate-900 truncate">
@@ -423,7 +423,7 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
           </span>
         </Link>
         <div className="p-4">
-          <p className="text-xs font-semibold text-[#D04A1B]">{dayLine(event)}</p>
+          <p className="text-xs font-semibold text-[#C2410C]">{dayLine(event)}</p>
           <Link href={eventHref(event)} className="mt-0.5 block text-base font-bold text-slate-900 leading-snug hover:underline">{event.title}</Link>
           <div className="mt-3 flex items-center gap-2">
             <SeatDots event={event} />
@@ -454,7 +454,7 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
           เพราะคุณชอบ
           {liked.map((cat) => (
-            <Link key={cat.id} href={`/community?category=${cat.id}`} className="h-6 px-2 inline-flex items-center rounded-full bg-[#FFF4EE] text-[#D04A1B] font-semibold hover:opacity-80">
+            <Link key={cat.id} href={`/community?category=${cat.id}`} className="h-6 px-2 inline-flex items-center rounded-full bg-[#FFF4EE] text-[#C2410C] font-semibold hover:opacity-80">
               {cat.name}
             </Link>
           ))}
@@ -499,7 +499,7 @@ function Shortcuts({ savedCount, redeemable }: MemberLiveHomeProps) {
                 <Icon className="w-3.5 h-3.5" />
               </span>
               <span className="flex-1 min-w-0 truncate">{label}</span>
-              {count !== undefined && count > 0 && <span className="text-xs font-medium text-slate-400 tabular-nums">{count}</span>}
+              {count !== undefined && count > 0 && <span className="text-xs font-medium text-slate-500 tabular-nums">{count}</span>}
             </Link>
           </li>
         ))}
@@ -609,7 +609,7 @@ const FOLD_TILES = 6;
 type FoldKey = 'meetup' | 'challenge' | 'fair' | 'spot';
 /** Each pillar's colors (DESIGN_SYSTEM.md): the line's tint, its hover, the count badge and the hook text */
 const FOLD_TONE: Record<FoldKey, { bg: string; hover: string; badge: string; hook: string }> = {
-  meetup: { bg: 'bg-[#FFF4EE]', hover: 'hover:bg-[#FFE8DC]', badge: 'bg-[#F26430]', hook: 'text-[#D04A1B]' },
+  meetup: { bg: 'bg-[#FFF4EE]', hover: 'hover:bg-[#FFE8DC]', badge: 'bg-[#F26430]', hook: 'text-[#C2410C]' },
   challenge: { bg: 'bg-[#F5F3FF]', hover: 'hover:bg-[#EDE9FE]', badge: 'bg-[#7C3AED]', hook: 'text-[#5B21B6]' },
   fair: { bg: 'bg-[#EEF3F8]', hover: 'hover:bg-[#E1EAF3]', badge: 'bg-[#2B527A]', hook: 'text-[#1F3D5C]' },
   spot: { bg: 'bg-[#EEF5F0]', hover: 'hover:bg-[#E0EEE4]', badge: 'bg-[#4A7C59]', hook: 'text-[#2D5A3C]' },

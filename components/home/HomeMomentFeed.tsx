@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -196,7 +196,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         >
           <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
           <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
-          <span className={`shrink-0 whitespace-nowrap ${target.ink}`}>· {target.go} →</span>
+          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
         </Link>
       )}
 
@@ -207,7 +207,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           onClick={() => handlers.onToggle(moment.id, moment.isLiked ? 'unlike' : 'like')}
           aria-pressed={moment.isLiked}
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
-          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#F43F5E]' : ''}`}
+          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
           <Heart className={`w-[18px] h-[18px] ${moment.isLiked ? 'fill-current' : ''}`} />
           <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>
@@ -248,14 +248,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
               <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[11px] mt-0.5" />
               <span className="min-w-0 flex-1">
                 <strong className="font-semibold text-slate-900">{comment.userName}</strong> {comment.text}
-                <span className="block text-[11px] text-slate-400">{comment.timeAgo}</span>
+                <span className="block text-[11px] text-slate-500">{comment.timeAgo}</span>
               </span>
               {comment.isMine && (
                 <button
                   type="button"
                   onClick={() => handlers.onDeleteComment(moment.id, comment.id)}
                   aria-label="ลบความคิดเห็น"
-                  className="w-7 h-7 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center cursor-pointer shrink-0"
+                  className="w-7 h-7 rounded-full text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center cursor-pointer shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -279,7 +279,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             maxLength={300}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="เขียนความคิดเห็น…"
-            className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+            className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
           <button
             type="submit"
@@ -665,7 +665,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           <button
             type="button"
             onClick={() => setSort('all')}
-            className="shrink-0 h-8 pl-3 pr-2 rounded-full bg-[#FFF1F2] text-[#F43F5E] text-[13px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+            className="shrink-0 h-8 pl-3 pr-2 rounded-full bg-[#FFF1F2] text-[#BE123C] text-[13px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
             aria-label={`${PERSONAL[sort]} กลับไปดูทั้งหมด`}
           >
             {PERSONAL[sort]}
@@ -680,7 +680,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               onClick={() => setSort(value)}
               aria-pressed={sort === value}
               className={`h-8 px-3 rounded-full text-[13px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                sort === value ? 'bg-[#FFF1F2] text-[#F43F5E]' : 'text-slate-500 hover:bg-slate-100'
+                sort === value ? 'bg-[#FFF1F2] text-[#BE123C]' : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
               {label}
@@ -793,7 +793,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin" />
             </div>
           )}
-          {!hasMore && moments.length > PAGE_SIZE && <p className="py-8 text-center text-[13px] font-medium text-slate-400">ดูครบทุกโมเมนต์แล้ว</p>}
+          {!hasMore && moments.length > PAGE_SIZE && <p className="py-8 text-center text-[13px] font-medium text-slate-500">ดูครบทุกโมเมนต์แล้ว</p>}
         </>
       )}
 

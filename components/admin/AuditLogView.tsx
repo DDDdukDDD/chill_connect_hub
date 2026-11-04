@@ -90,11 +90,12 @@ export function AuditLogView() {
           {ACTION_GROUPS.map((group) => <option key={group.id} value={group.id}>{group.label}</option>)}
         </select>
         <div className="relative w-full sm:w-64">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="search"
             value={query}
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
+            aria-label="ค้นหาในรายละเอียด"
             placeholder="ค้นหาในรายละเอียด"
             className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
           />
@@ -131,10 +132,10 @@ export function AuditLogView() {
                       </td>
                       <td className="px-4 py-2.5">
                         <p className="text-xs font-bold text-slate-800">{entry.actorName}</p>
-                        <p className="text-[11px] text-slate-400">{entry.actorRole}</p>
+                        <p className="text-[11px] text-slate-500">{entry.actorRole}</p>
                       </td>
                       <td className="px-4 py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${actionTone(entry.action)}`}>{entry.action}</span>
+                        <span className={`px-2 py-0.5 rounded-full border text-[11px] sm:text-xs font-bold whitespace-nowrap ${actionTone(entry.action)}`}>{entry.action}</span>
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-700">{entry.summary}</td>
                     </tr>

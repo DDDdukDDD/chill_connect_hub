@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Camera } from 'lucide-react';
+import { ArrowRight, Camera } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
@@ -434,7 +434,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
         {extra}
         <Link href={href} className="group inline-flex items-center gap-1 text-sm font-semibold text-slate-900 hover:underline underline-offset-4 whitespace-nowrap">
           {linkLabel}
-          <span className="transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</span>
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>
       </div>
     </div>
@@ -544,7 +544,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
                   <button
                     type="button"
                     onClick={() => scrollToId('journey-meetups')}
-                    className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
+                    className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
                   >
                     หากิจกรรมที่ใช่
                   </button>

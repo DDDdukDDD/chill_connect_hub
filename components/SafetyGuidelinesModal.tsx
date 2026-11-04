@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import { X, ShieldCheck, AlertTriangle, CheckCircle2, Lock, PhoneCall, Users, MapPin } from 'lucide-react';
 
 interface SafetyGuidelinesModalProps {
@@ -12,12 +13,21 @@ export const SafetyGuidelinesModal: React.FC<SafetyGuidelinesModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: isOpen, focusField: false });
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100010] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm animate-fade-in">
       <div
-        className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[90vh] overflow-y-auto"
+        ref={panelRef}
+        data-dialog-shell
+        role="dialog"
+        aria-modal="true"
+        aria-label="คู่มือความปลอดภัย"
+        tabIndex={-1}
+        className="focus:outline-hidden bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

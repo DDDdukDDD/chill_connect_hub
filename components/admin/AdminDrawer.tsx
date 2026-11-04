@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
+import React, { useRef } from 'react';
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import type { QualityReport } from '@/lib/contentQuality';
 
@@ -23,23 +24,13 @@ export function AdminDrawer({
   preview?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { focusField: false });
 
   return (
     <div className="fixed inset-0 z-[60] flex justify-end" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="ปิด" onClick={onClose} className="absolute inset-0 bg-slate-950/30" />
-      <div className="relative flex h-full w-full max-w-6xl flex-col bg-[#F6F8F7] shadow-2xl">
+      <div ref={panelRef} data-dialog-shell tabIndex={-1} className="focus:outline-hidden relative flex h-full w-full max-w-6xl flex-col bg-[#F6F8F7] shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{title}</h2>
@@ -98,7 +89,7 @@ export function Field({
       {error ? (
         <p className="mt-1 text-[11px] font-semibold text-rose-600">{error}</p>
       ) : hint ? (
-        <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+        <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
       ) : null}
     </div>
   );
@@ -110,7 +101,7 @@ export function QualityPanel({ report }: { report: QualityReport }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ตรวจคุณภาพ</p>
-        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold tabular-nums ${
+        <span className={`rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold tabular-nums ${
           report.requiredFailures > 0
             ? 'border-rose-200 bg-rose-50 text-rose-700'
             : report.score < 90 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'

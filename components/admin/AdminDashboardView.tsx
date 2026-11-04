@@ -248,7 +248,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
             <ul className="divide-y divide-slate-100">
               {data?.activity?.map((entry) => (
                 <li key={entry.id} className="flex items-center gap-3 px-4 py-2.5 text-xs">
-                  <span className="w-28 shrink-0 text-slate-400 tabular-nums">{new Date(entry.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  <span className="w-28 shrink-0 text-slate-500 tabular-nums">{new Date(entry.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
                   <span className="w-28 shrink-0 truncate font-bold text-slate-700">{entry.actorName}</span>
                   <span className="flex-1 min-w-0 truncate text-slate-600">{entry.summary}</span>
                 </li>

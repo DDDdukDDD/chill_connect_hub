@@ -11,7 +11,7 @@ import { avatarImage } from '@/lib/optimizedImage';
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=300&q=80';
-const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
+const FACE_COLORS = ['bg-amber-700', 'bg-pink-700', 'bg-sky-700'];
 // Test-login ตี้ carry a "[ตัวอย่าง]" tag in the title (as MeetupTile)
 const cleanTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
@@ -42,7 +42,7 @@ export function MyMonthSection({ isLoggedIn, onToast, showEmptyInvite }: { isLog
 
   const shareButton = (item: MonthItem) =>
     hasMoment(item) ? (
-      <span className="text-[11px] font-semibold text-[#E11D48] whitespace-nowrap">มีโมเมนต์แล้ว</span>
+      <span className="text-[11px] font-semibold text-[#BE123C] whitespace-nowrap">มีโมเมนต์แล้ว</span>
     ) : (
       <button
         type="button"

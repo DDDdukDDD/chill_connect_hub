@@ -96,7 +96,7 @@ export function FriendsMomentsWall() {
 
           {/* The one way on from here: the place itself, quiet (owner 2026-10-29) */}
           {placeName && (
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#F26430] min-w-0">
+            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#C2410C] min-w-0">
               <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
               {placeHref ? (
                 <Link href={placeHref} className="truncate underline-offset-4 hover:underline">ไปที่ {placeName}</Link>

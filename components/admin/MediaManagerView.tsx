@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Image as ImageIcon,
@@ -79,7 +80,7 @@ export function MediaManagerView() {
   };
 
   const handleDelete = async (key: string) => {
-    if (!confirm(`ยืนยันการลบไฟล์ "${key}" ออกจาก Storage?`)) return;
+    if (!await askConfirm(`ยืนยันการลบไฟล์ "${key}" ออกจาก Storage?`)) return;
     try {
       const res = await fetch(`/api/admin/media?key=${encodeURIComponent(key)}`, {
         method: 'DELETE',
@@ -98,7 +99,7 @@ export function MediaManagerView() {
   };
 
   const handleCleanOrphans = async () => {
-    if (!confirm('ยืนยันลบไฟล์ที่ไม่มีการอ้างอิงในฐานข้อมูล (Orphan Files) ทั้งหมด?')) return;
+    if (!await askConfirm('ยืนยันลบไฟล์ที่ไม่มีการอ้างอิงในฐานข้อมูล (Orphan Files) ทั้งหมด?')) return;
     try {
       setIsCleaning(true);
       const res = await fetch('/api/admin/media', {
@@ -147,7 +148,7 @@ export function MediaManagerView() {
     <div className="space-y-6">
       <AdminPageHeader
         icon={ImageIcon}
-        title="Media & Image Hub"
+        title="คลังรูปภาพ"
         description="ไฟล์รูปที่อัปโหลดเข้าระบบ และไฟล์ที่ไม่มีเนื้อหาใดอ้างอิงแล้ว (orphan)"
         actions={
           <>
@@ -158,7 +159,7 @@ export function MediaManagerView() {
             {stats && stats.orphanCount > 0 && (
               <button onClick={handleCleanOrphans} disabled={isCleaning} className={adminButton.danger}>
                 <Trash2 size={14} />
-                {isCleaning ? 'กำลังลบ...' : `ลบไฟล์ orphan (${stats.orphanCount})`}
+                {isCleaning ? 'กำลังลบ...' : `ลบไฟล์ที่ไม่มีใครใช้ (${stats.orphanCount})`}
               </button>
             )}
           </>
@@ -168,49 +169,49 @@ export function MediaManagerView() {
       {/* KPI Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold">พื้นที่จัดเก็บทั้งหมด</span>
             <HardDrive size={16} className="text-[#4A7C59]" />
           </div>
           <p className="text-2xl font-bold text-slate-800">
             {stats ? formatBytes(stats.totalSizeBytes) : '...'}
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">Driver: Local (public/uploads)</p>
+          <p className="text-[11px] text-slate-500 mt-1">เก็บในเครื่องนี้ (public/uploads)</p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold">จำนวนไฟล์ทั้งหมด</span>
             <Layers size={16} className="text-sky-500" />
           </div>
           <p className="text-2xl font-bold text-slate-800">
-            {stats ? stats.totalFiles.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-400">ไฟล์</span>
+            {stats ? stats.totalFiles.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-500">ไฟล์</span>
           </p>
-          <p className="text-[11px] text-sky-600 font-medium mt-1">
-            WebP format: {stats ? stats.webpFilesCount : 0} ไฟล์
+          <p className="text-[11px] text-sky-700 font-medium mt-1">
+            ไฟล์ WebP: {stats ? stats.webpFilesCount : 0} ไฟล์
           </p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-semibold">ไฟล์ขยะ (Orphan)</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1">
+            <span className="text-xs font-semibold">ไฟล์ที่ไม่มีใครใช้</span>
             <AlertTriangle size={16} className="text-amber-500" />
           </div>
           <p className={`text-2xl font-bold ${stats && stats.orphanCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
-            {stats ? stats.orphanCount.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-400">ไฟล์</span>
+            {stats ? stats.orphanCount.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-500">ไฟล์</span>
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">ไม่มีการอ้างอิงในฐานข้อมูล</p>
+          <p className="text-[11px] text-slate-500 mt-1">ไม่มีการอ้างอิงในฐานข้อมูล</p>
         </div>
 
         <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+          <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-semibold">รูปภาพในระบบอ้างอิง</span>
             <FileCheck2 size={16} className="text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-emerald-600">
-            {stats ? stats.referencedDatabaseImages.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-400">URLs</span>
+            {stats ? stats.referencedDatabaseImages.toLocaleString() : '...'} <span className="text-sm font-normal text-slate-500">URLs</span>
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">Spots + Events + Fairs</p>
+          <p className="text-[11px] text-slate-500 mt-1">สถานที่ ตี้ และอีเวนต์</p>
         </div>
       </div>
 
@@ -235,7 +236,7 @@ export function MediaManagerView() {
             disabled={isCleaning}
             className={adminButton.danger}
           >
-            {isCleaning ? 'กำลังลบไฟล์...' : 'ลบไฟล์ orphan ทั้งหมด'}
+            {isCleaning ? 'กำลังลบไฟล์...' : 'ลบไฟล์ที่ไม่มีใครใช้ ทั้งหมด'}
           </button>
         </div>
       )}
@@ -243,9 +244,10 @@ export function MediaManagerView() {
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
         <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="text"
+            aria-label="ค้นหาชื่อไฟล์ หรือ key"
             placeholder="ค้นหาชื่อไฟล์ หรือ key..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -296,7 +298,7 @@ export function MediaManagerView() {
         <div className="text-center py-16 bg-white border border-slate-200/70 rounded-2xl">
           <ImageIcon size={32} className="mx-auto text-slate-300 mb-2" />
           <p className="text-sm font-semibold text-slate-600">ไม่พบไฟล์มีเดียในโฟลเดอร์</p>
-          <p className="text-xs text-slate-400 mt-1">ไฟล์จะปรากฏที่นี่เมื่อมีการอัปโหลดภาพผ่านระบบ</p>
+          <p className="text-xs text-slate-500 mt-1">ไฟล์จะปรากฏที่นี่เมื่อมีการอัปโหลดภาพผ่านระบบ</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -324,11 +326,11 @@ export function MediaManagerView() {
                   {/* Status Tag */}
                   <div className="absolute top-2 left-2">
                     {file.isOrphan ? (
-                      <span className="px-1.5 py-0.5 bg-amber-500/90 text-white rounded text-[10px] font-bold backdrop-blur-xs">
+                      <span className="px-1.5 py-0.5 bg-amber-500/90 text-white rounded text-[11px] font-bold backdrop-blur-xs">
                         Orphan
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 bg-emerald-600/90 text-white rounded text-[10px] font-bold backdrop-blur-xs">
+                      <span className="px-1.5 py-0.5 bg-emerald-600/90 text-white rounded text-[11px] font-bold backdrop-blur-xs">
                         In Use
                       </span>
                     )}
@@ -336,7 +338,7 @@ export function MediaManagerView() {
 
                   {/* Extension badge */}
                   <div className="absolute top-2 right-2">
-                    <span className="px-1.5 py-0.5 bg-slate-900/60 text-white rounded text-[9px] font-semibold backdrop-blur-xs uppercase">
+                    <span className="px-1.5 py-0.5 bg-slate-900/60 text-white rounded text-[11px] font-semibold backdrop-blur-xs uppercase">
                       {file.mimeType.split('/')[1] || 'img'}
                     </span>
                   </div>
@@ -348,7 +350,7 @@ export function MediaManagerView() {
                     <p className="text-xs font-semibold text-slate-700 truncate" title={file.filename}>
                       {file.filename}
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       {formatBytes(file.size)}
                     </p>
                   </div>
@@ -357,7 +359,7 @@ export function MediaManagerView() {
                   <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-100">
                     <button
                       onClick={() => handleCopy(file.url, file.key)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-600 transition-colors"
                       title="คัดลอก URL"
                     >
                       {isCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
@@ -366,14 +368,14 @@ export function MediaManagerView() {
                       href={file.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-600 transition-colors"
                       title="เปิดดูขนาดจริง"
                     >
                       <ExternalLink size={13} />
                     </a>
                     <button
                       onClick={() => handleDelete(file.key)}
-                      className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-500 hover:text-rose-500 transition-colors"
                       title="ลบไฟล์"
                     >
                       <Trash2 size={13} />

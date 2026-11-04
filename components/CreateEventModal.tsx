@@ -272,7 +272,7 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
 }
 
 const inputClass = (bad?: boolean) =>
-  `w-full px-4 py-3 border rounded-2xl text-base sm:text-sm font-semibold text-slate-900 bg-white placeholder:text-slate-400 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 ${bad ? 'border-rose-400' : 'border-slate-300'}`;
+  `w-full px-4 py-3 border rounded-2xl text-base sm:text-sm font-semibold text-slate-900 bg-white placeholder:text-slate-500 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 ${bad ? 'border-rose-400' : 'border-slate-300'}`;
 
 function Field({ label, optional, hint, error, children, htmlFor }: { label: string; optional?: boolean; hint?: string; error?: string; children: React.ReactNode; htmlFor?: string }) {
   return (

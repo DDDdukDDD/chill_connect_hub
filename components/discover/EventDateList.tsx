@@ -16,7 +16,7 @@ const PAGE = 40;
 type Kind = 'meetups' | 'fairs';
 
 /** The pillar's dark color for the when-line (DESIGN_SYSTEM.md, pillar colors on cards) */
-const WHEN_COLOR: Record<Kind, string> = { meetups: 'text-[#D04A1B]', fairs: 'text-[#2B527A]' };
+const WHEN_COLOR: Record<Kind, string> = { meetups: 'text-[#C2410C]', fairs: 'text-[#2B527A]' };
 
 const startOf = (e: EventItem) => parseEventDateToTimestamp(e.date);
 const endOf = (e: EventItem) => parseEventEndDateToTimestamp(e.endDate || e.date) + DAY - 1;
@@ -51,7 +51,7 @@ function statusOf(kind: Kind, e: EventItem): { text: string; tone: string } | nu
     return free ? { text: 'เข้าฟรี', tone: 'text-emerald-700' } : hasValue(e.price) ? { text: priceOf(e.price!), tone: 'text-slate-600' } : null;
   const left = (e.maxParticipants || 0) - (e.participantsCount || 0);
   if (left <= 0) return { text: 'เต็มแล้ว', tone: 'text-slate-500' };
-  return { text: `${free ? 'ฟรี · ' : ''}เหลือ ${left} ที่`, tone: left <= 2 ? 'text-[#D04A1B]' : 'text-emerald-700' };
+  return { text: `${free ? 'ฟรี · ' : ''}เหลือ ${left} ที่`, tone: left <= 2 ? 'text-[#C2410C]' : 'text-emerald-700' };
 }
 
 // A ตี้ names its short area ("สุขุมวิท"), as its tile does; an อีเวนต์ its province and venue
@@ -144,7 +144,7 @@ function StripCard({ kind, event }: { kind: Kind; event: EventItem }) {
 
 const heading = (title: string, count: number) => (
   <h2 className="text-base sm:text-lg font-bold text-slate-900">
-    {title} <span className="ml-1 text-sm font-medium text-slate-400 tabular-nums">{count}</span>
+    {title} <span className="ml-1 text-sm font-medium text-slate-500 tabular-nums">{count}</span>
   </h2>
 );
 

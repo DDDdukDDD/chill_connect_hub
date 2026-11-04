@@ -150,7 +150,7 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
             placeholder="ค้นหาชื่อสถานที่"
             aria-label="ค้นหาชื่อสถานที่"
             autoComplete="off"
-            className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400 placeholder:font-normal"
+            className="w-full bg-white border border-slate-300 rounded-2xl pl-10 pr-3.5 py-3 text-base sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-500 placeholder:font-normal"
           />
         </form>
 

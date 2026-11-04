@@ -59,7 +59,7 @@ const STICKER = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-wh
 export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhotos, highlight, title, subtitle, facts, actions, note }: DetailHeroProps) {
   const style = PILLAR_STYLE[pillar];
   return (
-    <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
+    <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
       <figure className="relative m-0 aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
         {/* A tall poster shows whole over a blurred copy of itself, so its text is not cut; photos fill the frame (owner 2026-10-28).
             An อีเวนต์ picture is nearly always a poster with words to the edges, so anything taller than the 16:10 frame shows whole */}

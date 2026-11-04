@@ -248,7 +248,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
       {myCampaigns.dialog}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 pb-28 sm:pt-4 xl:pb-12 space-y-4 sm:space-y-5 w-full">
+      <main className="flex-1 max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-28 sm:pt-4 xl:pb-12 space-y-4 sm:space-y-5 w-full">
         
 
         {/* 1. What this page is, with the side actions. No box: the cards below carry the weight */}

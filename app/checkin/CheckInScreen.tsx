@@ -44,7 +44,7 @@ export function CheckInScreen({ eventId, code }: { eventId: string; code: string
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 text-center">
           {result.state === 'working' && (
             <>
-              <Loader2 className="w-10 h-10 mx-auto text-slate-400 animate-spin" aria-hidden="true" />
+              <Loader2 className="w-10 h-10 mx-auto text-slate-500 animate-spin" aria-hidden="true" />
               <h1 className="mt-4 text-xl font-bold">กำลังเช็กอิน…</h1>
             </>
           )}

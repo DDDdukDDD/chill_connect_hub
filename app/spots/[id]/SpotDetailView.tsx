@@ -1,5 +1,6 @@
 'use client';
 
+import { optimizedImage } from '@/lib/optimizedImage';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -456,7 +457,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
         {/* Like the challenge page: the story, the details as a plain table and the map on the left; on the right
             how to reach the place, then moments and the challenge it counts toward, going together and a day plan */}
-        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+        <div className="mt-10 sm:mt-14 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-start">
           <aside className="lg:order-2 max-lg:contents lg:space-y-6">
             {(spot.contact?.phone || spot.contact?.website || spot.contact?.facebook || (spot.sourceName && spot.sourceUrl)) && (
               <section className="p-5 sm:p-6 rounded-3xl bg-[#EBF3ED] border border-slate-200 space-y-3">
@@ -481,13 +482,13 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                 )}
                 <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
                   {spot.sourceName && spot.sourceUrl ? (
-                    <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-800 hover:underline">
+                    <a href={spot.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-800 hover:underline">
                       ข้อมูล: {spot.sourceName.replace(/\s*\(.*\)\s*$/, '')}
                     </a>
                   ) : (
                     <span />
                   )}
-                  <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                  <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-600 hover:text-slate-800 cursor-pointer">
                     <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                     แจ้งข้อมูลผิด
                   </button>
@@ -591,13 +592,13 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
           INTERACTIVE FULLSCREEN PHOTO LIGHTBOX MODAL
          ========================================================================= */}
       {isLightboxOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-fade-in select-none">
+        <div role="dialog" aria-modal="true" aria-label="ดูรูปเต็มจอ" className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-fade-in select-none">
           
           {/* Top Bar: Title, Counter & Close Button */}
           <div className="flex items-center justify-between text-white pb-3">
             <div className="space-y-0.5">
               <h3 className="text-sm sm:text-base font-bold truncate max-w-xs sm:max-w-md">{spot.title}</h3>
-              <p className="text-xs text-slate-400">รูปที่ {activePhotoIndex + 1} จาก {galleryImages.length} รูป</p>
+              <p className="text-xs text-slate-500">รูปที่ {activePhotoIndex + 1} จาก {galleryImages.length} รูป</p>
             </div>
 
             <button
@@ -625,7 +626,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
             </button>
 
             <img
-              src={galleryImages[activePhotoIndex]}
+              src={optimizedImage(galleryImages[activePhotoIndex], 1080)}
               alt={`${spot.title} บรรยากาศภาพที่ ${activePhotoIndex + 1}`}
               className="max-h-full max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-300"
             />
@@ -637,7 +638,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                 setActivePhotoIndex((prev) => (prev + 1) % galleryImages.length);
               }}
               className="absolute right-2 sm:right-4 z-10 w-11 h-11 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/10"
-              title="รูปถัดไป (→)"
+              title="รูปถัดไป"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -656,7 +657,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                     : 'border-white/20 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={thumbUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                <img src={optimizedImage(thumbUrl, 128)} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>

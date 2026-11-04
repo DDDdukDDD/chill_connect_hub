@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { formatThaiDateBE } from '@/lib/dateUtils';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import {
   X,
   MapPin,
@@ -177,6 +179,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     }
   }, [isOpen, spotTitle, spotImage, mode]);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: isOpen, focusField: false });
+
   if (!isOpen) return null;
 
   // A trip to a place follows the Spot Buddy rules; a fair group is created by the fair page itself
@@ -306,7 +311,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       id: `spot-buddy-${Date.now()}`,
       title: title.trim(),
       hostName: userProfile.name || 'ฉันเอง',
-      hostAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      hostAvatar: userProfile.avatar || undefined,
       hostBadge: userProfile.badgeLabel || 'สมาชิก',
       date: date,
       time: `${startTime} - ${endTime} น.`,
@@ -425,7 +430,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
       <div
-        className="bg-white rounded-[28px] sm:rounded-[32px] max-w-5xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
+        ref={panelRef}
+        data-dialog-shell
+        role="dialog"
+        aria-modal="true"
+        aria-label="ชวนเพื่อนไปที่นี่"
+        tabIndex={-1}
+        className="focus:outline-hidden bg-white rounded-[28px] sm:rounded-[32px] max-w-5xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -465,9 +476,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800">
-                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'} <span className="text-rose-500">*</span>
+                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'}
                   </label>
-                  <span className="text-[11px] text-slate-400 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
+                  <span className="text-[11px] text-slate-500 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
                 </div>
                 <input
                   type="text"
@@ -485,7 +496,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-2">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
-                    <span>วันที่นัดหมาย <span className="text-rose-500">*</span></span>
+                    <span>วันที่นัดหมาย</span>
                   </label>
                   <input
                     type="date"
@@ -496,7 +507,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                   />
                   <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
-                    วันนัดหมาย: {date}
+                    วันนัดหมาย: {date ? formatThaiDateBE(date) : ''}
                   </div>
                 </div>
 
@@ -504,11 +515,11 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-2">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>ช่วงเวลาของตี้ <span className="text-rose-500">*</span></span>
+                    <span>ช่วงเวลาของตี้</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาเริ่ม:</span>
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">เวลาเริ่ม:</span>
                       <input
                         type="time"
                         value={startTime}
@@ -517,7 +528,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       />
                     </div>
                     <div>
-                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาสิ้นสุด:</span>
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">เวลาสิ้นสุด:</span>
                       <input
                         type="time"
                         value={endTime}
@@ -541,9 +552,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
-                      <span>สถานที่นัด <span className="text-rose-500">*</span></span>
+                      <span>สถานที่นัด</span>
                     </label>
-                    <span className="text-[11px] text-slate-400">ระบุสถานที่นัดพบ</span>
+                    <span className="text-[11px] text-slate-500">ระบุสถานที่นัดพบ</span>
                   </div>
                   <input
                     type="text"
@@ -559,9 +570,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800">
-                      จุดนัดพบที่แน่นอน / จุดสังเกต <span className="text-rose-500">*</span>
+                      จุดนัดพบที่แน่นอน / จุดสังเกต
                     </label>
-                    <span className="text-[11px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
+                    <span className="text-[11px] text-slate-500">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
                   {isSpotTrip ? (
                     <>
@@ -592,7 +603,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               {/* 4. Description & Rich Text Editor */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 block">
-                  รายละเอียด & บรรยากาศทริป <span className="text-rose-500">*</span> (พิมพ์ตัวหนาหรือรายการได้ทันที)
+                  รายละเอียด & บรรยากาศทริป (พิมพ์ตัวหนาหรือรายการได้ทันที)
                 </label>
                 <RichTextEditor
                   value={description}
@@ -625,7 +636,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
                       <span>กำหนดการของตี้</span>
                     </h4>
-                    <p className="text-[11px] text-slate-400">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
+                    <p className="text-[11px] text-slate-500">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
                   </div>
                   <button
                     type="button"
@@ -655,12 +666,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                         value={item.title}
                         onChange={(e) => handleUpdateItinerary(idx, 'title', e.target.value)}
                         placeholder="รายละเอียดช่วงเวลานี้"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
+                        className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveItinerary(idx)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
                         title="ลบแถวนี้"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -682,7 +693,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <ImageIcon className="w-3.5 h-3.5 text-[#2563EB]" />
                     <span>รูปปกของตี้:</span>
                   </label>
-                  <span className="text-[11px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
+                  <span className="text-[11px] text-slate-500">อัปโหลดหรือเลือกรูปสำเร็จ</span>
                 </div>
 
                 {/* Upload Box */}
@@ -701,7 +712,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       ? 'เปลี่ยนรูปภาพจากเครื่อง'
                       : 'คลิกเพื่ออัปโหลดรูปจากเครื่อง'}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                   <input
                     type="file"
                     disabled={isUploadingImage}
@@ -763,7 +774,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
                 {/* Suggestions */}
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
+                  <span className="text-[11px] text-slate-500 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {WHAT_TO_BRING_SUGGESTIONS.filter((s) => !whatToBringList.includes(s)).map((item) => (
                       <button
@@ -814,7 +825,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] font-bold text-slate-700">
-                        จำนวนรับ: <span className="text-rose-500">*</span>
+                        จำนวนรับ:
                       </label>
                       <span className="text-[11px] font-bold text-emerald-700">{maxParticipants} คน</span>
                     </div>
@@ -860,7 +871,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700">ช่วงอายุที่แนะนำ:</label>
-                    <span className="text-[11px] text-slate-400">พิมพ์ระบุเองได้</span>
+                    <span className="text-[11px] text-slate-500">พิมพ์ระบุเองได้</span>
                   </div>
                   <input
                     type="text"
@@ -955,14 +966,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               disabled={!isSafetyAccepted || isSubmitting}
               className={`px-7 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm ${
                 isSafetyAccepted && !isSubmitting
-                  ? 'bg-slate-900 hover:bg-slate-800 text-white active:scale-95'
+                  ? 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Users className="w-4 h-4 text-emerald-400" />
+                <Users className="w-4 h-4" aria-hidden="true" />
               )}
               <span>{isSubmitting ? 'กำลังบันทึก...' : 'เปิดวงชวนเพื่อนเลย'}</span>
             </button>

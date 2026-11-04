@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import { X, Calendar, Check, RotateCcw } from 'lucide-react';
 
 interface CustomDatePickerModalProps {
@@ -45,6 +46,9 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
   const [mode, setMode] = useState<'single' | 'range'>(endDate && endDate !== startDate ? 'range' : 'single');
   const [tempStart, setTempStart] = useState<string>(formatToYMD(startDate));
   const [tempEnd, setTempEnd] = useState<string>(formatToYMD(endDate || startDate));
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: isOpen, focusField: false });
 
   if (!isOpen) return null;
 
@@ -109,10 +113,10 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200/90 shadow-2xl overflow-hidden animate-scale-up">
+      <div ref={panelRef} data-dialog-shell role="dialog" aria-modal="true" aria-label="เลือกช่วงเวลา" tabIndex={-1} className="focus:outline-hidden bg-white rounded-3xl max-w-md w-full max-h-[92vh] overflow-y-auto border border-slate-200/90 shadow-2xl animate-scale-up">
         
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-slate-50/40 to-transparent flex items-start justify-between gap-3">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
           <div className="space-y-1">
             <h3 className="font-bold text-base sm:text-lg text-slate-900 tracking-tight">
               ระบุช่วงเวลาตามใจคุณ
@@ -126,7 +130,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="ปิดหน้าต่าง"
-            className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-700 border border-slate-200/80 transition-colors flex items-center justify-center cursor-pointer shrink-0 shadow-2xs"
+            className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200/80 transition-colors flex items-center justify-center cursor-pointer shrink-0 shadow-2xs"
           >
             <X className="w-4 h-4" />
           </button>
@@ -290,7 +294,7 @@ export const CustomDatePickerModal: React.FC<CustomDatePickerModalProps> = ({
           <button
             type="button"
             onClick={handleApply}
-            className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl shadow-md shadow-blue-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
+            className="flex-1 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
           >
             <Check className="w-4 h-4" />
             <span>นำไปใช้</span>

@@ -203,7 +203,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
     >
       <FormSection title="ข้อมูลบัญชี">
         <div className="sm:col-span-2 grid gap-2 text-sm text-slate-700">
-          <p><span className="text-slate-500">อีเมล:</span> {member.email ?? '–'} {member.email && (member.emailVerified ? <span className="text-xs text-emerald-700">(ยืนยันแล้ว)</span> : <span className="text-xs text-slate-400">(ยังไม่ยืนยัน)</span>)}</p>
+          <p><span className="text-slate-500">อีเมล:</span> {member.email ?? '–'} {member.email && (member.emailVerified ? <span className="text-xs text-emerald-700">(ยืนยันแล้ว)</span> : <span className="text-xs text-slate-500">(ยังไม่ยืนยัน)</span>)}</p>
           <p><span className="text-slate-500">ช่องทางเข้าสู่ระบบ:</span> {[member.hasPassword && 'อีเมล', ...member.providers.map((p) => METHOD_LABELS[p.provider])].filter(Boolean).join(', ') || '–'}</p>
           <p><span className="text-slate-500">สมัครเมื่อ:</span> {formatDate(member.createdAt)} · <span className="text-slate-500">เข้าล่าสุด:</span> {formatDate(member.lastLoginAt)}{member.lastLoginMethod ? ` (${METHOD_LABELS[member.lastLoginMethod]})` : ''}</p>
           <p>
@@ -211,7 +211,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
           </p>
           <p>
             <span className="text-slate-500">สถานะ:</span>{' '}
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
+            <span className={`rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
             {member.suspendedUntil && <span className="text-xs text-slate-500"> ถึง {formatDate(member.suspendedUntil)}</span>}
             {member.statusReason && <span className="block text-xs text-slate-500">เหตุผล: {member.statusReason}</span>}
           </p>
@@ -228,7 +228,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
                   {openFlags.map((flag, i) => (
                     <li key={`${flag.code}-${i}`} className="flex items-start gap-2 text-sm text-slate-700">
                       <Flag size={14} className="mt-1 shrink-0 text-amber-600" aria-hidden="true" />
-                      <span><span className="font-bold text-slate-800">{RISK_FLAG_LABELS[flag.code]}</span>{flag.detail ? ` · ${flag.detail}` : ''} <span className="text-xs text-slate-400">{formatDate(flag.at)}</span></span>
+                      <span><span className="font-bold text-slate-800">{RISK_FLAG_LABELS[flag.code]}</span>{flag.detail ? ` · ${flag.detail}` : ''} <span className="text-xs text-slate-500">{formatDate(flag.at)}</span></span>
                     </li>
                   ))}
                 </ul>
@@ -237,7 +237,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
                     <p className="text-xs font-bold text-slate-600">รายงานจากสมาชิก {openReports.length} คน</p>
                     <ul className="mt-1 space-y-1">
                       {openReports.map((report, i) => (
-                        <li key={i} className="text-sm text-slate-700">“{report.reason}” <span className="text-xs text-slate-400">{formatDate(report.at)}</span></li>
+                        <li key={i} className="text-sm text-slate-700">“{report.reason}” <span className="text-xs text-slate-500">{formatDate(report.at)}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -438,7 +438,7 @@ export function MembersManagerView({ initialQuery = '', initialQueue }: { initia
             key={s}
             type="button"
             onClick={() => refetch(() => { setStatus(s); setQueue('none'); setPage(1); })}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${queue === 'none' && status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${queue === 'none' && status === s ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {s === 'all' ? 'ทั้งหมด' : STATUS_META[s].label} <span className="opacity-70 tabular-nums">{counts ? counts[s] : '—'}</span>
           </button>
@@ -455,11 +455,12 @@ export function MembersManagerView({ initialQuery = '', initialQueue }: { initia
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-64">
-          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="search"
             value={query}
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
+            aria-label="ค้นหาชื่อ อีเมล หรือ id"
             placeholder="ค้นหาชื่อ อีเมล หรือ id"
             className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
           />
@@ -521,13 +522,13 @@ export function MembersManagerView({ initialQuery = '', initialQueue }: { initia
                       <td className="px-4 py-2.5 text-xs whitespace-nowrap">
                         {member.onboardedAt
                           ? <span className="text-slate-700">{member.preferences && member.preferences.intent !== 'member' ? INTENT_LABELS[member.preferences.intent] : 'ทำแล้ว'}</span>
-                          : <span className="text-slate-400">ยังไม่ทำ</span>}
+                          : <span className="text-slate-500">ยังไม่ทำ</span>}
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-700 whitespace-nowrap">{TRUST_LABELS[member.trust.level]}{member.hostApplication?.status === 'approved' ? ' · โฮสต์' : ''}</td>
                       <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(member.createdAt)}</td>
                       <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(member.lastLoginAt)}</td>
                       <td className="px-4 py-2.5">
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold whitespace-nowrap ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold whitespace-nowrap ${STATUS_META[member.status].className}`}>{STATUS_META[member.status].label}</span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         <button type="button" onClick={() => setSelected(member)} className={adminButton.secondarySm}>จัดการ</button>

@@ -278,7 +278,9 @@ export function LegalBody({ tab }: { tab: Tab }) {
         เราเก็บข้อมูลเท่าที่จำเป็นต่อการให้บริการ ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) และไม่ขายข้อมูลส่วนบุคคลของคุณ
       </p>
       <SectionList sections={PRIVACY} />
-      <MyDataActions />
+      <div id="my-data" className="scroll-mt-24">
+        <MyDataActions />
+      </div>
       <section className="space-y-2">
         <h3 className="text-sm sm:text-base font-bold text-slate-900">5. ติดต่อเรา</h3>
         <p className="text-sm text-slate-600 leading-relaxed">

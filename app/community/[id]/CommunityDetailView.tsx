@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { optimizedImage } from '@/lib/optimizedImage';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { MobileNav } from '@/components/MobileNav';
@@ -120,7 +122,7 @@ export default function CommunityDetailPage({
   useEffect(() => {
     if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
   }, [myActivity.isLoaded, myActivity.joinedIds]);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
+
   const [isCopied, setIsCopied] = useState(false);
 
   // Lightbox State
@@ -131,6 +133,8 @@ export default function CommunityDetailPage({
   const [isETicketOpen, setIsETicketOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isConfirmJoinModalOpen, setIsConfirmJoinModalOpen] = useState(false);
+  const joinPanelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(joinPanelRef, () => setIsConfirmJoinModalOpen(false), { active: isConfirmJoinModalOpen, focusField: false });
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
@@ -654,17 +658,17 @@ export default function CommunityDetailPage({
 
         {/* Like the challenge page: the story, the rules as a plain table and the way there on the left; on the right
             the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
-        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+        <div className="mt-10 sm:mt-14 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-start">
           <aside className="lg:order-2 max-lg:contents lg:space-y-6 lg:sticky lg:top-24">
             <section className="p-5 sm:p-6 rounded-3xl bg-[#FFF4EE] border border-slate-200 space-y-4">
               <h2 className="text-sm sm:text-base font-bold text-slate-900">คนจัดตี้นี้</h2>
               <Link href={profileHref} className="flex items-center gap-3 min-w-0 group">
                 {/* eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers */}
-                <img
-                  src={avatarImage(eventData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80')}
-                  alt=""
-                  className="w-12 h-12 rounded-full object-cover bg-white shrink-0"
-                />
+                {eventData.hostAvatar ? (
+                  <img src={avatarImage(eventData.hostAvatar)} alt="" className="w-12 h-12 rounded-full object-cover bg-white shrink-0" />
+                ) : (
+                  <span className="w-12 h-12 rounded-full bg-white text-slate-600 font-bold flex items-center justify-center shrink-0" aria-hidden="true">{[...(eventData.hostName || '?')][0]}</span>
+                )}
                 <span className="min-w-0">
                   <span className="block text-sm sm:text-base font-bold text-slate-900 truncate group-hover:underline">{eventData.hostName}</span>
                   {(isSample || eventData.hostRating || eventData.hostHostedCount) && (
@@ -679,8 +683,8 @@ export default function CommunityDetailPage({
               </Link>
               <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
                 <Link href={profileHref} className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดูโปรไฟล์และรีวิว</Link>
-                <button type="button" onClick={() => setIsReportModalOpen(true)} className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
-                  <Flag className="inline-flex items-center min-h-11 w-3.5 h-3.5" aria-hidden="true" />
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-600 hover:text-slate-800 cursor-pointer">
+                  <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                   รายงาน
                 </button>
               </div>
@@ -853,6 +857,9 @@ export default function CommunityDetailPage({
       {/* Fullscreen Lightbox Modal */}
       {isLightboxOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="ดูรูปเต็มจอ"
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => setIsLightboxOpen(false)}
         >
@@ -874,7 +881,7 @@ export default function CommunityDetailPage({
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={galleryImages[activePhotoIndex]}
+              src={optimizedImage(galleryImages[activePhotoIndex], 1080)}
               alt={`Fullscreen ${activePhotoIndex + 1}`}
               className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl"
             />
@@ -910,7 +917,7 @@ export default function CommunityDetailPage({
                   activePhotoIndex === idx ? 'border-[#F26430] scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
                 }`}
               >
-                <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                <img src={optimizedImage(imgUrl, 128)} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -1003,7 +1010,10 @@ export default function CommunityDetailPage({
           onClick={() => setIsConfirmJoinModalOpen(false)}
         >
           <div
-            className="bg-white rounded-3xl p-5 sm:p-7 max-w-lg sm:max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative"
+            ref={joinPanelRef}
+            data-dialog-shell
+            tabIndex={-1}
+            className="focus:outline-hidden bg-white rounded-3xl p-5 sm:p-7 max-w-lg sm:max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 text-left space-y-5 animate-scale-up relative"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -1011,7 +1021,7 @@ export default function CommunityDetailPage({
           >
             {/* Top Bar: Category Pill & Close Button */}
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#F26430] text-xs font-bold tracking-wide">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#C2410C] text-xs font-bold tracking-wide">
                 <span>ตี้</span>
               </div>
               <button
@@ -1067,7 +1077,7 @@ export default function CommunityDetailPage({
                 <div className="flex items-center gap-2.5">
                   <Calendar className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div>
-                    <span className="text-slate-400 block text-[11px]">วันที่จัด:</span>
+                    <span className="text-slate-500 block text-[11px]">วันที่จัด:</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.date)}</span>
                   </div>
                 </div>
@@ -1075,7 +1085,7 @@ export default function CommunityDetailPage({
                 <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div>
-                    <span className="text-slate-400 block text-[11px]">ช่วงเวลา:</span>
+                    <span className="text-slate-500 block text-[11px]">ช่วงเวลา:</span>
                     <span className="font-bold text-slate-900">{cleanText(eventData.time)}</span>
                   </div>
                 </div>
@@ -1083,7 +1093,7 @@ export default function CommunityDetailPage({
                 <div className="flex items-start gap-2.5 sm:col-span-2">
                   <MapPin className="w-4 h-4 text-[#F26430] shrink-0 mt-0.5" />
                   <div>
-                    <span className="text-slate-400 block text-[11px]">สถานที่นัดพบ:</span>
+                    <span className="text-slate-500 block text-[11px]">สถานที่นัดพบ:</span>
                     <span className="font-bold text-slate-900 leading-relaxed">{cleanText(eventData.location)}</span>
                   </div>
                 </div>
@@ -1091,7 +1101,7 @@ export default function CommunityDetailPage({
                 <div className="flex items-center gap-2.5 sm:col-span-2">
                   <User className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400 text-[11px]">ผู้จัด:</span>
+                    <span className="text-slate-500 text-[11px]">ผู้จัด:</span>
                     <span className="font-bold text-slate-900">{eventData.hostName || 'Verified Community Host'}</span>
                     <ShieldCheck className="w-3.5 h-3.5 text-[#F26430]" />
                   </div>
@@ -1125,7 +1135,7 @@ export default function CommunityDetailPage({
                 type="button"
                 onClick={handleExecuteJoin}
                 disabled={Boolean(joinBlocker(hostCheckMember))}
-                className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-2xs hover:shadow-md transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-3.5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold shadow-sm transition-colors active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>ยืนยันการเข้าร่วม</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1141,13 +1151,6 @@ export default function CommunityDetailPage({
             isOpen={isETicketOpen}
             onClose={() => setIsETicketOpen(false)}
             event={eventData}
-            ticketId={`TICK-${eventData.id}`}
-            isCheckedIn={isCheckedIn}
-            onCheckIn={() => {
-              const nextCheckedIn = !isCheckedIn;
-              setIsCheckedIn(nextCheckedIn);
-              showToast(nextCheckedIn ? 'เช็คอินหน้างานเรียบร้อย ยินดีต้อนรับค่ะ! 🎉' : 'ยกเลิกการจำลองเช็คอินเรียบร้อย');
-            }}
             onOpenChat={() => setIsChatOpen(true)}
           />}
           {isChatOpen && <GroupChatModal isOpen onClose={() => setIsChatOpen(false)} event={eventData} />}

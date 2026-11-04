@@ -166,7 +166,7 @@ export function SpotsMapPanel() {
               type="button"
               aria-pressed={statuses[status]}
               onClick={() => setStatuses((current) => ({ ...current, [status]: !current[status] }))}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${statuses[status] ? 'border-slate-300 bg-white text-slate-700' : 'border-slate-200 bg-slate-50 text-slate-400 line-through'}`}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${statuses[status] ? 'border-slate-300 bg-white text-slate-700' : 'border-slate-200 bg-slate-50 text-slate-500 line-through'}`}
             >
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: STATUS_COLORS[status] }} />
               {STATUS_LABELS[status]} {points ? counts[status].toLocaleString('th-TH') : ''}
@@ -174,7 +174,7 @@ export function SpotsMapPanel() {
           ))}
         </div>
         {openingId && <span className="inline-flex items-center gap-1 text-xs text-slate-500"><Loader2 size={12} className="animate-spin" /> กำลังเปิด…</span>}
-        <span className="ml-auto text-[11px] text-slate-400">คลิกจุดเพื่อแก้ไขสถานที่</span>
+        <span className="ml-auto text-[11px] text-slate-500">คลิกจุดเพื่อแก้ไขสถานที่</span>
       </div>
 
       {error && <p role="alert" className="text-sm font-semibold text-rose-600">{error}</p>}

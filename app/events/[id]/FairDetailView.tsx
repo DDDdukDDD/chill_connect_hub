@@ -1,5 +1,6 @@
 'use client';
 
+import { optimizedImage } from '@/lib/optimizedImage';
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -597,7 +598,7 @@ export default function FairDetailPage({
 
         {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
             right the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}
-        <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+        <div className="mt-10 sm:mt-14 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-start">
           <aside className="lg:order-2 max-lg:contents lg:space-y-6 lg:sticky lg:top-24">
             <section className="p-5 sm:p-6 rounded-3xl bg-[#EEF4FA] border border-slate-200 space-y-3">
               {/* An imported อีเวนต์ names the site we read it from (a venue or a calendar such as ThaiRun), not its organizer */}
@@ -619,7 +620,7 @@ export default function FairDetailPage({
                 ) : (
                   <span />
                 )}
-                <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 cursor-pointer">
+                <button type="button" onClick={() => setIsReportModalOpen(true)} className="min-h-11 inline-flex items-center gap-1 text-slate-600 hover:text-slate-800 cursor-pointer">
                   <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                   แจ้งข้อมูลผิด
                 </button>
@@ -741,10 +742,10 @@ export default function FairDetailPage({
                   return (
                     <div
                       key={sub.id}
-                      className={`p-4 rounded-2xl bg-white border transition-all space-y-3 flex flex-col justify-between ${
+                      className={`p-4 rounded-2xl border transition-all space-y-3 flex flex-col justify-between ${
                         isJoined
-                          ? 'border-sky-400 ring-2 ring-sky-300/50 shadow-md bg-gradient-to-b from-sky-50/25 to-white'
-                          : 'border-slate-200/90 shadow-2xs hover:border-sky-300 hover:shadow-xs'
+                          ? 'border-sky-400 ring-2 ring-sky-300/50 shadow-md bg-sky-50/30'
+                          : 'bg-white border-slate-200/90 shadow-2xs hover:border-sky-300 hover:shadow-xs'
                       }`}
                     >
                       <div className="space-y-2">
@@ -782,7 +783,7 @@ export default function FairDetailPage({
                           />
                           <div className="min-w-0">
                             <span className="text-xs font-bold text-slate-800 block truncate">{sub.creatorName}</span>
-                            <span className="text-[11px] text-slate-400 block">นัด {sub.time}</span>
+                            <span className="text-[11px] text-slate-500 block">นัด {sub.time}</span>
                           </div>
                         </div>
 
@@ -833,13 +834,13 @@ export default function FairDetailPage({
 
       {/* Fullscreen Lightbox Modal */}
       {isLightboxOpen && galleryImages.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200">
+        <div role="dialog" aria-modal="true" aria-label="ดูรูปเต็มจอ" className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
             <div className="flex items-center gap-3">
               <span className="text-sm sm:text-base font-bold truncate max-w-md">
                 {cleanText(eventData.title)}
               </span>
-              <span className="text-xs text-slate-400 bg-white/10 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs text-slate-500 bg-white/10 px-2.5 py-0.5 rounded-full">
                 {activePhotoIndex + 1} / {galleryImages.length}
               </span>
             </div>
@@ -855,7 +856,7 @@ export default function FairDetailPage({
 
           <div className="relative flex-1 flex items-center justify-center py-4 select-none">
             <img
-              src={galleryImages[activePhotoIndex]}
+              src={optimizedImage(galleryImages[activePhotoIndex], 1080)}
               alt={`${eventData.title} รูปที่ ${activePhotoIndex + 1}`}
               className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-300"
             />
@@ -891,7 +892,7 @@ export default function FairDetailPage({
                   activePhotoIndex === idx ? 'border-sky-400 scale-105 opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
                 }`}
               >
-                <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                <img src={optimizedImage(imgUrl, 128)} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>

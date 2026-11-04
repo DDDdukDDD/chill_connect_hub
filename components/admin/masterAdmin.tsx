@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { compressImage } from '@/lib/media/compressor';
@@ -99,7 +100,7 @@ export function ImageField({ id, value, onChange, folder }: { id: string; value:
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <input id={id} value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://... หรือ /images/..." className={fieldInputClass} />
+        <input id={id} aria-label="ลิงก์รูป" value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://... หรือ /images/..." className={fieldInputClass} />
         <button type="button" onClick={() => inputRef.current?.click()} disabled={isUploading} className={`${adminButton.secondary} shrink-0`}>
           {isUploading ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />} อัปโหลด
         </button>
@@ -170,17 +171,17 @@ export function MasterList({
               </div>
             )}
             {row.leading}
-            <div className={`min-w-0 flex-1 ${entry.active ? '' : 'opacity-60'}`}>
+            <div className={`min-w-[calc(100%-4.5rem)] sm:min-w-0 flex-1 ${entry.active ? '' : 'opacity-60'}`}>
               <p className="truncate text-sm font-bold text-slate-800">{row.title}</p>
               {row.subtitle && <div className="mt-0.5 truncate text-[11px] text-slate-500">{row.subtitle}</div>}
             </div>
             {row.extra}
             {allowDeactivate && (
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold ${entry.active ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-500'}`}>
+              <span className={`rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold ${entry.active ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-500'}`}>
                 {entry.active ? 'ใช้งาน' : 'ปิดใช้งาน'}
               </span>
             )}
-            {entry.builtIn && allowDeactivate && <span className="text-[10px] font-semibold text-slate-400" title="มากับระบบ ลบไม่ได้ ปิดใช้งานได้">มากับระบบ</span>}
+            {entry.builtIn && allowDeactivate && <span className="text-[11px] font-semibold text-slate-500" title="มากับระบบ ลบไม่ได้ ปิดใช้งานได้">มากับระบบ</span>}
             {admin.canEdit && (
               <div className="flex items-center gap-1">
                 <button type="button" onClick={() => onEdit(entry)} className={adminButton.icon} title="แก้ไข"><Pencil size={13} /></button>
@@ -198,7 +199,7 @@ export function MasterList({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => { if (confirm(`ลบ "${row.title}"? ลบแล้วกู้คืนไม่ได้`)) admin.remove(collection, entry.id, row.title); }}
+                    onClick={() => { void askConfirm(`ลบ "${row.title}"? ลบแล้วกู้คืนไม่ได้`).then((ok) => { if (ok) admin.remove(collection, entry.id, row.title); }); }}
                     className={adminButton.icon}
                     title="ลบ"
                   >

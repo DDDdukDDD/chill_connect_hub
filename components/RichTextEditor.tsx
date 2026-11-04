@@ -261,11 +261,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             type="button"
             onClick={() => exec('insertUnorderedList')}
             className="min-h-8 px-2.5 rounded-lg bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center gap-1 cursor-pointer shadow-2xs text-[11px] transition-colors active:scale-95"
-            title="ใส่สัญลักษณ์ข้อความจุดนำ (Bullet)"
-            aria-label="ใส่สัญลักษณ์ข้อความจุดนำ (Bullet)"
+            title="ใส่รายการแบบจุด"
+            aria-label="ใส่รายการแบบจุด"
           >
             <List className="w-3.5 h-3.5" />
-            <span>Bullet ข้อ</span>
+            <span>รายการ</span>
           </button>
 
           {/* Meeting Point Tag */}
@@ -321,9 +321,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       />
 
       {/* Character Counter & Helper Footer */}
-      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-        <span>คุณสามารถพิมพ์ตัวหนาหรือไฮไลต์หัวข้อได้ทันทีโดยไม่ต้องใส่เครื่องหมาย **</span>
-        <span>{characterCount} ตัวอักษร</span>
+      <div className="flex justify-end text-xs text-slate-500 px-1 tabular-nums">
+        <span className="whitespace-nowrap">{characterCount} ตัวอักษร</span>
       </div>
     </div>
   );

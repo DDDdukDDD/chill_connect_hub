@@ -189,7 +189,7 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
         <span className="inline-flex items-center gap-2 flex-wrap">
           {!isNew && <AdminStatusChip status={eventStatus(event!)} />}
           {event?.source && <span>แหล่งที่มา: {event.source}</span>}
-          {!isNew && <span className="text-slate-400">id: {event!.id}</span>}
+          {!isNew && <span className="text-slate-500">id: {event!.id}</span>}
         </span>
       }
       onClose={onClose}

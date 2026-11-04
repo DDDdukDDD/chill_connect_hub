@@ -12,7 +12,7 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 export const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
-const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
+const FACE_COLORS = ['bg-amber-700', 'bg-pink-700', 'bg-sky-700'];
 
 const startTime = (event: EventItem) => (event.time ?? '').split('-')[0].trim().replace(/\s*น\.$/, '');
 

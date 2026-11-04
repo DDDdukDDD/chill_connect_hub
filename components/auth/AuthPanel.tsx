@@ -114,7 +114,7 @@ function Divider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-4 my-6" role="separator">
       <div className="border-t border-slate-200 flex-1" />
-      <span className="text-xs text-slate-400 font-bold shrink-0">{label}</span>
+      <span className="text-xs text-slate-500 font-bold shrink-0">{label}</span>
       <div className="border-t border-slate-200 flex-1" />
     </div>
   );
@@ -152,7 +152,7 @@ function PasswordInput({ id, value, onChange, autoComplete, invalid, describedBy
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
         aria-pressed={visible}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
       >
         {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>

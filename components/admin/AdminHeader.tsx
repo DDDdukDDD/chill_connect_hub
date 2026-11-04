@@ -31,7 +31,7 @@ export function AdminHeader({ activeModule, onOpenSearch, onOpenNavigation }: Ad
       </button>
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <span className="text-slate-400 text-xs font-medium hidden sm:block truncate">{crumb.parent}</span>
+        <span className="text-slate-500 text-xs font-medium hidden sm:block truncate">{crumb.parent}</span>
         <ChevronRight size={12} className="text-slate-300 shrink-0 hidden sm:block" />
         <span className="text-slate-700 text-sm font-semibold truncate">{crumb.label}</span>
       </div>
@@ -46,14 +46,14 @@ export function AdminHeader({ activeModule, onOpenSearch, onOpenNavigation }: Ad
         >
           <Search size={14} className="shrink-0" />
           <span className="hidden flex-1 text-left md:block">ค้นหา...</span>
-          <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold md:block">Ctrl K</kbd>
+          <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold md:block">Ctrl K</kbd>
         </button>
       )}
 
       {/* Environment Badge */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
         <Server size={11} className="text-slate-500" />
-        <span className="text-[10px] font-bold text-slate-600 tracking-wide hidden sm:block">
+        <span className="text-[11px] font-bold text-slate-600 tracking-wide hidden sm:block">
           {process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}
         </span>
       </div>

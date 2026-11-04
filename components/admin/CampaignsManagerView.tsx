@@ -1,5 +1,6 @@
 'use client';
 
+import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Eye, EyeOff, Loader2, Megaphone, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { CampaignStrip } from '@/components/CampaignStrip';
@@ -224,7 +225,7 @@ export function CampaignsManagerView() {
   };
 
   const remove = async (campaign: AdminCampaign) => {
-    if (!window.confirm(`ลบแคมเปญ "${campaign.name}"? ชาเลนจ์และของรางวัลยังอยู่ ลบเฉพาะแคมเปญ`)) return;
+    if (!await askConfirm(`ลบแคมเปญ "${campaign.name}"? ชาเลนจ์และของรางวัลยังอยู่ ลบเฉพาะแคมเปญ`)) return;
     const res = await fetch('/api/admin/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: campaign.id }) });
     const json = await res.json();
     if (!json.success) setError(json.error || 'ลบไม่สำเร็จ');
@@ -312,7 +313,7 @@ export function CampaignsManagerView() {
                     <tbody className="divide-y divide-slate-100">
                       {s.quests.map((q) => (
                         <tr key={q.id}>
-                          <td className="py-1.5 pr-3 text-slate-800">{q.isStep && <span className="mr-1.5 rounded bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-white">หลัก</span>}{q.title}</td>
+                          <td className="py-1.5 pr-3 text-slate-800">{q.isStep && <span className="mr-1.5 rounded bg-slate-900 px-1.5 py-0.5 text-[11px] font-bold text-white">หลัก</span>}{q.title}</td>
                           <td className="py-1.5 px-3 text-right tabular-nums">{q.joined.toLocaleString()}</td>
                           <td className="py-1.5 px-3 text-right tabular-nums">{q.finished.toLocaleString()}</td>
                           <td className="py-1.5 pl-3 text-right tabular-nums text-slate-600">{percent(q.finished, q.joined)}</td>

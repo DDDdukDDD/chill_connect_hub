@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { askConfirm } from '@/components/admin/adminConfirm';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import {
   Bot,
   RefreshCw,
@@ -47,6 +49,8 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
   const [spotProvince, setSpotProvince] = useState(initialProvince ?? '');
   const [spotLimit, setSpotLimit] = useState(30);
   const [showAddModal, setShowAddModal] = useState(false);
+  const addPanelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(addPanelRef, () => setShowAddModal(false), { active: showAddModal, focusField: false });
   const [historySourceId, setHistorySourceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -178,7 +182,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSource.name || !newSource.url) {
-      showToast('⚠️ กรุณาระบุชื่อและ URL ของแหล่งข้อมูล');
+      showToast('กรุณาระบุชื่อและ URL ของแหล่งข้อมูล');
       return;
     }
 
@@ -213,7 +217,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
 
   // ── Delete Custom Source ──
   const handleDeleteSource = async (id: string, name: string) => {
-    if (!confirm(`ยืนยันการลบแหล่งข้อมูล "${name}"?`)) return;
+    if (!await askConfirm(`ยืนยันการลบแหล่งข้อมูล "${name}"?`)) return;
     try {
       const res = await fetch(`/api/admin/sources?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -244,8 +248,8 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
         setAutoPublish(nextVal);
         showToast(
           nextVal
-            ? '⚡ เปิดระบบ Auto-Publish: กิจกรรมที่ดูดมาจะอนุมัติขึ้นหน้าเว็บทันที'
-            : '🛡️ ปิด Auto-Publish: กิจกรรมใหม่จะอยู่ในคิวรอตรวจสอบ (Pending Approval)'
+            ? 'เปิดเผยแพร่อัตโนมัติ: กิจกรรมที่ดูดมาจะอนุมัติขึ้นหน้าเว็บทันที'
+            : 'ปิดเผยแพร่อัตโนมัติ: กิจกรรมใหม่จะอยู่ในคิวรอตรวจสอบ (Pending Approval)'
         );
       }
     } catch (err) {
@@ -255,7 +259,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
 
   // ── Reset & Seed Live Bangkok Events ──
   const handleResetAndSeed = async () => {
-    if (!confirm('ต้องการรีเซ็ตและดึงข้อมูลอีเวนต์สดชุดใหญ่ (80+ รายการ) ใหม่ทั้งหมดใช่หรือไม่?')) return;
+    if (!await askConfirm('ต้องการรีเซ็ตและดึงข้อมูลอีเวนต์สดชุดใหญ่ (80+ รายการ) ใหม่ทั้งหมดใช่หรือไม่?')) return;
     try {
       setIsResetting(true);
       const res = await fetch('/api/admin/events', {
@@ -327,7 +331,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
 
       <AdminPageHeader
         icon={Bot}
-        title="Scraper Engine"
+        title="การดึงข้อมูล"
         description="นำเข้า Event และ Spot จากแหล่งข้อมูลภายนอก พร้อมตรวจ robots.txt คัดข้อมูลไม่ครบ และกันรายการซ้ำ"
         badge={<AdminBadge>JSON-LD + ตัวอ่านเฉพาะเว็บ</AdminBadge>}
         actions={
@@ -378,7 +382,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 title="รีเซ็ตชุด Event ตัวอย่างแบบคัดสรร (ไม่ใช่การดึงจากเว็บ)"
               >
                 <Database size={14} className={isResetting ? 'animate-spin' : ''} />
-                {isResetting ? 'กำลังโหลด...' : 'โหลดชุด Event ตัวอย่าง'}
+                {isResetting ? 'กำลังโหลด...' : 'โหลดอีเวนต์ตัวอย่าง'}
               </button>
             )}
             <button
@@ -392,7 +396,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 ? `กำลังสแกน ${sourceTypeFilter === 'spots' ? 'Spots' : 'Events'}...`
                 : sourceTypeFilter === 'spots'
                 ? `สแกน Spots${spotProvince ? ` · ${spotProvince}` : ''}`
-                : 'สแกน Event sources'}
+                : 'สแกนแหล่งอีเวนต์'}
             </button>
           </>
         }
@@ -403,10 +407,10 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
         {[
           { label: 'แหล่งข้อมูล', value: sourceTypeFilter === 'spots' ? spotSources.length : eventSources.length, unit: 'แห่ง', style: 'bg-sky-50 border-sky-100 text-[#2B527A]' },
           { label: 'กำลังใช้งาน', value: activeSources.length, unit: `/${sourceTypeFilter === 'spots' ? spotSources.length : eventSources.length}`, style: 'bg-[#EBF3ED] border-[#4A7C59]/15 text-[#4A7C59]' },
-          { label: sourceTypeFilter === 'spots' ? 'Spots ที่นำเข้า' : 'Events ที่นำเข้า', value: totalContentCount, unit: 'รายการ', style: 'bg-amber-50 border-amber-100 text-amber-700' },
+          { label: sourceTypeFilter === 'spots' ? 'สถานที่ที่นำเข้า' : 'อีเวนต์ที่นำเข้า', value: totalContentCount, unit: 'รายการ', style: 'bg-amber-50 border-amber-100 text-amber-700' },
           ...(sourceTypeFilter === 'events' ? [{
             label: 'Auto-Publish Mode',
-            value: autoPublish ? 'ON (อัตโนมัติ)' : 'OFF (รอตรวจ)',
+            value: autoPublish ? 'เปิด' : 'ปิด รอตรวจ',
             unit: '',
             style: autoPublish ? 'bg-[#EBF3ED] border-[#4A7C59]/20 text-[#2D5A3C]' : 'bg-slate-50 border-slate-200 text-slate-600',
           }] : [{
@@ -418,9 +422,9 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
         ].map((s) => (
           <div key={s.label} className={`border rounded-xl p-3.5 ${s.style}`}>
             <p className="text-2xl font-bold">
-              {s.value} <span className="text-xs font-normal opacity-70">{s.unit}</span>
+              {s.value} <span className="text-xs font-normal">{s.unit}</span>
             </p>
-            <p className="text-xs opacity-80 mt-0.5">{s.label}</p>
+            <p className="text-xs mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -430,19 +434,19 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
         <div className="bg-white border-2 border-[#4A7C59]/30 rounded-2xl p-5 shadow-md animate-fade-in relative">
           <button
             onClick={() => setScrapeResult(null)}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="absolute top-4 right-4 text-slate-500 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <X size={16} />
           </button>
 
           <div className="flex items-center gap-2.5 mb-3">
             <CheckCircle2 size={20} className="text-[#4A7C59]" />
-            <h3 className="text-base font-bold text-slate-800">ผลสแกน {scrapeResult.targetType === 'spots' ? 'Spot sources' : 'Event sources'}</h3>
+            <h3 className="text-base font-bold text-slate-800">ผลสแกน {scrapeResult.targetType === 'spots' ? 'แหล่งสถานที่' : 'แหล่งอีเวนต์'}</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-              <p className="text-slate-400 text-[11px] font-semibold uppercase">สแกนทั้งหมด</p>
+              <p className="text-slate-500 text-[11px] font-semibold uppercase">สแกนทั้งหมด</p>
               <p className="text-xl font-bold text-slate-700">{scrapeResult.totalScanned}</p>
             </div>
             <div className="bg-[#EBF3ED] border border-[#4A7C59]/20 rounded-xl p-3 text-center">
@@ -470,7 +474,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
 
           {scrapeResult.duplicateDetails && scrapeResult.duplicateDetails.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs font-bold text-slate-500 mb-2">🔍 รายการที่ระบบคัดกรองข้าม (Duplicate Protection):</p>
+              <p className="text-xs font-bold text-slate-500 mb-2">รายการที่ระบบคัดกรองข้าม (Duplicate Protection):</p>
               <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
                 {scrapeResult.duplicateDetails.slice(0, 10).map((dup, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg">
@@ -479,7 +483,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                   </div>
                 ))}
                 {scrapeResult.duplicateDetails.length > 10 && (
-                  <p className="text-[11px] text-slate-400 text-center pt-1">
+                  <p className="text-[11px] text-slate-500 text-center pt-1">
                     ...และอีก {scrapeResult.duplicateDetails.length - 10} รายการที่ซ้ำ
                   </p>
                 )}
@@ -494,7 +498,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
         {sourceTypeFilter === 'events' && <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Activity size={15} className="text-[#2B527A]" />
-            <span className="text-slate-700 text-xs font-bold">Auto-Publish Mode:</span>
+            <span className="text-slate-700 text-xs font-bold">เผยแพร่อัตโนมัติ:</span>
           </div>
           <button
             onClick={handleToggleAutoPublish}
@@ -504,8 +508,8 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
             }`}
           >
-            <Power size={11} className={autoPublish ? 'text-[#4A7C59]' : 'text-slate-400'} />
-            {autoPublish ? 'เปิดใช้งาน (Auto-Approve)' : 'ปิด (Moderate First)'}
+            <Power size={11} className={autoPublish ? 'text-[#4A7C59]' : 'text-slate-500'} />
+            {autoPublish ? 'เปิด: ขึ้นเว็บทันที' : 'ปิด: รอทีมงานตรวจก่อน'}
           </button>
         </div>}
 
@@ -523,9 +527,10 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
       {/* Search & Filter Bar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="text"
+            aria-label="ค้นหาชื่อแหล่งข้อมูล, URL หรือหมวดหมู่"
             placeholder="ค้นหาชื่อแหล่งข้อมูล, URL หรือหมวดหมู่..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -535,8 +540,8 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
 
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="ประเภทแหล่งข้อมูล">
           {([
-            { id: 'events', label: `Events (${eventSources.length})` },
-            { id: 'spots', label: `Spots (${spotSources.length})` },
+            { id: 'events', label: `อีเวนต์ (${eventSources.length})` },
+            { id: 'spots', label: `สถานที่ (${spotSources.length})` },
           ] as const).map((target) => (
             <button
               key={target.id}
@@ -560,7 +565,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 statusFilter === st ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              {{ all: 'ทั้งหมด', active: 'Active', inactive: 'Inactive' }[st]}
+              {{ all: 'ทั้งหมด', active: 'ใช้งาน', inactive: 'พักไว้' }[st]}
             </button>
           ))}
         </div>
@@ -585,7 +590,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
           </div>
           {sourceTypeFilter === 'spots' && !spotSources.length && (
             <button type="button" onClick={() => setShowAddModal(true)} className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1D4ED8]">
-              <Plus size={14} /> เพิ่ม Spot source
+              <Plus size={14} /> เพิ่มแหล่งสถานที่
             </button>
           )}
         </div>
@@ -613,21 +618,21 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                       <div className="flex items-center gap-2.5 flex-wrap mb-1">
                         <h3 className="text-slate-800 font-bold text-sm leading-tight">{source.name}</h3>
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                             isActive
                               ? 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/20'
                               : 'bg-slate-100 text-slate-500 border-slate-200'
                           }`}
                         >
-                          {isActive ? '● Active' : '○ Inactive'}
+                          {isActive ? 'ใช้งาน' : 'พักไว้'}
                         </span>
                         {source.isCustom && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                             Custom Source
                           </span>
                         )}
-                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${source.targetType === 'spots' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-sky-200 bg-sky-50 text-sky-800'}`}>
-                          {source.targetType === 'spots' ? 'Spot source' : 'Event source'}
+                        <span className={`rounded-md border px-1.5 py-0.5 text-[11px] font-semibold ${source.targetType === 'spots' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-sky-200 bg-sky-50 text-sky-800'}`}>
+                          {source.targetType === 'spots' ? 'แหล่งสถานที่' : 'แหล่งอีเวนต์'}
                         </span>
                       </div>
 
@@ -640,13 +645,13 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                           href={source.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-slate-400 hover:text-[#2B527A] flex items-center gap-1 transition-colors text-[11px]"
+                          className="text-slate-500 hover:text-[#2B527A] flex items-center gap-1 transition-colors text-[11px]"
                         >
                           <ExternalLink size={10} />
                           {source.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                         </a>
                         <span className="text-slate-300">·</span>
-                        <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                        <span className="text-slate-500 text-[11px] flex items-center gap-1">
                           <Clock size={10} /> {source.lastRunAt ? `สแกนล่าสุด ${new Date(source.lastRunAt).toLocaleString('th-TH')}` : 'ยังไม่เคยสแกน'}
                         </span>
                         {source.lastRunStatus && <span className={`text-[11px] font-semibold ${source.lastRunStatus === 'failed' ? 'text-rose-700' : source.lastRunStatus === 'partial' ? 'text-amber-700' : 'text-emerald-700'}`}>{source.lastRunStatus}</span>}
@@ -660,7 +665,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                       <p className="text-xs font-bold text-slate-700">
                         {source.targetType === 'spots' ? source.spotsCount || 0 : source.eventsCount || 0} {source.targetType === 'spots' ? 'Spots' : 'Events'}
                       </p>
-                      <p className="text-[10px] text-slate-400">ในระบบ</p>
+                      <p className="text-[11px] text-slate-500">ในระบบ</p>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -671,7 +676,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                             ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
                             : 'bg-[#EBF3ED] border-[#4A7C59]/20 text-[#2D5A3C] hover:bg-[#4A7C59] hover:text-white'
                         }`}
-                        title={isActive ? 'พักการดึงข้อมูล (Deactivate)' : 'เปิดใช้งาน (Activate)'}
+                        title={isActive ? 'พักการดึงข้อมูล' : 'เปิดใช้งาน'}
                       >
                         <Power size={13} />
                       </button>
@@ -721,12 +726,12 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
       {/* Add Custom Source Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl p-6">
+          <div ref={addPanelRef} data-dialog-shell tabIndex={-1} role="dialog" aria-modal="true" aria-label="เพิ่มแหล่งข้อมูลใหม่" className="focus:outline-hidden bg-white border border-slate-200 rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-base font-bold text-slate-800">เพิ่มแหล่งข้อมูลใหม่ (Add Custom Source)</h3>
+              <h3 className="text-base font-bold text-slate-800">เพิ่มแหล่งข้อมูลใหม่</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-600"
               >
                 <X size={16} />
               </button>
@@ -740,6 +745,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 <input
                   type="text"
                   required
+                  aria-label="ชื่อแหล่งข้อมูล"
                   placeholder="เช่น Eventpop / The Concert / ThaiRun"
                   value={newSource.name}
                   onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
@@ -778,8 +784,8 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                   }}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 >
-                  <option value="events">Events / meetups / fairs</option>
-                  <option value="spots">Spots / places</option>
+                  <option value="events">ตี้และอีเวนต์</option>
+                  <option value="spots">สถานที่</option>
                 </select>
                 <p className="mt-1 text-[11px] text-slate-500">รองรับหน้าเว็บที่เปิดเผย Schema.org JSON-LD และอนุญาตตาม robots.txt</p>
               </div>
