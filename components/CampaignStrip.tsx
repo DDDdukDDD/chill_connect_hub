@@ -88,7 +88,7 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
     >
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] sm:text-xs font-medium text-slate-600 tabular-nums truncate">{state}{detail && ` · ${detail}`}</span>
-        <span className="block text-sm sm:text-base lg:text-lg font-bold leading-snug line-clamp-2 lg:truncate">{campaign.headline}</span>
+        <span className="block text-sm sm:text-base lg:text-lg font-bold leading-snug line-clamp-2">{campaign.headline}</span>
         <span className="mt-0.5 sm:mt-1 inline-flex items-center gap-1 text-xs sm:text-sm font-bold">
           {ready ? 'แลกสิทธิ์ลุ้น' : enrolled ? 'ดูรายละเอียด' : campaign.cta}
           <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />

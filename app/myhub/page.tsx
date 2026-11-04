@@ -11,6 +11,7 @@ import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
 import { MyMonthSection } from '@/components/myhub/MyMonthSection';
 import { MyCampaignsSection } from '@/components/myhub/MyCampaignsSection';
+import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { ChallengeList } from '@/components/ChallengeList';
@@ -2325,32 +2326,13 @@ function MyHubContent() {
 
                   {/* Section 2: Rewards Catalog Gateway & Active Voucher Locker */}
                   <div className="space-y-5 pt-4">
-                    {/* Gateway Banner to /rewards */}
-                    <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent p-5 sm:p-6 rounded-3xl border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-                      <div className="space-y-1.5 max-w-xl">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-[#F26430] text-white shadow-2xs">
-                            ของรางวัล
-                          </span>
-                          <span className="text-xs text-slate-500 font-bold">แลก XP เป็นของรางวัล</span>
-                        </div>
-                        <h4 className="font-bold text-sm sm:text-base text-slate-900">
-                          แลกรับส่วนลดคาเฟ่ บอร์ดเกม และของขวัญพิเศษ
-                        </h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          คุณมี <strong className="text-[#D04A1B] font-bold">{userXp} XP</strong> พร้อมแลกรับสิทธิพิเศษจากพาร์ทเนอร์ทางการในหน้าศูนย์ของรางวัล
-                        </p>
-                      </div>
-
-                      <Link
-                        href="/rewards"
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs shrink-0 active:scale-95 cursor-pointer"
-                      >
-                        <Gift className="w-4 h-4 text-amber-400" />
-                        <span>เปิดศูนย์ของรางวัล</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
+                    {/* What the XP can buy, the ones it covers first (owner 2026-11-04) */}
+                    <section aria-labelledby="my-rewards-title" className="space-y-2.5">
+                      <h4 id="my-rewards-title" className="font-bold text-sm sm:text-base text-slate-900 tabular-nums">
+                        แลกอะไรดี <span className="font-medium text-slate-500">· คุณมี {userXp.toLocaleString()} XP</span>
+                      </h4>
+                      <PromoBoard campaigns={[]} redeemedRewardIds={redeemedRewardIds} balance={userXp} rewardsOnPhone />
+                    </section>
 
                     {/* Active Vouchers Locker */}
                     <div className="space-y-3">

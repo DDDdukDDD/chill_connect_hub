@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Gift } from 'lucide-react';
+import { ArrowRight, Check, Gift } from 'lucide-react';
 import { useDragRail } from '@/components/campaigns/useDragRail';
 import { REWARD_SHOP_ITEMS, type RewardShopItem } from '@/data/rewardsData';
 import { type Campaign, campaignDay } from '@/lib/campaigns/types';
@@ -28,7 +28,7 @@ function CampaignPanel({ campaign, onOpen }: { campaign: Campaign; onOpen: (id: 
     <button type="button" onClick={() => onOpen(campaign.id)} className={`group relative w-full ${CARD_HEIGHT} text-left flex items-center gap-3 rounded-3xl bg-[#FFF0B3] hover:bg-[#FFE99A] text-slate-900 pl-4 pr-3 sm:pl-5 sm:pr-4 overflow-hidden transition-colors cursor-pointer`}>
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] sm:text-xs font-medium text-slate-600 tabular-nums">ถึง {campaignDay(campaign.endDate)}</span>
-        <span className="block text-sm sm:text-base lg:text-lg font-bold leading-snug line-clamp-2 lg:truncate">{campaign.headline}</span>
+        <span className="block text-sm sm:text-base lg:text-lg font-bold leading-snug line-clamp-2">{campaign.headline}</span>
         <span className="mt-0.5 sm:mt-1 inline-flex items-center gap-1 text-xs sm:text-sm font-bold">
           {campaign.cta}
           <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
@@ -46,11 +46,17 @@ function CampaignPanel({ campaign, onOpen }: { campaign: Campaign; onOpen: (id: 
   );
 }
 
-/** A reward as a flat card: price, name and a joke, with its photo as a round sticker in the corner */
-function RewardCard({ item, tint }: { item: RewardShopItem; tint: string }) {
+/** A reward as a flat card: price, name and a joke, with its photo as a round sticker in the corner. A member with enough XP is told so */
+function RewardCard({ item, tint, canRedeem }: { item: RewardShopItem; tint: string; canRedeem: boolean }) {
   return (
     <Link href={`/rewards?reward=${encodeURIComponent(item.id)}`} draggable={false} className={`group relative block ${CARD_HEIGHT} rounded-3xl ${tint} px-3.5 py-2.5 overflow-hidden`}>
       <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 tabular-nums">{item.costXp.toLocaleString()} XP</span>
+      {canRedeem && (
+        <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+          <Check className="w-3 h-3" aria-hidden="true" />
+          แลกได้แล้ว
+        </span>
+      )}
       <span className="mt-1 block pr-3 text-[13px] font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{item.title}</span>
       <span className="absolute left-3.5 right-14 bottom-2.5 text-[11px] text-slate-600 truncate">{QUIPS[item.category]}</span>
       {/* eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link */}
@@ -65,10 +71,21 @@ function RewardCard({ item, tint }: { item: RewardShopItem; tint: string }) {
  * headings, so its edges line up. With no campaign to show, the rewards take the whole width. The landing leaves the
  * rewards out (`withRewards={false}`, owner 2026-11-04): a visitor has no XP yet, and /challenges is where it is earned.
  */
-export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewards = true, className = '' }: { campaigns: Campaign[]; onOpen: (id: string) => void; redeemedRewardIds?: string[]; withRewards?: boolean; className?: string }) {
+export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewards = true, balance, rewardsOnPhone = false, className = '' }: {
+  campaigns: Campaign[];
+  onOpen?: (id: string) => void;
+  redeemedRewardIds?: string[];
+  withRewards?: boolean;
+  /** A signed-in member's XP: what it covers says so and comes first */
+  balance?: number;
+  /** On /challenges the list comes first on phones; where the rewards are the point, they stay */
+  rewardsOnPhone?: boolean;
+  className?: string;
+}) {
+  const canRedeem = (item: RewardShopItem) => balance !== undefined && balance >= item.costXp;
   const rewards = withRewards
     ? REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id))
-        .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+        .sort((a, b) => Number(canRedeem(b)) - Number(canRedeem(a)) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
         .slice(0, REWARDS_SHOWN)
     : [];
   const hasCampaigns = campaigns.length > 0;
@@ -90,7 +107,7 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
           <div ref={campaignRailRef} {...campaignHandlers} className={railClass}>
             {campaigns.map((campaign) => (
               <div key={campaign.id} className={`${campaignWidth} shrink-0 snap-start last:snap-end`}>
-                <CampaignPanel campaign={campaign} onOpen={onOpen} />
+                <CampaignPanel campaign={campaign} onOpen={onOpen ?? (() => {})} />
               </div>
             ))}
           </div>
@@ -108,11 +125,10 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
       )}
 
       {rewards.length > 0 && (
-        // Not on phones: the list is what /challenges is for, and "ดูของรางวัล" under its title goes to the rewards
-        <div ref={rewardRailRef} {...rewardHandlers} aria-label="ของรางวัลแลกด้วย XP" className={`${railClass} max-sm:hidden min-w-0`}>
+        <div ref={rewardRailRef} {...rewardHandlers} aria-label="ของรางวัลแลกด้วย XP" className={`${railClass} ${rewardsOnPhone ? '' : 'max-sm:hidden'} min-w-0`}>
           {rewards.map((item, index) => (
             <div key={item.id} className={`${rewardWidth} shrink-0 snap-start`}>
-              <RewardCard item={item} tint={TINTS[index % TINTS.length]} />
+              <RewardCard item={item} tint={TINTS[index % TINTS.length]} canRedeem={canRedeem(item)} />
             </div>
           ))}
           <div className={`${rewardWidth} shrink-0 snap-start last:snap-end`}>
