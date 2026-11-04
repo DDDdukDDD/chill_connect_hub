@@ -3,7 +3,9 @@ import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { thaiTimeAgo } from '../moments/service';
-import { notificationStore, type NotificationMatch, type NotificationType } from './notificationStore';
+import { notificationStore, type NotificationMatch, type NotificationType, type StoredNotification } from './notificationStore';
+import { afterResponse, pushConfigured, sendPush, type PushMessage } from './push';
+import { pushStore } from './pushStore';
 
 export type { NotificationType };
 
@@ -30,63 +32,113 @@ export async function notify(recipientId: string | null | undefined, actor: Memb
   if (!recipientId || recipientId === actor.id) return;
   // A repeated like or follow by the same person is one notification, not many
   const same = type === 'comment' ? undefined : { memberId: recipientId, actorId: actor.id, types: [type], momentId };
-  await quietly(() => notificationStore.add({ id: newId(), memberId: recipientId, type, actorId: actor.id, momentId, commentId, preview: preview?.slice(0, 80), createdAt: now() }, same));
+  await quietly(() => saveAndPush({ id: newId(), memberId: recipientId, type, actorId: actor.id, momentId, commentId, preview: preview?.slice(0, 80), createdAt: now() }, same));
 }
 
 /** Tells a member, once per challenge, that they finished it and the reward is waiting */
 export async function notifyChallengeFinished(memberId: string, questId: string, questTitle: string): Promise<void> {
   await quietly(async () => {
     if (await notificationStore.exists({ memberId, types: ['challenge'], questId })) return;
-    await notificationStore.add({ id: newId(), memberId, type: 'challenge', actorId: memberId, questId, preview: questTitle.slice(0, 80), createdAt: now() });
+    await saveAndPush({ id: newId(), memberId, type: 'challenge', actorId: memberId, questId, preview: questTitle.slice(0, 80), createdAt: now() });
   });
 }
 
 /** Tells a member that staff looked at a moment's photo and did not count it as a visit (the reason is the preview) */
 export async function notifyEvidenceRejected(memberId: string, momentId: string, note: string): Promise<void> {
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'evidence', actorId: memberId, momentId, preview: note.slice(0, 80), createdAt: now() }, { memberId, types: ['evidence'], momentId }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'evidence', actorId: memberId, momentId, preview: note.slice(0, 80), createdAt: now() }, { memberId, types: ['evidence'], momentId }));
 }
 
 /** Tells a member that someone they picked after a ตี้ picked them too ("อยากเจออีก"), so they can talk now */
 export async function notifyMatch(memberId: string, actor: Member, eventId: string): Promise<void> {
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'match', actorId: actor.id, eventId, createdAt: now() }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'match', actorId: actor.id, eventId, createdAt: now() }));
 }
 
 /** A seat opened in a full ตี้ the member queued for; it is held for them for a while (lib/social/waitlist.ts) */
 export async function notifySeat(memberId: string, eventId: string): Promise<void> {
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'seat', actorId: memberId, eventId, createdAt: now() }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'seat', actorId: memberId, eventId, createdAt: now() }));
 }
 
 /** Someone asked the host a question on their ตี้, or the host answered the member's question */
 export async function notifyQuestion(memberId: string, actor: Member, eventId: string, type: 'question' | 'answer', preview: string): Promise<void> {
   if (memberId === actor.id) return;
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type, actorId: actor.id, eventId, preview: preview.slice(0, 80), createdAt: now() }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: actor.id, eventId, preview: preview.slice(0, 80), createdAt: now() }));
 }
 
 /** Tells a host that staff published or turned down their ตี้ (the preview is its title) */
 export async function notifyReview(memberId: string, eventId: string, eventTitle: string, type: 'approved' | 'rejected', path: string): Promise<void> {
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId, eventId, types: ['approved', 'rejected'] }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: memberId, eventId, path, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId, eventId, types: ['approved', 'rejected'] }));
 }
 
 /** Tells a host that someone joined their ตี้; joining again after leaving stays one notification */
 export async function notifyJoined(hostId: string, actor: Member, eventId: string, eventTitle: string): Promise<void> {
   if (hostId === actor.id) return;
-  await quietly(() => notificationStore.add({ id: newId(), memberId: hostId, type: 'joined', actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId: hostId, types: ['joined'], actorId: actor.id, eventId }));
+  await quietly(() => saveAndPush({ id: newId(), memberId: hostId, type: 'joined', actorId: actor.id, eventId, preview: eventTitle.slice(0, 80), createdAt: now() }, { memberId: hostId, types: ['joined'], actorId: actor.id, eventId }));
 }
 
 /** The member was drawn in a campaign's prize draw; `path` opens the campaign's popup, where they claim */
 export async function notifyDrawWon(memberId: string, path: string, headline: string): Promise<void> {
-  await quietly(() => notificationStore.add({ id: newId(), memberId, type: 'draw_won', actorId: memberId, path, preview: headline.slice(0, 80), createdAt: now() }));
+  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'draw_won', actorId: memberId, path, preview: headline.slice(0, 80), createdAt: now() }));
 }
 
 /** Everyone else who held an entry: the results are out. One write, as there can be thousands */
 export async function notifyDrawResult(memberIds: string[], path: string, headline: string): Promise<void> {
-  await quietly(() => notificationStore.addToMany(memberIds, { type: 'draw_result', path, preview: headline.slice(0, 80) }));
+  await quietly(async () => {
+    const notice = { type: 'draw_result' as const, path, preview: headline.slice(0, 80) };
+    await notificationStore.addToMany(memberIds, notice);
+    if (pushConfigured) afterResponse(() => pushToAll(memberIds, notice));
+  });
 }
 
 /** Sent by the site itself, not by a person */
 const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected', 'draw_won', 'draw_result']);
 
+/** Where a notice from the site leads; undefined means its moment */
+const systemHref = (n: StoredNotification) => (n.type === 'evidence' ? undefined : n.type === 'rejected' ? '/myhub' : n.type === 'approved' || n.type === 'draw_won' || n.type === 'draw_result' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`);
+
+/** Where a notice about a person leads; undefined means their moment or, without one, their profile */
+const personHref = (n: StoredNotification) => (n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : n.type === 'joined' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : undefined);
+
 const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานตรวจแล้ว ตี้ของคุณขึ้นบนเว็บแล้ว ชวนเพื่อนๆ มาได้เลย', rejected: 'ทีมงานยังเผยแพร่ตี้นี้ไม่ได้ ดูตี้ของคุณได้ที่มายฮับ', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย' };
+
+/** The same words and destination as the bell (components/NotificationBell.tsx) */
+function pushMessage(n: StoredNotification, actor?: Member): PushMessage {
+  const isSystem = SYSTEM_TYPES.has(n.type);
+  const momentHref = n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' ? '#comments' : ''}` : undefined;
+  return {
+    title: isSystem || !actor ? 'Chillwaa' : tidyDisplayName(actor.displayName).trim() || actor.displayName,
+    body: n.preview ? `${MESSAGES[n.type]}\n“${n.preview}”` : MESSAGES[n.type],
+    url: (isSystem ? systemHref(n) : personHref(n)) ?? momentHref ?? `/profile?id=${encodeURIComponent(n.actorId)}`,
+    // Many hearts on one moment stay one notification; a like taken back and given again does not ring twice
+    tag: n.type === 'like' ? `like:${n.momentId}` : n.commentId ? `comment:${n.commentId}` : [n.type, n.actorId, n.momentId ?? n.eventId ?? n.questId ?? n.path].filter(Boolean).join(':'),
+  };
+}
+
+/** Pushed under the same rule as the bell: never someone the member blocked, never to or from a closed account */
+async function pushNotice(n: StoredNotification): Promise<void> {
+  const devices = await pushStore.listFor([n.memberId]);
+  if (devices.length === 0) return;
+  const people = await memberRepository.findByIds([n.memberId, n.actorId]);
+  const recipient = people.get(n.memberId);
+  const actor = people.get(n.actorId);
+  if (recipient?.status !== 'active') return;
+  if (!SYSTEM_TYPES.has(n.type) && (actor?.status !== 'active' || recipient.blockedIds?.includes(n.actorId))) return;
+  await sendPush(devices, () => pushMessage(n, actor));
+}
+
+async function pushToAll(memberIds: string[], notice: Pick<StoredNotification, 'type' | 'preview' | 'path'>): Promise<void> {
+  const devices = await pushStore.listFor(memberIds);
+  if (devices.length === 0) return;
+  const people = await memberRepository.findByIds([...new Set(devices.map((d) => d.memberId))]);
+  await sendPush(
+    devices.filter((d) => people.get(d.memberId)?.status === 'active'),
+    (d) => pushMessage({ ...notice, id: '', memberId: d.memberId, actorId: d.memberId, createdAt: '', read: false })
+  );
+}
+
+async function saveAndPush(notice: Omit<StoredNotification, 'read' | 'readAt'>, replace?: NotificationMatch): Promise<void> {
+  await notificationStore.add(notice, replace);
+  if (pushConfigured) afterResponse(() => pushNotice({ ...notice, read: false }));
+}
 
 export async function notificationsFor(member: Member) {
   const mine = await notificationStore.list(member.id);
@@ -103,7 +155,7 @@ export async function notificationsFor(member: Member) {
           actorName: 'Chillwaa',
           actorAvatar: '',
           momentId: n.type === 'evidence' ? n.momentId : undefined,
-          href: n.type === 'evidence' ? undefined : n.type === 'rejected' ? '/myhub' : n.type === 'approved' || n.type === 'draw_won' || n.type === 'draw_result' ? n.path : n.type === 'seat' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`,
+          href: systemHref(n),
           message: MESSAGES[n.type],
           preview: n.preview,
           timeAgo: thaiTimeAgo(n.createdAt),
@@ -120,7 +172,7 @@ export async function notificationsFor(member: Member) {
         actorName: tidyDisplayName(actor.displayName).trim() || actor.displayName,
         actorAvatar: actor.avatarUrl ?? '',
         momentId: n.momentId,
-        href: n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : n.type === 'joined' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : (undefined as string | undefined),
+        href: personHref(n),
         message: MESSAGES[n.type],
         preview: n.preview,
         timeAgo: thaiTimeAgo(n.createdAt),
@@ -139,4 +191,5 @@ export async function markNotificationsRead(memberId: string): Promise<void> {
 /** Account deletion: nothing addressed to, or caused by, the member stays behind */
 export async function removeNotificationsOf(memberId: string): Promise<void> {
   await notificationStore.removeInvolving(memberId);
+  await pushStore.removeMember(memberId);
 }

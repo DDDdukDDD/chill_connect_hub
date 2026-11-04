@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { turnPushOff } from './appClient';
 import { forgetAll } from './clientMemory';
 import type { HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
 
@@ -101,6 +102,7 @@ export const memberActions = {
     return json.member as PublicMember;
   },
   logout: async () => {
+    await turnPushOff().catch(() => undefined);
     await fetch('/api/auth/member', { method: 'DELETE' }).catch(() => undefined);
     setState({ member: null });
   },
@@ -173,6 +175,7 @@ export const memberActions = {
   changePassword: (currentPassword: string, newPassword: string) => postJson('/api/auth/member/password', { currentPassword, newPassword }),
   deleteAccount: async () => {
     await postJson('/api/auth/member/account', { confirm: 'DELETE' }, 'DELETE');
+    await turnPushOff().catch(() => undefined);
     setState({ member: null });
   },
 };

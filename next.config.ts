@@ -38,7 +38,11 @@ const nextConfig: NextConfig = {
   // No "X-Powered-By: Next.js": it tells attackers the framework for free
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // The service worker must never be served stale, or a fix to it would not reach installed apps
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] },
+    ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],

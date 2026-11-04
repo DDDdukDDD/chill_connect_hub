@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { AppSettingsCard } from '@/components/AppSettingsCard';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -95,6 +96,9 @@ export function SettingsScreen() {
             </div>
             <div className={SECTION}>
               <HostCard member={own.member} application={own.hostApplication} onChanged={changed} />
+            </div>
+            <div className={`${SECTION} empty:hidden`}>
+              <AppSettingsCard />
             </div>
             <div className={SECTION}>
               <AccountCard member={own.member} onLogout={() => setIsLogoutOpen(true)} />
