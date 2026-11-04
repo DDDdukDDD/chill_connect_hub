@@ -26,7 +26,7 @@ const CATEGORY_LOOK: Record<RewardShopItem['category'], { icon: LucideIcon; tile
 /** How XP is earned, said once in the wallet card */
 const EARN: { icon: LucideIcon; text: string; xp: string }[] = [
   { icon: Users, text: 'ไปตี้ (คนจัดเช็กอินให้)', xp: '+50' },
-  { icon: Camera, text: 'แชร์โมเมนต์จากที่เที่ยวหรืออีเวนต์', xp: '+30' },
+  { icon: Camera, text: 'แชร์โมเมนต์ถ่ายที่นั่น (เปิดตำแหน่ง หรือรอทีมงานตรวจรูป)', xp: '+30' },
   { icon: Trophy, text: 'ทำชาเลนจ์ครบ', xp: 'รับเพิ่ม' },
 ];
 /** The XP tickets lean a little, each its own way, like the challenge stickers */
@@ -110,6 +110,7 @@ export default function RewardsPage() {
     setDetailItem(item);
   };
 
+  const [redeemError, setRedeemError] = useState<{ id: string; message: string; needsIdentity: boolean } | null>(null);
   const handleRedeem = async () => {
     if (!detailItem || isRedeeming) return;
     if (!isLoggedIn) {
@@ -127,7 +128,8 @@ export default function RewardsPage() {
     setIsRedeeming(false);
     setIsConfirming(false);
     if (!result.ok) {
-      showToast(result.message || 'แลกไม่สำเร็จ ลองใหม่อีกครั้งนะ');
+      // Said inside the dialog: a toast would sit behind it
+      setRedeemError({ id: detailItem.id, message: result.message || 'แลกไม่สำเร็จ ลองใหม่อีกครั้งนะ', needsIdentity: Boolean(result.needsIdentity) });
       return;
     }
     setJustRedeemedId(detailItem.id);
@@ -136,7 +138,7 @@ export default function RewardsPage() {
   const filteredRewards = useMemo(
     () =>
       REWARD_SHOP_ITEMS.filter(
-        (item) => (selectedCategory === 'all' || item.category === selectedCategory) && (!onlyAffordable || userXp >= item.costXp)
+        (item) => !item.campaignOnly && (selectedCategory === 'all' || item.category === selectedCategory) && (!onlyAffordable || userXp >= item.costXp)
       ),
     [selectedCategory, onlyAffordable, userXp]
   );
@@ -145,7 +147,7 @@ export default function RewardsPage() {
   const tiles = filteredRewards.filter((item) => item !== featured);
   const myRedeemedItems = useMemo(() => REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)), [redeemedRewardIds]);
   // What the wallet cheers about: how many I can take now, or how far the next one is
-  const openRewards = REWARD_SHOP_ITEMS.filter((item) => !redeemedRewardIds.includes(item.id));
+  const openRewards = REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !redeemedRewardIds.includes(item.id));
   const affordableCount = openRewards.filter((item) => item.costXp <= userXp).length;
   const nextGoal = openRewards.filter((item) => item.costXp > userXp).sort((a, b) => a.costXp - b.costXp)[0];
 
@@ -522,6 +524,12 @@ export default function RewardsPage() {
               {isConfirming && (
                 <p className="text-sm font-medium text-slate-700 tabular-nums">
                   ใช้ {detailItem.costXp} XP จาก {userXp.toLocaleString()} XP เหลือ {(userXp - detailItem.costXp).toLocaleString()} XP แลกเลยไหม
+                </p>
+              )}
+              {redeemError?.id === detailItem.id && (
+                <p role="alert" className="text-sm font-semibold text-rose-700">
+                  {redeemError.message}
+                  {redeemError.needsIdentity && <> <Link href="/profile/settings" className="underline">ไปยืนยันตัวตน</Link></>}
                 </p>
               )}
               <button type="button" onClick={handleRedeem} disabled={(isLoggedIn && detailShort > 0) || isRedeeming} className={`${dialogButton.primary} w-full`}>

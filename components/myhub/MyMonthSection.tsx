@@ -25,13 +25,15 @@ const hrefOf = (item: MonthItem) =>
 /**
  * "เดือนนี้ของฉัน": what "ตี้ · ที่เที่ยว" on the home page counts. Meetups the member went to with the people
  * who came, places and fairs they visited, and a way to share a moment from any of them that has none yet.
+ * An empty month shows only to a member with no plan yet (showEmptyInvite): "ถัดไปของคุณ" already covers the rest.
  */
-export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; onToast: (message: string) => void }) {
+export function MyMonthSection({ isLoggedIn, onToast, showEmptyInvite }: { isLoggedIn: boolean; onToast: (message: string) => void; showEmptyInvite: boolean }) {
   const { isLoaded, month } = useMyMonth(isLoggedIn);
   const [composer, setComposer] = useState<MomentComposerInitial | null>(null);
   const [sharedKeys, setSharedKeys] = useState<string[]>([]);
 
   if (!isLoaded || !month) return null;
+  if (month.connect.length === 0 && month.chill.length === 0 && !showEmptyInvite) return null;
   const monthName = THAI_MONTHS[Number(month.month.slice(5, 7)) - 1];
   const keyOf = (item: MonthItem) => `${item.targetType}:${item.targetId}`;
   const hasMoment = (item: MonthItem) => item.hasMoment || sharedKeys.includes(keyOf(item));

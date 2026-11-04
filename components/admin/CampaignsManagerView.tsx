@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Eye, EyeOff, Loader2, Megaphone, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { CampaignStrip } from '@/components/CampaignStrip';
-import { type Campaign, type CampaignStats, bangkokToday, campaignDay, homeCampaignOf } from '@/lib/campaigns/types';
+import { type Campaign, type CampaignStats, MAX_HOME_CAMPAIGNS, bangkokToday, campaignDay, homeCampaignsOf } from '@/lib/campaigns/types';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
 import { useAdminSession } from './AdminAuthGate';
@@ -40,7 +40,7 @@ function Kpi({ label, value, note }: { label: string; value: React.ReactNode; no
   );
 }
 
-function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: { entry: AdminCampaign | null; quests: QuestOption[]; rewards: RewardOption[]; homeNow: AdminCampaign | null; onClose: () => void; onSaved: (message: string) => void }) {
+function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: { entry: AdminCampaign | null; quests: QuestOption[]; rewards: RewardOption[]; homeNow: AdminCampaign[]; onClose: () => void; onSaved: (message: string) => void }) {
   const [form, setForm] = useState(() => (entry ? { ...entry, prizeImage: entry.prizeImage ?? '', rewardId: entry.rewardId ?? '' } : { ...EMPTY }));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="mb-1 text-[11px] sm:text-xs font-semibold text-slate-500">ตัวอย่างแถบบนหน้าแรก</p>
           <div className="pointer-events-none">
-            <CampaignStrip campaign={preview} />
+            <CampaignStrip campaign={preview} onOpen={() => {}} />
           </div>
         </div>
       }
@@ -135,9 +135,9 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
             <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าแรกและหน้าชาเลนจ์
           </label>
         </div>
-        {form.showOnHome && homeNow && homeNow.id !== form.id && (
+        {form.showOnHome && homeNow.length >= MAX_HOME_CAMPAIGNS && !homeNow.some((c) => c.id === form.id) && (
           <p className="sm:col-span-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
-            หน้าแรกแสดงได้ทีละแคมเปญ ตอนนี้แสดง “{homeNow.name}” อยู่ ถ้าเปิดพร้อมกัน แคมเปญที่เริ่มทีหลังจะแสดงแทน
+            หน้าแรกแสดงได้พร้อมกัน {MAX_HOME_CAMPAIGNS} แคมเปญ ตอนนี้เต็มแล้ว แคมเปญที่เริ่มก่อนจะไม่แสดง
           </p>
         )}
       </FormSection>
@@ -187,8 +187,8 @@ export function CampaignsManagerView() {
   const { can } = useAdminSession();
   const canEdit = can('content.edit');
   const [data, setData] = useState<{ campaigns: AdminCampaign[]; quests: QuestOption[]; rewards: RewardOption[] } | null>(null);
-  // The campaign guests see on the home strip today (same rule as the server), to warn about others marked for it
-  const homeNow = data ? homeCampaignOf(data.campaigns) : null;
+  // The campaigns on the home page today (same rule as the server), to warn about others marked for it
+  const homeNow = data ? homeCampaignsOf(data.campaigns) : [];
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminCampaign | null | undefined>(undefined);
@@ -270,10 +270,10 @@ export function CampaignsManagerView() {
                     <h2 className="text-base sm:text-lg font-bold text-slate-900">{campaign.name}</h2>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${phase.tone}`}>{phase.label}</span>
                     {campaign.showOnHome &&
-                      (homeNow && campaign.live && homeNow.id !== campaign.id ? (
-                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">ไม่ได้แสดงบนหน้าแรก: “{homeNow.name}” แสดงอยู่</span>
+                      (campaign.live && !homeNow.some((c) => c.id === campaign.id) ? (
+                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">ไม่ได้แสดงบนหน้าแรก: เกิน {MAX_HOME_CAMPAIGNS} แคมเปญ</span>
                       ) : (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">{homeNow?.id === campaign.id ? 'แสดงบนหน้าแรกอยู่' : 'แถบหน้าแรก'}</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">{homeNow.some((c) => c.id === campaign.id) ? 'แสดงบนหน้าแรกอยู่' : 'แถบหน้าแรก'}</span>
                       ))}
                   </div>
                   <p className="mt-0.5 text-sm text-slate-600">{campaign.headline}</p>
@@ -290,7 +290,8 @@ export function CampaignsManagerView() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+                <Kpi label="เข้าร่วมแคมเปญ" value={s.enrolled.toLocaleString()} />
                 <Kpi label="สมัครใหม่ช่วงแคมเปญ" value={s.signups.toLocaleString()} />
                 <Kpi label="ไปตี้แรกภายใน 14 วัน" value={percent(s.firstTeeWithin14Days, s.signups)} note={`${s.firstTeeWithin14Days} จาก ${s.signups} คน`} />
                 <Kpi label="สมัครผ่านลิงก์ชวนเพื่อน" value={s.invited.toLocaleString()} note={`ไปตี้กับคนชวนแล้ว ${s.invitedActivated} คน`} />

@@ -7,6 +7,8 @@ import { removeReviewsBy } from '@/lib/social/reviews';
 import { removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
 import { removeQuestJoinsBy } from '@/lib/social/questJoins';
+import { removeCampaignEntriesBy } from '@/lib/campaigns/members';
+import { removeWinnerEntriesBy } from '@/lib/campaigns/winners';
 import { removeVouchersBy } from '@/lib/social/questVouchers';
 import { removeFinishesBy } from '@/lib/social/questFinishes';
 import { removeContentReportsBy } from '@/lib/social/contentReports';
@@ -225,6 +227,8 @@ export async function POST(request: Request) {
     await removeVisitsBy(member.id);
     await removeRedemptionsBy(member.id);
     await removeQuestJoinsBy(member.id);
+    await removeCampaignEntriesBy(member.id);
+    await removeWinnerEntriesBy(member.id);
     await removeVouchersBy(member.id);
   await removeFinishesBy(member.id);
     await removeContentReportsBy(member.id);

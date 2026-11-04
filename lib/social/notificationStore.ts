@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import type { PendingQuery, Row } from 'postgres';
 import { momentRepository } from '../moments';
 import { USE_POSTGRES, sql, type Sql } from '../db/postgres/client';
 import { createJsonStore } from './jsonStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result';
 
 export interface StoredNotification {
   id: string;
@@ -49,6 +50,8 @@ export const KEEP_PER_MEMBER = 100;
 interface NotificationStore {
   /** Saves a notice, first removing what `replace` covers, and clears out the member's old ones */
   add(notice: Omit<StoredNotification, 'read' | 'readAt'>, replace?: NotificationMatch): Promise<void>;
+  /** The same notice from the site to many members in one write (their old ones go at their next new notice) */
+  addToMany(memberIds: string[], notice: Pick<StoredNotification, 'type' | 'preview' | 'path'>): Promise<void>;
   exists(match: NotificationMatch): Promise<boolean>;
   /** The member's current notices, newest first */
   list(memberId: string): Promise<NotificationView[]>;
@@ -82,6 +85,10 @@ function jsonStore(): NotificationStore {
         let kept = 0;
         return [{ ...notice, read: false }, ...rest].filter((n) => n.memberId !== notice.memberId || (isCurrent(n, now) && ++kept <= KEEP_PER_MEMBER));
       });
+    },
+    async addToMany(memberIds, notice) {
+      const createdAt = new Date().toISOString();
+      await store.update((items) => [...memberIds.map((memberId) => ({ ...notice, id: `ntf_${randomUUID()}`, memberId, actorId: memberId, createdAt, read: false })), ...items]);
     },
     async exists(match) {
       return store.read().some((n) => matches(n, match));
@@ -148,6 +155,14 @@ function postgresStore(): NotificationStore {
               select x.id from app.notifications x where x.recipient_id = n.recipient_id order by x.created_at desc limit ${KEEP_PER_MEMBER}
             ))`;
       });
+    },
+    async addToMany(memberIds, notice) {
+      if (memberIds.length === 0) return;
+      const db = sql();
+      await db`
+        insert into app.notifications (recipient_id, type, actor_id, preview, path)
+        select r.id, ${notice.type}::text, r.id, ${notice.preview ?? null}::text, ${notice.path ?? null}::text
+        from app.members r where r.legacy_id in ${db(memberIds)}`;
     },
     async exists(match) {
       const db = sql();

@@ -93,14 +93,15 @@ export function useMyRewards(isLoggedIn: boolean) {
   }, [isLoggedIn, refresh]);
 
   /** Redeems a catalog reward; the answer carries the message to show when it is refused */
-  const redeem = useCallback(async (rewardId: string): Promise<{ ok: boolean; message?: string }> => {
+  const redeem = useCallback(async (rewardId: string): Promise<{ ok: boolean; message?: string; needsIdentity?: boolean }> => {
     try {
-      const data: RewardsAnswer = await fetch('/api/rewards', {
+      const res = await fetch('/api/rewards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rewardId }),
-      }).then((res) => res.json());
-      if (!data.success) return { ok: false, message: data.message };
+      });
+      const data: RewardsAnswer = await res.json();
+      if (!data.success) return { ok: false, message: data.message, needsIdentity: res.status === 403 };
       setState(toState(data));
       return { ok: true };
     } catch {

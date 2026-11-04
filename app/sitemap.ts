@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page('/', 'daily', 1),
     page('/community', 'daily', 0.9),
     page('/challenges', 'daily', 0.9),
+    page('/campaigns/results', 'weekly', 0.5),
     page('/events', 'daily', 0.85),
     page('/spots', 'weekly', 0.85),
     page('/moments', 'daily', 0.7),

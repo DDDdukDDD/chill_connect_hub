@@ -52,3 +52,19 @@ export function passwordResetEmail(name: string, url: string, minutes: number) {
 </div>`,
   };
 }
+
+export function drawWinnerMessage(name: string, prize: string, code: string, url: string, days: number) {
+  const safeName = escapeHtml(name);
+  const safePrize = escapeHtml(prize);
+  return {
+    subject: 'ยินดีด้วย คุณคือผู้โชคดี · Chillwaa',
+    text: `สวัสดีคุณ ${name}\n\nรหัสสิทธิ์ ${code} ของคุณได้รับรางวัล ${prize}\nกดยืนยันรับรางวัลภายใน ${days} วัน ไม่เช่นนั้นจะจับรางวัลใหม่:\n${url}\n\nทีมงานไม่ขอเงินหรือรหัสผ่านจากคุณ`,
+    html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;color:#1e293b">
+<p>สวัสดีคุณ ${safeName}</p>
+<p>รหัสสิทธิ์ <b>${escapeHtml(code)}</b> ของคุณได้รับรางวัล <b>${safePrize}</b></p>
+<p>กดยืนยันรับรางวัลภายใน ${days} วัน ไม่เช่นนั้นจะจับรางวัลใหม่</p>
+<p><a href="${escapeHtml(url)}" style="display:inline-block;background:#2563EB;color:#fff;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:bold">ยืนยันรับรางวัล</a></p>
+<p style="color:#64748b;font-size:13px">ทีมงานไม่ขอเงินหรือรหัสผ่านจากคุณ</p>
+</div>`,
+  };
+}

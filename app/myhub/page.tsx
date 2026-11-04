@@ -10,6 +10,8 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { MySubmissions } from '@/components/MySubmissions';
 import { MyMonthSection } from '@/components/myhub/MyMonthSection';
+import { MyCampaignsSection } from '@/components/myhub/MyCampaignsSection';
+import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
@@ -379,6 +381,8 @@ function MyHubContent() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+  const myCampaigns = useCampaigns({ campaigns: [], isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
+  const hasMyCampaigns = myCampaigns.mine.length > 0;
 
   // Build resolved list of joined events
   const allJoinedEvents: EventItem[] = useMemo(() => {
@@ -967,25 +971,27 @@ function MyHubContent() {
     );
   };
 
+  const openMyChallenges = () => {
+    setHubMainMode('categories');
+    setActiveSubTab('quests_rewards');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // What has no date: the places the member saved, and their challenges and XP. Each card opens its own view
   // My Hub gathers what the member is doing and what they are interested in. "กำลังทำอยู่" comes first:
   // the challenges under way, one row each, with the XP they have. Without one, a short card shows the XP and the way in
   const renderDoingNow = () => {
-    const openChallenges = () => {
-      setHubMainMode('categories');
-      setActiveSubTab('quests_rewards');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    const allLink = 'py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap';
     // Without a challenge under way there is nothing here: the XP and the way to the challenges are under the page title
     if (doingChallenges.length === 0) return null;
     return (
-      <section aria-label="กำลังทำอยู่" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
+      <section aria-label="กำลังทำอยู่" className={hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-900">กำลังทำอยู่</h2>
-          <button type="button" onClick={openChallenges} className={allLink}>
-            {doingChallenges.length > 2 ? `ดูทั้งหมด ${doingChallenges.length}` : 'ชาเลนจ์ทั้งหมด'}
-          </button>
+          {doingChallenges.length > 2 && (
+            <button type="button" onClick={openMyChallenges} className="py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap tabular-nums">
+              ดูทั้งหมด {doingChallenges.length}
+            </button>
+          )}
         </div>
         <ul className="mt-1 divide-y divide-slate-100">
           {doingChallenges.slice(0, 2).map((challenge) => (
@@ -1088,7 +1094,7 @@ function MyHubContent() {
 
   // Sections are open, split by a thin line like the member home (owner 2026-10-30: no white boxes); on a wide
   // screen the first thing in the right column has no line over it
-  const scheduleDivider = `border-t border-slate-200/70 pt-5${doingChallenges.length === 0 && !nextEvent ? ' lg:border-t-0 lg:pt-0' : ''}`;
+  const scheduleDivider = `border-t border-slate-200/70 pt-5${doingChallenges.length === 0 && !nextEvent && !hasMyCampaigns ? ' lg:border-t-0 lg:pt-0' : ''}`;
   // What the member has their eye on, in one list: saved ตี้ and อีเวนต์ they have not joined, then saved places
   const renderSaved = () => {
     const rows = [
@@ -2018,6 +2024,7 @@ function MyHubContent() {
 
         {/* Toast Notification */}
         <Toast message={toastMessage} />
+        {myCampaigns.dialog}
 
         {/* Until the session is known nobody counts as a guest: a member refreshing the page saw the sign-up invitation first.
             A guest sees this only for the moment before going to the sign-in page */}
@@ -2048,11 +2055,7 @@ function MyHubContent() {
                       {/* The XP and the way to the challenges, one line under the name like the home greeting (was a box of its own) */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setHubMainMode('categories');
-                          setActiveSubTab('quests_rewards');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={openMyChallenges}
                         className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
                       >
                         {userXp} XP · ชาเลนจ์ของฉัน ›
@@ -2088,7 +2091,7 @@ function MyHubContent() {
                 {/* What "ตี้ · ที่เที่ยว" on the home page opens: the month behind the numbers */}
                 {isLoggedIn && (
                   <div className="order-4 lg:order-none empty:hidden border-t border-slate-200/70 pt-5">
-                    <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} />
+                    <MyMonthSection isLoggedIn={isLoggedIn} onToast={showToast} showEmptyInvite={activity.isLoaded && !nextEvent} />
                   </div>
                 )}
                 <div className="order-6 lg:order-none">
@@ -2109,12 +2112,17 @@ function MyHubContent() {
                   </button>
                 )}
 
+                    {hubMainMode === 'calendar' && hasMyCampaigns && (
+                      <div className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
+                        <MyCampaignsSection campaigns={myCampaigns.mine} rewards={myRewards} onOpen={myCampaigns.open} />
+                      </div>
+                    )}
                     {hubMainMode === 'calendar' && renderDoingNow()}
                     {hubMainMode === 'calendar' && nextEvent && (() => {
                       const when = new Date(scheduleTs(nextEvent));
                       const isFair = nextEvent.eventType === 'public_venue';
                       return (
-                        <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
+                        <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 || hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
                           <h2 className="text-base font-bold text-slate-900">ถัดไปของคุณ</h2>
                           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
                             <Link href={`${isFair ? '/events' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="group flex flex-1 basis-60 min-w-0 items-center gap-3">
