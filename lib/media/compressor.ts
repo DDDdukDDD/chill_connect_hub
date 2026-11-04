@@ -18,16 +18,19 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   targetMimeType: 'image/webp',
 };
 
-/** A stored photo should not pass this: phones on mobile data load them, and storage is paid per GB */
-export const MAX_PHOTO_BYTES = 500 * 1024;
-const LOWER_QUALITIES = [0.78, 0.7, 0.62];
-const SMALLER_SIDES = [1200, 1000, 800];
+/**
+ * A stored photo aims for this. Viewers get the optimizer's copy, not this file, so it costs storage and not their data;
+ * 500 KB with a floor of 0.62 made busy photos like food visibly softer than calm ones (owner 2026-11-04).
+ */
+export const MAX_PHOTO_BYTES = 1024 * 1024;
+const LOWER_QUALITIES = [0.84, 0.82];
+const SMALLER_SIDES = [1200, 1080];
 
 /**
  * A finished canvas as an upload, lowering quality and then size until it fits MAX_PHOTO_BYTES. WebP, or JPEG where the
  * browser cannot write WebP: Safari quietly returns a PNG for `image/webp`, several MB for a photo, and its JPEGs were
- * up to 3 MB at 0.86 (live moments, 2026-11-03). Never makes the picture smaller than 800 px; a very busy one at that
- * size is sent as it comes out.
+ * up to 3 MB at 0.86 (live moments, 2026-11-03). Never goes below quality 0.82 or 1080 px; a very busy one at that size is
+ * sent as it comes out.
  */
 export async function encodeForUpload(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob | null> {
   const encode = (from: HTMLCanvasElement, type: string, q: number) =>

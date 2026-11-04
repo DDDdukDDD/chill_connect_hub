@@ -20,6 +20,17 @@ Item template:
 
 ---
 
+### BE-257 · Moment photos sharper (owner 2026-11-04)
+- **Why:** photos were squeezed twice: to 500 KB when sent, with quality down to 0.62 and size down to 800 px, then again at quality 75 when shown. Busy photos like food came out softer than calm ones.
+- **What changed:** `encodeForUpload` aims for 1 MB, with a floor of quality 0.82 and 1080 px (a very busy photo goes over 1 MB, under the 5 MB upload limit). `MomentPhotos` asks the optimizer for quality 85, listed in `images.qualities` in `next.config.ts`. A new quality must be added there or the optimizer answers 400. This replaces the 500 KB in BE-236 and also covers other uploads through `compressImage`.
+- **What to do about it:** new photos take more storage on Vercel Blob. Photos already stored get the better showing, not a better file.
+
+### BE-256 · "สถานที่" tab on /moments counts a place typed by hand (owner 2026-11-04)
+- **What changed:** a general moment with a real location text (`realPlace`, not the placeholders) is filed under "สถานที่" in the tab and its count. It stays `targetType: 'general'`, so XP and challenges are unchanged. A post with no place at all is only under "ทั้งหมด". `GET /api/moments?targetType=spot` without `targetId` means this tab.
+
+### BE-255 · Campaigns on /rewards, rewards in My Hub, "แลกได้แล้ว" on the card (owner 2026-11-04)
+- **What changed:** `/rewards` lists campaigns not yet joined, because draw prizes are not in the shop; its screen moved to `app/rewards/RewardsView.tsx` and `page.tsx` reads the campaigns on the server. The "XP · ชาเลนจ์ของฉัน" tab in My Hub shows the reward row in place of the banner to `/rewards`. `PromoBoard` takes `balance`: a reward the member's XP covers comes first with a "แลกได้แล้ว" badge. `rewardsOnPhone` keeps the row on phones. On `/rewards` the big prize card is gone, as draw prizes are reached through the campaign row (`?reward=ID` still opens one, and the wallet's next goal skips them), and the wallet is the soft `#FFF4D6`.
+
 ### BE-254 · Campaigns and rewards as one board on /challenges and the landing (owner 2026-11-04, after Trip.com)
 - **What changed:** new `components/campaigns/PromoBoard.tsx`: the campaign on the left half, rewards as a sideways row on the right, and only rewards at full width when no campaign is left to show. Flat tints, no borders or headings, one card height (`CARD_HEIGHT`), photos as tilted stickers, and a small joke per reward category (`QUIPS`), after the owner asked for minimal and funny. Cards are 108 to 128 px tall, rewards are hidden on phones, and `CampaignStrip` on the member home has the same look. Quick repeated drags are covered in `useDragRail`: a press stops the glide and the snapping timer. It replaces the strip on `/challenges` and the visitor landing; the landing shows campaigns only (`withRewards={false}`, two at a time), because rewards belong where XP is earned. Member home keeps `CampaignShelf`. The drag code moved to `components/campaigns/useDragRail.ts`. The row lists `REWARD_SHOP_ITEMS` without draw entries and `campaignOnly`.
 
