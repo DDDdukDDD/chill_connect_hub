@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { tidyDisplayName } from '../displayName';
+import { tidyDisplayName, withoutSampleHandle } from '../displayName';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
@@ -83,7 +83,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
       const commenter = comment.authorId ? people.get(comment.authorId) : undefined;
       return {
         id: comment.id,
-        userName: commenter?.displayName ?? comment.authorName,
+        userName: moment.isSample ? withoutSampleHandle(commenter?.displayName ?? comment.authorName) : commenter?.displayName ?? comment.authorName,
         userAvatar: commenter?.avatarUrl ?? comment.authorAvatar ?? '',
         text: plain(comment.text, moment.isSample),
         timeAgo: thaiTimeAgo(comment.createdAt),
@@ -99,7 +99,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
   return {
     id: moment.id,
     authorId: moment.authorId,
-    userName: author?.displayName ?? moment.authorName,
+    userName: moment.isSample ? withoutSampleHandle(author?.displayName ?? moment.authorName) : author?.displayName ?? moment.authorName,
     userAvatar: author?.avatarUrl ?? moment.authorAvatar ?? '',
     userBadge: moment.authorBadge ?? '',
     images: moment.images,

@@ -11,6 +11,7 @@ import { tidyDisplayName } from '../displayName';
 import { joinersOf } from '../social/questJoins';
 import type { Member } from './types';
 import { getCommunityEventCategory } from '@/data/masterHub';
+import { nightlifeAgeMessage, NIGHTLIFE_CATEGORY } from './nightlife';
 import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
@@ -27,12 +28,9 @@ export type JoinStatus = 'joined' | 'already_joined' | 'event_full' | 'event_end
 
 const isCommunity = (event: EventItem) => event.eventType !== 'public_venue';
 
-/** Thai law sets 20 for drinking venues. The year of birth is what the member told us, so this is a check, not proof */
 export function nightlifeAgeBlock(member: Member, event: Pick<EventItem, 'eventType' | 'lifestyleCategory' | 'category' | 'title' | 'tag'>): string | null {
-  if (event.eventType === 'public_venue' || getCommunityEventCategory(event as Parameters<typeof getCommunityEventCategory>[0]) !== 'bars_nightlife') return null;
-  const year = member.preferences?.birthYear;
-  if (!year) return 'ตี้หมวดบาร์สำหรับอายุ 20 ปีขึ้นไป บอกปีเกิดของคุณในหน้าเริ่มต้นก่อนนะ';
-  return new Date().getFullYear() - year < 20 ? 'ตี้หมวดบาร์สำหรับอายุ 20 ปีขึ้นไป' : null;
+  if (event.eventType === 'public_venue' || getCommunityEventCategory(event as Parameters<typeof getCommunityEventCategory>[0]) !== NIGHTLIFE_CATEGORY) return null;
+  return nightlifeAgeMessage(member.preferences?.birthYear);
 }
 const hostOf = (event: EventItem) => (event as { createdByMemberId?: string }).createdByMemberId;
 

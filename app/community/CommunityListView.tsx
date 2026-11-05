@@ -449,7 +449,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         {/* High-Density Community Events Grid / List */}
         {/* The list view is dated, like /challenges: this week on top, then by month */}
         {viewMode === 'list' && filteredEvents.length > 0 ? (
-          <EventDateList kind="meetups" events={filteredEvents} renderTile={tileFor} />
+          <EventDateList kind="meetups" events={filteredEvents} />
         ) : paginatedEvents.length > 0 ? (
           // The landing's tiles at the landing's widths, plus a line for host, rating and price (owner 2026-10-27)
           <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">

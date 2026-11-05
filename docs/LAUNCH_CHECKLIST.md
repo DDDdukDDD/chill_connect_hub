@@ -104,7 +104,7 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 ถ้าลบเร็วไปหน้าเว็บจะดูโล่งระหว่างทดสอบ ต้องสำรองข้อมูลก่อนลบ
 
 **โค้ดและบัญชี** (`Claude`)
-- [ ] บัญชีตัวอย่าง 24 บัญชี (`@sample.invalid`) พร้อมโพสต์: ลบ `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` และการเรียก `ensureSampleMembers()` ใน `app/api/members/[id]`, `app/api/members/suggested`, `app/api/moments`, `app/moments/page.tsx`, `app/moments/[id]/page.tsx`
+- [ ] บัญชีตัวอย่าง 24 บัญชี (`@sample.invalid`) พร้อมโพสต์: ลบ `withoutSampleHandle`, `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` และการเรียก `ensureSampleMembers()` ใน `app/api/members/[id]`, `app/api/members/suggested`, `app/api/moments`, `app/moments/page.tsx`, `app/moments/[id]/page.tsx`
 - [ ] โพสต์ตัวอย่าง: `MOCK_POSTS` และการสร้างอัตโนมัติใน `lib/moments/jsonMomentRepository.ts`
 - [ ] ตี้ตัวอย่าง 58 รายการ พร้อมรายละเอียด และรายชื่อ `sample-guest-` 205 คน
 - [ ] `data/mockData.ts` และ `data/profilesData.ts` ส่วนที่หน้าเว็บยังอ่านอยู่ และ `rollSampleEventDate`

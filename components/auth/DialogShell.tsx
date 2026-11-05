@@ -116,7 +116,7 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
           </button>
         )}
         {title && !bare && (
-          <div className="text-center pb-6 px-8">
+          <div className="text-center pb-6 px-2 sm:px-8">
             <h2 id={ownTitleId} className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
               <PhraseText text={title} />
             </h2>

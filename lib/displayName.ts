@@ -12,6 +12,12 @@ const STRAY_THAI_MARK = new RegExp('(?<![' + THAI_CONSONANT + THAI_MARK + '])[' 
 const INVISIBLE = new RegExp('[\\u0000-\\u001F\\u007F\\u200B-\\u200F\\u2028-\\u202F\\uFEFF]', 'g');
 const THAI_LEADING_VOWEL = new RegExp('[\\u0E40-\\u0E44]');
 
+/**
+ * Sample posts name their author like "คุณกี้ (Kee_Explorer)", where the bracket is how the sample account is found
+ * (data/sampleMembers.ts). People see only the name. Goes with the sample data before launch (docs/LAUNCH_CHECKLIST.md).
+ */
+export const withoutSampleHandle = (name: string): string => name.replace(/\s*\([A-Za-z0-9_]+\)\s*$/, '');
+
 /** Name given to an email sign-up until the member picks one in onboarding (sign-up no longer asks) */
 export const NEW_MEMBER_NAME = 'สมาชิกใหม่';
 

@@ -490,7 +490,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
           <>
             {/* The list view is dated, like /challenges: on now on top, then by month */}
             {viewMode === 'list' ? (
-              <EventDateList kind="fairs" events={filteredEvents} renderTile={tileFor} />
+              <EventDateList kind="fairs" events={filteredEvents} />
             ) : (
               // The ตี้ grid and tile shape, so switching tabs feels like one page; posters show whole (owner 2026-10-27)
               <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">

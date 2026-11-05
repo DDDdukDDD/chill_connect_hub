@@ -11,6 +11,8 @@ import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUt
 import { placeName } from '@/lib/placeName';
 import { optimizedImage } from '@/lib/optimizedImage';
 
+const PHOTO_STAND_IN = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';
+
 type Face = { id: string; name: string; avatar: string };
 
 const FACES_SHOWN = 3;
@@ -186,6 +188,9 @@ export function MeetupTile({
       >
         <img
           src={optimizedImage(event.image, 384)}
+          onError={(e) => {
+            if (e.currentTarget.src !== PHOTO_STAND_IN) e.currentTarget.src = PHOTO_STAND_IN;
+          }}
           alt=""
           loading="lazy"
           className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}

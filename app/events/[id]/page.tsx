@@ -10,7 +10,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getPublicEvent(decodeURIComponent((await params).id), 'public_venue');
-  if (!event) return { title: 'อีเวนต์และอีเวนต์' };
+  if (!event) return { title: 'อีเวนต์' };
   return pageMetadata({
     title: event.title,
     description: metaDescription(`${formatEventDateRange(event)} · ${event.location} · ${metaDescription(event.description, 300)}`),

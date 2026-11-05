@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-270 · Tester's TR-001 to TR-009, and My Hub's create button (owner 2026-11-06)
+- **What changed:** see each report in `docs/TEST_REPORTS.md`. For other work to know: `joinBlocker` takes the event and can answer `'age'`; `PublicMember.birthYear` is new (sent only to the member themselves); the age rule lives in `lib/members/nightlife.ts`, used by the server and the forms. `EventDateList` has no `renderTile` and `ChallengeList` no strip: the list views are rows from the top. `withoutSampleHandle` (`lib/displayName.ts`) goes with the sample data. "งานที่จัด" in My Hub always shows, with "ตั้งตี้ใหม่", and open ตี้ are suggested to anyone with nothing coming up.
+
 ### BE-269 · Phone screens: quieter search, first tiles higher (owner 2026-11-06, from a tester's notes)
 - **What changed:** the search button inside a search box is now quiet (`DESIGN_SYSTEM.md` updated), so it no longer competes with "สมัครฟรี". On phones, `DiscoverHeader` puts the create button, ♡ and the view switch at the start of the row of filters that scrolls, instead of a row of their own, and the three `/challenges` menus keep one row at 360 px. First tile at 360 px: `/community` 481 to 429, `/challenges` 613 to 569. With no campaign left to show, `/challenges` shows the rewards row on phones instead of nothing. A visitor sees a quiet "ไม่เจอที่ชอบ? ตั้งตี้เองเลย" under the `/community` list, which asks them to sign up; the create button stays members-only (owner 2026-10-25).
 
