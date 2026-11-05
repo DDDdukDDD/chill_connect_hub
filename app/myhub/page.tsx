@@ -31,7 +31,6 @@ import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { useSpotCatalog } from '@/lib/useSpotCatalog';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { Toast } from '@/components/Toast';
 import {
@@ -475,7 +474,7 @@ function MyHubContent() {
   const hostedIdSet = useMemo(() => new Set(userCreatedEvents.map((e) => e.id)), [userCreatedEvents]);
   const guestEvents = useMemo(() => allJoinedEvents.filter((e) => !hostedIdSet.has(e.id)), [allJoinedEvents, hostedIdSet]);
   // For a member with an empty schedule: a few real meetups that are open now, the soonest first
-  const [suggestedEvents, setSuggestedEvents] = useState<EventItem[]>([]);
+  const [openEvents, setOpenEvents] = useState<EventItem[]>([]);
   const needsSuggestions = activity.isLoaded && guestEvents.length === 0;
   // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
   const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
@@ -484,21 +483,28 @@ function MyHubContent() {
     setOpenedOnHosting(true);
     setHubMainMode('hosting');
   }
+  // Read once: the member's own ตี้ are left out below, so a change to them does not ask the server again
   useEffect(() => {
     if (!needsSuggestions) return;
     let isActive = true;
     fetch('/api/events?type=community&status=recruiting&limit=40')
       .then((res) => res.json())
       .then((json: { events?: EventItem[] }) => {
-        if (!isActive) return;
-        const open = (json.events ?? []).filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id));
-        setSuggestedEvents(open.sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)).slice(0, 4));
+        if (isActive) setOpenEvents(json.events ?? []);
       })
       .catch(() => undefined);
     return () => {
       isActive = false;
     };
-  }, [needsSuggestions, hostedIdSet]);
+  }, [needsSuggestions]);
+  const suggestedEvents = useMemo(
+    () =>
+      openEvents
+        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id))
+        .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
+        .slice(0, 4),
+    [openEvents, hostedIdSet]
+  );
 
   // Events the member saved but has not joined: they had no place on this page before
   const [savedEventItems, setSavedEventItems] = useState<EventItem[]>([]);
@@ -540,25 +546,22 @@ function MyHubContent() {
     [activity.hosted],
   );
 
-  // Live catalog (published spots + bundled ones saved earlier)
-  const spotCatalog = useSpotCatalog('home');
-
-  // The catalog here was read when the page opened and holds only some places, so a place saved since is asked for by id
+  // Saved places are asked for by id (30 at a time), not found in a whole catalog; a member with none asks for nothing
   const [extraSavedSpots, setExtraSavedSpots] = useState<LifestyleSpotItem[]>([]);
   const askedSpotIds = useRef(new Set<string>());
   useEffect(() => {
-    const missing = savedSpotIds.filter((id) => !askedSpotIds.current.has(id) && !spotCatalog.some((s) => s.id === id)).slice(0, 30);
+    const missing = savedSpotIds.filter((id) => !askedSpotIds.current.has(id)).slice(0, 30);
     if (missing.length === 0) return;
     missing.forEach((id) => askedSpotIds.current.add(id));
     fetch(`/api/spots?ids=${encodeURIComponent(missing.join(','))}`)
       .then((res) => res.json())
       .then((json: { spots?: LifestyleSpotItem[] }) => setExtraSavedSpots((prev) => [...prev, ...(json.spots ?? [])]))
       .catch(() => missing.forEach((id) => askedSpotIds.current.delete(id)));
-  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
+  }, [savedSpotIds, extraSavedSpots]);
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    const byId = new Map([...extraSavedSpots, ...spotCatalog].map((s) => [s.id, s]));
+    const byId = new Map(extraSavedSpots.map((s) => [s.id, s]));
     return savedSpotIds.flatMap((id) => byId.get(id) ?? []);
-  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
+  }, [savedSpotIds, extraSavedSpots]);
 
   const removeSaved = async (kind: 'spot' | 'event', id: string, title: string) => {
     if (!(await activityActions.setSaved(kind, id, false))) return showToast('นำออกไม่สำเร็จ ลองอีกครั้งนะ');

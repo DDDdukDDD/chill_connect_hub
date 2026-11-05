@@ -28,6 +28,9 @@ interface NotificationItem {
 }
 
 const REFRESH_MS = 60_000;
+type BellData = { items: NotificationItem[]; unread: number };
+// The top bar is drawn anew on each page, so the last answer is kept outside it
+let lastRead: { memberId: string; at: number; data: BellData } | null = null;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const bangkokDay = (time: Date | string) => new Date(time).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
@@ -57,8 +60,16 @@ const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${enco
 export function NotificationBell() {
   const { member } = useMemberSession();
   const memberId = member?.id;
-  const [data, setData] = useState<{ items: NotificationItem[]; unread: number }>({ items: [], unread: 0 });
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [remembered] = useState(() => (lastRead?.memberId === memberId ? lastRead : null));
+  const [data, setDataNow] = useState<BellData>(remembered?.data ?? { items: [], unread: 0 });
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(remembered ? 'ready' : 'loading');
+  const setData = useCallback((next: BellData | ((now: BellData) => BellData)) => {
+    setDataNow((now) => {
+      const value = typeof next === 'function' ? next(now) : next;
+      if (lastRead) lastRead = { ...lastRead, data: value };
+      return value;
+    });
+  }, []);
   const [isOpen, setIsOpen] = useState(false);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [canTurnOnPush, setCanTurnOnPush] = useState(false);
@@ -73,15 +84,23 @@ export function NotificationBell() {
 
   const refresh = useCallback(() => {
     // The list on screen is not swapped under the reader
-    if (listOpen.current) return;
+    if (listOpen.current || !memberId) return;
+    // Moving between pages or back to this tab within the minute shows what was read; the timer keeps the minute
+    if (lastRead?.memberId === memberId && Date.now() - lastRead.at < REFRESH_MS - 1000) return;
+    lastRead = { memberId, at: Date.now(), data: lastRead?.memberId === memberId ? lastRead.data : { items: [], unread: 0 } };
     load().then(
       (next) => {
+        // Kept here too: this bar may be gone by now, and the next page's bar reads this
+        lastRead = { memberId, at: Date.now(), data: next };
         setData(next);
         setStatus('ready');
       },
-      () => setStatus((now) => (now === 'loading' ? 'failed' : now))
+      () => {
+        lastRead = null;
+        setStatus((now) => (now === 'loading' ? 'failed' : now));
+      }
     );
-  }, [load]);
+  }, [load, memberId, setData]);
 
   useEffect(() => {
     if (!memberId) return;

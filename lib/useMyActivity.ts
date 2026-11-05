@@ -181,13 +181,21 @@ async function pushLocalHearts() {
 }
 
 /** Mount once per page (the Navbar does): keeps the store in step with the signed-in member */
+const SYNC_FRESH_MS = 60_000;
+let lastSync: { id: string | null; at: number } = { id: null, at: 0 };
+
 export function useActivitySync() {
   const session = useMemberSession();
   const id = session.member?.id ?? null;
   useEffect(() => {
     if (!session.isLoaded) return;
     memberId = id;
-    void activityActions.refresh();
+    // The top bar is drawn anew on each page: a change here updates this state at once, so moving between pages need not ask again
+    const stillFresh = id && lastSync.id === id && state.isLoaded && Date.now() - lastSync.at < SYNC_FRESH_MS;
+    if (!stillFresh) {
+      lastSync = { id, at: Date.now() };
+      void activityActions.refresh();
+    }
     if (!id) return;
     const timer = setInterval(() => void pushLocalHearts(), 2500);
     return () => clearInterval(timer);
