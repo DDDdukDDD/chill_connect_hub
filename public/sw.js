@@ -27,11 +27,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.mode === 'navigate') {
+    // Sign-in (LINE, Google, Facebook) and email links pass through /api: the browser handles those on its own
+    if (new URL(request.url).pathname.startsWith('/api/')) return;
     event.respondWith(
       (async () => {
         try {
           return (await event.preloadResponse) || (await fetch(request));
         } catch {
+          // "No internet" only when that is true; any other failure is the browser's own page, which names the error
+          if (self.navigator.onLine) return Response.error();
           return (await caches.match(OFFLINE_PAGE)) || Response.error();
         }
       })()
