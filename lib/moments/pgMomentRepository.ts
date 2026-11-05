@@ -20,8 +20,9 @@ const hydrate = (tx: Sql, where: Fragment) => tx`
     array(select x.legacy_id from app.moment_saves s join app.members x on x.id = s.member_id where s.moment_id = m.id order by s.created_at) as saved_by,
     array(select x.legacy_id from app.moment_tags g join app.members x on x.id = g.member_id where g.moment_id = m.id order by g.created_at) as tagged_ids,
     (select coalesce(json_agg(json_build_object('id', coalesce(c.slug, c.id::text), 'author_id', x.legacy_id, 'author_name', coalesce(x.display_name, c.author_name),
-        'author_avatar', coalesce(x.avatar_url, c.author_avatar), 'body', c.body, 'hidden', c.hidden, 'created_at', c.created_at) order by c.created_at, c.id), '[]')
-       from app.moment_comments c left join app.members x on x.id = c.author_id where c.moment_id = m.id) as comments,
+        'author_avatar', coalesce(x.avatar_url, c.author_avatar), 'body', c.body, 'hidden', c.hidden, 'created_at', c.created_at, 'parent_id', coalesce(p.slug, p.id::text),
+        'liked_by', array(select y.legacy_id from app.moment_comment_likes k join app.members y on y.id = k.member_id where k.comment_id = c.id order by k.created_at)) order by c.created_at, c.id), '[]')
+       from app.moment_comments c left join app.members x on x.id = c.author_id left join app.moment_comments p on p.id = c.parent_id where c.moment_id = m.id) as comments,
     (select coalesce(json_agg(json_build_object('member_id', x.legacy_id, 'reason', r.reason, 'created_at', r.created_at) order by r.created_at), '[]')
        from app.moment_reports r join app.members x on x.id = r.member_id where r.moment_id = m.id) as reports
   from app.moments m
@@ -61,6 +62,8 @@ function rowToMoment(r: PgRow): Moment {
       text: c.body as string,
       createdAt: iso(c.created_at) as string,
       ...(c.hidden ? { hidden: true } : {}),
+      ...(c.parent_id ? { parentId: c.parent_id as string } : {}),
+      likedBy: (c.liked_by as string[] | null) ?? [],
     })),
     reports: (r.reports as Row[]).map((x) => ({ memberId: x.member_id as string, reason: x.reason as string, createdAt: iso(x.created_at) as string })),
     status: r.status,
@@ -131,11 +134,15 @@ async function insertImages(tx: Sql, momentId: string, images: string[]) {
 async function insertComments(tx: Sql, momentId: string, comments: MomentComment[]) {
   if (comments.length === 0) return;
   const members = await memberIdsOf(tx, comments.flatMap((c) => (c.authorId ? [c.authorId] : [])));
+  const parentRefs = [...new Set(comments.flatMap((c) => (c.parentId ? [c.parentId] : [])))];
+  const parents = parentRefs.length
+    ? new Map((await tx`select id, coalesce(slug, id::text) as ref from app.moment_comments where moment_id = ${momentId} and coalesce(slug, id::text) in ${tx(parentRefs)}`).map((r) => [r.ref as string, r.id as string]))
+    : new Map<string, string>();
   const rows = comments.map((c) => {
     const authorId = c.authorId ? members.get(c.authorId) ?? null : null;
     return {
       id: uuidV7(c.createdAt), slug: c.id, moment_id: momentId, author_id: authorId, author_name: authorId ? null : c.authorName, author_avatar: authorId ? null : c.authorAvatar ?? null,
-      body: c.text, hidden: Boolean(c.hidden), created_at: toDate(c.createdAt) as Date,
+      body: c.text, hidden: Boolean(c.hidden), created_at: toDate(c.createdAt) as Date, parent_id: c.parentId ? parents.get(c.parentId) ?? null : null,
     };
   });
   await tx`insert into app.moment_comments ${tx(rows)}`;
@@ -164,6 +171,19 @@ async function syncComments(tx: Sql, momentId: string, before: MomentComment[], 
     }
   }
   await insertComments(tx, momentId, after.filter((c) => !beforeById.has(c.id)));
+  for (const comment of after) {
+    const had = beforeById.get(comment.id)?.likedBy ?? [];
+    const has = comment.likedBy ?? [];
+    const added = has.filter((id) => !had.includes(id));
+    const taken = had.filter((id) => !has.includes(id));
+    if (added.length === 0 && taken.length === 0) continue;
+    const members = await memberIdsOf(tx, [...added, ...taken]);
+    const [row] = await tx`select id from app.moment_comments where moment_id = ${momentId} and coalesce(slug, id::text) = ${comment.id}`;
+    const addedRows = added.flatMap((id) => (members.has(id) ? [{ comment_id: row.id as string, member_id: members.get(id) as string }] : []));
+    const takenIds = taken.flatMap((id) => (members.has(id) ? [members.get(id) as string] : []));
+    if (addedRows.length) await tx`insert into app.moment_comment_likes ${tx(addedRows)} on conflict do nothing`;
+    if (takenIds.length) await tx`delete from app.moment_comment_likes where comment_id = ${row.id} and member_id in ${tx(takenIds)}`;
+  }
 }
 
 async function syncReports(tx: Sql, momentId: string, before: MomentReport[], after: MomentReport[]) {
@@ -225,7 +245,11 @@ const hydrateFeed = (tx: Sql, ids: string[], query: MomentFeedQuery) => {
   const me = query.viewerId;
   const blocked = query.blockedIds ?? [];
   const mine = (table: string) => (me ? tx`exists (select 1 from ${tx(`app.${table}`)} t where t.moment_id = m.id and t.member_id = (select id from app.members where legacy_id = ${me}))` : tx`false`);
-  const shownComment = tx`not c.hidden and (c.author_id is null or (x.status <> 'banned' ${blocked.length ? tx`and x.legacy_id <> all(${tx.array(blocked)}::text[])` : tx``}))`;
+  const noBlock = (who: 'x' | 'px') => (blocked.length ? tx`and ${tx(who)}.legacy_id <> all(${tx.array(blocked)}::text[])` : tx``);
+  // A reply goes with its comment: one staff hid, or one by someone banned or blocked, takes its replies along
+  const commentJoins = tx`left join app.members x on x.id = c.author_id left join app.moment_comments pc on pc.id = c.parent_id left join app.members px on px.id = pc.author_id`;
+  const shownComment = tx`not c.hidden and (c.author_id is null or (x.status <> 'banned' ${noBlock('x')}))
+    and (c.parent_id is null or (not pc.hidden and (pc.author_id is null or (px.status <> 'banned' ${noBlock('px')}))))`;
   return tx`
     select m.*, a.legacy_id as author_legacy, a.display_name as author_display_name, a.avatar_url as author_avatar_url,
       array(select i.url from app.moment_images i where i.moment_id = m.id order by i.position) as images,
@@ -233,11 +257,12 @@ const hydrateFeed = (tx: Sql, ids: string[], query: MomentFeedQuery) => {
       array(select x.legacy_id from app.moment_tags g join app.members x on x.id = g.member_id where g.moment_id = m.id order by g.created_at) as tagged_ids,
       (select coalesce(json_agg(newest), '[]') from (
         select coalesce(c.slug, c.id::text) as id, x.legacy_id as author_id, coalesce(x.display_name, c.author_name) as author_name, coalesce(x.avatar_url, c.author_avatar) as author_avatar,
-          c.body, c.hidden, c.created_at
-        from app.moment_comments c left join app.members x on x.id = c.author_id
-        where c.moment_id = m.id and ${shownComment} order by c.created_at desc, c.id desc limit 1) newest) as comments,
+          c.body, c.hidden, c.created_at, null::text as parent_id,
+          array(select y.legacy_id from app.moment_comment_likes k join app.members y on y.id = k.member_id where k.comment_id = c.id) as liked_by
+        from app.moment_comments c ${commentJoins}
+        where c.moment_id = m.id and c.parent_id is null and ${shownComment} order by c.created_at desc, c.id desc limit 1) newest) as comments,
       '[]'::json as reports,
-      (select count(*) from app.moment_comments c left join app.members x on x.id = c.author_id where c.moment_id = m.id and ${shownComment}) as shown_comments,
+      (select count(*) from app.moment_comments c ${commentJoins} where c.moment_id = m.id and ${shownComment}) as shown_comments,
       ${mine('moment_likes')} as viewer_liked, ${mine('moment_saves')} as viewer_saved, ${mine('moment_reports')} as viewer_reported
     from app.moments m
     left join app.members a on a.id = m.author_id
@@ -358,6 +383,7 @@ export const pgMomentRepository: MomentRepository = {
       // Their likes, saves and reports go too
       const likes = await tx`delete from app.moment_likes where member_id = ${member} returning moment_id`;
       const saves = await tx`delete from app.moment_saves where member_id = ${member} returning moment_id`;
+      await tx`delete from app.moment_comment_likes where member_id = ${member}`;
       await tx`delete from app.moment_reports where member_id = ${member}`;
       await recountMoments(tx, [...new Set([...comments, ...likes, ...saves].map((r) => r.moment_id as string))]);
       return comments.length;

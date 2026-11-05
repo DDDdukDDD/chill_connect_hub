@@ -2,6 +2,8 @@ import { db } from '../db';
 import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
+import { commentOfReport, removeReportedComment } from '../moments/service';
+import { removeNotifications } from './notifications';
 import { chatMessageForReport, chatRoomForStaff, removeChatMessageAsStaff } from './chat';
 import { contentReportStore } from './stores';
 import { removeReview, reviewById } from './reviews';
@@ -11,7 +13,8 @@ import { removeReview, reviewById } from './reviews';
  * about a review on a host's profile, or about a message in a group chat.
  * Staff read and close them in the admin console. The reported side never sees who reported.
  */
-export const REPORT_TARGET_TYPES = ['community', 'fair', 'spot', 'review', 'chat_message'] as const;
+// A 'comment' target is "momentId/commentId"
+export const REPORT_TARGET_TYPES = ['community', 'fair', 'spot', 'review', 'chat_message', 'comment'] as const;
 export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
 
 export const CONTENT_REPORT_REASONS = [
@@ -69,6 +72,12 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
     targetTitle = `รีวิวของตี้ "${review.eventTitle}"`;
     hostMemberId = review.authorId;
     excerpt = review.text;
+  } else if (targetType === 'comment') {
+    const found = await commentOfReport(targetId);
+    if (!found) throw new MemberAuthError('ไม่พบความคิดเห็นนี้ อาจถูกลบไปแล้ว', 404);
+    targetTitle = `ความคิดเห็นในโมเมนต์ของ ${found.moment.authorName}`;
+    hostMemberId = found.comment.authorId ?? undefined;
+    excerpt = found.comment.text;
   } else if (targetType === 'chat_message') {
     // Throws unless the reporter can read that room
     const { message, roomTitle } = await chatMessageForReport(reporter, targetId);
@@ -144,8 +153,12 @@ export async function removeChatMessageOfReport(id: string, messageId: string): 
  */
 export async function removeReportedContent(id: string, closedBy: string, note: string): Promise<ContentReport | null> {
   const report = (await contentReportStore.all()).find((item) => item.id === id && item.status === 'open');
-  if (!report || (report.targetType !== 'review' && report.targetType !== 'chat_message')) return null;
+  if (!report || (report.targetType !== 'review' && report.targetType !== 'chat_message' && report.targetType !== 'comment')) return null;
   if (report.targetType === 'review') await removeReview(report.targetId);
+  else if (report.targetType === 'comment') {
+    const removedIds = await removeReportedComment(report.targetId);
+    await Promise.all(removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like'], commentId })));
+  }
   else await removeChatMessageAsStaff(report.targetId);
   const closedAt = new Date().toISOString();
   const closingNote = ['ลบเนื้อหาที่ถูกรายงานแล้ว', note].filter(Boolean).join(' · ');

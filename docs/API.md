@@ -300,7 +300,7 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
 | `PATCH /api/moments/[id]` | `{ caption?, location?, commentsOff?, likesOff?, sharesOff? }` | own posts only (`403`) |
 | `DELETE /api/moments/[id]` | — | own posts only |
-| `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300) }` · `{ action: 'delete_comment', commentId }` (commenter or post author) · `{ action: 'report', reason }` (once per member, not your own) | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
+| `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300), parentId? }` (a reply to a reply sits under the same comment) · `{ action: 'like_comment'\|'unlike_comment', commentId }` · `{ action: 'delete_comment', commentId }` (commenter or post author; its replies go with it) · `{ action: 'report', reason }` (once per member, not your own). Each comment in a `FeedItem` has `parentId?`, `likesCount`, `isLiked`, `isMine`, `canDelete`. To report a comment: `POST /api/reports` with `targetType: 'comment'`, `targetId: 'momentId/commentId'` | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
 
 `FeedItem` keeps the `CommunityPost` shape (`data/mockData.ts`) so the current UI fits:
 `{ id, authorId, userName, userAvatar, userBadge, images, caption, location, category?, likesCount, commentsCount, timeAgo (Thai), createdAt, isLiked, isSaved, isMine, hasReported, comments: [{ id, userName, userAvatar, text, timeAgo, createdAt, isMine }], targetType, targetId?, targetTitle?, isSample }`.

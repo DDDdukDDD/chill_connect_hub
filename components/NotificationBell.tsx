@@ -50,7 +50,7 @@ function sectionsOf(items: NotificationItem[]): { title: string; items: Notifica
   return sections.filter((section) => section.items.length > 0);
 }
 
-const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' ? '#comments' : ''}` : `/profile?id=${n.actorId}`);
+const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' || n.type === 'reply' || n.type === 'comment_like' ? '#comments' : ''}` : `/profile?id=${n.actorId}`);
 
 /**
  * Bell for the signed-in member: follows, likes and comments on their moments (GET /api/notifications).

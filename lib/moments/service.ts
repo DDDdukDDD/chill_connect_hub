@@ -73,8 +73,12 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
   const author = moment.authorId ? people.get(moment.authorId) : undefined;
   // The viewer does not see comments from people they blocked
   const blocked = new Set(viewer?.blockedIds ?? []);
-  const comments = (moment.commentsOff ? [] : moment.comments)
-    .filter((comment) => !comment.hidden && (!comment.authorId || (people.get(comment.authorId)?.status !== 'banned' && !blocked.has(comment.authorId))))
+  const mayRead = (comment: Moment['comments'][number]) => !comment.hidden && (!comment.authorId || (people.get(comment.authorId)?.status !== 'banned' && !blocked.has(comment.authorId)));
+  const allComments = moment.commentsOff ? [] : moment.comments;
+  const readable = new Set(allComments.filter(mayRead).map((comment) => comment.id));
+  // A reply goes with its comment
+  const comments = allComments
+    .filter((comment) => readable.has(comment.id) && (!comment.parentId || readable.has(comment.parentId)))
     .map((comment) => {
       const commenter = comment.authorId ? people.get(comment.authorId) : undefined;
       return {
@@ -85,6 +89,11 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
         timeAgo: thaiTimeAgo(comment.createdAt),
         createdAt: comment.createdAt,
         isMine: Boolean(viewer && comment.authorId === viewer.id),
+        parentId: comment.parentId,
+        likesCount: comment.likedBy?.length ?? 0,
+        isLiked: Boolean(viewer && comment.likedBy?.includes(viewer.id)),
+        // The commenter and the author of the post may remove it
+        canDelete: Boolean(viewer && (comment.authorId === viewer.id || moment.authorId === viewer.id)),
       };
     });
   return {
@@ -332,8 +341,10 @@ export async function setSaved(member: Member, id: string, saved: boolean): Prom
   return momentRepository.mutate(id, (m) => ({ ...m, savedBy: toggle(m.savedBy, member.id, saved) }));
 }
 
-export async function addComment(member: Member, id: string, input: unknown): Promise<Moment> {
+export async function addComment(member: Member, id: string, input: unknown, replyTo?: unknown): Promise<Moment> {
   const moment = await requireVisible(id);
+  const answered = typeof replyTo === 'string' && replyTo ? moment.comments.find((c) => c.id === replyTo && !c.hidden) : undefined;
+  if (replyTo && !answered) throw new MomentError('ไม่พบความคิดเห็นนี้ อาจถูกลบไปแล้ว', 404);
   if (moment.commentsOff) throw new MomentError('เจ้าของโพสต์ปิดความคิดเห็นไว้');
   const body = text(input, MAX_COMMENT_LENGTH + 1);
   if (!body) throw new MomentError('กรุณาพิมพ์ความคิดเห็น');
@@ -345,17 +356,53 @@ export async function addComment(member: Member, id: string, input: unknown): Pr
     authorAvatar: member.avatarUrl,
     text: body,
     createdAt: new Date().toISOString(),
+    // One level: a reply to a reply sits under the same comment
+    ...(answered ? { parentId: answered.parentId ?? answered.id } : {}),
   };
   return momentRepository.mutate(id, (m) => ({ ...m, comments: [...m.comments, comment] }));
 }
 
+export async function setCommentLike(member: Member, id: string, commentId: string, liked: boolean): Promise<Moment> {
+  const moment = await requireVisible(id);
+  if (!moment.comments.some((c) => c.id === commentId && !c.hidden)) throw new MomentError('ไม่พบความคิดเห็น', 404);
+  return momentRepository.mutate(id, (m) => ({
+    ...m,
+    comments: m.comments.map((c) => {
+      if (c.id !== commentId) return c;
+      const others = (c.likedBy ?? []).filter((who) => who !== member.id);
+      return { ...c, likedBy: liked ? [...others, member.id] : others };
+    }),
+  }));
+}
+
+/** A comment leaves with its replies */
+const withoutComment = (moment: Moment, commentId: string): Moment => ({ ...moment, comments: moment.comments.filter((c) => c.id !== commentId && c.parentId !== commentId) });
+
+/** For a report: the comment and the post it is on. `target` is "momentId/commentId" */
+export async function commentOfReport(target: string): Promise<{ moment: Moment; comment: Moment['comments'][number] } | null> {
+  const [momentId, commentId] = target.split('/');
+  const moment = momentId ? await momentRepository.findById(momentId) : null;
+  const comment = moment?.comments.find((c) => c.id === commentId);
+  return moment && comment ? { moment, comment } : null;
+}
+
+/** Staff take down a reported comment; answers the ids that went, so their notices can go too */
+export async function removeReportedComment(target: string): Promise<string[]> {
+  const found = await commentOfReport(target);
+  if (!found) return [];
+  const removedIds = found.moment.comments.filter((c) => c.id === found.comment.id || c.parentId === found.comment.id).map((c) => c.id);
+  await momentRepository.mutate(found.moment.id, (m) => withoutComment(m, found.comment.id));
+  return removedIds;
+}
+
 /** The commenter or the moment's author may remove a comment */
-export async function deleteComment(member: Member, id: string, commentId: string): Promise<Moment> {
+export async function deleteComment(member: Member, id: string, commentId: string): Promise<{ moment: Moment; removedIds: string[] }> {
   const moment = await requireVisible(id);
   const comment = moment.comments.find((c) => c.id === commentId);
   if (!comment) throw new MomentError('ไม่พบความคิดเห็น', 404);
   if (comment.authorId !== member.id && moment.authorId !== member.id) throw new MomentError('ลบได้เฉพาะความคิดเห็นของตัวเองหรือในโมเมนต์ของตัวเอง', 403);
-  return momentRepository.mutate(id, (m) => ({ ...m, comments: m.comments.filter((c) => c.id !== commentId) }));
+  const removedIds = moment.comments.filter((c) => c.id === commentId || c.parentId === commentId).map((c) => c.id);
+  return { moment: await momentRepository.mutate(id, (m) => withoutComment(m, commentId)), removedIds };
 }
 
 /** One report per member; AUTO_HIDE_REPORTS distinct reports hide the moment for moderator review */

@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
-import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { saveFeedReturn, takeShowcase } from '@/components/moments/momentsReturn';
@@ -16,7 +16,6 @@ import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
 import { recall, remember } from '@/lib/clientMemory';
-import { avatarImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -60,21 +59,12 @@ export async function call(url: string, method: string, body?: unknown): Promise
   }
 }
 
-function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
-  return src ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={avatarImage(src)} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
-  ) : (
-    <span className={`${className} rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center shrink-0`} aria-hidden="true">
-      {nameInitial(name)}
-    </span>
-  );
-}
+const Avatar = MomentAvatar;
 
 interface PostHandlers {
   onToggle: (id: string, action: Action) => void;
-  onComment: (id: string, text: string) => Promise<boolean>;
-  onDeleteComment: (id: string, commentId: string) => void;
+  onComment: (id: string, text: string, parentId?: string) => Promise<boolean>;
+  onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
   onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
   onPhotos: (images: string[], index: number) => void;
   /** A clip is opening on its own page: keep the list and the place in it for the way back */
@@ -92,7 +82,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [showWholeCaption, setShowWholeCaption] = useState(false);
   const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
-  const shownComments = showComments ? moment.comments : moment.comments.slice(-1);
+  const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
+  const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
+  const commentBox = useRef<HTMLInputElement>(null);
+  const answer = (comment: ThreadComment) => {
+    setReplyTo(comment);
+    setShowComments(true);
+    requestAnimationFrame(() => commentBox.current?.focus());
+  };
   const missingComments = showComments && moment.comments.length < moment.commentsCount;
   const { onLoadComments } = handlers;
   useEffect(() => {
@@ -105,7 +102,10 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     e.preventDefault();
     if (!draft.trim() || isSending) return;
     setIsSending(true);
-    if (await handlers.onComment(moment.id, draft.trim())) setDraft('');
+    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id)) {
+      setDraft('');
+      setReplyTo(null);
+    }
     setIsSending(false);
   };
 
@@ -251,38 +251,20 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       </div>
 
       {shownComments.length > 0 && (
-        <ul className="space-y-2">
-          {shownComments.map((comment) => (
-            <li key={comment.id} className="flex items-start gap-2 text-[13px] text-slate-700">
-              <Avatar name={comment.userName} src={comment.userAvatar} className="w-6 h-6 text-[11px] mt-0.5" />
-              <span className="min-w-0 flex-1">
-                <strong className="font-semibold text-slate-900">{comment.userName}</strong> {comment.text}
-                <span className="block text-[11px] text-slate-500">{comment.timeAgo}</span>
-              </span>
-              {comment.isMine && (
-                <button
-                  type="button"
-                  onClick={() => handlers.onDeleteComment(moment.id, comment.id)}
-                  aria-label="ลบความคิดเห็น"
-                  className="w-7 h-7 rounded-full text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center cursor-pointer shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <CommentThread momentId={moment.id} comments={shownComments} isLoggedIn onNeedLogin={() => undefined} onAct={(body) => handlers.onCommentAct(moment.id, body)} onReply={answer} />
       )}
       {!showComments && moment.commentsCount > 1 && (
         <button type="button" onClick={() => setShowComments(true)} className="inline-flex items-center min-h-11 -my-2 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
           ดูความคิดเห็นทั้งหมด {moment.commentsCount} รายการ
         </button>
       )}
+      {showComments && !moment.commentsOff && replyTo && <ReplyingTo name={replyTo.userName} onCancel={() => setReplyTo(null)} />}
       {showComments && !moment.commentsOff && (
         <form onSubmit={send} className="flex items-center gap-2">
           <Avatar name={myName} src={myAvatar} className="w-7 h-7 text-[11px]" />
           <label htmlFor={`comment-${moment.id}`} className="sr-only">เขียนความคิดเห็น</label>
           <input
+            ref={commentBox}
             id={`comment-${moment.id}`}
             value={draft}
             maxLength={300}
@@ -573,8 +555,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         }
       });
     },
-    onComment: async (id, text) => {
-      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text });
+    onComment: async (id, text, parentId) => {
+      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId });
       if (!result.ok || !result.moment) {
         showToast(result.message);
         return false;
@@ -582,10 +564,14 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       replace(result.moment);
       return true;
     },
-    onDeleteComment: async (id, commentId) => {
-      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'delete_comment', commentId });
-      if (!result.ok || !result.moment) return showToast(result.message);
+    onCommentAct: async (id, body) => {
+      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', body);
+      if (!result.ok || !result.moment) {
+        showToast(result.message);
+        return false;
+      }
       replace(result.moment);
+      return true;
     },
     onMenu: (moment, choice) => {
       if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });

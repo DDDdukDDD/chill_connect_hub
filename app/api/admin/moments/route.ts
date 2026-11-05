@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { removeNotifications } from '@/lib/social/notifications';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { Moment, momentRepository, MomentStatus } from '@/lib/moments';
@@ -152,9 +153,13 @@ export async function POST(request: Request) {
       await momentRepository.mutate(moment.id, (m) => ({
         ...m,
         comments: body.action === 'delete_comment'
-          ? m.comments.filter((c) => c.id !== comment.id)
+          ? m.comments.filter((c) => c.id !== comment.id && c.parentId !== comment.id)
           : m.comments.map((c) => (c.id === comment.id ? { ...c, hidden: body.action === 'hide_comment' } : c)),
       }));
+      if (body.action === 'delete_comment') {
+        const removedIds = moment.comments.filter((c) => c.id === comment.id || c.parentId === comment.id).map((c) => c.id);
+        await Promise.all(removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like'], commentId })));
+      }
       const verb = body.action === 'delete_comment' ? 'ลบ' : body.action === 'hide_comment' ? 'ซ่อน' : 'แสดง';
       audit(body.action, `${verb}ความคิดเห็นของ ${comment.authorName}: "${comment.text.slice(0, 40)}"`);
       break;

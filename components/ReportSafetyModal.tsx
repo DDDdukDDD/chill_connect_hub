@@ -7,7 +7,7 @@ import { DialogShell, dialogButton } from './auth/DialogShell';
 interface ReportSafetyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message';
+  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message' | 'comment';
   targetId: string;
   targetTitle: string;
   /** A part of the target the report is about, such as a meet-up group inside a fair */
@@ -32,7 +32,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
   const uid = useId();
   // A place is reported for wrong details first; an event for how people behave
   // Words someone wrote (a review, a chat message) are not a place or a meeting, so those two reasons do not apply
-  const isWords = targetType === 'review' || targetType === 'chat_message';
+  const isWords = targetType === 'review' || targetType === 'chat_message' || targetType === 'comment';
   const reasons = isWords ? REASONS.filter((r) => r.id !== 'unsafe_location' && r.id !== 'wrong_info') : targetType === 'spot' ? [...REASONS.filter((r) => r.places), ...REASONS.filter((r) => !r.places && r.id !== 'unsafe_location')] : REASONS;
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');

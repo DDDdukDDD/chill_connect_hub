@@ -938,7 +938,7 @@ function pgContentReports(): ContentReportStore {
     from app.content_reports r
     left join app.members h on h.id = r.host_member_id
     left join app.members p on p.id = r.reporter_id
-    where r.target_type in ('community', 'fair', 'spot', 'review', 'chat_message')`;
+    where r.target_type in ('community', 'fair', 'spot', 'review', 'chat_message', 'comment')`;
   return {
     async all() {
       const db = sql();
@@ -965,7 +965,7 @@ function pgContentReports(): ContentReportStore {
     async closeTarget(targetId, closedBy, note) {
       await sql()`
         update app.content_reports set status = 'closed', closed_at = now(), closed_by_label = ${closedBy}, note = ${note}
-        where target_id = ${targetId} and status = 'open' and target_type in ('review', 'chat_message')`;
+        where target_id = ${targetId} and status = 'open' and target_type in ('review', 'chat_message', 'comment')`;
     },
     async removeBy(memberId) {
       const db = sql();

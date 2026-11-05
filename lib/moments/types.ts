@@ -27,6 +27,10 @@ export interface MomentComment {
   text: string;
   createdAt: string;
   hidden?: boolean;
+  /** The comment this replies to; replies go one level deep */
+  parentId?: string;
+  /** Members who liked this comment */
+  likedBy?: string[];
 }
 
 export interface MomentReport {

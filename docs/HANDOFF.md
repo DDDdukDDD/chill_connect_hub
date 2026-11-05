@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-268 · Comments: reply, like, report, and the post's author can delete (owner 2026-11-05)
+- **What changed:** new `components/moments/CommentThread.tsx`, used by the home feed and the moment page, so both behave the same. Replies go one level (a reply to a reply sits under the same comment). The author of a post can delete any comment on it, always after a confirm; a comment leaves with its replies, and their notices go too. New `like_comment` / `unlike_comment` actions and `parentId` on `comment`. A comment can be reported (`targetType: 'comment'`, `targetId: 'momentId/commentId'`) and staff can remove it from the reports screen. New notices `reply` and `comment_like`. A feed post's preview is its newest top comment, never a reply.
+- **What to do about it:** **run `npm run db:migrate` on live for `0026_comment_replies_likes` BEFORE this reaches `main`.** Every moment read now uses the new column and table, so without it the feed and moment pages fail. It only adds things, so the current site keeps working once it has run. `db:migrate` reads `.env.local`, which is live; `npm run db:dev` is the one for the dev database.
+
 ### BE-267 · The database pages the moments feed (owner 2026-11-05)
 - **Why:** every feed load read all matching posts with their photos, likes and comments, then kept 8 to 24; `/moments` did it a second time for its tab counts. Egress and connection time grew with every post.
 - **What changed:** `momentRepository.feed()` applies every visibility rule in SQL and reads only one page; `typeCounts()` counts in SQL. A feed post now carries **only its newest comment** plus counts and the viewer's own liked/saved/reported answers; `GET /api/moments/[id]` still has every comment, and the home feed loads them when opened. New `?cursor=` with `pagination.nextCursor` for the newest order, so a new or deleted post between pages neither repeats nor skips one. `popular` still uses `page`. `pagination.totalCount` and `totalPages` come only without a cursor. `GET /api/moments/journey` is gone (nothing called it).
