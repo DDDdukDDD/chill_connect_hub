@@ -11,6 +11,7 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
@@ -61,7 +62,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>('soonest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Saved อีเวนต์ come from the account, so a heart here shows on the detail page, in My Hub and on every device
   const myActivity = useMyActivity();
   const favorites = isLoggedIn ? myActivity.savedEventIds : [];
@@ -284,15 +285,6 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
     }
     return counts;
   }, [eventsList, statusFilter, selectedVenue]);
-
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
-
-  // Pagination clamp: reset to page 1 if filter changes reduce totalPages below currentPage
-  React.useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen

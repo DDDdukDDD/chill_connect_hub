@@ -15,6 +15,7 @@ import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
 import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import type { CampaignView } from '@/lib/campaigns/types';
@@ -103,7 +104,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   const myInterests = useMyInterests(isLoggedIn);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Whole rows at every width of the tile grid (2, 3, 4 and 6 columns)
   const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
   const [storedQuestList, setQuestList] = useState<QuestWithDuration[]>(() => (initialQuests ?? []).map(toListQuest));
