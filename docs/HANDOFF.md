@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-266 · Service worker leaves sign-in alone; "no internet" only when true (owner 2026-11-05)
+- **Why:** a friend on Chrome pressed Facebook sign-up and got our own `public/offline.html` ("ยังไม่มีอินเทอร์เน็ต"), retry included. Not reproduced: start and return both worked on the live site under the worker, with navigation preload on and off, using a headless desktop Chrome with an Android user agent. The cause on that device is unknown.
+- **What changed:** `public/sw.js` no longer handles navigations under `/api/` (all social sign-in and email links), and a failed page load shows the offline page only when the browser reports it is offline; otherwise the browser's own error page names the error. Offline `/community` still shows the offline page (checked).
+- **What to do about it:** after merge, ask the friend to try again. A device still holding the old worker gets the new one on its next visit. If it still fails, the browser's error code tells us where to look next.
+
+### BE-265 · Fewer requests per member page (owner 2026-11-05)
+- **What changed:** measured on a production build with the dev database. Home 7 to 5: the layout no longer asks for the session the page brought (`useMemberSession({ background: true })` waits 1.5 s), and the "first ตี้" line reads `earned === 0` from rewards instead of `GET /api/visits?mine=1&month=1`. That line used to show for anyone with no visits this month; now only for members who never earned XP. My Hub 13 to 10: no whole place catalog (saved places by id), and open ตี้ read once. Moving between pages no longer re-reads notifications and activity within a minute; `NotificationBell` focus refresh follows the same minute.
+- **What to do about it:** the rest of a page's requests still leave together. Merging them into one request is the next step if the pool fills again.
+
+### BE-264 · Lists load by themselves; phones and upright iPads open on the feed (owner 2026-11-05)
+- **What changed:** `ShowMoreButton` loads 3 batches while scrolling, then waits for a press, which gives 3 more; filters start the count over. New `lib/useShownBatches.ts` returns a list to its length and place on the back button. The old page clamp in `/community` and `/events` is gone, and `/spots` asks for the batch after what is on screen. On member home below `lg`, the day line and "สวัสดี" are gone (the `h1` stays for screen readers); the first-ตี้ line stays. iPad on its side keeps them in the left column.
+
 ### BE-263 · Site held out of Google and AI crawlers until launch (owner 2026-11-05)
 - **Why:** much of the content is still sample data, and connecting www.chillwaa.com would make it findable under the real brand.
 - **What changed:** unless `SITE_INDEXING=on`, every response carries `X-Robots-Tag: noindex, nofollow`, the root metadata says noindex, `robots.txt` bars the AI crawlers it lists and names no sitemap, and the sitemap is empty. Link previews and members are not affected. `AGENTS.md` section 4 still applies to new pages.
