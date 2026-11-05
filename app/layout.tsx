@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { SITE_URL } from "@/lib/site";
+import { SEARCH_INDEXING_ON, SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AppSetup } from "@/components/AppSetup";
@@ -74,11 +74,11 @@ export const metadata: Metadata = {
     images: ["/hero-bg-70.png"],
   },
   robots: {
-    index: true,
-    follow: true,
+    index: SEARCH_INDEXING_ON,
+    follow: SEARCH_INDEXING_ON,
     googleBot: {
-      index: true,
-      follow: true,
+      index: SEARCH_INDEXING_ON,
+      follow: SEARCH_INDEXING_ON,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,

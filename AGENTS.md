@@ -91,7 +91,7 @@ Pillar facts every agent needs (data side):
 
 ## 🔎 4. Search & AI Search Readiness (owner rule, 2026-10-17)
 
-Every change to a public page must keep it findable by Google and by AI search (ChatGPT, Claude, Perplexity, Google AI Overviews):
+Every change to a public page must keep it findable by Google and by AI search (ChatGPT, Claude, Perplexity, Google AI Overviews). Since 2026-11-05 the whole site is held out of search until launch (`SITE_INDEXING`, `lib/site.ts`); keep following these rules so it is ready when opened:
 - **Content in the server HTML.** AI crawlers mostly do not run JavaScript. Titles, dates, places and descriptions a visitor reads must be rendered on the server, not only fetched in `useEffect`.
 - **Own metadata per page:** title, description, canonical URL and Open Graph image via `generateMetadata` (server `page.tsx` or `layout.tsx`).
 - **Structured data on detail pages:** JSON-LD for meetups and fairs (`Event`), places (`Place`/`TouristAttraction`), challenges where it fits.

@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-263 · Site held out of Google and AI crawlers until launch (owner 2026-11-05)
+- **Why:** much of the content is still sample data, and connecting www.chillwaa.com would make it findable under the real brand.
+- **What changed:** unless `SITE_INDEXING=on`, every response carries `X-Robots-Tag: noindex, nofollow`, the root metadata says noindex, `robots.txt` bars the AI crawlers it lists and names no sitemap, and the sitemap is empty. Link previews and members are not affected. `AGENTS.md` section 4 still applies to new pages.
+- **What to do about it:** merge this before DNS points at the domain. At launch, after sample data is gone, set `SITE_INDEXING=on` on Production and redeploy.
+
 ### BE-262 · A host can move their own ตี้ (owner 2026-11-05)
 - **What changed:** the host of a one-off ตี้ can change its date, time and place until it starts: `POST /api/events { action: "edit_tee" }` (`lib/social/editTee.ts`), link on the ตี้ page, `components/EditTeeDialog.tsx`. Title and description stay as staff saw them. People in the ตี้ and its waiting line get a `tee_changed` notice; a newer change replaces the older notice. Not for recurring ตี้, Spot Buddy trips or rejected ตี้. 10 real changes per hour.
 - **What to do about it:** migration `0025_tee_changed_notice.sql` is already on live and dev (2026-11-05). Members with no year of birth stay blocked from bar ตี้ (owner confirmed). A ตี้ still waiting for review has no page, so it has no edit link yet.
