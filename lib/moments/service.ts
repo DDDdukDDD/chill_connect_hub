@@ -3,7 +3,7 @@ import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
-import { hasHashtag } from './hashtags';
+import { realPlace } from './feedRules';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -17,10 +17,7 @@ export class MomentError extends Error {
 
 const TARGET_TYPES = new Set<MomentTargetType>(['spot', 'community', 'fair', 'challenge', 'general']);
 const CATEGORIES = new Set<MomentCategory>(['heal', 'move', 'chill', 'learn']);
-/** Words the form used to fill in when no place was chosen; a post without a place now simply shows none */
-const NOT_A_PLACE = new Set(['ไลฟ์สไตล์ทั่วไป', 'ตำแหน่งปัจจุบันของฉัน (GPS)', 'กรุงเทพมหานคร (พิกัดใกล้ฉัน)']);
-const realPlace = (value: string | undefined) => (value && !NOT_A_PLACE.has(value) ? value : '');
-const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const text =(value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
 /** Only images uploaded through /api/upload (local disk or Vercel Blob) may be attached */
 export function isAllowedMomentImage(url: string): boolean {
@@ -109,18 +106,18 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     }),
     isTaggedMe: Boolean(viewer && moment.taggedIds?.includes(viewer.id)),
     category: moment.category,
-    likesCount: moment.likesOff ? 0 : moment.likedBy.length + moment.sampleLikes,
-    commentsCount: comments.length,
+    likesCount: moment.likesOff ? 0 : (moment.feedFacts?.likes ?? moment.likedBy.length) + moment.sampleLikes,
+    commentsCount: moment.commentsOff ? 0 : (moment.feedFacts?.comments ?? comments.length),
     commentsOff: Boolean(moment.commentsOff),
     likesOff: Boolean(moment.likesOff),
     sharesOff: Boolean(moment.sharesOff),
     timeAgo: thaiTimeAgo(moment.createdAt),
     createdAt: moment.createdAt,
-    isLiked: Boolean(viewer && moment.likedBy.includes(viewer.id)),
-    isSaved: Boolean(viewer && moment.savedBy.includes(viewer.id)),
+    isLiked: moment.feedFacts?.liked ?? Boolean(viewer && moment.likedBy.includes(viewer.id)),
+    isSaved: moment.feedFacts?.saved ?? Boolean(viewer && moment.savedBy.includes(viewer.id)),
     isMine: Boolean(viewer && moment.authorId === viewer.id),
     isFollowingAuthor: Boolean(viewer && moment.authorId && viewer.followingIds?.includes(moment.authorId)),
-    hasReported: Boolean(viewer && moment.reports.some((r) => r.memberId === viewer.id)),
+    hasReported: moment.feedFacts?.reported ?? Boolean(viewer && moment.reports.some((r) => r.memberId === viewer.id)),
     comments,
     targetType: moment.targetType,
     targetId: moment.targetId,
@@ -146,18 +143,24 @@ export interface MomentListOptions {
   tag?: string;
   page?: number;
   limit?: number;
+  /** `pagination.nextCursor` of the page before; the next page then starts right after it */
+  cursor?: string;
 }
 
-const pagination = (totalCount: number, page: number, limit: number) => {
-  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-  return { totalCount, page, limit, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 };
-};
-
-/** Belongs under "สถานที่": tied to a place, or a post with a place typed by hand and nothing else to file it under (owner 2026-11-04) */
-const isPlaceMoment = (moment: Pick<Moment, 'targetType' | 'location'>) => moment.targetType === 'spot' || (moment.targetType === 'general' && realPlace(moment.location).trim() !== '');
+const pagination = (page: number, limit: number, found: { totalCount?: number; hasNext: boolean; nextCursor?: string }) => ({
+  // Left out when continuing from a cursor: only the first page counts them all
+  ...(found.totalCount === undefined ? {} : { totalCount: found.totalCount, totalPages: Math.max(1, Math.ceil(found.totalCount / limit)) }),
+  page,
+  limit,
+  hasNextPage: found.hasNext,
+  hasPrevPage: page > 1,
+  ...(found.nextCursor ? { nextCursor: found.nextCursor } : {}),
+});
 
 /**
- * One page of published moments the viewer may see (GET /api/moments and the server-rendered /moments).
+ * One page of published moments the viewer may see (GET /api/moments and the server-rendered /moments). The database
+ * picks the page, so a feed reads only the posts it shows, however many there are. A post it shows carries the newest
+ * comment and the counts; the moment's own page and GET /api/moments/[id] have the rest.
  * Posts by members the viewer has blocked are left out; "saved", "mine" and "following" need a viewer.
  */
 export async function listMoments(viewer: Member | null, options: MomentListOptions) {
@@ -165,71 +168,43 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
   if ((tab === 'saved' || tab === 'mine' || tab === 'following') && !viewer) {
-    return { moments: [] as FeedItem[], requiresLogin: true, pagination: pagination(0, 1, limit) };
+    return { moments: [] as FeedItem[], requiresLogin: true, pagination: pagination(1, limit, { totalCount: 0, hasNext: false }) };
   }
+  const followed = viewer?.followingIds ?? [];
+  if (tab === 'following' && followed.length === 0) return { moments: [] as FeedItem[], requiresLogin: false, pagination: pagination(1, limit, { totalCount: 0, hasNext: false }) };
   const asked = options.targetType && TARGET_TYPES.has(options.targetType as MomentTargetType) ? (options.targetType as MomentTargetType) : undefined;
   // The "สถานที่" tab, not one place's own page: that one asks by targetId
   const placeTab = asked === 'spot' && !options.targetId;
   const targetType = placeTab ? undefined : asked;
-  const category = options.category && CATEGORIES.has(options.category as MomentCategory) ? options.category : undefined;
-  const result = await momentRepository.query({
-    statuses: ['published'],
+  const category = options.category && CATEGORIES.has(options.category as MomentCategory) ? (options.category as MomentCategory) : undefined;
+  const found = await momentRepository.feed({
+    viewerId: viewer?.id,
+    blockedIds: viewer?.blockedIds,
+    authorIds: tab === 'following' ? followed : undefined,
     authorId: tab === 'mine' ? viewer!.id : options.author || undefined,
     savedBy: tab === 'saved' ? viewer!.id : undefined,
     targetType,
     targetId: options.targetId || undefined,
     location: options.location || undefined,
-    q: options.q || (options.tag ? `#${options.tag.replace(/^#/, '')}` : undefined),
+    q: options.q || undefined,
+    tag: options.tag || undefined,
+    category,
+    placesOnly: placeTab,
     sort: tab === 'popular' ? 'popular' : 'newest',
-    page: 1,
-    limit: 10_000,
+    page,
+    limit,
+    cursor: options.cursor || undefined,
   });
-  const people = await loadPeople(result.items);
-  const blocked = new Set(viewer?.blockedIds ?? []);
-  const following = tab === 'following' ? new Set(viewer?.followingIds ?? []) : null;
-  const visible = result.items.filter(
-    (moment) =>
-      isPubliclyVisible(moment, people) &&
-      (!placeTab || isPlaceMoment(moment)) &&
-      !(moment.authorId && blocked.has(moment.authorId)) &&
-      (!following || (moment.authorId !== null && following.has(moment.authorId))) &&
-      (!category || moment.category === category) &&
-      (!options.tag || hasHashtag(moment.caption, options.tag))
-  );
+  const people = await loadPeople(found.items);
   return {
-    moments: visible.slice((page - 1) * limit, page * limit).map((moment) => toFeedItem(moment, viewer, people)),
+    moments: found.items.map((moment) => toFeedItem(moment, viewer, people)),
     requiresLogin: false,
-    pagination: pagination(visible.length, page, limit),
+    pagination: pagination(page, limit, found),
   };
 }
 
-/** How many public moments each /moments tab holds, from one read instead of one per tab */
-export async function countMomentsByType(): Promise<{ all: number; spot: number; community: number; fair: number; challenge: number }> {
-  const result = await momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 10_000 });
-  const people = await loadPeople(result.items);
-  const counts = { all: 0, spot: 0, community: 0, fair: 0, challenge: 0 };
-  for (const moment of result.items) {
-    if (!isPubliclyVisible(moment, people)) continue;
-    counts.all++;
-    if (isPlaceMoment(moment)) counts.spot++;
-    else if (moment.targetType in counts) counts[moment.targetType as keyof typeof counts]++;
-  }
-  return counts;
-}
-
-/**
- * How far a member is on the moments path of the home journey band: people followed, whether they have
- * liked or commented on someone else's moment, and whether they have posted one themselves
- */
-export async function momentJourneyOf(member: Member): Promise<{ following: number; reacted: boolean; posted: boolean }> {
-  const { items } = await momentRepository.query({ statuses: ['published'], sort: 'newest', page: 1, limit: 10_000 });
-  const others = items.filter((m) => m.authorId !== member.id);
-  return {
-    following: member.followingIds?.length ?? 0,
-    reacted: others.some((m) => m.likedBy.includes(member.id) || m.comments.some((c) => c.authorId === member.id)),
-    posted: items.some((m) => m.authorId === member.id),
-  };
-}
+/** How many public moments each /moments tab holds, counted by the database */
+export const countMomentsByType = () => momentRepository.typeCounts();
 
 /** A published moment for its public page, or null (hidden, removed, banned author, unknown id) */
 export async function findPublicMoment(id: string): Promise<FeedItem | null> {

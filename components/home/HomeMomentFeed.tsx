@@ -79,6 +79,8 @@ interface PostHandlers {
   onPhotos: (images: string[], index: number) => void;
   /** A clip is opening on its own page: keep the list and the place in it for the way back */
   onLeaveToClip: (id: string) => void;
+  /** A feed post comes with only its newest comment: the rest load when they are opened */
+  onLoadComments: (id: string) => Promise<void>;
 }
 
 function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; handlers: PostHandlers; myAvatar?: string; myName: string }) {
@@ -91,6 +93,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
   const shownComments = showComments ? moment.comments : moment.comments.slice(-1);
+  const missingComments = showComments && moment.comments.length < moment.commentsCount;
+  const { onLoadComments } = handlers;
+  useEffect(() => {
+    if (missingComments) void onLoadComments(moment.id);
+    // once each time the comments open; `handlers` is new on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missingComments, moment.id]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,6 +420,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   // Back on Home, the first page seen last time shows at once while it refreshes
   const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
   const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(() => recall<{ hasNext: boolean }>(`home-feed:${sort}`)?.hasNext ?? false);
   // The view whose list is on screen; until it matches the chosen view, placeholders show
   const [loadedView, setLoadedView] = useState<FeedView | null>(() => (recall(`home-feed:${sort}`) ? sort : null));
@@ -452,21 +462,22 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const fetchPage = useCallback(async (which: FeedView, pageNo: number) => {
-    const response = await fetch(`/api/moments?tab=${which}&page=${pageNo}&limit=${PAGE_SIZE}`, { cache: 'no-store' });
+  const fetchPage = useCallback(async (which: FeedView, pageNo: number, after?: string) => {
+    const response = await fetch(`/api/moments?tab=${which}&page=${pageNo}&limit=${PAGE_SIZE}${after ? `&cursor=${encodeURIComponent(after)}` : ''}`, { cache: 'no-store' });
     const result = await response.json();
     if (!result?.success || !Array.isArray(result.moments)) throw new Error('moments');
-    return { items: result.moments as FeedItem[], hasNext: Boolean(result.pagination?.hasNextPage) };
+    return { items: result.moments as FeedItem[], hasNext: Boolean(result.pagination?.hasNextPage), nextCursor: result.pagination?.nextCursor as string | undefined };
   }, []);
 
   const reload = useCallback(
     (which: FeedView) => {
       // The current list stays on screen until the new one arrives
       fetchPage(which, 1)
-        .then(({ items, hasNext }) => {
+        .then(({ items, hasNext, nextCursor }) => {
           remember(`home-feed:${which}`, { items, hasNext });
           setMoments(items);
           setHasMore(hasNext);
+          setCursor(nextCursor);
           setPage(1);
           setNewCount(0);
         })
@@ -487,6 +498,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     setMoments(snapshot.moments);
     setPage(snapshot.page);
     setHasMore(snapshot.hasMore);
+    setCursor(snapshot.cursor);
     setLoadedView(view);
     requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: snapshot.scrollY, behavior: 'instant' })));
     // once, on arriving at the page
@@ -520,15 +532,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
-    fetchPage(sort, page + 1)
-      .then(({ items, hasNext }) => {
+    fetchPage(sort, page + 1, cursor)
+      .then(({ items, hasNext, nextCursor }) => {
         setMoments((prev) => [...prev, ...items.filter((m) => !prev.some((p) => p.id === m.id))]);
         setHasMore(hasNext);
+        setCursor(nextCursor);
         setPage(page + 1);
       })
       .catch((error) => console.warn('Home moments:', error))
       .finally(() => setIsLoadingMore(false));
-  }, [isLoadingMore, hasMore, fetchPage, sort, page]);
+  }, [isLoadingMore, hasMore, fetchPage, sort, page, cursor]);
 
   // The next page loads before the end of the list comes into view
   useEffect(() => {
@@ -598,7 +611,12 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       }
     },
     onPhotos: (images, index) => setViewer({ images, index }),
-    onLeaveToClip: (id) => saveFeedReturn({ url: window.location.pathname, momentId: id, moments, page, hasMore, scrollY: window.scrollY, view: sort }),
+    onLeaveToClip: (id) => saveFeedReturn({ url: window.location.pathname, momentId: id, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort }),
+    onLoadComments: async (id) => {
+      const result = await call(`/api/moments/${encodeURIComponent(id)}`, 'GET');
+      if (result.ok && result.moment) replace(result.moment);
+      else showToast(result.message);
+    },
   };
 
   const deletePost = async (moment: FeedItem) => {

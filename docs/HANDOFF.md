@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-267 · The database pages the moments feed (owner 2026-11-05)
+- **Why:** every feed load read all matching posts with their photos, likes and comments, then kept 8 to 24; `/moments` did it a second time for its tab counts. Egress and connection time grew with every post.
+- **What changed:** `momentRepository.feed()` applies every visibility rule in SQL and reads only one page; `typeCounts()` counts in SQL. A feed post now carries **only its newest comment** plus counts and the viewer's own liked/saved/reported answers; `GET /api/moments/[id]` still has every comment, and the home feed loads them when opened. New `?cursor=` with `pagination.nextCursor` for the newest order, so a new or deleted post between pages neither repeats nor skips one. `popular` still uses `page`. `pagination.totalCount` and `totalPages` come only without a cursor. `GET /api/moments/journey` is gone (nothing called it).
+- **Checked:** on dev, all 13 filters as guest and 16 as member gave the same posts, order, counts and newest comment as before the change. At 30 posts it is about 50 ms slower on dev, which sits about 90 ms per query from the database; that cost stays flat as posts grow while the old read did not. Not measured on the live database.
+- **Note:** a tag ends at any character outside ASCII letters and digits, `_` and the Thai block (depends on the database locale), so a tag running straight into another script could match wrongly.
+
 ### BE-266 · Service worker leaves sign-in alone; "no internet" only when true (owner 2026-11-05)
 - **Why:** a friend on Chrome pressed Facebook sign-up and got our own `public/offline.html` ("ยังไม่มีอินเทอร์เน็ต"), retry included. Not reproduced: start and return both worked on the live site under the worker, with navigation preload on and off, using a headless desktop Chrome with an Android user agent. The cause on that device is unknown.
 - **What changed:** `public/sw.js` no longer handles navigations under `/api/` (all social sign-in and email links), and a failed page load shows the offline page only when the browser reports it is offline; otherwise the browser's own error page names the error. Offline `/community` still shows the offline page (checked).
