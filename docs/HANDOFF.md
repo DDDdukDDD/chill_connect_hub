@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-269 · Phone screens: quieter search, first tiles higher (owner 2026-11-06, from a tester's notes)
+- **What changed:** the search button inside a search box is now quiet (`DESIGN_SYSTEM.md` updated), so it no longer competes with "สมัครฟรี". On phones, `DiscoverHeader` puts the create button, ♡ and the view switch at the start of the row of filters that scrolls, instead of a row of their own, and the three `/challenges` menus keep one row at 360 px. First tile at 360 px: `/community` 481 to 429, `/challenges` 613 to 569. With no campaign left to show, `/challenges` shows the rewards row on phones instead of nothing. A visitor sees a quiet "ไม่เจอที่ชอบ? ตั้งตี้เองเลย" under the `/community` list, which asks them to sign up; the create button stays members-only (owner 2026-10-25).
+
 ### BE-268 · Comments: reply, like, report, and the post's author can delete (owner 2026-11-05)
 - **What changed:** new `components/moments/CommentThread.tsx`, used by the home feed and the moment page, so both behave the same. Replies go one level (a reply to a reply sits under the same comment). The author of a post can delete any comment on it, always after a confirm; a comment leaves with its replies, and their notices go too. New `like_comment` / `unlike_comment` actions and `parentId` on `comment`. A comment can be reported (`targetType: 'comment'`, `targetId: 'momentId/commentId'`) and staff can remove it from the reports screen. New notices `reply` and `comment_like`. A feed post's preview is its newest top comment, never a reply.
 - **What to do about it:** **run `npm run db:migrate` on live for `0026_comment_replies_likes` BEFORE this reaches `main`.** Every moment read now uses the new column and table, so without it the feed and moment pages fail. It only adds things, so the current site keeps working once it has run. `db:migrate` reads `.env.local`, which is live; `npm run db:dev` is the one for the dev database.

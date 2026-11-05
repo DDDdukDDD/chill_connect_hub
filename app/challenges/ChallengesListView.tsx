@@ -310,7 +310,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
               <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="flex-1 min-w-0" />
               <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Phones: tighter, so the three menus keep one row on a 360 px screen */}
+            <div className="flex flex-wrap items-center gap-2 max-sm:gap-1.5 max-sm:[&_button[aria-haspopup]]:px-2.5">
               <FilterMenu
                 id="when"
                 label="ช่วงเวลา"

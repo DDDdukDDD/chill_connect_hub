@@ -464,6 +464,15 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
           <ShowMoreButton shown={paginatedEvents.length} total={filteredEvents.length} onClick={() => setCurrentPage(currentPage + 1)} />
         )}
+        {/* A visitor learns they can start one too, once they have looked through the list, not on top of it */}
+        {isAuthReady && !isLoggedIn && filteredEvents.length > 0 && (
+          <p className="pt-2 text-center text-sm text-slate-600">
+            ไม่เจอที่ชอบ?{' '}
+            <button type="button" onClick={openCreate} className="font-semibold text-[#C2410C] hover:underline underline-offset-4 cursor-pointer">
+              ตั้งตี้เองเลย
+            </button>
+          </p>
+        )}
       </main>
 
       <CustomDatePickerModal

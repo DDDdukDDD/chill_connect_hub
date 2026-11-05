@@ -90,9 +90,9 @@ Always pair the color with an icon and text. Never show a state by color alone.
 
 | Level | Classes | Use for |
 | :--- | :--- | :--- |
-| Primary | `bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | The one main action of a screen or dialog: search, log in, create account, next, save |
+| Primary | `bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | The one main action of a screen or dialog: log in, create account, next, save |
 | Secondary | `bg-slate-900 hover:bg-slate-800 text-white` | A second strong action: page-header "create" buttons, the Navbar login trigger, "sign up with email" |
-| Quiet | `bg-slate-100 hover:bg-slate-200 text-slate-700` | Back, cancel, close, skip |
+| Quiet | `bg-slate-100 hover:bg-slate-200 text-slate-700` | Back, cancel, close, skip, and the search button inside a search box (typing already searches, so it does not compete with the main action) |
 | Provider | `bg-white border border-slate-300 text-slate-800` | Google / Apple / Facebook sign-in |
 | Danger | `bg-rose-600 hover:bg-rose-700 text-white` | Only the final confirmation of something that cannot be undone (delete account). Logging out is not a danger action |
 | Disabled | `bg-slate-200 text-slate-400 cursor-not-allowed` | Any level when unavailable |

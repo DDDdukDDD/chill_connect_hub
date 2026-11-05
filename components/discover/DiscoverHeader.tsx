@@ -181,18 +181,20 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
 
       {lead}
 
-      {/* Phones: how many and how they are shown, with the create button, on one short row */}
-      <div className="sm:hidden flex items-center justify-between gap-3">
-        {summary && <div className="min-w-0 text-sm text-slate-500 font-medium truncate">{summary}</div>}
-        <div className="shrink-0 flex items-center gap-2">
-          {tools}
-          {action}
-        </div>
-      </div>
+      {summary && <div className="sm:hidden min-w-0 text-sm text-slate-500 font-medium truncate">{summary}</div>}
 
       {/* Filters on the left; how many and how they are shown on the right (wide screens) */}
       <div className="flex items-start gap-4">
-        <div className="flex-1 min-w-0">{children}</div>
+        {/* Phones: the create button and how they are shown start the row of filters that scrolls, so the first tiles sit higher */}
+        <div className="flex-1 min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:overflow-x-auto no-scrollbar max-sm:-mx-4 max-sm:px-4 max-sm:[&>div]:contents max-sm:[&_button]:shrink-0">
+          {(action || tools) && (
+            <div className="sm:hidden">
+              {action}
+              {tools}
+            </div>
+          )}
+          {children}
+        </div>
         {(summary || tools) && (
           <div className="hidden sm:flex shrink-0 items-center gap-3 min-h-9">
             {summary && <div className="text-sm text-slate-500 font-medium whitespace-nowrap">{summary}</div>}
