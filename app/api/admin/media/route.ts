@@ -46,7 +46,7 @@ async function getAllReferencedImageUrls(): Promise<Set<string>> {
 }
 
 export async function GET(request: NextRequest) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   try {
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const denied = requireAdminApiAccess(request, 'system.manage');
+  const denied = await requireAdminApiAccess(request, 'system.manage');
   if (denied) return denied;
 
   try {
@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    recordAudit(getAdminActor(request), 'media.delete', `ลบไฟล์ ${key}`, { type: 'media', id: key });
+    recordAudit(await getAdminActor(request), 'media.delete', `ลบไฟล์ ${key}`, { type: 'media', id: key });
     return NextResponse.json({ success: true, message: `Deleted ${key}` });
   } catch (error) {
     console.error('Error deleting media asset:', error);
@@ -124,7 +124,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireAdminApiAccess(request, 'system.manage');
+  const denied = await requireAdminApiAccess(request, 'system.manage');
   if (denied) return denied;
 
   try {
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      recordAudit(getAdminActor(request), 'media.clean_orphans', `ลบไฟล์ที่ไม่มีใครใช้ ${deletedCount} ไฟล์`);
+      recordAudit(await getAdminActor(request), 'media.clean_orphans', `ลบไฟล์ที่ไม่มีใครใช้ ${deletedCount} ไฟล์`);
       return NextResponse.json({
         success: true,
         message: `ลบไฟล์ขยะเรียบร้อยแล้ว ${deletedCount} ไฟล์ (คืนพื้นที่ ${(freedBytes / (1024 * 1024)).toFixed(2)} MB)`,

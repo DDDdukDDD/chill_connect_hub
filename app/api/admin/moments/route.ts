@@ -58,7 +58,7 @@ function toAdminItem(moment: Moment, people: Map<string, Member>, counted: Map<s
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const filterParam = searchParams.get('filter') as Filter | null;
@@ -103,9 +103,9 @@ export async function GET(request: Request) {
  * · reject_evidence {id, note} (the post stays but is no longer a visit; the author is told) · accept_evidence {id}
  */
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'community.review');
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   const body = await request.json().catch(() => ({}));
   const moment = typeof body.id === 'string' ? await momentRepository.findById(body.id) : null;
   if (!moment) return NextResponse.json({ success: false, error: 'ไม่พบโมเมนต์' }, { status: 404 });

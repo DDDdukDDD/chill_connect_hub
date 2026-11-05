@@ -11,9 +11,9 @@ const DEFAULT_SPOT_LIMIT = 30;
 const MAX_SPOT_LIMIT = 100;
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req, 'sources.run');
+  const denied = await requireAdminApiAccess(req, 'sources.run');
   if (denied) return denied;
-  const actor = getAdminActor(req);
+  const actor = await getAdminActor(req);
 
   try {
     let targetSource: string | undefined;

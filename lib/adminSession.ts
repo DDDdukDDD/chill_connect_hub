@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { countStaff } from './staffStore';
+import { mayHaveStaff } from './staffStore';
 
 /**
  * Stateless admin session: an HMAC-SHA256 signed token stored in an httpOnly cookie.
@@ -31,7 +31,7 @@ function getSecret(): string | null {
 }
 
 export function isAdminLoginConfigured(): boolean {
-  return Boolean(getSecret() && (process.env.ADMIN_PASSWORD || countStaff() > 0));
+  return Boolean(getSecret() && (process.env.ADMIN_PASSWORD || mayHaveStaff()));
 }
 
 function sign(payload: string, secret: string): string {

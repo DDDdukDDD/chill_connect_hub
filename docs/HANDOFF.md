@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-271 · Admin: staff, audit log and master data survive; tighter permissions (owner 2026-11-06)
+- **Why:** on Vercel these three lived in files under `/tmp`: a staff account or a master data edit vanished on the next deploy and differed from server to server, and the audit log kept nothing.
+- **What changed:** staff accounts are read from `app.staff_accounts` on every admin request, so disabling someone or changing a role takes effect at once on every server. The audit log writes to `app.audit_log`, which the website can only add to. Master data is one document in `app.app_settings` on top of the bundled file. **`requireAdminApiAccess`, `getAdminActor`, `hasAdminCredentials` and the staff functions are now async: always `await` them.** Reading reports and moments in admin needs `community.review`, not `content.view` (they hold reporters' names and reported words). Resetting all events is refused in production. The rail screen and the `communityClubs`, `venueGroups`, `questCategories` lists are gone from admin and `/api/master`: no public page used them. The moods stay, the server still files events by them.
+- **What to do about it:** **run `npm run db:migrate` on live for `0027_staff_created_by_note` with 0026, before `main` gets this.** Staff accounts made on live before now were never kept, so recreate them; the `ADMIN_PASSWORD` owner login is unchanged.
+
 ### BE-270 · Tester's TR-001 to TR-009, and My Hub's create button (owner 2026-11-06)
 - **What changed:** see each report in `docs/TEST_REPORTS.md`. For other work to know: `joinBlocker` takes the event and can answer `'age'`; `PublicMember.birthYear` is new (sent only to the member themselves); the age rule lives in `lib/members/nightlife.ts`, used by the server and the forms. `EventDateList` has no `renderTile` and `ChallengeList` no strip: the list views are rows from the top. `withoutSampleHandle` (`lib/displayName.ts`) goes with the sample data. "งานที่จัด" in My Hub always shows, with "ตั้งตี้ใหม่", and open ตี้ are suggested to anyone with nothing coming up.
 

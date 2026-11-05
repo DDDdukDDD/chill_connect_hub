@@ -4,7 +4,7 @@ import { recordAudit } from '@/lib/auditLog';
 import { cacheManager } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   try {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireAdminApiAccess(request, 'system.manage');
+  const denied = await requireAdminApiAccess(request, 'system.manage');
   if (denied) return denied;
 
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const { action, tag, tags } = body;
     if (['flush_all', 'flush_tag', 'flush_tags'].includes(action)) {
       const scope = action === 'flush_all' ? 'ทั้งหมด' : action === 'flush_tag' ? `แท็ก ${tag}` : `แท็ก ${Array.isArray(tags) ? tags.join(', ') : ''}`;
-      recordAudit(getAdminActor(request), `cache.${action}`, `ล้าง cache ${scope}`);
+      recordAudit(await getAdminActor(request), `cache.${action}`, `ล้าง cache ${scope}`);
     }
 
     if (action === 'flush_all') {

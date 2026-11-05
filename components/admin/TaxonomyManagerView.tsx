@@ -223,6 +223,7 @@ export function TaxonomyManagerView() {
         ))}
       </div>
       <p className="text-xs text-slate-500">{COLLECTION_HINTS[tab]}</p>
+      <p className="text-xs text-slate-500">การแก้ไขมีผลกับฟอร์มสร้าง ความสนใจของสมาชิก และการจัดหมวดอัตโนมัติ ส่วนแถบหมวดบนหน้าเว็บยังเป็นชุดในโค้ดที่มีไอคอนวาดไว้ หมวดใหม่จะยังไม่ขึ้นแถบนั้น</p>
 
       <MasterNotices admin={admin} />
 

@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
 
 // Campaigns with their stats, plus the challenges and rewards a campaign can name (for the form)
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
   // ?lite=1: names and challenges only (the challenges list groups by campaign), no stats
   if (new URL(request.url).searchParams.get('lite') === '1') {
@@ -26,9 +26,9 @@ export async function GET(request: Request) {
 
 // { action: 'save', campaign } (new when campaign.id is empty) · { action: 'delete', id }
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'content.edit');
+  const denied = await requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   try {
     const body = await request.json();
     if (body?.action === 'save' && body.campaign && typeof body.campaign === 'object') {

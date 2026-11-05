@@ -224,7 +224,7 @@ export async function POST(req: Request) {
     }
 
     // Role comes only from a server-verified admin session / token, never from the request body
-    const isAdmin = hasAdminCredentials(req);
+    const isAdmin = await hasAdminCredentials(req);
     const isPublicVenue = eventData.eventType === 'public_venue';
 
     // Who may publish without review: staff, and members whose host application was approved (community events only).

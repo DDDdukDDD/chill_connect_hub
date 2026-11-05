@@ -11,17 +11,17 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const roomReportId = params.get('room');
   if (roomReportId) {
-    const roomDenied = requireAdminApiAccess(request, 'community.review');
+    const roomDenied = await requireAdminApiAccess(request, 'community.review');
     if (roomDenied) return roomDenied;
     const room = await chatRoomOfReport(roomReportId);
     if (!room) return NextResponse.json({ success: false, error: 'ไม่พบรายงาน หรือไม่ใช่รายงานข้อความแชต' }, { status: 404 });
-    recordAudit(getAdminActor(request), 'report.read_chat', `เปิดอ่านแชตทั้งห้องจากรายงาน: ${room.report.targetTitle}`, { type: 'report', id: room.report.id });
+    recordAudit(await getAdminActor(request), 'report.read_chat', `เปิดอ่านแชตทั้งห้องจากรายงาน: ${room.report.targetTitle}`, { type: 'report', id: room.report.id });
     return NextResponse.json(
       { success: true, reportedMessageId: room.report.targetId, messages: room.messages },
       { headers: { 'Cache-Control': 'no-store' } }
     );
   }
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
   const param = params.get('status');
   const status = param === 'closed' || param === 'all' ? param : 'open';
@@ -33,9 +33,9 @@ export async function GET(request: Request) {
 
 // { action: 'close', id, note? }
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'community.review');
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   const body = await request.json().catch(() => null) as { action?: unknown; id?: unknown; note?: unknown; messageId?: unknown } | null;
   // { action: 'remove_chat_message', id: reportId, messageId } deletes another message of the reported room; the report stays open
   if (body?.action === 'remove_chat_message' && typeof body.id === 'string' && typeof body.messageId === 'string') {

@@ -9,11 +9,11 @@ function parsePositiveInteger(value: string | null, fallback: number, max: numbe
 
 // Audit log, newest first. Filters: actorId, action (exact or prefix such as "event"), q (summary / target id)
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request, 'audit.view');
+  const denied = await requireAdminApiAccess(request, 'audit.view');
   if (denied) return denied;
 
   const { searchParams } = new URL(request.url);
-  const result = queryAudit({
+  const result = await queryAudit({
     actorId: searchParams.get('actorId'),
     action: searchParams.get('action'),
     q: searchParams.get('q'),

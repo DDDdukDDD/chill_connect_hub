@@ -17,12 +17,9 @@ interface PublicMasterData {
   communityMoods: MasterCategory[];
   communityCategories: MasterCategory[];
   fairCategories: MasterCategory[];
-  questCategories: MasterCategory[];
   venues: MasterVenue[];
   provinces: MasterProvince[];
   zones: MasterZone[];
-  communityClubs: MasterFeaturedGroup[];
-  venueGroups: MasterFeaturedGroup[];
 }
 
 let cached: PublicMasterData | null = null;
@@ -59,15 +56,10 @@ export function useMasterData() {
       communityMoods: resolveCommunityMoods(source.communityMoods),
       communityCategories: resolveCommunityCategories(source.communityCategories),
       fairCategories: resolveFairCategories(source.fairCategories),
-      questCategories: source.questCategories.filter((c) => c.active),
       venues: resolveVenues(source.venues),
       provinces: resolveProvinces(source.provinces),
       featuredProvinces: resolveFeaturedProvinces(source.provinces),
       zonesFor: (province?: string) => resolveZones(source.zones, province),
-      /** TopCommunityRail cards (TOP_COMMUNITY_CLUBS shape) */
-      communityClubs: resolveCommunityClubs(source.communityClubs),
-      /** TopVenuesRail cards (TOP_VENUES shape) */
-      venueGroups: resolveVenueGroups(source.venueGroups),
     };
   }, [data]);
 }
