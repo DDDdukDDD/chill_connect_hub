@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { OPTIMIZED_REMOTE_IMAGES } from './lib/optimizedImage';
+import { SEARCH_INDEXING_ON } from './lib/site';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -40,6 +41,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
+      // Every page, image and file stays out of search results until the site is opened (lib/site.ts)
+      ...(SEARCH_INDEXING_ON ? [] : [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }]),
       // The service worker must never be served stale, or a fix to it would not reach installed apps
       { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] },
     ];

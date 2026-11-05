@@ -4,6 +4,12 @@ import type { Metadata } from 'next';
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chillwaa.com').replace(/\/$/, '');
 export const SITE_NAME = 'Chillwaa';
 
+/**
+ * Search engines and AI crawlers stay out until SITE_INDEXING=on is set on the live site and it is redeployed: much of
+ * the content is still sample data (owner 2026-11-05). Off by default, so a forgotten setting never exposes it.
+ */
+export const SEARCH_INDEXING_ON = process.env.SITE_INDEXING === 'on';
+
 export const absoluteUrl = (path = '/') => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 /** Plain text for a meta description: tags stripped, spaces collapsed, cut at a word near `max` characters. */
