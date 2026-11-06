@@ -27,7 +27,10 @@ const PICKED: Record<Props['kind'], string> = {
   challenges: 'border-[#7C3AED] text-[#5B21B6]',
 };
 
-/** The count sticker on each icon, in the pillar color like the landing's category cards ("ทั้งหมด" in grey there too) */
+/**
+ * The count sticker of the picked tab, in the pillar color. The others stay light grey (owner 2026-11-06): a strong
+ * sticker on every tab made the row a dozen focus points next to the page's one orange button
+ */
 const STICKER: Record<Props['kind'], string> = {
   meetups: 'bg-[#C2410C] text-white',
   fairs: 'bg-[#2B527A] text-white',
@@ -97,10 +100,12 @@ export function DiscoverCategoryTabs({ kind, categories, counts, selectedId, onS
                 <Icon className={`${isDrawn ? 'w-9 h-9' : 'w-6 h-6'} transition-transform group-hover:-translate-y-0.5 ${iconColor}`} strokeWidth={1.75} aria-hidden="true" />
                 {/* The member's own สาย: a dot on the left, the count sticker keeps the right corner */}
                 {isMine && <span className="absolute -top-0.5 -left-1.5 w-2 h-2 rounded-full bg-[#F26430] ring-2 ring-white" aria-hidden="true" />}
-                {/* How many the tab holds, as a sticker on the corner like the landing's cards (owner 2026-11-01) */}
+                {/* How many the tab holds, on the corner (owner 2026-11-01): quiet grey, the picked tab's in its color */}
                 {count !== undefined && count > 0 && (
                   <span
-                    className={`absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[11px] font-bold flex items-center justify-center shadow-sm rotate-12 group-hover:rotate-0 transition-transform tabular-nums ${id === null ? 'bg-slate-500 text-white' : STICKER[kind]}`}
+                    className={`absolute -top-2 -right-3 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[11px] font-semibold flex items-center justify-center tabular-nums transition-colors ${
+                      !isPicked ? 'bg-slate-100 text-slate-600' : id === null ? 'bg-slate-600 text-white' : STICKER[kind]
+                    }`}
                     aria-hidden="true"
                   >
                     {count >= 1000 ? `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : count}
