@@ -315,7 +315,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
             aria-label="ค้นหาคำบรรยาย ผู้โพสต์ หรือสถานที่"
             placeholder="ค้นหาคำบรรยาย ผู้โพสต์ หรือสถานที่"
-            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Activity, AlertCircle, ArrowRight, CheckCircle2, History, Inbox, LayoutDashboard, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, CheckCircle2, History, Inbox, LayoutDashboard, RefreshCw, ShieldAlert, Users } from 'lucide-react';
 import type { AuditEntry } from '@/lib/auditLog';
 import { AdminPageHeader, PillarBadge, adminButton } from './AdminUI';
 import type { AdminModuleFilters, AdminModuleId, AdminNavigate } from './AdminSidebar';
@@ -34,13 +34,24 @@ interface Safety {
   flaggedMembers: number | null;
 }
 
+interface Pulse {
+  members: { total: number; today: number; week: number };
+  moments: { today: number; week: number; capped: boolean };
+  campaigns: Array<{ id: string; name: string; endDate: string; enrolled: number; drawDate: string | null }>;
+  push: { configured: boolean; devices: number; members: number };
+}
+
 interface OverviewData {
   counts: { all: number; community: number; fairs: number; spots: number; quests: number };
   items: QueueItem[];
   health: Health;
   safety: Safety;
+  /** null when it failed to load: the rest of the page still shows */
+  pulse: Pulse | null;
   activity: AuditEntry[] | null;
 }
+
+const shortDay = (iso: string) => new Date(`${iso}T00:00:00+07:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
 async function fetchJson(url: string) {
   const res = await fetch(url, { cache: 'no-store' });
@@ -65,8 +76,9 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
   const [error, setError] = useState<string | null>(null);
 
   const fetchOverview = useCallback(async (): Promise<OverviewData> => {
-    const [queue, audit, openReports, reportedMoments, hostApplications, flaggedMembers] = await Promise.all([
+    const [queue, pulse, audit, openReports, reportedMoments, hostApplications, flaggedMembers] = await Promise.all([
       fetchJson('/api/admin/review?limit=5&health=1'),
+      fetchJson('/api/admin/pulse').catch(() => null),
       canViewAudit ? fetchJson('/api/admin/audit?limit=6') : Promise.resolve(null),
       optionalCount('/api/admin/reports', (d) => d.counts?.open),
       optionalCount('/api/admin/moments?filter=reported&limit=1', (d) => d.counts?.reported),
@@ -78,6 +90,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
       items: queue.items,
       health: queue.health,
       safety: { openReports, reportedMoments, hostApplications, flaggedMembers },
+      pulse: pulse as Pulse | null,
       activity: audit?.entries ?? null,
     };
   }, [canViewAudit, canMembers]);
@@ -153,7 +166,7 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
 
       {error && <div role="alert" className="flex items-start gap-2 border-l-2 border-rose-500 bg-rose-50 px-3 py-2 text-sm text-rose-800"><AlertCircle size={16} className="mt-0.5 shrink-0" />{error}</div>}
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
         {/* To do */}
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
@@ -215,6 +228,51 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
             {isLoading && !health && [1, 2, 3, 4].map((n) => <li key={n} className="h-9 animate-pulse rounded-lg bg-slate-50" />)}
           </ul>
         </div>
+      </section>
+
+      {/* Is the community alive: the content above is workload, this is whether people use the site */}
+      <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+          <Users size={16} className="text-slate-500" />
+          <h2 className="text-sm font-bold text-slate-900">ชุมชนวันนี้</h2>
+        </div>
+        {data && !data.pulse ? (
+          <p className="px-4 py-3 text-xs text-slate-500">โหลดตัวเลขชุมชนไม่สำเร็จ กดรีเฟรชเพื่อลองใหม่</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0">
+              {[
+                { label: 'สมาชิกใหม่วันนี้', value: data?.pulse?.members.today, sub: data?.pulse ? `7 วัน ${data.pulse.members.week} · ทั้งหมด ${data.pulse.members.total.toLocaleString('th-TH')}` : '' },
+                { label: 'โมเมนต์วันนี้', value: data?.pulse?.moments.today, sub: data?.pulse ? `7 วัน ${data.pulse.moments.week}${data.pulse.moments.capped ? '+' : ''}` : '' },
+                { label: 'แคมเปญที่เปิดอยู่', value: data?.pulse?.campaigns.length, sub: data?.pulse ? `สมัครแล้ว ${data.pulse.campaigns.reduce((sum, c) => sum + c.enrolled, 0)} คน` : '' },
+                {
+                  label: 'เปิดรับแจ้งเตือน',
+                  value: data?.pulse?.push.members,
+                  sub: !data?.pulse ? '' : data.pulse.push.configured ? `${data.pulse.push.devices} อุปกรณ์` : 'ยังไม่ได้ตั้งคีย์ VAPID ระบบจึงยังไม่ส่ง',
+                },
+              ].map((tile) => (
+                <div key={tile.label} className="px-4 py-3">
+                  <p className="text-2xl font-bold tabular-nums text-slate-900">{tile.value === undefined ? '—' : tile.value.toLocaleString('th-TH')}</p>
+                  <p className="text-[11px] text-slate-500">{tile.label}</p>
+                  {tile.sub && <p className="mt-0.5 text-[11px] text-slate-500">{tile.sub}</p>}
+                </div>
+              ))}
+            </div>
+            {data?.pulse?.campaigns.length ? (
+              <ul className="divide-y divide-slate-100 border-t border-slate-100">
+                {data.pulse.campaigns.map((campaign) => (
+                  <li key={campaign.id}>
+                    <button type="button" onClick={() => onNavigate('campaigns')} className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2.5 text-left hover:bg-slate-50">
+                      <span className="min-w-0 basis-full truncate text-sm font-semibold text-slate-800 sm:basis-auto sm:flex-1">{campaign.name}</span>
+                      <span className="text-[11px] text-slate-500">สมัคร {campaign.enrolled} คน · ถึง {shortDay(campaign.endDate)}</span>
+                      {campaign.drawDate && <span className="text-[11px] font-semibold text-slate-700">จับรางวัล {shortDay(campaign.drawDate)}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </>
+        )}
       </section>
 
       {/* Safety & community: people-side work that does not go through the content review queue */}

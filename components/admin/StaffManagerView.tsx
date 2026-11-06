@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, Loader2, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Plus, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import type { AdminPermission, StaffRole } from '@/lib/permissions';
 import type { PublicStaffAccount } from '@/lib/staffStore';
 import { NEW_ACCOUNT_DAYS, NEW_ACCOUNT_LIMITS } from '@/lib/members/trust';
 import { AdminBadge, AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
 import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { askText } from './adminConfirm';
 import { MODULE_EDIT_PERMISSIONS, MODULE_PERMISSIONS, SIDEBAR_GROUPS, type AdminNavigate } from './AdminSidebar';
 
 /**
@@ -32,7 +33,7 @@ interface StaffResponse {
 
 type MemberLevels = Record<'new' | 'verified' | 'trusted' | 'host' | 'organizer' | 'suspended' | 'banned', number>;
 
-const inputClass = 'w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]';
+const inputClass = 'w-full px-3 py-2 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]';
 const labelClass = 'block text-[11px] sm:text-xs font-semibold text-slate-500 mb-1.5';
 const tabClass = (active: boolean) => `whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold ${active ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`;
 
@@ -40,6 +41,10 @@ function formatDateTime(iso?: string) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 }
+
+/** An active account unused this long is worth a look: close it if the person no longer needs access */
+const STALE_LOGIN_DAYS = 30;
+const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 
 /** What a role may do on one admin page: change all of it, part of it, only look, or nothing */
 function accessOn(role: RoleInfo, moduleId: keyof typeof MODULE_PERMISSIONS) {
@@ -56,7 +61,7 @@ const ACCESS_CHIP = {
   view: { label: 'ดู', className: 'bg-slate-50 text-slate-600 border-slate-200' },
 };
 
-function RoleCards({ roles }: { roles: RoleInfo[] }) {
+function RoleCards({ roles, holders }: { roles: RoleInfo[]; holders: Record<StaffRole, number> }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {roles.map((role) => {
@@ -66,7 +71,10 @@ function RoleCards({ roles }: { roles: RoleInfo[] }) {
         })).filter((group) => group.modules.length);
         return (
           <div key={role.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-bold text-slate-900">{role.label}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-bold text-slate-900">{role.label}</p>
+              <span className="shrink-0 text-[11px] font-semibold text-slate-500" title="บัญชีที่ใช้งานอยู่ในบทบาทนี้">{holders[role.id]} คน</span>
+            </div>
             <p className="mt-1 text-xs text-slate-600 leading-relaxed">{role.description}</p>
             <p className="mt-3 text-[11px] font-semibold text-slate-500">แก้ไขได้ใน</p>
             <ul className="mt-1 space-y-1">
@@ -83,14 +91,45 @@ function RoleCards({ roles }: { roles: RoleInfo[] }) {
   );
 }
 
-function AccessTable({ roles }: { roles: RoleInfo[] }) {
+/** Who can do what at a glance: per admin page (as the sidebar lists them) or per permission (as the server checks them) */
+function AccessTable({ roles, permissionLabels }: { roles: RoleInfo[]; permissionLabels: Record<AdminPermission, string> }) {
+  const [view, setView] = useState<'pages' | 'permissions'>('pages');
   return (
-    <details className="group rounded-2xl border border-slate-200 bg-white overflow-hidden">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-bold text-slate-900">
-        <ChevronRight size={16} className="transition-transform group-open:rotate-90" />
-        ดูรายละเอียดสิทธิ์รายหน้า
-        <span className="ml-auto text-[11px] font-normal text-slate-500">ตามเมนูด้านซ้าย</span>
-      </summary>
+    <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <h3 className="text-sm font-bold text-slate-900">ตารางสิทธิ์</h3>
+        <div className="ml-auto inline-flex gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="ดูตารางสิทธิ์แบบ">
+          <button type="button" role="tab" aria-selected={view === 'pages'} onClick={() => setView('pages')} className={tabClass(view === 'pages')}>รายหน้า</button>
+          <button type="button" role="tab" aria-selected={view === 'permissions'} onClick={() => setView('permissions')} className={tabClass(view === 'permissions')}>รายสิทธิ์</button>
+        </div>
+      </div>
+      {view === 'permissions' ? (
+        <div className="overflow-x-auto border-t border-slate-200">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[11px] font-semibold text-slate-500 border-b border-slate-100">
+                <th className="px-4 py-2.5 text-left">สิทธิ์</th>
+                {roles.map((role) => <th key={role.id} className="px-3 py-2.5 text-center whitespace-nowrap">{role.label}</th>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {(Object.keys(permissionLabels) as AdminPermission[]).map((permission) => (
+                <tr key={permission}>
+                  <td className="px-4 py-2.5 text-xs text-slate-700">
+                    {permissionLabels[permission]}
+                    <p className="font-mono text-[11px] text-slate-400">{permission}</p>
+                  </td>
+                  {roles.map((role) => (
+                    role.permissions.includes(permission)
+                      ? <td key={role.id} className="px-3 py-2.5 text-center"><CheckCircle2 size={16} className="inline text-emerald-600" aria-label="มีสิทธิ์" /></td>
+                      : <td key={role.id} className="px-3 py-2.5 text-center text-slate-300" aria-label="ไม่มีสิทธิ์">–</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="overflow-x-auto border-t border-slate-200">
         <table className="w-full text-sm">
           <thead>
@@ -133,10 +172,12 @@ function AccessTable({ roles }: { roles: RoleInfo[] }) {
           ))}
         </table>
       </div>
+      )}
       <p className="border-t border-slate-100 px-4 py-2.5 text-[11px] text-slate-500">
-        กำหนดไว้ในโค้ด (lib/permissions.ts) แก้จากหน้านี้ไม่ได้ เซิร์ฟเวอร์ตรวจสิทธิ์นี้ทุกครั้ง ชี้ที่ “แก้บางส่วน” เพื่อดูว่าทำอะไรได้
+        กำหนดไว้ในโค้ด (lib/permissions.ts) แก้จากหน้านี้ไม่ได้ เซิร์ฟเวอร์ตรวจสิทธิ์นี้ทุกครั้ง
+        {view === 'pages' && ' ชี้ที่ “แก้บางส่วน” เพื่อดูว่าทำอะไรได้'}
       </p>
-    </details>
+    </section>
   );
 }
 
@@ -313,14 +354,22 @@ export function StaffManagerView({ onNavigate }: { onNavigate?: AdminNavigate })
     }
   };
 
-  const handleResetPassword = (account: PublicStaffAccount) => {
-    const password = window.prompt(`รหัสผ่านใหม่สำหรับ ${account.name} (อย่างน้อย 10 ตัวอักษร)`);
+  const handleResetPassword = async (account: PublicStaffAccount) => {
+    const password = await askText(`ตั้งรหัสผ่านใหม่ให้ ${account.name}`, {
+      label: 'รหัสผ่านใหม่ (อย่างน้อย 10 ตัว):', type: 'password', minLength: 10, autoComplete: 'new-password', action: 'ตั้งรหัสใหม่',
+    });
     if (password) post({ action: 'reset_password', id: account.id, password }, `ตั้งรหัสผ่านใหม่ให้ ${account.name} แล้ว session เดิมถูกออกจากระบบ`);
   };
 
   const roleLabel = (role: StaffRole) => data?.roles.find((r) => r.id === role)?.label ?? role;
   const ownerLabel = roleLabel('owner');
   const pickedRole = data?.roles.find((r) => r.id === form.role);
+  // createdBy holds a staff id or, for the ADMIN_PASSWORD owner and older rows, a name
+  const creatorName = (createdBy: string) => data?.staff.find((s) => s.id === createdBy)?.name ?? (createdBy || '—');
+  const holders = Object.fromEntries((data?.roles ?? []).map((role) => [
+    role.id,
+    (data?.staff ?? []).filter((s) => s.role === role.id && s.status === 'active').length + (role.id === 'owner' && data?.envOwnerEnabled ? 1 : 0),
+  ])) as Record<StaffRole, number>;
 
   return (
     <div className="space-y-6">
@@ -440,6 +489,7 @@ export function StaffManagerView({ onNavigate }: { onNavigate?: AdminNavigate })
                           <td className="px-4 py-3">
                             <p className="font-bold text-slate-800">{account.name}{isSelf && <span className="ml-1.5 text-[11px] font-semibold text-slate-500">(คุณ)</span>}</p>
                             <p className="text-[11px] text-slate-500">{account.email}</p>
+                            <p className="text-[11px] text-slate-400">สร้างโดย {creatorName(account.createdBy)} · {formatDateTime(account.createdAt)}</p>
                           </td>
                           <td className="px-4 py-3">
                             <select
@@ -457,7 +507,12 @@ export function StaffManagerView({ onNavigate }: { onNavigate?: AdminNavigate })
                               {account.status === 'active' ? 'ใช้งาน' : 'ปิดแล้ว'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{formatDateTime(account.lastLoginAt)}</td>
+                          <td className="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">
+                            {account.lastLoginAt ? formatDateTime(account.lastLoginAt) : 'ยังไม่เคยเข้า'}
+                            {account.status === 'active' && account.lastLoginAt && daysSince(account.lastLoginAt) > STALE_LOGIN_DAYS && (
+                              <p className="mt-0.5 text-[11px] font-semibold text-amber-700">ไม่ได้เข้า {daysSince(account.lastLoginAt)} วัน ยังต้องใช้อยู่ไหม</p>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-1.5 flex-wrap">
                               <button type="button" disabled={busy} onClick={() => handleResetPassword(account)} className={adminButton.secondarySm}>ตั้งรหัสใหม่</button>
@@ -486,8 +541,8 @@ export function StaffManagerView({ onNavigate }: { onNavigate?: AdminNavigate })
           {data && (
             <section className="space-y-3">
               <h2 className="text-sm font-bold text-slate-900">บทบาทของทีมงาน</h2>
-              <RoleCards roles={data.roles} />
-              <AccessTable roles={data.roles} />
+              <RoleCards roles={data.roles} holders={holders} />
+              <AccessTable roles={data.roles} permissionLabels={data.permissionLabels} />
             </section>
           )}
         </>

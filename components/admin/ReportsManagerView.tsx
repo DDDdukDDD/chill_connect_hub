@@ -193,7 +193,7 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                 {report.status === 'open' && can('community.review') && (
                   <span className="flex items-center gap-2 ml-auto flex-1 sm:flex-none min-w-[240px]">
                     <label htmlFor={`note-${report.id}`} className="sr-only">บันทึกสิ่งที่ทำ</label>
-                    <input id={`note-${report.id}`} value={notes[report.id] ?? ''} maxLength={300} onChange={(e) => setNotes((prev) => ({ ...prev, [report.id]: e.target.value }))} placeholder="บันทึกสิ่งที่ทำ (ไม่บังคับ)" className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
+                    <input id={`note-${report.id}`} value={notes[report.id] ?? ''} maxLength={300} onChange={(e) => setNotes((prev) => ({ ...prev, [report.id]: e.target.value }))} placeholder="บันทึกสิ่งที่ทำ (ไม่บังคับ)" className="flex-1 min-w-0 px-3 py-2 border border-slate-200 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" />
                     <button type="button" disabled={busyId === report.id} onClick={() => close(report)} className={adminButton.primary}>
                       {busyId === report.id && <Loader2 size={14} className="animate-spin" />} ปิดรายงาน
                     </button>

@@ -534,7 +534,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
             placeholder="ค้นหาชื่อแหล่งข้อมูล, URL หรือหมวดหมู่..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 text-xs placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 shadow-xs"
+            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-slate-700 text-xs placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 shadow-xs"
           />
         </div>
 
@@ -749,7 +749,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                   placeholder="เช่น Eventpop / The Concert / ThaiRun"
                   value={newSource.name}
                   onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 />
               </div>
 
@@ -763,7 +763,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                   placeholder={newSource.targetType === 'spots' ? 'https://... (Place JSON-LD)' : 'https://... (Event JSON-LD)'}
                   value={newSource.url}
                   onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 />
               </div>
 
@@ -782,7 +782,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                       categoryLabel: targetType === 'spots' ? 'สถานที่ท่องเที่ยวและจุดแวะพัก' : '🎟️ เวิร์กช็อป & ไลฟ์สไตล์',
                     });
                   }}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 >
                   <option value="events">ตี้และอีเวนต์</option>
                   <option value="spots">สถานที่</option>
@@ -815,7 +815,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                         categoryLabel: labels[cat] || 'เว็บไซต์อีเวนต์',
                       });
                     }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                   >
                     <option value="lifestyle">ไลฟ์สไตล์ & เวิร์กช็อป</option>
                     <option value="music">ดนตรี & คอนเสิร์ต</option>
@@ -836,7 +836,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                     placeholder="เช่น 🎟️ / 🏃 / 🏛️"
                     value={newSource.icon}
                     onChange={(e) => setNewSource({ ...newSource, icon: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                   />
                 </div>
               </div>
@@ -850,7 +850,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                   placeholder="รายละเอียดประเภทของกิจกรรมที่ดึง..."
                   value={newSource.description}
                   onChange={(e) => setNewSource({ ...newSource, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 text-xs focus:outline-none focus:border-[#4A7C59]/50"
                 />
               </div>
 

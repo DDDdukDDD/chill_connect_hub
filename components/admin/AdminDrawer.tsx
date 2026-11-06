@@ -64,7 +64,7 @@ export function FormSection({ title, hint, children }: { title: string; hint?: s
 }
 
 export const fieldInputClass =
-  'w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] disabled:bg-slate-50 disabled:text-slate-500';
+  'w-full px-3 py-2 bg-white border border-slate-200 rounded-2xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] disabled:bg-slate-50 disabled:text-slate-500';
 
 /** Label + control + optional hint/error, spanning both columns when `wide`. */
 export function Field({

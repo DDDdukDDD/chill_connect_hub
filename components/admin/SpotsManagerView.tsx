@@ -174,7 +174,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
   };
 
   const selectClass =
-    'px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm focus:outline-none focus:border-[#4A7C59]/50 shadow-xs';
+    'px-3 py-2 bg-white border border-slate-200 rounded-2xl text-slate-600 text-sm focus:outline-none focus:border-[#4A7C59]/50 shadow-xs';
 
   return (
     <div className="space-y-5">
@@ -240,7 +240,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
             placeholder="ค้นหาชื่อ จังหวัด อำเภอ หรือคำอธิบาย..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 shadow-xs"
+            className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-2xl text-slate-700 text-sm placeholder-slate-400 focus:outline-none focus:border-[#4A7C59]/50 focus:ring-1 focus:ring-[#4A7C59]/20 shadow-xs"
           />
         </div>
         <select value={category} onChange={(e) => withPageReset(setCategory)(e.target.value)} aria-label="กรองหมวดหมู่" className={selectClass}>
