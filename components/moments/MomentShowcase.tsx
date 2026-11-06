@@ -100,7 +100,7 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
           <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
             <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place || moment.userName}`} loading="lazy" className="w-full h-full object-cover" />
-            {moment.video && <ClipPlayer url={moment.video.url} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
+            {moment.video?.previewUrl && <ClipPlayer url={moment.video.url} preview={moment.video.previewUrl} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
             {moment.video && (
               <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
                 <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />

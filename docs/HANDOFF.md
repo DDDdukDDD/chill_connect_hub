@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-272 · Clips shrunk on the phone; feeds autoplay a small preview (owner 2026-11-07)
+- **Why:** Vercel Blob Data Transfer reached 75% of the free 10 GB: every autoplay downloaded the whole original (20–40 MB `.mov`). Plan in stages: [VIDEO_PLAN.md](VIDEO_PLAN.md).
+- **What changed:** `lib/media/clipCompress.ts` (Mediabunny 1.62.1, WebCodecs) cuts the chosen 15 s, makes it 720p H.264 MP4 and a 3 s 360p silent preview; a device that cannot falls back to the original. `video.previewUrl` is new (API.md). `ClipPlayer` takes `preview`: feeds and grids autoplay it and load the full file only on sound or opening; clips without one show their cover until tapped, and grid tiles show only the cover. Clip uploads per hour 10 → 20 (two files per clip).
+- **What to do about it:** **run `npm run db:migrate` on live for `0028_moment_video_preview` before `main` gets this** (already run on dev). Until then clip posts with a preview fail on live; other posts keep saving. Not yet tried on a real phone.
+
 ### BE-271 · Admin: staff, audit log and master data survive; tighter permissions (owner 2026-11-06)
 - **Why:** on Vercel these three lived in files under `/tmp`: a staff account or a master data edit vanished on the next deploy and differed from server to server, and the audit log kept nothing.
 - **What changed:** staff accounts are read from `app.staff_accounts` on every admin request, so disabling someone or changing a role takes effect at once on every server. The audit log writes to `app.audit_log`, which the website can only add to. Master data is one document in `app.app_settings` on top of the bundled file. **`requireAdminApiAccess`, `getAdminActor`, `hasAdminCredentials` and the staff functions are now async: always `await` them.** Reading reports and moments in admin needs `community.review`, not `content.view` (they hold reporters' names and reported words). Resetting all events is refused in production. The rail screen and the `communityClubs`, `venueGroups`, `questCategories` lists are gone from admin and `/api/master`: no public page used them. The moods stay, the server still files events by them.

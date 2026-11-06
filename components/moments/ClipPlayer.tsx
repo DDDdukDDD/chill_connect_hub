@@ -8,6 +8,11 @@ import { Heart, Play, Volume2, VolumeX } from 'lucide-react';
  * silent and looping, and stops when it scrolls away. A tap pauses, a double tap likes, the speaker turns the sound on.
  * Only the topmost clip on screen plays, so a page of clips spends the data of one, and nothing loads before it plays.
  * On a computer the clip under the mouse plays instead (owner 2026-11-02), and the topmost takes over when the mouse leaves.
+ *
+ * Feeds and grids pass `preview` (docs/VIDEO_PLAN.md, stage 1, owner 2026-11-07): they autoplay the clip's small silent
+ * loop, and the full file loads only when the reader turns the sound on or opens the post. A clip posted before previews
+ * existed (`preview` null) shows its cover and loads nothing until a tap. Without `preview` (the post's own page) the
+ * full clip plays as before.
  */
 
 /** How much of a clip must be on screen before it plays */
@@ -19,6 +24,8 @@ const AUTOPLAY_REFUSED = 'clip-autoplay-refused';
 
 const onScreen = new Set<HTMLVideoElement>();
 const pausedByReader = new WeakSet<HTMLVideoElement>();
+/** Clips that wait for a tap: no preview to play, and the full file is too heavy to start by itself in a feed */
+const waitsForTap = new WeakSet<HTMLVideoElement>();
 let playing: HTMLVideoElement | null = null;
 let hovered: HTMLVideoElement | null = null;
 
@@ -54,7 +61,7 @@ function start(el: HTMLVideoElement) {
 }
 
 function settle() {
-  const next = hovered ?? [...onScreen].sort((a, b) => {
+  const next = (hovered && !waitsForTap.has(hovered) ? hovered : null) ?? [...onScreen].filter((el) => !waitsForTap.has(el)).sort((a, b) => {
     const [boxA, boxB] = [a.getBoundingClientRect(), b.getBoundingClientRect()];
     // Tiles in one row are not quite level while a hovered one still leans, so the row counts first, then the leftmost
     return Math.abs(boxA.top - boxB.top) > SAME_ROW_PX ? boxA.top - boxB.top : boxA.left - boxB.left;
@@ -66,6 +73,8 @@ function settle() {
 
 interface ClipPlayerProps {
   url: string;
+  /** The small silent loop to autoplay in place of `url`; null for an older clip with none (then it waits for a tap) */
+  preview?: string | null;
   /** The part of the file to play and loop, when the member picked one from a longer clip */
   startS?: number;
   durationS?: number;
@@ -81,7 +90,7 @@ interface ClipPlayerProps {
   className?: string;
 }
 
-export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, className = '' }: ClipPlayerProps) {
+export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, className = '' }: ClipPlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(true);
@@ -89,6 +98,9 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
   const [needsTap, setNeedsTap] = useState(false);
   const [hearts, setHearts] = useState(0);
   const sound = useSyncExternalStore(subscribeSound, () => soundOn, () => false);
+  // The full file, rather than the preview or nothing; switched on by the reader, never back
+  const [isFull, setIsFull] = useState(preview === undefined);
+  const switchedToFull = useRef(false);
 
   useEffect(() => {
     const el = video.current;
@@ -110,7 +122,8 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
     const onRefused = () => setNeedsTap(true);
     el.addEventListener(AUTOPLAY_REFUSED, onRefused);
     // Data saver and reduced motion start clips with a tap
-    const startsByItself = mayAutoplay();
+    const startsByItself = mayAutoplay() && preview !== null;
+    if (preview === null) waitsForTap.add(el);
     if (!startsByItself) queueMicrotask(onRefused);
     // A grid tile's player lets the pointer through to its link, so there the mouse is watched on the tile
     const wrapper = el.parentElement;
@@ -138,7 +151,23 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
       if (playing === el) playing = null;
       settle();
     };
-  }, [interactive]);
+  }, [interactive, preview]);
+
+  // Preview to full file: the reader asked for it, so it plays at once, in place of whatever else was playing
+  useEffect(() => {
+    const el = video.current;
+    if (!isFull || !switchedToFull.current || !el) return;
+    waitsForTap.delete(el);
+    pausedByReader.delete(el);
+    if (playing && playing !== el) playing.pause();
+    playing = el;
+    start(el);
+  }, [isFull]);
+
+  const goFull = () => {
+    switchedToFull.current = true;
+    setIsFull(true);
+  };
 
   useEffect(() => () => {
     if (tapTimer.current) clearTimeout(tapTimer.current);
@@ -146,7 +175,7 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
 
   // Stays inside the chosen part; a whole file (startS 0) just loops on its own
   const keepInPart = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    if (startS <= 0 || !durationS) return;
+    if (!isFull || startS <= 0 || !durationS) return;
     const el = e.currentTarget;
     if (el.currentTime < startS - 0.25 || el.currentTime >= startS + durationS) el.currentTime = startS;
   };
@@ -154,6 +183,7 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
   const togglePlay = () => {
     const el = video.current;
     if (!el) return;
+    if (!isFull) return goFull();
     if (el.paused) {
       pausedByReader.delete(el);
       if (playing && playing !== el) playing.pause();
@@ -187,7 +217,7 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
     <div className={`${className} ${interactive ? '' : 'pointer-events-none'}`}>
       <video
         ref={video}
-        src={url}
+        src={isFull ? url : (preview ?? undefined)}
         poster={poster}
         muted
         loop
@@ -216,12 +246,19 @@ export function ClipPlayer({ url, startS = 0, durationS, poster, label, fit = 'c
           </button>
           <button
             type="button"
-            onClick={() => setSound(!sound)}
-            aria-label={sound ? 'ปิดเสียง' : 'เปิดเสียง'}
-            aria-pressed={sound}
+            onClick={() => {
+              // The preview has no sound: turning it on brings the full clip
+              if (!isFull) {
+                setSound(true);
+                return goFull();
+              }
+              setSound(!sound);
+            }}
+            aria-label={sound && isFull ? 'ปิดเสียง' : 'เปิดเสียง'}
+            aria-pressed={sound && isFull}
             className="absolute top-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
           >
-            {sound ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
+            {sound && isFull ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
           </button>
           {hearts > 0 && (
             <span key={hearts} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">

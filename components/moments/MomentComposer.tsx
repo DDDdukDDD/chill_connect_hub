@@ -14,6 +14,7 @@ import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { uploadPresigned } from '@vercel/blob/client';
 import { clipFrame, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
+import { compressClip } from '@/lib/media/clipCompress';
 import { drawBase, drawOverlays, exportPhoto, newPhoto, type EditedPhoto } from '@/lib/media/photoEdit';
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -297,15 +298,15 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   };
 
   /** Sends the clip straight to storage when the site can sign that; a local server keeps it itself */
-  const uploadClip = async (file: File): Promise<string | null> => {
+  const uploadClip = async (file: File, showProgress = true): Promise<string | null> => {
     const { mode } = await fetch('/api/upload/video', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ mode: 'off' }));
     if (mode === 'direct') {
-      const name = `moments/clip.${file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'}`;
+      const name = `moments/${file.name === 'clip-preview.mp4' ? 'clip-preview' : 'clip'}.${file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'}`;
       const blob = await uploadPresigned(name, file, {
         access: 'public',
         handleUploadUrl: '/api/upload/video',
         contentType: file.type,
-        onUploadProgress: ({ percentage }) => setUploadNote(`กำลังอัปโหลดคลิป ${Math.round(percentage)}%`),
+        onUploadProgress: ({ percentage }) => showProgress && setUploadNote(`กำลังอัปโหลดคลิป ${Math.round(percentage)}%`),
       });
       return blob.url;
     }
@@ -351,9 +352,14 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         if (!upload?.success || !upload.url) return onToast(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
         imageUrls.push(upload.url);
       }
+      // Only the chosen part, made small on this phone; the original goes when this device cannot do that
+      if (clip) setUploadNote('กำลังเตรียมคลิป…');
+      const small = clip ? await compressClip(clip.file, clip.startS, clip.fullSeconds, (share) => setUploadNote(`กำลังเตรียมคลิป ${Math.round(share * 100)}%`)) : null;
       if (clip) setUploadNote('กำลังอัปโหลดคลิป…');
-      const clipUrl = clip ? await uploadClip(clip.file).catch(() => null) : null;
+      const clipUrl = clip ? await uploadClip(small?.file ?? clip.file).catch(() => null) : null;
       if (clip && !clipUrl) return onToast('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
+      // The silent loop feeds autoplay; without it the post still goes, its clip then waits for a tap
+      const previewUrl = small?.preview ? await uploadClip(small.preview, false).catch(() => null) : null;
       setUploadNote('กำลังโพสต์…');
       const imageRatio = clip?.cover
         ? await new Promise<number | undefined>((resolve) => {
@@ -367,7 +373,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       const result = await postJson('/api/moments', {
         caption: caption.trim(),
         images: imageUrls,
-        video: clip && clipUrl ? { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.fullSeconds - clip.startS), startS: clip.startS } : undefined,
+        video: clip && clipUrl ? (small ? { url: clipUrl, durationS: small.durationS, startS: 0, ...(previewUrl ? { previewUrl } : {}) } :{ url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.fullSeconds - clip.startS), startS: clip.startS }) : undefined,
         ...options,
         imageRatio,
         location,

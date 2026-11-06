@@ -30,7 +30,7 @@ export function isAllowedMomentVideo(url: string): boolean {
 }
 
 /** Every stored file a moment shows, for deleting them with it */
-export const momentFiles = (moment: Moment): string[] => [...moment.images, ...(moment.video ? [moment.video.url] : [])];
+export const momentFiles = (moment: Moment): string[] => [...moment.images, ...(moment.video ? [moment.video.url, ...(moment.video.previewUrl ? [moment.video.previewUrl] : [])] : [])];
 
 export function thaiTimeAgo(iso: string, now = Date.now()): string {
   const minutes = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
@@ -225,12 +225,13 @@ export async function findPublicMoment(id: string): Promise<FeedItem | null> {
 
 function cleanVideo(input: unknown, imageCount: number): Moment['video'] {
   if (input === undefined || input === null) return undefined;
-  const { url, durationS, startS } = input as { url?: unknown; durationS?: unknown; startS?: unknown };
+  const { url, durationS, startS, previewUrl } = input as { url?: unknown; durationS?: unknown; startS?: unknown; previewUrl?: unknown };
   if (typeof url !== 'string' || !isAllowedMomentVideo(url)) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
   if (typeof durationS !== 'number' || !Number.isFinite(durationS) || durationS <= 0 || durationS > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) throw new MomentError(`คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาที`);
   if (imageCount !== 1) throw new MomentError('โมเมนต์ที่มีคลิปใช้รูปปกได้รูปเดียว');
   const start = typeof startS === 'number' && Number.isFinite(startS) && startS > 0 ? Math.round(startS * 10) / 10 : 0;
-  return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}) };
+  if (previewUrl !== undefined && (typeof previewUrl !== 'string' || !isAllowedMomentVideo(previewUrl))) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
+  return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}), ...(previewUrl ? { previewUrl } : {}) };
 }
 
 /** People the member follows who follow back, neither blocking the other: the only ones they can tag */
