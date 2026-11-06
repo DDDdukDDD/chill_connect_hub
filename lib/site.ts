@@ -15,8 +15,8 @@ export function metaDescription(text: string | undefined, max = 160): string {
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).trim()}…`;
 }
 
-/** The site's share picture (also in app/layout.tsx), for pages without a picture of their own */
-const DEFAULT_SHARE_IMAGE = '/hero-bg-70.png';
+/** The site's share picture (drawn by app/opengraph-image.tsx), for pages without a picture of their own */
+const DEFAULT_SHARE_IMAGE = '/opengraph-image';
 
 /** Title, description, canonical address and share preview for one public page. Without an image the site's own is
  *  used: setting openGraph here replaces the root layout's, picture included, so list pages shared as a bare link. */

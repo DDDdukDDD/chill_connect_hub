@@ -1985,7 +1985,7 @@ function MyHubContent() {
             {/* An invitation, not a feature list: what free time could hold, and the two ways in */}
             <div>
               <p className="text-xs font-bold text-slate-500">มายฮับ</p>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight text-balance">Hub กิจกรรมและคอมมูนิตี้ สำหรับคนชอบออกไปใช้ชีวิต</h1>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-tight text-balance">Social platform สำหรับคนชอบออกไปใช้ชีวิต</h1>
               <p className="mt-3 text-sm sm:text-base font-medium text-slate-600 leading-relaxed text-pretty">
                 เราคัดสรรและรวบรวมทุกมิติของการออกไปใช้ชีวิต ตั้งแต่ค้นหาพิกัดใจฟู ชวนเพื่อนรู้ใจ ชาเลนจ์สนุกๆ ไปจนถึงรับรางวัลพิเศษ ให้ทุกการพักผ่อนมีความหมาย
               </p>
