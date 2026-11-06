@@ -187,7 +187,7 @@ export function ProvincesManagerView() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:w-56">
               <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="ค้นหาจังหวัด" placeholder="ค้นหาจังหวัด" className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20" />
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="ค้นหาจังหวัด" placeholder="ค้นหาจังหวัด" className="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20" />
             </div>
             <select aria-label="ภาค" value={region} onChange={(e) => setRegion(e.target.value as 'all' | Region)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
               <option value="all">ทุกภาค</option>

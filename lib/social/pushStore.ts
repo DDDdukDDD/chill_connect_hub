@@ -18,6 +18,8 @@ interface PushStore {
   listFor(memberIds: string[]): Promise<PushDevice[]>;
   removeEndpoints(endpoints: string[]): Promise<void>;
   removeMember(memberId: string): Promise<void>;
+  /** How many devices take notifications, and from how many members (admin home) */
+  summary(): Promise<{ devices: number; members: number }>;
 }
 
 function jsonStore(): PushStore {
@@ -39,6 +41,10 @@ function jsonStore(): PushStore {
     },
     async removeMember(memberId) {
       await store.update((items) => items.filter((d) => d.memberId !== memberId));
+    },
+    async summary() {
+      const items = store.read();
+      return { devices: items.length, members: new Set(items.map((d) => d.memberId)).size };
     },
   };
 }
@@ -76,6 +82,10 @@ function postgresStore(): PushStore {
     async removeMember(memberId) {
       const db = sql();
       await db`delete from app.push_subscriptions where member_id = (select id from app.members where legacy_id = ${memberId})`;
+    },
+    async summary() {
+      const [row] = await sql()`select count(*)::int as devices, count(distinct member_id)::int as members from app.push_subscriptions`;
+      return { devices: row.devices, members: row.members };
     },
   };
 }

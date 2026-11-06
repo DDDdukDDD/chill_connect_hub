@@ -97,7 +97,7 @@ export function AuditLogView() {
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
             aria-label="ค้นหาในรายละเอียด"
             placeholder="ค้นหาในรายละเอียด"
-            className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
+            className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
           />
         </div>
       </div>
