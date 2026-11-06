@@ -49,10 +49,10 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ อีเวนต์ ที่เที่ยว'}
-        className="h-full flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className="h-full flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-500 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (
-        <button type="button" onClick={() => onQueryChange('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 cursor-pointer">
+        <button type="button" onClick={() => onQueryChange('')} aria-label="ล้างคำค้นหา" className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 cursor-pointer">
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
@@ -81,7 +81,7 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
           ))}
         </optgroup>
       </select>
-      <button type="submit" aria-label="ค้นหา" className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm cursor-pointer">
+      <button type="submit" aria-label="ค้นหา" className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
         <Search className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
       </button>
     </form>

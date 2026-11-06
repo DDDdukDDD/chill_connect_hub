@@ -16,7 +16,7 @@ const PAGE = 40;
 type Kind = 'meetups' | 'fairs';
 
 /** The pillar's dark color for the when-line (DESIGN_SYSTEM.md, pillar colors on cards) */
-const WHEN_COLOR: Record<Kind, string> = { meetups: 'text-[#D04A1B]', fairs: 'text-[#2B527A]' };
+const WHEN_COLOR: Record<Kind, string> = { meetups: 'text-[#C2410C]', fairs: 'text-[#2B527A]' };
 
 const startOf = (e: EventItem) => parseEventDateToTimestamp(e.date);
 const endOf = (e: EventItem) => parseEventEndDateToTimestamp(e.endDate || e.date) + DAY - 1;
@@ -51,7 +51,7 @@ function statusOf(kind: Kind, e: EventItem): { text: string; tone: string } | nu
     return free ? { text: 'เข้าฟรี', tone: 'text-emerald-700' } : hasValue(e.price) ? { text: priceOf(e.price!), tone: 'text-slate-600' } : null;
   const left = (e.maxParticipants || 0) - (e.participantsCount || 0);
   if (left <= 0) return { text: 'เต็มแล้ว', tone: 'text-slate-500' };
-  return { text: `${free ? 'ฟรี · ' : ''}เหลือ ${left} ที่`, tone: left <= 2 ? 'text-[#D04A1B]' : 'text-emerald-700' };
+  return { text: `${free ? 'ฟรี · ' : ''}เหลือ ${left} ที่`, tone: left <= 2 ? 'text-[#C2410C]' : 'text-emerald-700' };
 }
 
 // A ตี้ names its short area ("สุขุมวิท"), as its tile does; an อีเวนต์ its province and venue
@@ -115,46 +115,18 @@ function DayGroups({ kind, events }: { kind: Kind; events: EventItem[] }) {
   );
 }
 
-function StripCard({ kind, event }: { kind: Kind; event: EventItem }) {
-  const status = statusOf(kind, event);
-  const start = new Date(startOf(event));
-  return (
-    <Link href={hrefOf(kind, event)} className="group snap-start shrink-0 w-56 sm:w-64">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={event.image || FALLBACK_IMAGE}
-        onError={(ev) => {
-          if (ev.currentTarget.src !== FALLBACK_IMAGE) ev.currentTarget.src = FALLBACK_IMAGE;
-        }}
-        alt=""
-        loading="lazy"
-        className="w-full aspect-video rounded-xl object-cover bg-slate-100"
-      />
-      <span className={`mt-2 block text-xs font-semibold tabular-nums truncate ${WHEN_COLOR[kind]}`}>
-        {kind === 'meetups' ? `${THAI_WEEKDAYS[start.getDay()]} ${shortDate(start.getTime())} · ${whenLine(kind, event)}` : whenLine(kind, event)}
-      </span>
-      <span className="mt-0.5 block text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:underline">{event.title}</span>
-      <span className="mt-0.5 block text-xs text-slate-500 truncate">
-        {event.province || event.location}
-        {status && <span className={`font-semibold ${status.tone}`}> · {status.text}</span>}
-      </span>
-    </Link>
-  );
-}
-
 const heading = (title: string, count: number) => (
   <h2 className="text-base sm:text-lg font-bold text-slate-900">
-    {title} <span className="ml-1 text-sm font-medium text-slate-400 tabular-nums">{count}</span>
+    {title} <span className="ml-1 text-sm font-medium text-slate-500 tabular-nums">{count}</span>
   </h2>
 );
 
 /**
- * The list view of /community and /events, like the /challenges list: what is soon on top as a strip of small cards
- * ("สัปดาห์นี้" for meetups, "กำลังจัดอยู่ตอนนี้" for fairs), then the rest by date under month headings, then
+ * The list view of /community and /events: rows from the top (a strip of cards made the switch from the card view look like nothing happened, TR-004).
+ * What is soon comes first ("สัปดาห์นี้" for meetups, "กำลังจัดอยู่ตอนนี้" for fairs), then the rest by date under month headings, then
  * the ended ones (latest first) when the filter shows them. Open layout: headings and rows, no boxes.
- * `renderTile` draws the strip with the page's own tile (/community: the ตี้ tile of the card view, owner 2026-10-27).
  */
-export function EventDateList({ kind, events, renderTile }: { kind: Kind; events: EventItem[]; renderTile?: (event: EventItem) => React.ReactNode }) {
+export function EventDateList({ kind, events }: { kind: Kind; events: EventItem[] }) {
   const [shown, setShown] = useState(PAGE);
   // The clock is read once when the list opens; what counts as "this week" does not shift while scrolling
   const [now] = useState(() => Date.now());
@@ -193,17 +165,7 @@ export function EventDateList({ kind, events, renderTile }: { kind: Kind; events
       {strip.length > 0 && (
         <section aria-label={kind === 'meetups' ? 'สัปดาห์นี้' : 'กำลังจัดอยู่ตอนนี้'}>
           {heading(kind === 'meetups' ? 'สัปดาห์นี้' : 'กำลังจัดอยู่ตอนนี้', strip.length)}
-          <div className="mt-3 flex gap-4 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
-            {strip.map((e) =>
-              renderTile ? (
-                <div key={e.id} className="snap-start shrink-0 w-44 sm:w-52">
-                  {renderTile(e)}
-                </div>
-              ) : (
-                <StripCard key={e.id} kind={kind} event={e} />
-              )
-            )}
-          </div>
+          <DayGroups kind={kind} events={strip} />
         </section>
       )}
 

@@ -4,7 +4,9 @@ import path from 'path';
 import { MOCK_POSTS } from '@/data/mockData';
 import { IS_SERVERLESS } from '../db/databaseFile';
 import { AsyncMutex } from '../db/mutex';
-import type { Moment, MomentQuery, MomentRepository, MomentStatus } from './types';
+import { isPlaceMoment } from './feedRules';
+import { hasHashtag } from './hashtags';
+import type { Moment, MomentFeedQuery, MomentQuery, MomentRepository, MomentStatus } from './types';
 
 /**
  * Prototype moments store: data/moments.json (gitignored: member content).
@@ -163,6 +165,49 @@ export const jsonMomentRepository: MomentRepository = {
       persist(next);
       return removed;
     });
+  },
+  // The no-database mode: everything is in memory already, so moments come whole, without feedFacts
+  async feed(query: MomentFeedQuery) {
+    const { memberRepository } = await import('../members');
+    const q = query.q?.trim().toLowerCase();
+    const location = query.location?.trim().toLowerCase();
+    const authors = await memberRepository.findByIds(load().flatMap((m) => (m.authorId ? [m.authorId] : [])));
+    const matches = load().filter((m) => {
+      if (m.status !== 'published') return false;
+      if (m.authorId && (authors.get(m.authorId)?.status ?? 'banned') === 'banned') return false;
+      if (m.authorId && query.blockedIds?.includes(m.authorId)) return false;
+      if (query.authorIds && !query.authorIds.includes(m.authorId ?? '')) return false;
+      if (query.authorId && m.authorId !== query.authorId) return false;
+      if (query.savedBy && !m.savedBy.includes(query.savedBy)) return false;
+      if (query.targetType && m.targetType !== query.targetType) return false;
+      if (query.targetId && m.targetId !== query.targetId) return false;
+      if (query.category && m.category !== query.category) return false;
+      if (query.placesOnly && !isPlaceMoment(m)) return false;
+      if (query.tag && !hasHashtag(m.caption, query.tag)) return false;
+      if (location && !m.location.toLowerCase().includes(location) && !(m.targetTitle ?? '').toLowerCase().includes(location)) return false;
+      return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q);
+    });
+    const newest = (a: Moment, b: Moment) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id);
+    const sorted = matches.sort((a, b) => (query.sort === 'popular' ? likeCount(b) + b.comments.length - (likeCount(a) + a.comments.length) || newest(a, b) : newest(a, b)));
+    const usesCursor = query.sort === 'newest' && Boolean(query.cursor);
+    const from = usesCursor ? sorted.findIndex((m) => `${m.createdAt}|${m.id}` === query.cursor) + 1 : (query.page - 1) * query.limit;
+    if (usesCursor && from === 0) return { items: [], hasNext: false };
+    const items = sorted.slice(from, from + query.limit);
+    const hasNext = sorted.length > from + query.limit;
+    const last = items[items.length - 1];
+    return { items, ...(usesCursor ? {} : { totalCount: sorted.length }), hasNext, ...(hasNext && query.sort === 'newest' ? { nextCursor: `${last.createdAt}|${last.id}` } : {}) };
+  },
+  async typeCounts() {
+    const { memberRepository } = await import('../members');
+    const authors = await memberRepository.findByIds(load().flatMap((m) => (m.authorId ? [m.authorId] : [])));
+    const counts = { all: 0, spot: 0, community: 0, fair: 0, challenge: 0 };
+    for (const moment of load()) {
+      if (moment.status !== 'published' || (moment.authorId && (authors.get(moment.authorId)?.status ?? 'banned') === 'banned')) continue;
+      counts.all++;
+      if (isPlaceMoment(moment)) counts.spot++;
+      else if (moment.targetType in counts) counts[moment.targetType as keyof typeof counts]++;
+    }
+    return counts;
   },
   async query(query: MomentQuery) {
     const q = query.q?.trim().toLowerCase();

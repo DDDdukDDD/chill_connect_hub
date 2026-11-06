@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { formatThaiDateBE } from '@/lib/dateUtils';
+import React, { useId, useState, useEffect, useRef } from 'react';
+import { DateInput, TimeInput } from '@/components/CreateEventModal';
+import { PhraseText } from '@/components/auth/PhraseText';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import {
   X,
   MapPin,
@@ -100,6 +104,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states matching original design exactly
+  const fieldId = useId();
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('2026-09-01');
   const [startTime, setStartTime] = useState('06:30');
@@ -176,6 +181,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       setErrorMessage(null);
     }
   }, [isOpen, spotTitle, spotImage, mode]);
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: isOpen, focusField: false });
 
   if (!isOpen) return null;
 
@@ -306,7 +314,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       id: `spot-buddy-${Date.now()}`,
       title: title.trim(),
       hostName: userProfile.name || 'ฉันเอง',
-      hostAvatar: userProfile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      hostAvatar: userProfile.avatar || undefined,
       hostBadge: userProfile.badgeLabel || 'สมาชิก',
       date: date,
       time: `${startTime} - ${endTime} น.`,
@@ -425,7 +433,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
       <div
-        className="bg-white rounded-[28px] sm:rounded-[32px] max-w-5xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
+        ref={panelRef}
+        data-dialog-shell
+        role="dialog"
+        aria-modal="true"
+        aria-label="ชวนเพื่อนไปที่นี่"
+        tabIndex={-1}
+        className="focus:outline-hidden bg-white rounded-[28px] sm:rounded-[32px] max-w-5xl w-full p-5 sm:p-8 space-y-6 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -464,12 +478,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               {/* 1. Title */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800">
-                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'} <span className="text-rose-500">*</span>
+                  <label htmlFor={`${fieldId}-title`} className="text-xs font-bold text-slate-800">
+                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'}
                   </label>
-                  <span className="text-[11px] text-slate-400 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
+                  <span className="text-[11px] text-slate-500 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
                 </div>
                 <input
+                  id={`${fieldId}-title`}
                   type="text"
                   required
                   value={title}
@@ -483,20 +498,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {/* Date */}
                 <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-2">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <label htmlFor={`${fieldId}-date`} className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
-                    <span>วันที่นัดหมาย <span className="text-rose-500">*</span></span>
+                    <span>วันที่นัดหมาย</span>
                   </label>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    min={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                  />
+                  <DateInput id={`${fieldId}-date`} value={date} min={new Date().toISOString().slice(0, 10)} onChange={setDate} />
                   <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
-                    วันนัดหมาย: {date}
+                    วันนัดหมาย: {date ? formatThaiDateBE(date) : ''}
                   </div>
                 </div>
 
@@ -504,26 +512,16 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-2">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>ช่วงเวลาของตี้ <span className="text-rose-500">*</span></span>
+                    <span>ช่วงเวลาของตี้</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาเริ่ม:</span>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                      />
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">เวลาเริ่ม:</span>
+                      <TimeInput value={startTime} ariaLabel="เวลาเริ่ม" onChange={setStartTime} />
                     </div>
                     <div>
-                      <span className="text-[11px] font-medium text-slate-400 block mb-0.5">เวลาสิ้นสุด:</span>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
-                      />
+                      <span className="text-[11px] font-medium text-slate-500 block mb-0.5">เวลาสิ้นสุด:</span>
+                      <TimeInput value={endTime} ariaLabel="เวลาสิ้นสุด" onChange={setEndTime} />
                     </div>
                   </div>
                   <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
@@ -539,13 +537,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="p-4 rounded-2xl bg-slate-50/70 border border-slate-200 space-y-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <label htmlFor={`${fieldId}-place`} className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
-                      <span>สถานที่นัด <span className="text-rose-500">*</span></span>
+                      <span>สถานที่นัด</span>
                     </label>
-                    <span className="text-[11px] text-slate-400">ระบุสถานที่นัดพบ</span>
+                    <span className="text-[11px] text-slate-500">ระบุสถานที่นัดพบ</span>
                   </div>
                   <input
+                    id={`${fieldId}-place`}
                     type="text"
                     required
                     value={locationName}
@@ -558,14 +557,15 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">
-                      จุดนัดพบที่แน่นอน / จุดสังเกต <span className="text-rose-500">*</span>
+                    <label htmlFor={`${fieldId}-point`} className="text-xs font-bold text-slate-800">
+                      จุดนัดพบที่แน่นอน / จุดสังเกต
                     </label>
-                    <span className="text-[11px] text-slate-400">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
+                    <span className="text-[11px] text-slate-500">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
                   {isSpotTrip ? (
                     <>
                       <select
+                        id={`${fieldId}-point`}
                         value={meetingPoint}
                         onChange={(e) => setMeetingPoint(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB] cursor-pointer"
@@ -578,6 +578,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </>
                   ) : (
                     <input
+                      id={`${fieldId}-point`}
                       type="text"
                       required
                       value={meetingPoint}
@@ -592,7 +593,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               {/* 4. Description & Rich Text Editor */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-800 block">
-                  รายละเอียด & บรรยากาศทริป <span className="text-rose-500">*</span> (พิมพ์ตัวหนาหรือรายการได้ทันที)
+                  รายละเอียด & บรรยากาศทริป (พิมพ์ตัวหนาหรือรายการได้ทันที)
                 </label>
                 <RichTextEditor
                   value={description}
@@ -625,12 +626,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
                       <span>กำหนดการของตี้</span>
                     </h4>
-                    <p className="text-[11px] text-slate-400">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
+                    <p className="text-[11px] text-slate-500">ระบุไทม์ไลน์คร่าวๆ ให้เพื่อนๆ ทราบขั้นตอน</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleAddItineraryRow}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#2563EB] bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>เพิ่มช่วงเวลา</span>
@@ -640,10 +641,11 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="space-y-2 pt-1">
                   {itinerary.map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-emerald-100 text-[#1D4ED8] text-[11px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
                       <input
+                        aria-label={`เวลาช่วงที่ ${idx + 1}`}
                         type="text"
                         value={item.time}
                         onChange={(e) => handleUpdateItinerary(idx, 'time', e.target.value)}
@@ -651,17 +653,19 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                         className="w-24 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none shrink-0"
                       />
                       <input
+                        aria-label={`รายละเอียดช่วงที่ ${idx + 1}`}
                         type="text"
                         value={item.title}
                         onChange={(e) => handleUpdateItinerary(idx, 'title', e.target.value)}
                         placeholder="รายละเอียดช่วงเวลานี้"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
+                        className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveItinerary(idx)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
                         title="ลบแถวนี้"
+                        aria-label={`ลบช่วงที่ ${idx + 1}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -682,12 +686,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <ImageIcon className="w-3.5 h-3.5 text-[#2563EB]" />
                     <span>รูปปกของตี้:</span>
                   </label>
-                  <span className="text-[11px] text-slate-400">อัปโหลดหรือเลือกรูปสำเร็จ</span>
+                  <span className="text-[11px] text-slate-500">อัปโหลดหรือเลือกรูปสำเร็จ</span>
                 </div>
 
                 {/* Upload Box */}
-                <label className="border-2 border-dashed border-slate-200 hover:border-[#2563EB] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-emerald-50/30 group">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#2563EB] group-hover:bg-emerald-100 flex items-center justify-center mb-1.5 transition-colors">
+                <label className="border-2 border-dashed border-slate-200 hover:border-[#2563EB] bg-white rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-slate-50 group">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 group-hover:text-[#2563EB] group-hover:bg-blue-50 flex items-center justify-center mb-1.5 transition-colors">
                     {isUploadingImage ? (
                       <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
                     ) : (
@@ -701,8 +705,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                       ? 'เปลี่ยนรูปภาพจากเครื่อง'
                       : 'คลิกเพื่ออัปโหลดรูปจากเครื่อง'}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">รองรับไฟล์ JPG, PNG, WEBP (บีบอัดอัตโนมัติ)</span>
                   <input
+                    aria-label="อัปโหลดรูปปก"
                     type="file"
                     disabled={isUploadingImage}
                     accept="image/jpeg,image/png,image/webp,image/avif"
@@ -746,13 +751,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   {whatToBringList.map((item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-[#1D4ED8] border border-emerald-200"
+                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl bg-blue-50 text-[#1D4ED8] border border-[#2563EB]"
                     >
-                      <Check className="w-3 h-3 text-emerald-600" />
+                      <Check className="w-3 h-3" aria-hidden="true" />
                       <span>{item}</span>
                       <button
                         type="button"
                         onClick={() => toggleBringItem(item)}
+                        aria-label={`เอา ${item} ออก`}
                         className="hover:text-rose-500 ml-0.5 cursor-pointer"
                       >
                         ×
@@ -763,7 +769,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
                 {/* Suggestions */}
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] text-slate-400 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
+                  <span className="text-[11px] text-slate-500 font-medium block">แตะเพื่อเพิ่มด่วน:</span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {WHAT_TO_BRING_SUGGESTIONS.filter((s) => !whatToBringList.includes(s)).map((item) => (
                       <button
@@ -781,6 +787,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 {/* Custom Input */}
                 <div className="flex items-center gap-2 pt-1">
                   <input
+                    aria-label="สิ่งที่ต้องเตรียมมา พิมพ์เอง"
                     type="text"
                     value={customBringInput}
                     onChange={(e) => setCustomBringInput(e.target.value)}
@@ -796,7 +803,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <button
                     type="button"
                     onClick={handleAddCustomBring}
-                    className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
                   >
                     เพิ่ม
                   </button>
@@ -813,12 +820,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-700">
-                        จำนวนรับ: <span className="text-rose-500">*</span>
+                      <label htmlFor={`${fieldId}-max`} className="text-[11px] font-bold text-slate-700">
+                        จำนวนรับ:
                       </label>
-                      <span className="text-[11px] font-bold text-emerald-700">{maxParticipants} คน</span>
+                      <span className="text-[11px] font-bold text-slate-700">{maxParticipants} คน</span>
                     </div>
                     <input
+                      id={`${fieldId}-max`}
                       type="number"
                       min={isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2}
                       max={SPOT_TRIP_MAX_PEOPLE}
@@ -832,8 +840,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">เพศที่เปิดรับ:</label>
+                    <label htmlFor={`${fieldId}-gender`} className="text-[11px] font-bold text-slate-700 block mb-1">เพศที่เปิดรับ:</label>
                     <select
+                      id={`${fieldId}-gender`}
                       value={targetGender}
                       onChange={(e) => setTargetGender(e.target.value as any)}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none cursor-pointer"
@@ -846,8 +855,9 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">ค่าใช้จ่าย:</label>
+                  <label htmlFor={`${fieldId}-price`} className="text-[11px] font-bold text-slate-700 block mb-1">ค่าใช้จ่าย:</label>
                   <input
+                    id={`${fieldId}-price`}
                     type="text"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
@@ -859,10 +869,11 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                 {/* Age Suggestions */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-slate-700">ช่วงอายุที่แนะนำ:</label>
-                    <span className="text-[11px] text-slate-400">พิมพ์ระบุเองได้</span>
+                    <label htmlFor={`${fieldId}-age`} className="text-[11px] font-bold text-slate-700">ช่วงอายุที่แนะนำ:</label>
+                    <span className="text-[11px] text-slate-500">พิมพ์ระบุเองได้</span>
                   </div>
                   <input
+                    id={`${fieldId}-age`}
                     type="text"
                     value={targetAge}
                     onChange={(e) => setTargetAge(e.target.value)}
@@ -876,7 +887,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                         onClick={() => setTargetAge(sug)}
                         className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                           targetAge === sug
-                            ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
+                            ? 'bg-blue-50 text-[#1D4ED8] border-[#2563EB] ring-1 ring-[#2563EB] font-bold'
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                         }`}
                       >
@@ -899,7 +910,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   </div>
 
                   <p className="text-xs font-medium text-slate-600 leading-relaxed p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    คนที่เข้าร่วมคุยกับคุณได้ใน "แชตกลุ่ม" ของทริปนี้ จึงไม่ต้องใส่ไลน์หรือเบอร์โทร
+                    <PhraseText text={'คนที่เข้าร่วมคุยกับคุณได้ใน "แชตกลุ่ม" ของทริปนี้ จึงไม่ต้องใส่ ไลน์หรือเบอร์โทร'} />
                   </p>
                 </div>
 
@@ -910,14 +921,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
           </div>
 
           {/* Safety Consent Bar */}
-          <div className="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-200 space-y-1 text-xs text-emerald-950 font-medium">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1 text-xs text-slate-800 font-medium">
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
                 required
                 checked={isSafetyAccepted}
                 onChange={(e) => setIsSafetyAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB] border-emerald-300 cursor-pointer shrink-0"
+                className="mt-0.5 w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB] border-slate-300 cursor-pointer shrink-0"
               />
               <span className="leading-relaxed">
                 ข้าพเจ้ายินยอมปฏิบัติตาม{' '}
@@ -955,14 +966,14 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               disabled={!isSafetyAccepted || isSubmitting}
               className={`px-7 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm ${
                 isSafetyAccepted && !isSubmitting
-                  ? 'bg-slate-900 hover:bg-slate-800 text-white active:scale-95'
+                  ? 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Users className="w-4 h-4 text-emerald-400" />
+                <Users className="w-4 h-4" aria-hidden="true" />
               )}
               <span>{isSubmitting ? 'กำลังบันทึก...' : 'เปิดวงชวนเพื่อนเลย'}</span>
             </button>

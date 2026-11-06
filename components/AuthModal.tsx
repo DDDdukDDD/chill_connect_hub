@@ -34,7 +34,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSu
   if (toOnboarding) {
     return (
       <div className="fixed inset-0 z-[100003] bg-white flex items-center justify-center" role="status" aria-live="polite">
-        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" aria-hidden="true" />
+        <Loader2 className="w-6 h-6 text-slate-500 animate-spin" aria-hidden="true" />
         <span className="sr-only">กำลังพาไปตั้งค่าบัญชี</span>
       </div>
     );

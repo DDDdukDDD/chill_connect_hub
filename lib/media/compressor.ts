@@ -18,6 +18,45 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   targetMimeType: 'image/webp',
 };
 
+/**
+ * A stored photo aims for this. Viewers get the optimizer's copy, not this file, so it costs storage and not their data;
+ * 500 KB with a floor of 0.62 made busy photos like food visibly softer than calm ones (owner 2026-11-04).
+ */
+export const MAX_PHOTO_BYTES = 1024 * 1024;
+const LOWER_QUALITIES = [0.84, 0.82];
+const SMALLER_SIDES = [1200, 1080];
+
+/**
+ * A finished canvas as an upload, lowering quality and then size until it fits MAX_PHOTO_BYTES. WebP, or JPEG where the
+ * browser cannot write WebP: Safari quietly returns a PNG for `image/webp`, several MB for a photo, and its JPEGs were
+ * up to 3 MB at 0.86 (live moments, 2026-11-03). Never goes below quality 0.82 or 1080 px; a very busy one at that size is
+ * sent as it comes out.
+ */
+export async function encodeForUpload(canvas: HTMLCanvasElement, quality = 0.86): Promise<Blob | null> {
+  const encode = (from: HTMLCanvasElement, type: string, q: number) =>
+    new Promise<Blob | null>((resolve) => from.toBlob(resolve, type, q));
+  const first = await encode(canvas, 'image/webp', quality);
+  const type = first?.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+  let blob = type === 'image/webp' ? first : await encode(canvas, type, quality);
+  for (const q of LOWER_QUALITIES) {
+    if (!blob || blob.size <= MAX_PHOTO_BYTES || q >= quality) continue;
+    blob = await encode(canvas, type, q);
+  }
+  for (const side of SMALLER_SIDES) {
+    const longest = Math.max(canvas.width, canvas.height);
+    if (!blob || blob.size <= MAX_PHOTO_BYTES || side >= longest) continue;
+    const smaller = document.createElement('canvas');
+    smaller.width = Math.round((canvas.width * side) / longest);
+    smaller.height = Math.round((canvas.height * side) / longest);
+    const ctx = smaller.getContext('2d');
+    if (!ctx) break;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, smaller.width, smaller.height);
+    blob = await encode(smaller, type, LOWER_QUALITIES[LOWER_QUALITIES.length - 1]);
+  }
+  return blob;
+}
+
 export interface CompressedResult {
   file: File;
   dataUrl: string;
@@ -125,7 +164,7 @@ export async function compressImageToDataUrl(
             dataUrl = canvas.toDataURL('image/jpeg', quality);
           }
 
-          canvas.toBlob(
+          encodeForUpload(canvas, quality).catch(() => null).then(
             (blob) => {
               if (!blob) {
                 return resolve({
@@ -141,9 +180,9 @@ export async function compressImageToDataUrl(
 
               // Determine output filename
               const originalBase = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-              const outputExt = mime === 'image/webp' ? 'webp' : 'jpg';
+              const outputExt = blob.type === 'image/webp' ? 'webp' : 'jpg';
               const compressedFile = new File([blob], `${originalBase}.${outputExt}`, {
-                type: blob.type || mime,
+                type: blob.type,
                 lastModified: Date.now(),
               });
 
@@ -163,9 +202,7 @@ export async function compressImageToDataUrl(
                 compressedSize,
                 compressionRatio,
               });
-            },
-            mime,
-            quality
+            }
           );
         } catch {
           // Fallback to original file on any canvas error

@@ -47,13 +47,13 @@ export function SourceRunHistory({ source }: { source: EventDataSource }) {
             <tr key={run.at} className="align-top">
               <td className="py-1.5 pr-3 whitespace-nowrap tabular-nums text-slate-600">{new Date(run.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</td>
               <td className="py-1.5 pr-3">
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${STATUS_META[run.status].className}`}>{STATUS_META[run.status].label}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${STATUS_META[run.status].className}`}>{STATUS_META[run.status].label}</span>
               </td>
               {source.targetType === 'spots' && <td className="py-1.5 pr-3 whitespace-nowrap text-slate-700">{run.context ?? '–'}</td>}
               <td className="py-1.5 pr-3 text-right tabular-nums">{run.scanned}</td>
               <td className="py-1.5 pr-3 text-right font-bold tabular-nums text-slate-900">{run.imported}</td>
               <td className="py-1.5 pr-3 text-right tabular-nums text-slate-500">{run.duplicates}</td>
-              <td className="py-1.5 text-rose-700 break-words">{run.errors.length ? run.errors.join(' · ') : <span className="text-slate-400">–</span>}</td>
+              <td className="py-1.5 text-rose-700 break-words">{run.errors.length ? run.errors.join(' · ') : <span className="text-slate-500">–</span>}</td>
             </tr>
           ))}
         </tbody>

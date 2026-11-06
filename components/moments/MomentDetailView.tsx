@@ -3,11 +3,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
-import { nameInitial } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
@@ -18,14 +18,7 @@ import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/M
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
 import { markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
 
-function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
-  return src ? (
-    // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={src} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
-  ) : (
-    <span className={`${className} rounded-full bg-slate-200 font-bold text-slate-700 flex items-center justify-center shrink-0`}>{nameInitial(name)}</span>
-  );
-}
+const Avatar = MomentAvatar;
 
 const iconButton =
   'inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors duration-200 tabular-nums focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]';
@@ -54,7 +47,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const [showAllComments, setShowAllComments] = useState(false);
   const [showFullCaption, setShowFullCaption] = useState(false);
   /** Own comment waiting for "ลบเลย": deleting cannot be undone, so it takes a second tap */
-  const [confirmCommentId, setConfirmCommentId] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentInput = useRef<HTMLInputElement>(null);
   const [isFull, setIsFull] = useState(openFullScreen && Boolean(initialMoment.video));
   const openedFull = useRef(isFull);
@@ -134,7 +127,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
   /** Comments before the newest three, folded until the reader opens them */
-  const hiddenComments = Math.max(0, moment.comments.length - 3);
+  // The newest three threads show first
+  const hiddenComments = Math.max(0, moment.comments.filter((c) => !c.parentId).length - 3);
 
   const toggle = (action: 'like' | 'unlike' | 'save' | 'unsave') => {
     if (!isLoggedIn) return requireLogin();
@@ -155,18 +149,26 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
     const text = comment.trim();
     if (!text) return;
     setIsBusy(true);
-    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text });
+    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text, parentId: replyTo?.id });
     setIsBusy(false);
     if (!result.ok || !result.moment) return showToast(result.message);
     setMoment(result.moment);
     setComment('');
+    setReplyTo(null);
   };
 
-  const deleteComment = async (commentId: string) => {
-    setConfirmCommentId(null);
-    const result = await call(`${url}/actions`, 'POST', { action: 'delete_comment', commentId });
-    if (!result.ok || !result.moment) return showToast(result.message);
+  const actOnComment = async (body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => {
+    const result = await call(`${url}/actions`, 'POST', body);
+    if (!result.ok || !result.moment) {
+      showToast(result.message);
+      return false;
+    }
     setMoment(result.moment);
+    return true;
+  };
+  const answer = (c: ThreadComment) => {
+    setReplyTo(c);
+    requestAnimationFrame(() => commentInput.current?.focus());
   };
 
   const share = async () => {
@@ -417,7 +419,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   <span className="block text-[11px] font-medium opacity-80">{target.label}</span>
                   <span className="block text-[13px] font-semibold truncate">{place}</span>
                 </span>
-                <span className="text-xs font-semibold whitespace-nowrap">{target.go} →</span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
               </Link>
             ) : (
               <p className="flex items-center gap-2.5 rounded-2xl bg-slate-100 text-slate-700 pl-2 pr-3 py-2">
@@ -444,7 +446,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 <span className="sr-only">ความคิดเห็น</span>
               </button>
               )}
-              <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} className={`${iconButton} ml-auto`}>
+              <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'} className={`${iconButton} ml-auto`}>
                 <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
                 <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
               </button>
@@ -469,6 +471,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               )}
             </div>
             {/* The box comes first, so replying never needs scrolling past the thread */}
+            {isLoggedIn && replyTo && <ReplyingTo name={replyTo.userName} onCancel={() => setReplyTo(null)} />}
             {isLoggedIn ? (
               <form onSubmit={sendComment} className="flex items-center gap-2">
                 <label htmlFor="moment-comment" className="sr-only">เขียนความคิดเห็น</label>
@@ -507,38 +510,16 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                     {showAllComments ? 'ซ่อนความคิดเห็นก่อนหน้า' : `ดูความคิดเห็นทั้งหมด (${moment.comments.length.toLocaleString()})`}
                   </button>
                 )}
-                <ul className="space-y-3.5">
-                  {moment.comments.map((c, index) => (
-                    // Older ones stay in the HTML (search engines read them) and show when the reader asks
-                    <li key={c.id} className={`flex items-start gap-2.5 ${index < hiddenComments && !showAllComments ? 'hidden' : ''}`}>
-                      <Avatar name={c.userName} src={c.userAvatar} className="w-8 h-8 text-xs" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-800 break-words">
-                          <span className="font-bold text-slate-900">{c.userName}</span> {c.text}
-                        </p>
-                        <p className="mt-0.5 flex items-center gap-3 text-xs font-medium text-slate-500">
-                          {c.timeAgo}
-                          {c.isMine &&
-                            (confirmCommentId === c.id ? (
-                              <span className="inline-flex items-center gap-3">
-                                <span className="text-slate-700">ลบความคิดเห็นนี้ไหม</span>
-                                <button type="button" onClick={() => deleteComment(c.id)} className="font-bold text-rose-600 hover:underline cursor-pointer">
-                                  ลบเลย
-                                </button>
-                                <button type="button" onClick={() => setConfirmCommentId(null)} className="font-bold hover:text-slate-800 hover:underline cursor-pointer">
-                                  ยกเลิก
-                                </button>
-                              </span>
-                            ) : (
-                              <button type="button" onClick={() => setConfirmCommentId(c.id)} className="font-bold hover:text-slate-800 hover:underline cursor-pointer">
-                                ลบ
-                              </button>
-                            ))}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {/* Older threads stay in the HTML (search engines read them) and show when the reader asks */}
+                <CommentThread
+                  momentId={moment.id}
+                  comments={moment.comments}
+                  isLoggedIn={isLoggedIn}
+                  onNeedLogin={() => requireLogin('เพื่อร่วมคอมเมนต์')}
+                  onAct={actOnComment}
+                  onReply={answer}
+                  hiddenBefore={showAllComments ? 0 : hiddenComments}
+                />
               </>
             ) : (
               <p className="text-sm font-medium text-slate-500">ยังไม่มีความคิดเห็น ทักทายเป็นคนแรกเลย</p>
@@ -552,8 +533,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
       {confirmDelete && (
         <DialogShell onClose={() => setConfirmDelete(false)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
-          <div className="flex flex-wrap justify-end gap-2.5">
-            <button type="button" className={dialogButton.quiet} onClick={() => setConfirmDelete(false)}>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" data-autofocus className={dialogButton.quiet} onClick={() => setConfirmDelete(false)}>
               ยกเลิก
             </button>
             <button type="button" className={dialogButton.danger} disabled={isBusy} onClick={deleteMoment}>
@@ -579,7 +560,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </label>
             ))}
           </fieldset>
-          <div className="flex flex-wrap justify-end gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             <button type="button" className={dialogButton.quiet} onClick={() => setReportReason(null)}>
               ยกเลิก
             </button>

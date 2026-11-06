@@ -1,5 +1,5 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { countStaff } from './staffStore';
+import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
+import { mayHaveStaff } from './staffStore';
 
 /**
  * Stateless admin session: an HMAC-SHA256 signed token stored in an httpOnly cookie.
@@ -31,7 +31,7 @@ function getSecret(): string | null {
 }
 
 export function isAdminLoginConfigured(): boolean {
-  return Boolean(getSecret() && (process.env.ADMIN_PASSWORD || countStaff() > 0));
+  return Boolean(getSecret() && (process.env.ADMIN_PASSWORD || mayHaveStaff()));
 }
 
 function sign(payload: string, secret: string): string {
@@ -47,11 +47,14 @@ function safeEqual(a: string, b: string): boolean {
 export function verifyAdminPassword(candidate: string): boolean {
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected || typeof candidate !== 'string') return false;
-  // Compare fixed-length digests so the check does not leak the password length
-  const expectedDigest = createHash('sha256').update(expected).digest();
-  const candidateDigest = createHash('sha256').update(candidate).digest();
-  return timingSafeEqual(expectedDigest, candidateDigest);
+  // Compare scrypt digests: fixed length, so the check does not leak the password length, and slow to guess.
+  // The expected digest is worked out once per server
+  if (ownerDigest?.password !== expected) ownerDigest = { password: expected, digest: ownerPasswordDigest(expected) };
+  return timingSafeEqual(ownerDigest.digest, ownerPasswordDigest(candidate));
 }
+
+let ownerDigest: { password: string; digest: Buffer } | undefined;
+const ownerPasswordDigest = (password: string) => scryptSync(password, 'chillwaa-admin-owner-password', 32);
 
 export function createAdminSessionToken(subject: string, version: number, now: number = Date.now()): string {
   const secret = getSecret();

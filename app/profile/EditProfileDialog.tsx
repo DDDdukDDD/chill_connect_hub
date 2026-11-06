@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { AlertCircle, Camera, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { SAI_FAIRS, SAI_SPOTS } from '@/app/onboarding/OnboardingFlow';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
@@ -222,7 +223,7 @@ export function EditProfileDialog({
           {tab === 'me' && (
             <>
               <div className="flex items-center gap-4">
-                <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-2xl font-bold">
+                <span className="w-20 h-20 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-slate-100 text-slate-600 text-2xl font-bold">
                   {photo || member.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- member photo (local preview or uploaded file)
                     <img src={safeImageSrc(photo?.preview ?? member.avatarUrl)} alt="" className="w-full h-full object-cover" />
@@ -290,7 +291,8 @@ export function EditProfileDialog({
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                 {master.communityCategories.map((cat) => {
                   const on = sai.includes(cat.id);
-                  const Icon = cat.icon;
+                  // The drawn icon pack, as in onboarding; a สาย added in admin without a drawing keeps its line icon
+                  const Icon = meetupCategoryIcon(cat.id) ?? cat.icon;
                   return (
                     <button
                       key={cat.id}
@@ -305,7 +307,7 @@ export function EditProfileDialog({
                         </span>
                       )}
                       <span className={`w-11 h-11 rounded-2xl flex items-center justify-center ${cat.colorScheme.iconBg} ${cat.colorScheme.iconColor}`}>
-                        <Icon className="w-5 h-5" aria-hidden="true" />
+                        <Icon className="w-7 h-7" aria-hidden="true" />
                       </span>
                       <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center leading-tight">
                         {cat.name.split(' & ').map((part, j, all) => (

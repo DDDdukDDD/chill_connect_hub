@@ -11,6 +11,7 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
@@ -61,7 +62,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
   const [sortBy, setSortBy] = useState<SortOption>('soonest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Saved อีเวนต์ come from the account, so a heart here shows on the detail page, in My Hub and on every device
   const myActivity = useMyActivity();
   const favorites = isLoggedIn ? myActivity.savedEventIds : [];
@@ -285,15 +286,6 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
     return counts;
   }, [eventsList, statusFilter, selectedVenue]);
 
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
-
-  // Pagination clamp: reset to page 1 if filter changes reduce totalPages below currentPage
-  React.useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
-
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen
     // A sponsored อีเวนต์ that fits the filters takes the third card (lib/sponsored)
@@ -498,7 +490,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
           <>
             {/* The list view is dated, like /challenges: on now on top, then by month */}
             {viewMode === 'list' ? (
-              <EventDateList kind="fairs" events={filteredEvents} renderTile={tileFor} />
+              <EventDateList kind="fairs" events={filteredEvents} />
             ) : (
               // The ตี้ grid and tile shape, so switching tabs feels like one page; posters show whole (owner 2026-10-27)
               <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
@@ -619,7 +611,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
 /** `initialEvents` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
 export default function FairsPage(props: ServerProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดอีเวนต์...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500 text-sm">กำลังโหลดอีเวนต์...</div>}>
       <FairsPageContent {...props} />
     </Suspense>
   );

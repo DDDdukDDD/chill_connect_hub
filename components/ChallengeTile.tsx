@@ -30,7 +30,7 @@ function reasonsFor(quest: ChallengeQuest): ChallengeReason[] {
     list.push({ kind: 'closing', text: `เหลือ ${quest.daysRemaining} วัน รีบเลย!`, Icon: Clock, tone: 'text-rose-600' });
   }
   if (stops <= 2) list.push({ kind: 'easy', text: stops === 1 ? 'ไปที่เดียวก็ครบ ง่ายมาก' : 'ไปแค่ 2 ที่ ชิลๆ', Icon: Footprints, tone: 'text-emerald-700' });
-  if (people >= 100) list.push({ kind: 'popular', text: `เพื่อนๆ ลองแล้ว ${people.toLocaleString()} คน`, Icon: Flame, tone: 'text-orange-600' });
+  if (people >= 100) list.push({ kind: 'popular', text: `เพื่อนๆ ลองแล้ว ${people.toLocaleString()} คน`, Icon: Flame, tone: 'text-orange-700' });
   if (reward.type === 'brand_partner') list.push({ kind: 'reward', text: `ได้ของจาก ${reward.partnerName}`, Icon: Gift, tone: 'text-amber-700' });
   list.push({ kind: 'stops', text: `ไปให้ครบ ${stops} ที่`, Icon: Footprints, tone: 'text-violet-700' });
   return list;
@@ -100,7 +100,7 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
           src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE}
           alt=""
           loading="lazy"
-          className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'grayscale opacity-80' : ''} ${
+          className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'opacity-70' : ''} ${
             isJoined && !isEnded ? 'ring-2 ring-[#7C3AED] ring-offset-2' : ''
           }`}
         />

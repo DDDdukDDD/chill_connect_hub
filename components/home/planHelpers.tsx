@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import type { EventItem } from '@/data/mockData';
 import { nearDayLabel, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { nameInitial } from '@/lib/displayName';
+import { avatarImage } from '@/lib/optimizedImage';
 
 /** Times, faces and links shared by the member home (MemberLiveHome) and its journey band (JourneyBand) */
 
@@ -11,7 +12,7 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const WEEKDAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 export const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
-const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
+const FACE_COLORS = ['bg-amber-700', 'bg-pink-700', 'bg-sky-700'];
 
 const startTime = (event: EventItem) => (event.time ?? '').split('-')[0].trim().replace(/\s*น\.$/, '');
 
@@ -96,7 +97,7 @@ export function Faces({ people, ring = 'ring-white', size = 'w-5 h-5' }: { peopl
       {people.map((p, i) =>
         p.avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src={p.avatar} alt="" className={`${size} rounded-full ring-2 ${ring} object-cover bg-slate-100`} />
+          <img key={i} src={avatarImage(p.avatar)} alt="" className={`${size} rounded-full ring-2 ${ring} object-cover bg-slate-100`} />
         ) : (
           <span key={i} className={`${size} rounded-full ring-2 ${ring} ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}>
             {nameInitial(p.name)}

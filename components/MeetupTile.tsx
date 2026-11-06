@@ -11,10 +11,12 @@ import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUt
 import { placeName } from '@/lib/placeName';
 import { optimizedImage } from '@/lib/optimizedImage';
 
+const PHOTO_STAND_IN = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';
+
 type Face = { id: string; name: string; avatar: string };
 
 const FACES_SHOWN = 3;
-const FACE_COLORS = ['bg-violet-500', 'bg-cyan-600', 'bg-pink-500', 'bg-orange-500', 'bg-emerald-600', 'bg-blue-600'];
+const FACE_COLORS = ['bg-violet-600', 'bg-cyan-700', 'bg-pink-700', 'bg-orange-700', 'bg-emerald-700', 'bg-blue-600'];
 const WEEKDAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -186,9 +188,12 @@ export function MeetupTile({
       >
         <img
           src={optimizedImage(event.image, 384)}
+          onError={(e) => {
+            if (e.currentTarget.src !== PHOTO_STAND_IN) e.currentTarget.src = PHOTO_STAND_IN;
+          }}
           alt=""
           loading="lazy"
-          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${isEnded ? 'grayscale opacity-80' : ''}`}
+          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
         />
         {badge ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 whitespace-nowrap shadow-sm">{badge}</span>
@@ -197,7 +202,7 @@ export function MeetupTile({
         ) : isJoined ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#C2410C] whitespace-nowrap shadow-sm">ร่วมแล้ว</span>
         ) : (
-          <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${seatsLine(event) === 'เต็มแล้ว' ? 'bg-slate-700 text-white' : 'bg-[#F26430] text-white'}`}>
+          <span className={`absolute right-2.5 bottom-2.5 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${seatsLine(event) === 'เต็มแล้ว' ? 'bg-slate-700 text-white' : 'bg-[#C2410C] text-white'}`}>
             {seatsLine(event)}
           </span>
         )}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import QRCode from 'qrcode';
 import { EventItem } from '@/data/mockData';
 import { Calendar, CheckCircle2, Clock, MapPin, MessageCircle, QrCode, User, Users, X } from 'lucide-react';
@@ -10,9 +11,6 @@ interface ETicketModalProps {
   onClose: () => void;
   event: EventItem | null;
   /** Kept for older callers; the real code is read from the account */
-  ticketId?: string;
-  isCheckedIn?: boolean;
-  onCheckIn?: (ticketId: string) => void;
   onOpenChat?: (event: EventItem) => void;
   onOpenCancel?: (event: EventItem, ticketId: string) => void;
 }
@@ -65,12 +63,8 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
     };
   }, [isOpen, eventId, isFairEvent]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: Boolean(isOpen && event), focusField: false });
 
   if (!isOpen || !event) return null;
 
@@ -108,10 +102,13 @@ export const ETicketModal: React.FC<ETicketModalProps> = ({ isOpen, onClose, eve
   return (
     <div className="fixed inset-0 z-[100003] flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
+        ref={panelRef}
+        data-dialog-shell
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ticket-title"
-        className="relative w-full sm:max-w-2xl max-h-[94dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 text-slate-900"
+        className="focus:outline-hidden relative w-full sm:max-w-2xl max-h-[94dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 text-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 sm:px-6 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3">

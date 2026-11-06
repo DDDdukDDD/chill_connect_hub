@@ -1,5 +1,6 @@
 'use client';
 
+import { optimizedImage } from '@/lib/optimizedImage';
 import React from 'react';
 import Link from 'next/link';
 import { Bookmark, Star, MapPin, Clock, ArrowRight } from 'lucide-react';
@@ -59,7 +60,7 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
           {/* Thumbnail */}
           <div className="relative w-20 h-20 sm:w-28 sm:h-24 md:w-32 md:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0">
             <img
-              src={spot.image}
+              src={optimizedImage(spot.image, 256)}
               alt={spot.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
               loading="lazy"
@@ -84,7 +85,7 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
               className={`sm:hidden absolute top-1.5 right-1.5 w-6 h-6 rounded-full shadow-xs flex items-center justify-center transition-all z-20 cursor-pointer ${
                 isFavorite
                   ? 'bg-[#4A7C59] text-white'
-                  : 'bg-white/90 text-slate-400'
+                  : 'bg-white/90 text-slate-500'
               }`}
               title={isFavorite ? 'นำออกจากสมุดท่องเที่ยว' : 'บันทึกลงสมุดท่องเที่ยว'}
             >
@@ -136,7 +137,7 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
               {spot.openHours && (
                 <div className="flex items-center gap-1 min-w-0">
                   <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate text-[11px] sm:text-xs text-slate-400">
+                  <span className="truncate text-[11px] sm:text-xs text-slate-500">
                     {spot.openHours}
                   </span>
                 </div>

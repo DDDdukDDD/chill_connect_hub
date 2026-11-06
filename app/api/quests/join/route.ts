@@ -22,6 +22,8 @@ export async function POST(request: Request) {
     }
     if (body.action === 'join') await joinQuest(member.id, questId);
     else {
+      // A finish not recorded yet is recorded first, so leaving cannot lose it
+      await rewardsOf(member.id);
       await leaveQuest(member.id, questId);
       // Why members stop: kept for staff without the member's name, and only when one was given
       const reason = typeof body.reason === 'string' ? body.reason.replace(/\s+/g, ' ').trim().slice(0, 200) : '';

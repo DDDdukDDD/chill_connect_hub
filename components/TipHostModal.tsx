@@ -81,7 +81,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({ isOpen, onClose, eve
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           placeholder="บรรยากาศเป็นยังไง คนจัดดูแลดีไหม"
-          className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-400"
+          className="w-full bg-white border border-slate-300 rounded-2xl p-3.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-500"
         />
         <p className="mt-2 text-xs font-medium text-slate-500">รีวิวจะแสดงบนโปรไฟล์ของคนจัด พร้อมชื่อของคุณ</p>
 
@@ -89,7 +89,7 @@ export const TipHostModal: React.FC<TipHostModalProps> = ({ isOpen, onClose, eve
           <p role="alert" className="mt-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold">{error}</p>
         )}
 
-        <div className="mt-5 flex flex-wrap justify-end gap-2.5">
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <button type="button" className={dialogButton.quiet} onClick={onClose}>ไว้ทีหลัง</button>
           <button type="submit" className={dialogButton.primary} disabled={isSending}>{isSending ? 'กำลังส่ง…' : 'ส่งรีวิว'}</button>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, Copy, Share2, Ticket } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 type Invitee = { id: string; displayName: string; avatarUrl?: string; joinedAt: string; wentTogether: boolean };
 
@@ -87,7 +88,7 @@ export function InviteFriendsCard({ questHref = '/challenges/friend-ticket', cla
               <li key={friend.id} className="flex items-center gap-3">
                 {friend.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- member avatars from storage
-                  <img src={friend.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                  <img src={avatarImage(friend.avatarUrl)} alt="" className="w-9 h-9 rounded-full object-cover" />
                 ) : (
                   <span className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-sm font-bold text-slate-600">{friend.displayName.slice(0, 1)}</span>
                 )}

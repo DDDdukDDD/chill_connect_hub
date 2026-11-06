@@ -17,6 +17,7 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
@@ -65,7 +66,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Saved and joined come from the account, so a heart here shows in My Hub and on every device
   const myActivity = useMyActivity();
   const favoriteSpots = isLoggedIn ? myActivity.savedSpotIds : [];
@@ -398,13 +399,14 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 
             {/* Show more, Meetup-style */}
             {totalSpots > paginatedSpots.length && (
-              <ShowMoreButton shown={paginatedSpots.length} total={totalSpots} onClick={() => setCurrentPage(currentPage + 1)} />
+              // Counted from what is on screen: the server page's first answer can hold more than one batch
+              <ShowMoreButton shown={paginatedSpots.length} total={totalSpots} onClick={() => setCurrentPage(Math.floor(paginatedSpots.length / itemsPerPage) + 1)} />
             )}
           </>
         ) : (
           <div className="w-full bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-400 flex items-center justify-center shrink-0 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/80 text-slate-500 flex items-center justify-center shrink-0 shadow-2xs">
                 <Search className="w-4 h-4 text-slate-400" />
               </div>
               <div className="min-w-0">
@@ -484,7 +486,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 /** `initial` (the first places, from the server page) is in the HTML search engines read; the browser asks for the rest. */
 export default function SpotsPage(props: ServerProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-400 text-sm">กำลังโหลดข้อมูลสถานที่...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-slate-500 text-sm">กำลังโหลดข้อมูลสถานที่...</div>}>
       <SpotsPageContent {...props} />
     </Suspense>
   );

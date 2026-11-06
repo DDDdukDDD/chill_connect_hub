@@ -8,6 +8,8 @@ import { removeReviewsBy } from '@/lib/social/reviews';
 import { marksOf, removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
 import { joinsOf, removeQuestJoinsBy } from '@/lib/social/questJoins';
+import { campaignMemberStore, removeCampaignEntriesBy } from '@/lib/campaigns/members';
+import { removeWinnerEntriesBy, winnerStore } from '@/lib/campaigns/winners';
 import { removeVouchersBy, vouchersOf } from '@/lib/social/questVouchers';
 import { removeFinishesBy } from '@/lib/social/questFinishes';
 import { removeContentReportsBy } from '@/lib/social/contentReports';
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
   const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
   const moments = ownMoments.map((m) => ({ id: m.id, caption: m.caption, images: m.images, location: m.location, status: m.status, createdAt: m.createdAt, likes: m.likedBy.length, comments: m.comments.length }));
   return NextResponse.json(
-    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: await marksOf(member.id), joinedChallenges: await joinsOf(member.id), challengeRewardCodes: await vouchersOf(member.id) },
+    { success: true, exportedAt: new Date().toISOString(), account: exportableAccount(member, { forMember: true }), profile: toPublicMember(member), moments, visits: await marksOf(member.id), joinedChallenges: await joinsOf(member.id), joinedCampaigns: (await campaignMemberStore.ofMember(member.id)).map(({ campaignId, enrolledAt }) => ({ campaignId, enrolledAt })), prizeDraws: (await winnerStore.ofMember(member.id)).map(({ campaignId, code, status, announcedAt, claimedAt }) => ({ campaignId, code, status, announcedAt, claimedAt })), challengeRewardCodes: await vouchersOf(member.id) },
     { headers: { 'Content-Disposition': `attachment; filename="chill-connect-account-${member.id}.json"`, 'Cache-Control': 'no-store' } }
   );
 }
@@ -48,6 +50,8 @@ export async function DELETE(request: Request) {
   await removeVisitsBy(member.id);
   await removeRedemptionsBy(member.id);
   await removeQuestJoinsBy(member.id);
+  await removeCampaignEntriesBy(member.id);
+  await removeWinnerEntriesBy(member.id);
   await removeVouchersBy(member.id);
   await removeFinishesBy(member.id);
   await removeContentReportsBy(member.id);

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Camera } from 'lucide-react';
+import { ArrowRight, Camera } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
@@ -14,8 +14,10 @@ import { ScrollRow } from '@/components/ScrollRow';
 import { CategoryStickerCards, communityCategoryCards } from '@/components/CategoryStickerCards';
 import dynamic from 'next/dynamic';
 import { LiveJoinsLine } from '@/components/home/LiveActivity';
-import { CampaignStrip } from '@/components/CampaignStrip';
-import type { Campaign } from '@/lib/campaigns/types';
+import { PromoBoard } from '@/components/campaigns/PromoBoard';
+import { useCampaigns } from '@/components/campaigns/useCampaigns';
+import { campaignStanding } from '@/components/campaigns/campaignStanding';
+import type { Campaign, CampaignView } from '@/lib/campaigns/types';
 import type { MemberHomeData } from '@/lib/homeData';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
@@ -27,8 +29,7 @@ import { formatEventDateRange, isClosedToJoin, isEventEnded, nearDayLabel, parse
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
-import { useMyMonth } from '@/lib/useMyMonth';
-import { useMyActivity } from '@/lib/useMyActivity';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
@@ -132,7 +133,7 @@ const allowsMeetups = (spot: LifestyleSpotItem) =>
 type InitialContent = {
   initialEvents?: EventItem[];
   initialQuests?: ChallengeQuest[];
-  campaign?: Campaign | null;
+  campaigns?: CampaignView[];
   /** The server read a member session: the page waits for the member home instead of showing the landing first */
   signedIn?: boolean;
   /** The member home's places, extra อีเวนต์ and onboarding picks, read on the server with the page */
@@ -145,7 +146,7 @@ type InitialContent = {
   fairTotal?: number;
 };
 
-function JourneyContent({ initialEvents, initialQuests, campaign = null, signedIn = false, memberData = null, spotTotal: serverSpotTotal = null, session, fairTotal }: InitialContent) {
+function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn = false, memberData = null, spotTotal: serverSpotTotal = null, session, fairTotal }: InitialContent) {
   // Before useAuth below reads the store: no wait for GET /api/auth/member after hydration
   useState(() => session && seedMemberSession(session));
   useState(() => signedIn && typeof window !== 'undefined' && void loadMemberHome());
@@ -155,7 +156,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   const [isEventsLoaded, setIsEventsLoaded] = useState(Boolean(initialEvents));
   const [questList, setQuestList] = useState<ChallengeQuest[]>(initialQuests ?? []);
   const [isQuestsLoaded, setIsQuestsLoaded] = useState(Boolean(initialQuests));
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
 
@@ -198,6 +198,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   }, [isAuthReady, isMember, serverSpotTotal]);
   const sessionMember = useMemberSession().member;
   const activity = useMyActivity();
+  const favorites = activity.savedEventIds;
   const [now] = useState(() => Date.now());
   const [likedCategories, setLikedCategories] = useState<string[]>(memberData?.likedCategories ?? []);
   // Onboarding goals pick the journey band's first tab (a ตี้ or a challenge)
@@ -230,11 +231,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
 
   // Sync with runtime DB and localStorage
   useEffect(() => {
-    try {
-      const storedFavs = localStorage.getItem('favorite_events');
-      if (storedFavs) setFavorites(JSON.parse(storedFavs));
-    } catch {}
-
     let isActive = true;
     // The server page sends the challenges and the events that are not over, plus a member's own saved and visited
     // อีเวนต์; only a member who signed in on this page (no server data) loads the full list
@@ -278,14 +274,10 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
       triggerMembershipPrompt('เพื่อบันทึกกิจกรรมนี้ไว้ในรายการโปรด');
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.includes(eventId);
-      const updated = isFav ? prev.filter((id) => id !== eventId) : [...prev, eventId];
-      showToast(isFav ? 'ลบออกจากรายการโปรดแล้ว' : 'เพิ่มเข้ารายการโปรดแล้ว');
-      try {
-        localStorage.setItem('favorite_events', JSON.stringify(updated));
-      } catch {}
-      return updated;
+    // Saved on the account, the list My Hub shows under "ที่บันทึก"
+    const wasSaved = favorites.includes(eventId);
+    void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
+      showToast(!ok ? 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ' : wasSaved ? 'เอาออกจากที่บันทึกแล้ว' : 'บันทึกไว้ในมายฮับแล้ว');
     });
   };
 
@@ -339,10 +331,8 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
   // Everything the member joined or hosts, ended ones too: the journey band asks for a moment from a ตี้ they went to
   // A host is also among the joined, so their own ตี้ comes once
   const myEvents = useMemo(() => [...new Map([...joined, ...hosted].map((e) => [e.id, e])).values()], [joined, hosted]);
-  // This month's Chill (places) and Connect (meetups) behind the greeting
-  const myMonth = useMyMonth(isMember);
-  const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
-  const redeemable = REWARD_SHOP_ITEMS.filter((item) => !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
+  const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
+  const redeemable = REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
 
   // Member home feed cards (owner 2026-10-29): what the member picked at onboarding, then what they joined, saved
   // and took part in since, decide which ตี้, challenges, อีเวนต์ and places come first and which kind of card leads
@@ -440,7 +430,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
         {extra}
         <Link href={href} className="group inline-flex items-center gap-1 text-sm font-semibold text-slate-900 hover:underline underline-offset-4 whitespace-nowrap">
           {linkLabel}
-          <span className="transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</span>
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>
       </div>
     </div>
@@ -462,21 +452,28 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
 
       {/* Toast Notification */}
       <Toast message={toastMessage} />
+      {myCampaigns.dialog}
 
       <main className="flex-1 pb-28 xl:pb-16">
         {isMember ? (
           <MemberLiveHome
-            campaign={campaign}
-            campaignMember={
-              campaign && myRewards.isLoaded
-                ? {
-                    xp: myRewards.balance,
-                    started: [...campaign.questIds, ...campaign.extraQuestIds].some((id) => myRewards.joinedQuestIds.includes(id)),
-                    enteredAt: campaign.rewardId ? myRewards.redeemedAt[campaign.rewardId] : undefined,
-                    now,
+            campaigns={campaigns}
+            campaignMemberOf={
+              myRewards.isLoaded && myCampaigns.isLoaded
+                ? (item: Campaign) => {
+                    const standing = campaignStanding(item as CampaignView, myRewards);
+                    return {
+                      xp: myRewards.balance,
+                      enrolled: myCampaigns.mine.some((entry) => entry.campaign.id === item.id),
+                      entered: standing.entered,
+                      ready: standing.ready,
+                      done: standing.done,
+                      total: standing.total,
+                    };
                   }
-                : null
+                : undefined
             }
+            onOpenCampaign={myCampaigns.open}
             name={sessionMember?.displayName ?? 'เพื่อน'}
             avatar={sessionMember?.avatarUrl}
             now={now}
@@ -487,7 +484,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             mine={myEvents}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
-            month={monthCounts}
+            noXpYet={myRewards.isLoaded && myRewards.earned === 0}
             savedCount={activity.savedEventIds.length + activity.savedSpotIds.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}
@@ -500,7 +497,6 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             spots={memberSpots}
             cardKinds={interests.kinds}
             isSpotsLoaded={isSpotsLoaded}
-            stampCount={myRewards.finished.length}
           />
         ) : isMemberPending ? (
           <MemberHomeSkeleton />
@@ -544,7 +540,7 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
                   <button
                     type="button"
                     onClick={() => scrollToId('journey-meetups')}
-                    className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-[0_8px_20px_rgba(242,100,48,0.28)] whitespace-nowrap cursor-pointer transition-colors"
+                    className="flex-1 sm:flex-none h-13 px-4 sm:px-8 rounded-full bg-[#F26430] hover:bg-[#E2551F] text-white text-[15px] sm:text-base lg:text-[17px] font-semibold shadow-sm whitespace-nowrap cursor-pointer transition-colors"
                   >
                     หากิจกรรมที่ใช่
                   </button>
@@ -570,9 +566,9 @@ function JourneyContent({ initialEvents, initialQuests, campaign = null, signedI
             A search from the header window opens the ค้นพบ pages. */}
         {!isMember && !isMemberPending && (
           <>
-            {/* The running campaign, one slim line under the hero; gone outside its dates (owner 2026-10-25) */}
-            <div className={`${CONTAINER} pt-4 sm:pt-6`}>
-              <CampaignStrip campaign={campaign} />
+            {/* Under the hero: the running campaigns only (owner 2026-11-04); pressing one opens its popup. Rewards are on /challenges */}
+            <div className={`${CONTAINER} pt-6 sm:pt-8 empty:hidden`}>
+              <PromoBoard campaigns={campaigns} onOpen={myCampaigns.open} withRewards={false} />
             </div>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
               {/* 2. Proof of the community the hero names ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต"): people and their moments

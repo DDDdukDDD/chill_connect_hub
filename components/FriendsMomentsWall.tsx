@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Heart, MessageCircle } from 'lucide-react';
 import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 // "คุณกี้ (Kee_Explorer)" reads as "คุณกี้"
 const shortName = (name: string) => name.split(' (')[0];
@@ -55,7 +55,7 @@ export function FriendsMomentsWall() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={optimizedImage(m.images[0], 256)} alt="" className="w-full h-full rounded-full object-cover border-2 border-white" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={m.userAvatar} alt="" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border-2 border-white" />
+                <img src={avatarImage(m.userAvatar)} alt="" className="absolute -bottom-0.5 -right-0.5 w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border-2 border-white" />
               </span>
               <span className={`max-w-full truncate text-[11px] sm:text-xs ${selected ? 'font-bold text-slate-900' : 'font-bold text-slate-600'}`}>
                 {shortName(m.userName)}
@@ -87,7 +87,7 @@ export function FriendsMomentsWall() {
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={active.userAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+            <img src={avatarImage(active.userAvatar)} alt="" className="w-10 h-10 rounded-full object-cover" />
             <span>
               <span className="block text-sm font-bold text-slate-900">{shortName(active.userName)}</span>
               <span className="block text-xs font-medium text-slate-500">{active.timeAgo}</span>
@@ -96,7 +96,7 @@ export function FriendsMomentsWall() {
 
           {/* The one way on from here: the place itself, quiet (owner 2026-10-29) */}
           {placeName && (
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#F26430] min-w-0">
+            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[#C2410C] min-w-0">
               <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
               {placeHref ? (
                 <Link href={placeHref} className="truncate underline-offset-4 hover:underline">ไปที่ {placeName}</Link>
@@ -118,7 +118,7 @@ export function FriendsMomentsWall() {
           {reply && (
             <div className="mt-3 flex items-start gap-2.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={reply.userAvatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+              <img src={avatarImage(reply.userAvatar)} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
               <p className="min-w-0 rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700">
                 <span className="block text-xs font-bold text-slate-900">{shortName(reply.userName)}</span>
                 <span className="line-clamp-2">{reply.text}</span>

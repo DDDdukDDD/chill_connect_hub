@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MemberAuthError } from '@/lib/members/accounts';
-import { getSessionMember } from '@/lib/members/session';
+import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { proposeQuest, questsProposedBy } from '@/lib/members/submissions';
 import { joinCounts } from '@/lib/social/questJoins';
 
@@ -64,6 +64,7 @@ export async function GET(request: Request) {
  * A signed-in, verified member proposes a challenge. It is saved as a draft and published by staff after review.
  */
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   try {
     const member = await getSessionMember(request);
     if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });

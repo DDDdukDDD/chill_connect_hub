@@ -222,7 +222,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, placeTitl
               onChange={(e) => typeText(e.target.value)}
               placeholder="พิมพ์ข้อความบนรูป แล้วลากไปวางตรงที่ชอบ"
               aria-label="ข้อความบนรูป"
-              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-2xl px-3.5 py-2.5 text-base sm:text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-2xl px-3.5 py-2.5 text-base sm:text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-500"
             />
             {textOn && (
               <button type="button" onClick={removeText} aria-label="ลบข้อความนี้" className="w-10 h-10 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center cursor-pointer shrink-0">

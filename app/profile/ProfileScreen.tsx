@@ -26,6 +26,8 @@ import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
+import { FollowListDialog, type FollowTab } from './FollowListDialog';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 /**
  * Member profile.
@@ -83,7 +85,8 @@ const ABOUT_ORDER: ProfileFieldKey[] = ['connectGoal', 'occupation', 'workplace'
 const card = 'mt-10 pt-10 border-t border-slate-200';
 // How much of a long list shows at first, and per "ดูเพิ่ม"
 const PAGE_HOSTED = 6;
-const FIRST_MOMENTS = 9;
+// 12 fills whole rows at both 3 and 4 across
+const FIRST_MOMENTS = 12;
 const PAGE_MOMENTS = 12;
 const FIRST_BADGES = 10;
 /** The tabs under the story, like IG (owner 2026-11-01): what they posted, ตี้ they went to, ตี้ they host, challenges they finished */
@@ -327,7 +330,7 @@ export function HostCard({ member, application, onChanged }: { member: PublicMem
           </div>
           <ErrorLine message={error} />
           {!canApply && <p className="text-xs font-bold text-slate-500"><PhraseText text="ยืนยันตัวตนและรับคำมั่นของคอมมูนิตี้ก่อน จึงจะส่งคำขอได้" /></p>}
-          <button type="submit" disabled={busy || !canApply} className={dialogButton.secondary}>
+          <button type="submit" disabled={busy || !canApply} className={`${dialogButton.secondary} w-full`}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <CalendarPlus className="w-4 h-4" aria-hidden="true" />}
             ส่งคำขอให้ทีมงาน
           </button>
@@ -379,6 +382,9 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
           <dd className="font-bold text-slate-800">{methods || 'ไม่มี'}</dd>
         </div>
       </dl>
+      <p className="mt-2 text-sm">
+        <a href="/legal?tab=privacy#my-data" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดาวน์โหลดข้อมูลหรือลบบัญชี</a>
+      </p>
       <p className="mt-2 text-xs font-medium text-slate-500">อีเมลของคุณไม่แสดงให้สมาชิกคนอื่นเห็น</p>
 
       {done && <p className="mt-3 text-sm font-bold text-emerald-700" role="status">เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ</p>}
@@ -515,6 +521,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   // null: the first tab that has something
   const [tab, setTab] = useState<ProfileTab | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [followList, setFollowList] = useState<FollowTab | null>(null);
 
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
   const memberId = member?.id;
@@ -615,6 +622,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     return hostedRank(a) === 2 ? -when : when;
   });
 
+  const closeFollowList = (changed: boolean) => {
+    setFollowList(null);
+    if (changed) refresh();
+  };
+
   const toggleFollow = async () => {
     if (!profile) return;
     const following = !profile.viewer?.isFollowing;
@@ -664,11 +676,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     : []
   ).filter((stat) => stat.value !== '0');
   // Under the name, as on IG: posts, followers, following (zeros too: they are the start of a profile, not a gap)
-  const social: { label: string; value: number; tab?: ProfileTab }[] = profile
+  const social: { label: string; value: number; tab?: ProfileTab; list?: FollowTab }[] = profile
     ? [
         { label: 'โพสต์', value: state.momentsTotal ?? state.moments.length, tab: 'moments' as const },
-        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount }] : []),
-        ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount }] : []),
+        ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount, list: 'followers' as const }] : []),
+        ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount, list: 'following' as const }] : []),
       ]
     : [];
   const went = profile?.wentTo ?? [];
@@ -754,14 +766,14 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
             )}
 
             {/* Identity card on the left (sticky from lg), the person's story on the right: Airbnb-like, no cover (owner 2026-10-25) */}
-            <div className="mt-6 grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
+            <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
               <aside className="lg:sticky lg:top-24">
                 <section className="rounded-3xl border border-slate-200 shadow-[0_6px_24px_rgba(15,23,42,0.06)] p-6 sm:p-7">
                   <div className="flex flex-col items-center text-center">
-                    <span className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-[#F26430] to-[#7C3AED] text-white text-5xl font-bold flex items-center justify-center">
+                    <span className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 text-slate-600 text-5xl font-bold flex items-center justify-center">
                       {profile.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
-                        <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={avatarImage(profile.avatarUrl, 256)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         nameInitial(profile.displayName, 'C')
                       )}
@@ -770,7 +782,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                     <p className="mt-1 text-sm font-medium text-slate-500">
                       {[provinceName, profile.ageBand ? `อายุ ${profile.ageBand}` : '', profile.gender ? GENDER_LABELS[profile.gender] : ''].filter(Boolean).join(' · ')}
                     </p>
-                    <p className="mt-0.5 text-xs font-medium text-slate-400">
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">
                       {profile.memberSince ? `สมาชิกตั้งแต่ ${monthYear(profile.memberSince)}` : ''}
                     </p>
                     {(profile.isSample || profile.isSampleAccount) && !profile.isMe && <span className="mt-2 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">โปรไฟล์ตัวอย่าง</span>}
@@ -787,6 +799,15 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             <dd className="text-lg font-bold text-slate-900 tabular-nums">{item.value.toLocaleString()}</dd>
                           </>
                         );
+                        // The lists are the member's own: on another member's profile the numbers stay plain
+                        if (viewOwn && item.list) {
+                          const list = item.list;
+                          return (
+                            <button key={item.label} type="button" onClick={() => setFollowList(list)} aria-haspopup="dialog" className="flex flex-col-reverse items-center rounded-xl py-1 hover:bg-slate-50 cursor-pointer">
+                              {cell}
+                            </button>
+                          );
+                        }
                         return item.tab && tabs.some((t) => t.key === item.tab) ? (
                           <button key={item.label} type="button" onClick={() => openTab(item.tab!)} className="flex flex-col-reverse items-center rounded-xl py-1 hover:bg-slate-50 cursor-pointer">
                             {cell}
@@ -917,11 +938,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                   {bio ? (
                     <p className="mt-4 text-base sm:text-lg font-medium text-slate-800 leading-relaxed whitespace-pre-line break-words max-w-prose">
                       {bio}
-                      {viewOwn && hiddenKeys.includes('bio') && <span className="ml-2 text-xs font-bold text-slate-400 whitespace-nowrap">(ซ่อนอยู่)</span>}
+                      {viewOwn && hiddenKeys.includes('bio') && <span className="ml-2 text-xs font-bold text-slate-500 whitespace-nowrap">(ซ่อนอยู่)</span>}
                     </p>
                   ) : (
                     viewOwn && (
-                      <button type="button" onClick={() => setEditTab('me')} className="inline-flex items-center min-h-11 mt-4 text-base font-medium text-slate-400 hover:text-slate-600 cursor-pointer text-left">
+                      <button type="button" onClick={() => setEditTab('me')} className="inline-flex items-center min-h-11 mt-4 text-base font-medium text-slate-500 hover:text-slate-600 cursor-pointer text-left">
                         + เล่าเกี่ยวกับตัวเองสักประโยค ให้เพื่อนใหม่รู้จักคุณ
                       </button>
                     )
@@ -985,7 +1006,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                               onClick={() => setTab(t.key)}
                               className={`-mb-px shrink-0 pb-3 border-b-2 text-base sm:text-lg font-bold whitespace-nowrap cursor-pointer transition-colors ${isOn ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                             >
-                              {t.label} <span className={`text-sm font-semibold tabular-nums ${isOn ? 'text-slate-500' : 'text-slate-400'}`}>{t.count.toLocaleString()}</span>
+                              {t.label} <span className={`text-sm font-semibold tabular-nums ${isOn ? 'text-slate-500' : 'text-slate-500'}`}>{t.count.toLocaleString()}</span>
                             </button>
                           );
                         })}
@@ -999,12 +1020,12 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       {activeTab === 'moments' &&
                         (state.moments.length > 0 ? (
                           <>
-                            <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                            <ul className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
                               {state.moments.slice(0, momentsShown).map((m) => (
-                                <li key={m.id} className="aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100">
+                                <li key={m.id} className="aspect-[4/5] rounded-xl overflow-hidden bg-slate-100">
                                   <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
                                     {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
-                                    <img src={m.image} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                    <img src={optimizedImage(m.image, 384)} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                   </Link>
                                 </li>
                               ))}
@@ -1063,7 +1084,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             {(showAllBadges ? profile.challengeBadges : profile.challengeBadges.slice(0, FIRST_BADGES)).map((badge) => (
                               <li key={badge.questId}>
                                 <Link href={`/challenges/${encodeURIComponent(badge.questId)}`} title={badge.title} className="group flex flex-col items-center text-center gap-2 cursor-pointer">
-                                  <span className="w-16 h-16 rounded-full bg-gradient-to-br from-[#A78BFA] to-[#6D28D9] text-white flex items-center justify-center ring-4 ring-[#F5F3FF] transition-transform group-hover:scale-105">
+                                  <span className="w-16 h-16 rounded-full bg-[#7C3AED] text-white flex items-center justify-center ring-4 ring-[#F5F3FF] transition-transform group-hover:scale-105">
                                     <Award className="w-8 h-8" aria-hidden="true" />
                                   </span>
                                   <span className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2">{badge.badgeLabel}</span>
@@ -1094,7 +1115,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             <span className="font-bold text-slate-900">{r.authorName}</span>
                             <span className="text-slate-500">{r.timeAgo}</span>
                             {isLoggedIn && r.authorId !== member?.id && (
-                              <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
+                              <button type="button" onClick={() => setReportingReview({ id: r.id, eventTitle: r.eventTitle })} className="ml-auto inline-flex items-center gap-1 text-xs text-slate-500 hover:text-rose-600 cursor-pointer" aria-label={`รายงานรีวิวของ ${r.authorName}`}>
                                 <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
                             )}
@@ -1122,6 +1143,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
       <MobileNav activeTab="profile" setActiveTab={() => undefined} />
 
       {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it, opened from the small link */}
+      {followList && <FollowListDialog initialTab={followList} onClose={closeFollowList} />}
+
       {isInviteOpen && (
         <DialogShell onClose={() => setIsInviteOpen(false)} title="ชวนเพื่อนมาไปตี้ด้วยกัน" size="md">
           <InviteFriendsCard />

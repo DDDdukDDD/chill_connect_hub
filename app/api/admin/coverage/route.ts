@@ -24,7 +24,7 @@ const normalizeProvince = (name: string) => (name === 'กรุงเทพม�
  * - ?view=points: every spot (published and draft) as a light map point
  */
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   const spots = await getAllSpots();

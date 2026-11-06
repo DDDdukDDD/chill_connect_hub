@@ -4,7 +4,7 @@ import { recordAudit } from '@/lib/auditLog';
 import { cacheManager } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   try {
@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
       activeTags,
       timestamp: new Date().toISOString(),
       supportedTags: [
-        { tag: 'spots', label: 'Lifestyle Spots (77 จังหวัด)', description: 'แคชรายการจุดเที่ยวและหมวดหมู่ไลฟ์สไตล์' },
-        { tag: 'events', label: 'Community Meetups', description: 'แคชตี้ สมาชิก และสถานะสมัคร' },
-        { tag: 'fairs', label: 'Fairs & Public Venues', description: 'แคชอีเวนต์ และศูนย์จัดแสดง' },
-        { tag: 'taxonomy', label: 'Master Taxonomy Hub', description: 'แคชโครงสร้างหมวดหมู่, Mood/Vibe, แท็กกลาง' },
-        { tag: 'venues', label: 'Venue Hub Master', description: 'แคชศูนย์ประชุมและจุดจัดแสดงหลัก' },
+        { tag: 'spots', label: 'สถานที่ 77 จังหวัด', description: 'แคชรายการจุดเที่ยวและหมวดหมู่ไลฟ์สไตล์' },
+        { tag: 'events', label: 'ตี้', description: 'แคชตี้ สมาชิก และสถานะสมัคร' },
+        { tag: 'fairs', label: 'อีเวนต์', description: 'แคชอีเวนต์ และศูนย์จัดแสดง' },
+        { tag: 'taxonomy', label: 'หมวดหมู่และแท็ก', description: 'แคชโครงสร้างหมวดหมู่, Mood/Vibe, แท็กกลาง' },
+        { tag: 'venues', label: 'สถานที่จัดงาน', description: 'แคชศูนย์ประชุมและจุดจัดแสดงหลัก' },
       ],
     });
   } catch (error) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireAdminApiAccess(request, 'system.manage');
+  const denied = await requireAdminApiAccess(request, 'system.manage');
   if (denied) return denied;
 
   try {
@@ -42,14 +42,14 @@ export async function POST(request: NextRequest) {
     const { action, tag, tags } = body;
     if (['flush_all', 'flush_tag', 'flush_tags'].includes(action)) {
       const scope = action === 'flush_all' ? 'ทั้งหมด' : action === 'flush_tag' ? `แท็ก ${tag}` : `แท็ก ${Array.isArray(tags) ? tags.join(', ') : ''}`;
-      recordAudit(getAdminActor(request), `cache.${action}`, `ล้าง cache ${scope}`);
+      recordAudit(await getAdminActor(request), `cache.${action}`, `ล้าง cache ${scope}`);
     }
 
     if (action === 'flush_all') {
       cacheManager.clear();
       return NextResponse.json({
         success: true,
-        message: '⚡ เคลียร์ L1 Memory Cache ทั้งหมดในระบบเรียบร้อยแล้ว',
+        message: 'เคลียร์แคชในหน่วยความจำทั้งหมดในระบบเรียบร้อยแล้ว',
         stats: cacheManager.getStats(),
       });
     }

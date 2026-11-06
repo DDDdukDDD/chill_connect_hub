@@ -43,13 +43,13 @@ function recordFailure(key: string, now: number) {
 
 // Current admin session state for the admin console, including the verified actor and its permissions
 export async function GET(request: Request) {
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   return NextResponse.json(
     {
       success: true,
       authenticated: actor !== null,
       actor: actor && { ...actor, roleLabel: ROLE_LABELS[actor.role], permissions: ROLE_PERMISSIONS[actor.role] },
-      hasSession: hasAdminCredentials(request),
+      hasSession: await hasAdminCredentials(request),
       authRequired: process.env.NODE_ENV === 'production' || isAdminAuthConfigured(),
       loginAvailable: isAdminLoginConfigured(),
     },
@@ -86,16 +86,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Invalid request body' }, { status: 400 });
   }
 
-  const hasEmail = typeof email === 'string' && email.trim() !== '';
-  let session: { subject: string; version: number; actor: AdminActor } | null = null;
-  if (typeof password === 'string') {
-    if (hasEmail) {
-      const account = authenticateStaff(email as string, password);
-      if (account) session = { subject: account.id, version: account.sessionVersion, actor: { id: account.id, name: account.name, role: account.role } };
-    } else if (verifyAdminPassword(password)) {
-      session = { subject: ENV_OWNER_SUBJECT, version: 0, actor: { id: ENV_OWNER_SUBJECT, name: 'เจ้าของระบบ', role: 'owner' } };
-    }
-  }
+  // Both checks always run, and the session comes only from their results: what the request sends never picks
+  // which check runs or skips one. It also keeps the response time the same for staff and owner logins
+  const emailText = typeof email === 'string' ? email.trim() : '';
+  const passwordText = typeof password === 'string' ? password : '';
+  const hasEmail = emailText !== '';
+  const account = await authenticateStaff(emailText, passwordText);
+  const ownerPasswordMatches = verifyAdminPassword(passwordText);
+  const session: { subject: string; version: number; actor: AdminActor } | null = account
+    ? { subject: account.id, version: account.sessionVersion, actor: { id: account.id, name: account.name, role: account.role } }
+    : !hasEmail && passwordText !== '' && ownerPasswordMatches
+      ? { subject: ENV_OWNER_SUBJECT, version: 0, actor: { id: ENV_OWNER_SUBJECT, name: 'เจ้าของระบบ', role: 'owner' } }
+      : null;
 
   if (!session) {
     recordFailure(clientKey, now);
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
   }
 
   failedAttempts.delete(clientKey);
-  if (session.subject !== ENV_OWNER_SUBJECT) recordStaffLogin(session.subject);
+  if (session.subject !== ENV_OWNER_SUBJECT) await recordStaffLogin(session.subject);
   recordAudit(session.actor, 'auth.login', 'เข้าสู่ระบบ');
   const response = NextResponse.json({ success: true, authenticated: true });
   response.cookies.set(ADMIN_SESSION_COOKIE, createAdminSessionToken(session.subject, session.version, now), {
@@ -119,8 +121,8 @@ export async function POST(request: Request) {
 
 // Log out
 export async function DELETE(request: Request) {
-  const actor = getAdminActor(request);
-  if (actor && hasAdminCredentials(request)) recordAudit(actor, 'auth.logout', 'ออกจากระบบ');
+  const actor = await getAdminActor(request);
+  if (actor && await hasAdminCredentials(request)) recordAudit(actor, 'auth.logout', 'ออกจากระบบ');
   const response = NextResponse.json({ success: true, authenticated: false });
   response.cookies.set(ADMIN_SESSION_COOKIE, '', {
     httpOnly: true,

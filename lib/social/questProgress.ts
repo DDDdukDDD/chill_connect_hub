@@ -7,6 +7,7 @@ import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp }
 import { momentRepository } from '../moments';
 import { memberRepository } from '../members';
 import { joinedQuestIdsOf } from './questJoins';
+import { questMemberStore } from './stores';
 import { checkedInTogether, friendIdsOf } from './friends';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
@@ -15,8 +16,8 @@ import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType
  * Everything is worked out from visits (lib/social/visits.ts) on each read; no balance is stored.
  */
 
-/** Points for one visit, by how strong the evidence is */
-export const VISIT_POINTS: Record<VisitEvidence, number> = { checkin: 50, moment: 30, marked: 10 };
+/** Points for one visit, by how strong the evidence is. "มาที่นี่แล้ว" proves nothing, so it earns nothing (owner 2026-11-04) */
+export const VISIT_POINTS: Record<VisitEvidence, number> = { checkin: 50, moment: 30, marked: 0 };
 
 const EVIDENCE_RANK: Record<VisitEvidence, number> = { checkin: 3, moment: 2, marked: 1 };
 const EVIDENCES = Object.keys(EVIDENCE_RANK) as VisitEvidence[];
@@ -395,7 +396,8 @@ export async function progressOf(memberId: string) {
     return special.get(key) as Visit[];
   };
 
-  const joined = new Set(await joinedQuestIdsOf(memberId));
+  // Leaving a finished challenge keeps what it earned (E2E 2026-11-04: leaving took 180 XP back and undid a campaign step)
+  const joined = new Set([...(await joinedQuestIdsOf(memberId)), ...(await questMemberStore.finishes({ memberId })).map((finish) => finish.questId)]);
   const quests: QuestProgress[] = [];
   for (const quest of await questsWithRules()) {
     const counted: Visit[] = [];
@@ -408,8 +410,9 @@ export async function progressOf(memberId: string) {
     quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
   }
 
-  // A visit to something that no longer exists earns nothing; hosting earns through its challenge only
-  const visitPoints = visits.reduce((sum, visit) => sum + (targets.get(targetKey(visit.targetType, visit.targetId)) ? VISIT_POINTS[visit.evidence] : 0), 0);
+  // A visit to something that no longer exists earns nothing; hosting earns through its challenge only. A photo still
+  // waiting for staff (no location at the place) earns once it passes: XP buys vouchers, so it needs proof too
+  const visitPoints = visits.reduce((sum, visit) => sum + (targets.get(targetKey(visit.targetType, visit.targetId)) && !visit.pending ? VISIT_POINTS[visit.evidence] : 0), 0);
   const questPoints = quests.reduce((sum, quest) => sum + (quest.completed && quest.joined ? quest.rewardPoints : 0), 0);
 
   return { visits, quests, points: { total: visitPoints + questPoints, fromVisits: visitPoints, fromQuests: questPoints } };

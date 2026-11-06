@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { SITE_URL } from "@/lib/site";
+import { SEARCH_INDEXING_ON, SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { AppSetup } from "@/components/AppSetup";
+import { SkipToContent } from '@/components/SkipToContent';
 import { InviteRefCapture } from "@/components/InviteRefCapture";
 import { OnboardingResume } from "@/components/OnboardingResume";
 
@@ -45,6 +47,8 @@ export const metadata: Metadata = {
     "Chill & Connect",
     "คอมมูนิตี้คนชอบทำกิจกรรม",
   ],
+  applicationName: "Chillwaa",
+  appleWebApp: { capable: true, title: "Chillwaa", statusBarStyle: "default" },
   authors: [{ name: "Chillwaa Team" }],
   creator: "Chillwaa",
   openGraph: {
@@ -63,11 +67,11 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
   robots: {
-    index: true,
-    follow: true,
+    index: SEARCH_INDEXING_ON,
+    follow: SEARCH_INDEXING_ON,
     googleBot: {
-      index: true,
-      follow: true,
+      index: SEARCH_INDEXING_ON,
+      follow: SEARCH_INDEXING_ON,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
@@ -132,6 +136,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans">
+        <SkipToContent />
+        <AppSetup />
         <InviteRefCapture />
         <OnboardingResume />
         {children}

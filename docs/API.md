@@ -167,6 +167,14 @@ Response `200`: `{ success: true, meetupAllowed: boolean, trips: EventItem[], ho
 - `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount >= minParticipants` (`isTripConfirmed` in `lib/spotTripRules.ts`).
 - `host`: only for a signed-in viewer. `canHost: false` comes with a Thai `reason` to show next to the disabled button.
 
+### `POST /api/events` with `action: "edit_tee"` — the host moves their own ตี้
+
+```ts
+{ action: 'edit_tee', eventId: string, edit: { date: 'YYYY-MM-DD', startTime: 'HH:MM', endTime: 'HH:MM', province, district, locationName, meetingPoint, placeId? } }
+```
+
+Returns `{ success, event, changed, notified }`. Other fields in `edit` are ignored; an online ตี้ changes date and time only. 401 signed out, 403 other site, 404 not the host, 409 started, ended, rejected, recurring or a trip, 400 bad values, 429 after 10 real changes in an hour. Notification type `tee_changed`.
+
 ### Spot Buddy trips — `POST /api/events` with `eventData.spotId`
 
 Sending `spotId` makes the event a Spot Buddy trip, and the server applies these rules (`lib/social/spotTrips.ts`). A refusal answers `{ success: false, message }` with `400`, `403` or `404`.
@@ -285,21 +293,20 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 
 | Method & path | Body / params | Response |
 |---|---|---|
-| `GET /api/moments` | `?tab=all|popular|following|saved|mine&category=heal|move|chill|learn&location&targetType&targetId&q&tag&page&limit(≤30)`\|popular\|saved\|mine&location&targetType&targetId&q&page&limit(≤30)` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }` |
+| `GET /api/moments` | `?tab=all\|popular\|following\|saved\|mine&category=heal\|move\|chill\|learn&location&targetType&targetId&q&tag&page&limit(≤30)&cursor` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }`. Each item's `comments` holds **only the newest visible comment**; `commentsCount` is the full count, and `GET /api/moments/[id]` has them all. To continue the newest order, pass `pagination.nextCursor` as `cursor` (a new or deleted post between pages neither repeats nor skips one; a bad cursor gives an empty list). `pagination.totalCount` and `totalPages` come only without a cursor. `popular` has no cursor and pages by `page` |
 | `POST /api/moments` | `{ caption? (0–500, optional since 2026-11-02), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
 | `POST /api/moments` with a clip (trial, 2026-11-02) | Add `video: { url, durationS }`, with `images` holding only the cover. `durationS` is at most 15 (15.5 with rounding); `url` must come from `/api/upload/video`. Feed items and moment pages carry `video`; `images[0]` is its cover, so grids keep working | `400` when a rule fails |
 | `POST /api/moments` options (2026-11-02) | Add `commentsOff?`, `likesOff?`, `sharesOff?` (booleans). `video` also takes `startS`, where in the file the post starts playing; the file may run longer than `durationS`, which stays at most 15 | Feed items always carry the three booleans. A closed post answers `400` to `like` or `comment`, shows `comments: []` and `likesCount: 0` |
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
 | `PATCH /api/moments/[id]` | `{ caption?, location?, commentsOff?, likesOff?, sharesOff? }` | own posts only (`403`) |
 | `DELETE /api/moments/[id]` | — | own posts only |
-| `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300) }` · `{ action: 'delete_comment', commentId }` (commenter or post author) · `{ action: 'report', reason }` (once per member, not your own) | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
+| `POST /api/moments/[id]/actions` | `{ action: like\|unlike\|save\|unsave }` · `{ action: 'comment', text (1–300), parentId? }` (a reply to a reply sits under the same comment) · `{ action: 'like_comment'\|'unlike_comment', commentId }` · `{ action: 'delete_comment', commentId }` (commenter or post author; its replies go with it) · `{ action: 'report', reason }` (once per member, not your own). Each comment in a `FeedItem` has `parentId?`, `likesCount`, `isLiked`, `isMine`, `canDelete`. To report a comment: `POST /api/reports` with `targetType: 'comment'`, `targetId: 'momentId/commentId'` | `{ moment: FeedItem }`; report also returns `autoHidden` · `409` already reported |
 
 `FeedItem` keeps the `CommunityPost` shape (`data/mockData.ts`) so the current UI fits:
 `{ id, authorId, userName, userAvatar, userBadge, images, caption, location, category?, likesCount, commentsCount, timeAgo (Thai), createdAt, isLiked, isSaved, isMine, hasReported, comments: [{ id, userName, userAvatar, text, timeAgo, createdAt, isMine }], targetType, targetId?, targetTitle?, isSample }`.
 
 - **Author details are live:** `userName` and `userAvatar` follow the author's current profile.
 - **Samples:** the 24 bundled `MOCK_POSTS` are seeded as `isSample: true`, with their illustrative like counts. 20 of them are tied to a real place or event in the stores (BE-042); on start, a stored sample takes `targetType`, `targetId`, `targetTitle` and `location` from the bundled one, and nothing else.
-- **Homepage row:** `components/CommunityMomentsStrip.tsx` shows the 12 newest from `GET /api/moments?tab=all&limit=12` and the full count from `pagination.totalCount`.
 - **Account deletion** removes the member's moments, comments, likes, saves and reports.
 
 ### `GET /api/master` — master data (admin-managed)
@@ -312,7 +319,7 @@ Cache: `public, s-maxage=60`.
 - **Venues:** `{ id, name, venueTag, province, location, transitHint, latitude?, longitude?, website?, image? }`.
 - **Provinces:** `{ id (stored province name, e.g. "กรุงเทพฯ"), displayName, nameEn, region, tagline, description, image?, featured }`.
 - **Zones:** `{ id, name, province }`.
-- **Rail cards** (`communityClubs` for TopCommunityRail, `venueGroups` for TopVenuesRail): `{ id, name, nameEn, subtitle, image?, badgeLabel?, keywords[] }`.
+- **Rail cards** (`communityClubs`, `venueGroups`): `{ id, name, nameEn, subtitle, image?, badgeLabel?, keywords[] }`.
 
 Icons and colors are keys. **Use `useMasterData()` from `lib/useMasterData.ts`.** It fetches this endpoint once, falls back to the bundled defaults, and returns lists in the old constant shapes (`spotVibes` like `MASTER_SPOT_CATEGORIES`, `venues` like `MASTER_VENUE_OPTIONS`, …) plus `featuredProvinces`, `zonesFor(province)`, `communityClubs` (`TOP_COMMUNITY_CLUBS` shape) and `venueGroups` (`TOP_VENUES` shape).
 
@@ -461,10 +468,15 @@ All writes are `POST` with an `action` field unless noted.
 ## Following and suggested members (added 2026-10-11)
 - `POST /api/members/{id}/actions` with `{ action: 'follow' | 'unfollow' }` → `{ success, following, followerCount }`. Signed-in members only; blocking a member also unfollows them.
 - `GET /api/members/{id}` and `GET /api/auth/member/profile` (`publicView`) now include `followerCount`, `followingCount`; `viewer.isFollowing` on another member's profile.
+- `GET /api/members/follows` (added 2026-11-03, BE-239) → `{ success, followers, following }`, each `[{ id, name, avatar, isFollowing, followsMe }]`: the signed-in member's own lists, active members only, nobody either side blocked. `401` signed out. Another member's lists are not available.
 - `GET /api/members/suggested` → `{ success, members: [{ id, displayName, avatarUrl, momentCount, trusted, approvedHost }] }`: up to 5 verified members with published moments, without the viewer, people they follow or blocked, and accounts with open risk flags.
 - `GET /api/members/interest-count?ids=cafe_social,running_fitness` (added 2026-10-23) → `{ success, people }`: how many active members picked at least one of these `communityCategories` ids in onboarding. A number only, never names (interests are private answers). Used by the onboarding "บอกสิ่งที่ชอบ" side panel.
 - `GET /api/moments?tab=following`: moments by members the viewer follows (signed out: empty list with `requiresLogin`).
-- `GET /api/moments/journey` (added 2026-10-23) → `{ success, following, reacted, posted }`: the signed-in member's steps on the moments path of the home journey band (people followed; has liked or commented on someone else's published moment; has posted one). `401` signed out.
+
+## Push notifications (added 2026-11-04, BE-258)
+- `POST /api/push` with a browser `PushSubscription` as JSON (`{ endpoint, keys: { p256dh, auth } }`) → `{ success }`. Needs a session and the same origin. This device now receives the member's notifications; a device already saved moves to this member. `400` when the endpoint is not a known push service (Google, Apple, Mozilla, Microsoft), so the server never posts to an address a member made up. A member keeps at most 10 devices, newest first.
+- `DELETE /api/push` with `{ endpoint }` → `{ success }`. Same origin, no session: a device whose session ended can still leave.
+- The push payload (read by `public/sw.js`) is `{ title, body, url, tag }`. Words and `url` match the bell's; a newer push with the same `tag` replaces the older one on the device.
 
 ## Notifications (added 2026-10-11)
 Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stories` no longer exist.
@@ -505,7 +517,6 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `GET /api/events/{fairId}/groups` → `{ groups: [{ id, title, meetupPoint, time, note, maxMembers, currentMembers, creator: { id, displayName, avatarUrl }, isJoined, isMine }] }` (public).
 - `POST /api/events/{fairId}/groups` `{ action: 'create', title, meetupPoint, time, note?, maxMembers? (2-15) }` · `{ action: 'join' | 'leave', groupId }` → `{ groups }`. Joining needs a verified account; creating also needs `organizerNeeds` to be `null` (403), the same check as a ตี้. At most 2 groups per member per fair; a full group answers 409; leaving one's own group closes it. Creating or joining also adds the fair to the member's plan.
 - `GET /api/auth/member/activity` adds `fairGroups: [{ id, fairId, fairTitle, title, time, meetupPoint, isMine }]`.
-- **Development only:** `POST /api/dev/demo` fills the signed-in account with sample activity (verified and trusted, upcoming events, a hosted event with participants and chat, an attended past event); `DELETE /api/dev/demo` removes the two sample events. Both return 404 in production.
 - **Check-in link (2026-10-11):** a ticket's QR encodes `/checkin?event={id}&code={ticketCode}`. The page calls `POST /api/events/{id}/participants { action: 'check_in', code }` with the visitor's session, so only the event's host can complete it.
   - _2026-10-26 (BE-153):_ `check_in` returns `409 "เช็กอินได้ตั้งแต่วันที่ตี้เริ่ม"` before the event's start date (opens 12 hours before that date's midnight, to cover the server time zone). Dates without a day number (a series) are not limited; `undo` is never limited.
 
@@ -557,8 +568,12 @@ Both need a signed-in member or a staff session, and are rate limited per accoun
 Body: `{ url }` (a Google Maps link, `https://` only). Answer: `{ success, coordinates: { latitude, longitude } | null }`.
 Reads the coordinates in the link's address. A short link (`maps.app.goo.gl`) is followed on Google hosts only. `null` means the link carries no pin inside Thailand, which is common for links shared from the phone app; ask for a pin on the map instead. No Google API is called.
 
-### `GET /api/places/search?q=`
-Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 5, Thailand only), from OpenStreetMap (Nominatim). Call it on a button press, not while typing. `502` when the search service does not answer.
+### `GET /api/places/search?q=[&lat=&lng=][&used=1]`
+Answer: `{ success, places: [{ name, detail, latitude, longitude }], used?: [{ name, posts }] }`. Thailand only.
+- `places` (at most 8): OpenStreetMap through Photon, which finds a name from its first letters, so it may be called while typing after a pause (the moment picker waits 450 ms). The same name within about 1 km is listed once. Nominatim answers when Photon is down. The server keeps each answer for 10 minutes.
+- `lat`/`lng` (optional) put places near that point first. They are rounded to about 1 km and not kept.
+- `used=1` (members only) adds `used` (at most 5): names members already put on published moments that contain the words, most used first. A place missing from the map is found once someone has posted it.
+- Rate limit: 120 per 10 minutes per account. `502` only when the map search fails and there are no `used` names.
 
 ### `/api/admin/review` — places need a pin
 `POST { action: 'approve' }` answers `400` when a place in the request has no coordinates inside Thailand. Nothing in the request is approved; staff set the pin in the spot editor first.
@@ -647,6 +662,26 @@ Every filter given must match. `categories` is a place's `category` (`cafe`, `pa
 ### Account deletion and export
 Deleting an account removes the member's marks. `GET /api/auth/member/account` (export) includes them as `visits`.
 
+## Campaigns for members (added 2026-11-04, BE-247)
+
+### `GET /api/campaigns/mine`
+`{ success, campaigns: MyCampaign[] }`, newest first; a guest gets an empty list. `MyCampaign` = `{ campaign: CampaignView, enrolledAt }` (`lib/campaigns/types.ts`); `CampaignView` is a `Campaign` plus `steps: [{ id, title, image?, total, rewardPoints }]`. Lists what the member joined while it runs, and after the end only one whose prize they redeemed, until `drawEntry.drawDate`. Redeeming a campaign's prize counts as joining.
+
+### `POST /api/campaigns/mine` — `{ campaignId, action?: 'leave' | 'claim' }`
+Signed-in, active member, same origin; 30 per hour. Joining also joins its step challenges (one that has ended is skipped) and twice changes nothing; 404 unknown, 409 not running. Leaving keeps the challenges; 409 once its prize is redeemed. Answers with the same list.
+
+`claim` (BE-250): the member's announced win moves to `claimed`; 404 no win, 409 past `claimBy`, and a second time changes nothing. `MyCampaign` also carries `resultsOut?: boolean` and `win?: { status: 'pending' | 'claimed' | 'confirmed' | 'forfeited', code, claimBy? }`, the latter only once announced. An entry holder's campaign stays listed until 30 days after the results; a winner's while `pending` or `claimed`.
+
+### `GET /api/admin/campaigns/draws` (`members.manage`)
+`{ success, campaigns: DrawCampaign[] }` (`lib/campaigns/types.ts`): every campaign whose prize is a draw, with entries that can be drawn, `refusal` (why not today) and winners with contact details.
+
+### `POST /api/admin/campaigns/draws` (`members.manage` and `content.edit`)
+`{ action: 'draw', campaignId }` draws until the prize count stands; 409 with the reason when it may not. `{ action: 'announce', campaignId }` publishes and notifies; 409 with nobody waiting. `{ action: 'confirm' | 'forfeit', winnerId, campaignId }` settles a winner: `confirm` only from `claimed`, `forfeit` from `pending` or `claimed`; 409 otherwise.
+
+The public result is the page `/campaigns/results` (server HTML, in the sitemap): entry code and masked name only.
+
+Any page opens the popup with `?campaign=ID`. Home and `/challenges` read `homeCampaigns()` on the server: live, `showOnHome`, latest start first, at most 10.
+
 ## Points and rewards (added 2026-10-13, BE-040)
 
 A member's points are no longer kept in the browser. The balance is what the member earned from visits and finished challenges (see "Visits") minus what they spent on rewards. Only the spending is stored (`data/redemptions.json`, gitignored). Code: `lib/social/rewardsLedger.ts`. Client hook: `useMyRewards(isLoggedIn)` in `lib/useMyRewards.ts`.
@@ -655,9 +690,13 @@ A member's points are no longer kept in the browser. The balance is what the mem
 `{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, joined, rewardPoints }], joinedQuestIds, redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
 
 ### `POST /api/rewards` — `{ rewardId }`
+Refused before the balance check when the reward belongs to a campaign: 409 no campaign with it is running; 403 a draw entry without a confirmed identity (email or social sign-in); 409 a draw entry whose running campaign still has unfinished steps; 404 a `campaignOnly` reward with no campaign. Rewards outside a campaign are unchanged.
+
 Redeems a reward of the catalog (`REWARD_SHOP_ITEMS` in `data/rewardsData.ts`). One of each reward per member. _2026-10-25 (BE-132):_ a catalog item with `drawEntry: { drawLabel, prizeCount }` is a prize-draw entry: `redemptions[]` carries `code` (`CC-XXXXXX`, the member's own entry code; `null` for vouchers, which use the catalog `voucherCode`). `/rewards?reward=ID` opens a reward. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
 
 ### Joining a challenge — `POST /api/quests/join` (added 2026-10-13, BE-043)
+XP from visits: a host check-in 50, a moment that passed 30; "มาที่นี่แล้ว" and a moment still waiting for staff earn 0 (BE-249).
+Leaving a finished challenge keeps its XP, and `joined` stays true for it in `quests` (BE-247).
 Body `{ questId, action: 'join' | 'leave', reason? }`; signed-in, active member, same origin. `reason` (leave only, up to 200 characters, optional) is why the member stops; it is written to the audit log as `quest.leave` without the member's name (BE-064). The answer has the same fields as `GET /api/rewards`. Joins are stored in `data/quest_joins.json` (gitignored); code in `lib/social/questJoins.ts`. Errors: 404 unknown or draft challenge, 409 the challenge has ended, 401 signed out, 429 more than 60 an hour. Joining twice changes nothing.
 - **What joining does:** the challenge appears in My Hub, the member counts among its participants, and its reward points are theirs when they finish. Progress is counted from visits whether or not the member joined, so visits made before joining still count; the reward points are added only while the member is joined (`quests[].joined`).
 - **`participantsCount` in `GET /api/quests`** is the number the quest was written with (sample data for seed quests, 0 for new ones) plus the members who joined.

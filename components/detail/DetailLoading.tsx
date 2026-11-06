@@ -21,7 +21,7 @@ export function DetailLoading() {
       <Navbar activeTab="explore" setActiveTab={noop} isLoggedIn={isLoggedIn} isAuthReady={isAuthReady} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 xl:pb-16" aria-busy="true">
         <div className={`h-4 w-28 ${bar}`} />
-        <section className="mt-4 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
+        <section className="mt-4 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
           <div className="aspect-[16/10] rounded-3xl bg-slate-100 animate-pulse" />
           <div className="space-y-4">
             <div className={`h-9 w-11/12 ${bar}`} />

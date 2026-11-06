@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
 import {
   X,
@@ -17,6 +18,7 @@ import {
   QrCode,
   Calendar
 } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
 
 export interface ExpoMeetupPassData {
   id: string;
@@ -53,6 +55,9 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
   const [isCopiedContact, setIsCopiedContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: Boolean(isOpen && passData), focusField: false });
+
   if (!isOpen || !passData) return null;
 
   const handleCopyContact = () => {
@@ -65,7 +70,13 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in font-sans select-none">
       <div
-        className="bg-white rounded-[28px] sm:rounded-[32px] max-w-lg w-full p-5 sm:p-7 space-y-5 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
+        ref={panelRef}
+        data-dialog-shell
+        role="dialog"
+        aria-modal="true"
+        aria-label="บัตรนัดในงาน"
+        tabIndex={-1}
+        className="focus:outline-hidden bg-white rounded-[28px] sm:rounded-[32px] max-w-lg w-full p-5 sm:p-7 space-y-5 shadow-2xl relative animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -99,7 +110,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
         </div>
 
         {/* Pass Ticket Body (Editorial Design) */}
-        <div className="rounded-3xl bg-gradient-to-b from-sky-50/70 to-slate-50 border border-sky-200 p-5 space-y-4 relative overflow-hidden shadow-xs">
+        <div className="rounded-3xl bg-sky-50/70 border border-sky-200 p-5 space-y-4 relative overflow-hidden shadow-xs">
           
           {/* Top Event Context */}
           <div className="space-y-1">
@@ -125,7 +136,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
           {/* Group Details */}
           <div className="space-y-3">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
                 หัวข้อกลุ่มนัดเดินงาน
               </span>
               <h4 className="text-sm font-bold text-slate-900 leading-snug">
@@ -136,7 +147,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             {/* Grid Specs */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="p-3 rounded-2xl bg-white border border-slate-200/80 space-y-1">
-                <span className="text-[11px] font-bold text-slate-400 block flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-[#2B527A]" />
                   จุดนัดพบในงาน
                 </span>
@@ -146,7 +157,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-slate-200/80 space-y-1">
-                <span className="text-[11px] font-bold text-slate-400 block flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 block flex items-center gap-1">
                   <Clock className="w-3 h-3 text-[#2B527A]" />
                   เวลานัดพบ
                 </span>
@@ -168,7 +179,7 @@ export const ExpoMeetupPassModal: React.FC<ExpoMeetupPassModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-white border border-sky-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
-                  src={passData.creatorAvatar}
+                  src={avatarImage(passData.creatorAvatar)}
                   alt={passData.creatorName}
                   className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
                 />

@@ -30,14 +30,20 @@ interface DialogShellProps {
   showClose?: boolean;
   /** 'top' keeps the heading in one place when the content changes height (multi-step dialogs such as sign-up) */
   align?: 'center' | 'top';
+  /** false when the first field is a choice: focus on it would look like an answer already picked */
+  focusField?: boolean;
 }
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 const SIZES = { sm: 'max-w-[420px]', md: 'max-w-[520px]', lg: 'max-w-[680px]' };
 
-export function DialogShell({ onClose, children, title, subtitle, labelledBy, size = 'md', layer = 'base', bare = false, showClose = true, align = 'center' }: DialogShellProps) {
-  const ownTitleId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
+/**
+ * What every dialog does (DESIGN_SYSTEM.md → Dialogs): Esc closes, Tab stays inside, the page behind does not
+ * scroll, and focus goes back to the trigger on close. For a dialog with its own frame: put `data-dialog-shell`
+ * and `tabIndex={-1}` on the panel so stacked dialogs know which one is on top.
+ * `focusField: false` starts on the panel, so a phone does not open its keyboard over a dialog that is mostly reading.
+ */
+export function useDialogBehavior(panelRef: React.RefObject<HTMLElement | null>, onClose: () => void, { active = true, focusField = true }: { active?: boolean; focusField?: boolean } = {}) {
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -45,11 +51,11 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
 
   useEffect(() => {
     const panel = panelRef.current;
-    if (!panel) return;
+    if (!active || !panel) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    (panel.querySelector<HTMLElement>('[data-autofocus], input, select, textarea') ?? panel).focus({ preventScroll: true });
+    (panel.querySelector<HTMLElement>(focusField ? '[data-autofocus], input, select, textarea' : '[data-autofocus]') ?? panel).focus({ preventScroll: true });
 
     const isTopMost = () => {
       const open = document.querySelectorAll('[data-dialog-shell]');
@@ -81,7 +87,15 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, []);
+    // panelRef is a stable ref; focusField never changes while a dialog is open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+}
+
+export function DialogShell({ onClose, children, title, subtitle, labelledBy, size = 'md', layer = 'base', bare = false, showClose = true, align = 'center', focusField = true }: DialogShellProps) {
+  const ownTitleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { focusField });
 
   if (typeof document === 'undefined') return null;
 
@@ -102,7 +116,7 @@ export function DialogShell({ onClose, children, title, subtitle, labelledBy, si
           </button>
         )}
         {title && !bare && (
-          <div className="text-center pb-6 px-8">
+          <div className="text-center pb-6 px-2 sm:px-8">
             <h2 id={ownTitleId} className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
               <PhraseText text={title} />
             </h2>

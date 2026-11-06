@@ -10,6 +10,7 @@ import { compressImage } from '@/lib/media/compressor';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { NIGHTLIFE_CATEGORY, nightlifeAgeMessage } from '@/lib/members/nightlife';
 import { activityActions } from '@/lib/useMyActivity';
 import { DialogShell, dialogButton } from './auth/DialogShell';
 import { OrganizerGateDialog } from './auth/OrganizerGateDialog';
@@ -208,12 +209,15 @@ const DESCRIPTION_TEMPLATES: Partial<Record<CreationEntityType, string>> = {
 const hasTemplatePrompt = (description: string): boolean => /\[[^\]]{3,}\]/.test(stripHtmlToPlainText(description));
 
 /** What must be filled in on each step; the server checks again */
-function validate(type: CreationEntityType, step: number, f: Form, minDate: string, publishesNow = false): Errors {
+function validate(type: CreationEntityType, step: number, f: Form, minDate: string, publishesNow = false, birthYear?: number): Errors {
   const e: Errors = {};
   const need = (key: keyof Form, ok: boolean, message: string) => { if (!ok && !e[key]) e[key] = message; };
   if (step === 0) {
     need('title', f.title.trim().length >= 5, 'ตั้งชื่ออย่างน้อย 5 ตัวอักษร');
     if (type === 'community') need('lifestyleCategory', Boolean(f.lifestyleCategory), 'เลือกหมวดตี้');
+    // Said here, not after all four steps (the server decides in the end)
+    const barRule = type === 'community' && f.lifestyleCategory === NIGHTLIFE_CATEGORY ? nightlifeAgeMessage(birthYear) : null;
+    if (barRule) e.lifestyleCategory = barRule;
     if (type === 'fair') need('fairCategory', Boolean(f.fairCategory), 'เลือกประเภทงาน');
     if (type === 'fair') need('organizer', f.organizer.trim().length >= 2, 'ใส่ชื่อผู้จัดงาน');
     if (type === 'spot') need('spotCategory', Boolean(f.spotCategory), 'เลือกประเภทสถานที่');
@@ -271,10 +275,10 @@ function validate(type: CreationEntityType, step: number, f: Form, minDate: stri
   return e;
 }
 
-const inputClass = (bad?: boolean) =>
-  `w-full px-4 py-3 border rounded-2xl text-base sm:text-sm font-semibold text-slate-900 bg-white placeholder:text-slate-400 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 ${bad ? 'border-rose-400' : 'border-slate-300'}`;
+export const inputClass = (bad?: boolean) =>
+  `w-full px-4 py-3 border rounded-2xl text-base sm:text-sm font-semibold text-slate-900 bg-white placeholder:text-slate-500 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 ${bad ? 'border-rose-400' : 'border-slate-300'}`;
 
-function Field({ label, optional, hint, error, children, htmlFor }: { label: string; optional?: boolean; hint?: string; error?: string; children: React.ReactNode; htmlFor?: string }) {
+export function Field({ label, optional, hint, error, children, htmlFor }: { label: string; optional?: boolean; hint?: string; error?: string; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div data-field-error={error ? 'true' : undefined}>
       <label htmlFor={htmlFor} className="block text-sm font-bold text-slate-900 mb-1.5">
@@ -300,7 +304,7 @@ function dmyToIso(text: string): string {
  * A date typed as DD/MM/YYYY whatever the browser's language (the browser's own date box follows the device and showed
  * MM/DD/YYYY; owner 2026-10-25). The calendar button opens the browser's picker. The value stays YYYY-MM-DD.
  */
-function DateInput({ id, value, min, bad, onChange }: { id: string; value: string; min?: string; bad?: boolean; onChange: (iso: string) => void }) {
+export function DateInput({ id, value, min, bad, onChange }: { id: string; value: string; min?: string; bad?: boolean; onChange: (iso: string) => void }) {
   // What is being typed, until it is a whole date; otherwise the box shows the value (also one set by the picker or a draft)
   const [typed, setTyped] = useState<string | null>(null);
   const text = typed ?? isoToDmy(value);
@@ -337,7 +341,7 @@ function DateInput({ id, value, min, bad, onChange }: { id: string; value: strin
  * A time typed as 24-hour HH:MM (the browser's own time box showed 06:00 AM on English devices; owner 2026-10-25).
  * Digits only, the colon comes by itself; the value stays HH:MM, or '' until it is a whole time.
  */
-function TimeInput({ id, value, bad, ariaLabel, onChange }: { id?: string; value: string; bad?: boolean; ariaLabel?: string; onChange: (hhmm: string) => void }) {
+export function TimeInput({ id, value, bad, ariaLabel, onChange }: { id?: string; value: string; bad?: boolean; ariaLabel?: string; onChange: (hhmm: string) => void }) {
   const [typed, setTyped] = useState<string | null>(null);
   const text = typed ?? value;
   const type = (raw: string) => {
@@ -361,7 +365,7 @@ export type PlacePick = { placeId?: string; name: string; province?: string; dis
  * The place of a ตี้: typing suggests places from our catalog and the event venues, so a ตี้ can link to the place's
  * page and fill the province, area and map pin; anything else can still be typed (owner 2026-10-25).
  */
-function PlaceSuggest({ id, value, linked, bad, venues, province, onType, onPick }: {
+export function PlaceSuggest({ id, value, linked, bad, venues, province, onType, onPick }: {
   id: string; value: string; linked: boolean; bad?: boolean; venues: PlaceVenue[]; province: string;
   onType: (text: string) => void; onPick: (pick: PlacePick) => void;
 }) {
@@ -615,7 +619,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const goNext = () => {
     if (!type) return;
-    const found = validate(type, step, form, minDate, publishesNow);
+    const found = validate(type, step, form, minDate, publishesNow, member?.birthYear);
     setErrors(found);
     if (Object.values(found).some(Boolean)) {
       requestAnimationFrame(() => bodyRef.current?.querySelector('[data-field-error]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
@@ -833,7 +837,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   // A meetup picks one of the categories, most popular first; the mood behind it is set from it but not shown
   // (owner 2026-10-25: kept for grouping later, not a choice members make)
   const categoryField = (
-    <Field label="หมวดตี้" error={errors.lifestyleCategory}>
+    <Field label="หมวดตี้" error={errors.lifestyleCategory ?? (form.lifestyleCategory === NIGHTLIFE_CATEGORY ? nightlifeAgeMessage(member?.birthYear) ?? undefined : undefined)}>
       <div className="flex flex-wrap gap-2">
         {questCategories.map((item) => {
           const selected = form.lifestyleCategory === item.id;
@@ -997,7 +1001,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     if (step === 0) {
       return (
         <>
-          {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ แล้วไปกินกาแฟ')}
+          {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ')}
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}

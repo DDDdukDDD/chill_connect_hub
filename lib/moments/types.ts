@@ -27,6 +27,10 @@ export interface MomentComment {
   text: string;
   createdAt: string;
   hidden?: boolean;
+  /** The comment this replies to; replies go one level deep */
+  parentId?: string;
+  /** Members who liked this comment */
+  likedBy?: string[];
 }
 
 export interface MomentReport {
@@ -35,7 +39,19 @@ export interface MomentReport {
   createdAt: string;
 }
 
+/** What a feed needs to know about the lists it does not read: only the viewer's own part of each */
+export interface MomentFeedFacts {
+  likes: number;
+  /** Comments this viewer may see */
+  comments: number;
+  liked: boolean;
+  saved: boolean;
+  reported: boolean;
+}
+
 export interface Moment {
+  /** Set on a moment read for a feed, whose likedBy, savedBy and reports are empty and comments hold only the newest */
+  feedFacts?: MomentFeedFacts;
   id: string;
   authorId: string | null;
   authorName: string;
@@ -112,7 +128,41 @@ export interface MomentQuery {
   limit: number;
 }
 
+/** One page of the public feed: every rule about who may see what is applied by the store, before the page is cut */
+export interface MomentFeedQuery {
+  viewerId?: string;
+  blockedIds?: string[];
+  /** Only these authors (the "following" tab) */
+  authorIds?: string[];
+  authorId?: string;
+  savedBy?: string;
+  targetType?: MomentTargetType;
+  targetId?: string;
+  location?: string;
+  q?: string;
+  tag?: string;
+  category?: MomentCategory;
+  placesOnly?: boolean;
+  sort: 'newest' | 'popular';
+  page: number;
+  limit: number;
+  /** Where the last page ended (newest only): a new or deleted post between pages then neither repeats nor skips one */
+  cursor?: string;
+}
+
+export interface MomentFeedPage {
+  items: Moment[];
+  /** How many match in all; left out when continuing from a cursor */
+  totalCount?: number;
+  hasNext: boolean;
+  nextCursor?: string;
+}
+
+export type MomentTypeCounts = { all: number; spot: number; community: number; fair: number; challenge: number };
+
 export interface MomentRepository {
+  feed(query: MomentFeedQuery): Promise<MomentFeedPage>;
+  typeCounts(): Promise<MomentTypeCounts>;
   findById(id: string): Promise<Moment | null>;
   create(moment: Moment): Promise<Moment>;
   /** Applies `change` to the stored moment atomically and returns the result */

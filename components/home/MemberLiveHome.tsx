@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CampaignStrip, type CampaignMemberState } from '@/components/CampaignStrip';
+import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
-import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Stamp, Zap } from 'lucide-react';
+import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Zap } from 'lucide-react';
 import { MeetupTile } from '@/components/MeetupTile';
 import { FairTile } from '@/components/FairTile';
 import { SpotTile } from '@/components/SpotTile';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { meetupTimes, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { ALL_PROVINCES, discoverHref, eventInProvince } from '@/lib/discoverMatch';
 import { useAuth } from '@/lib/useAuth';
@@ -17,19 +17,18 @@ import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { PASSPORT_HREF } from '@/components/home/StampPassport';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import type { FeedCardKind } from '@/lib/homeInterests';
 import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 
-const MY_MONTH_HREF = '/myhub#my-month';
 
 export interface MemberLiveHomeProps {
   name: string;
-  /** The running campaign (server, liveCampaign({ home: true })); shown again with the member's own progress */
-  campaign?: Campaign | null;
-  /** Where the member stands in it (null until their rewards load) */
-  campaignMember?: CampaignMemberState | null;
+  /** The running campaigns (server, homeCampaigns()); shown again with the member's own progress */
+  campaigns?: Campaign[];
+  /** Where the member stands in one; undefined until their rewards and joined campaigns load */
+  campaignMemberOf?: (campaign: Campaign) => CampaignMemberState;
+  onOpenCampaign?: (id: string) => void;
   avatar?: string;
   now: number;
   xp: number;
@@ -40,8 +39,8 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** This month's count behind "ตี้ · ที่เที่ยว"; null until it loads */
-  month: { chill: number; connect: number } | null;
+  /** Never earned any XP: the greeting tells them how the first comes. False until their rewards load */
+  noXpYet: boolean;
   savedCount: number;
   likedCategories: string[];
   isLoaded: boolean;
@@ -60,7 +59,6 @@ export interface MemberLiveHomeProps {
   cardKinds: FeedCardKind[];
   isSpotsLoaded: boolean;
   /** Finished challenges: the stamps in the passport, which lives in My Hub */
-  stampCount: number;
   /** Every meetup they joined or host, ended ones too: the slim line asks for a moment from one that just ended */
   mine: EventItem[];
 }
@@ -94,9 +92,9 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
       {/* Wide screens (2xl) add a right column (owner 2026-11-01): the 600px feed left ~290px empty on each side */}
       <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_340px] lg:gap-14">
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
-          {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello with
-              this month's counts, then one slim line when there is something to do next. Laptops have both beside the feed */}
-          <div className="lg:hidden mb-6">
+          {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
+              one slim line when there is something to do next. Laptops have both beside the feed */}
+          <div className="lg:hidden">
             <Greeting {...props} layout="row" />
           </div>
           <UpNextLine {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />
@@ -119,22 +117,21 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           {/* ของฉัน before the plans (owner 2026-10-31): the shortcuts keep one place however many plans there are */}
           <Shortcuts {...props} />
           <NextUp {...props} />
-          {/* The campaign sits beside the feed, not above it (owner 2026-10-30): you and your plans come first.
-              Loud only when there is a decision (start, enter); CampaignStrip has the states */}
-          {props.campaign && props.campaignMember && (
+          {/* Campaigns sit beside the feed, not above it (owner 2026-10-30): you and your plans come first */}
+          {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
             <div className="empty:hidden 2xl:hidden">
-              <CampaignStrip campaign={props.campaign} member={props.campaignMember} layout="side" />
+              <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
         </aside>
 
         {/* Wide screens: what to go to next as folded lines (owner 2026-11-01, as on the ตี้ pages), so the feed there is only
-            moments; the campaign stays its own line under them */}
-        <aside className="hidden 2xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-8 pb-4">
+            moments; campaigns are one more line under them */}
+        <aside className="hidden 2xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-3 pb-4">
           <SideFolds {...props} />
-          {props.campaign && props.campaignMember && (
+          {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
             <div className="empty:hidden">
-              <CampaignStrip campaign={props.campaign} member={props.campaignMember} layout="side" />
+              <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
         </aside>
@@ -144,21 +141,11 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 }
 
 /**
- * "สวัสดี Duke" with this month's ตี้ and places, which open the month in My Hub. Plain Thai words since the name
- * became Chillwaa (they were "Chill · Connect", owner 2026-10-31); before anything counts, one line says how the first one comes.
+ * "สวัสดี Duke" and the XP. This month's counts left for My Hub (owner 2026-11-04: "ของฉัน" already leads there);
+ * before anything counts, one line says how the first one comes.
  */
-function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
-  const isNew = month !== null && month.chill + month.connect === 0;
-  const counter = month && (
-    <Link href={MY_MONTH_HREF} className={`font-bold whitespace-nowrap text-slate-900 hover:opacity-80 ${layout === 'row' ? 'text-sm' : 'text-xl'}`} aria-label={`เดือนนี้ ไปตี้ ${month.connect} ครั้ง ไปที่เที่ยว ${month.chill} แห่ง ดูในมายฮับ`}>
-      {/* People first: ตี้ leads */}
-      <span className="font-medium text-slate-500">ตี้</span> <span className="tabular-nums">{month.connect}</span>
-      <span className="mx-1.5 font-normal text-slate-300" aria-hidden="true">·</span>
-      <span className="font-medium text-slate-500">ที่เที่ยว</span> <span className="tabular-nums">{month.chill}</span>
-      {layout === 'row' && <span className="ml-1 font-normal text-slate-400" aria-hidden="true">›</span>}
-    </Link>
-  );
-  const nudge = isNew && plans.length === 0 && (
+function Greeting({ name, now, xp, noXpYet, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
+  const nudge = noXpYet && plans.length === 0 && (
     <p className="mt-1 text-[13px] text-slate-600">
       ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
     </p>
@@ -167,12 +154,9 @@ function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps &
   if (layout === 'row') {
     return (
       <div className="min-w-0">
-        <p className="text-xs text-slate-500">{dayPart(now)}</p>
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-[22px] sm:text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
-          {counter}
-        </div>
-        {nudge}
+        {/* Phones and upright iPads start with the feed (owner 2026-11-05); the heading stays for screen readers */}
+        <h1 className="sr-only">สวัสดี {name}</h1>
+        {nudge && <div className="mb-4">{nudge}</div>}
       </div>
     );
   }
@@ -181,7 +165,6 @@ function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps &
       <p className="text-xs text-slate-500">{dayPart(now)}</p>
       {/* One <h1> per page: the phone copy is the h1 */}
       <p role="heading" aria-level={1} className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</p>
-      <div className="mt-2">{counter}</div>
       {nudge || (
         // XP only: the way to the rewards is "ของรางวัล" in ของฉัน below
         <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
@@ -242,7 +225,7 @@ function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare:
         <button
           type="button"
           onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
-          className="shrink-0 font-semibold text-[#E11D48] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
+          className="shrink-0 font-semibold text-[#BE123C] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
         >
           แชร์เลย ›
         </button>
@@ -253,10 +236,10 @@ function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare:
   if (!next) return null;
   return (
     <Link href={eventHref(next)} className={`${LINE} lg:hidden group`}>
-      <CalendarDays className="w-4 h-4 shrink-0 text-[#D04A1B]" aria-hidden="true" />
-      <span className="shrink-0 font-semibold text-[#D04A1B] tabular-nums whitespace-nowrap">{awayLabel(next, now) ?? dayLine(next)}</span>
+      <CalendarDays className="w-4 h-4 shrink-0 text-[#C2410C]" aria-hidden="true" />
+      <span className="shrink-0 font-semibold text-[#C2410C] tabular-nums whitespace-nowrap">{awayLabel(next, now) ?? dayLine(next)}</span>
       <span className="min-w-0 flex-1 truncate text-slate-800 group-hover:underline underline-offset-4">{plainTitle(next.title)}</span>
-      <span className="shrink-0 text-slate-400" aria-hidden="true">›</span>
+      <span className="shrink-0 text-slate-500" aria-hidden="true">›</span>
     </Link>
   );
 }
@@ -305,8 +288,8 @@ function PlanRow({ event, countdown, hostedIds, savedIds, fairWhen }: MemberLive
         <img src={event.image || FALLBACK_IMAGE} alt="" className="w-14 h-14 shrink-0 rounded-xl object-cover bg-slate-100" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 min-w-0">
-            {countdown && <span className="shrink-0 rounded-full bg-[#FFF4EE] px-2 py-0.5 text-[11px] font-semibold text-[#D04A1B] tabular-nums whitespace-nowrap">{countdown}</span>}
-            <span className={`text-xs truncate ${countdown ? 'text-slate-500' : isFair ? 'font-semibold text-[#2B527A]' : 'font-semibold text-[#D04A1B]'}`}>{when}</span>
+            {countdown && <span className="shrink-0 rounded-full bg-[#FFF4EE] px-2 py-0.5 text-[11px] font-semibold text-[#C2410C] tabular-nums whitespace-nowrap">{countdown}</span>}
+            <span className={`text-xs truncate ${countdown ? 'text-slate-500' : isFair ? 'font-semibold text-[#2B527A]' : 'font-semibold text-[#C2410C]'}`}>{when}</span>
           </span>
           <span className="block mt-0.5 text-sm font-semibold text-slate-900 leading-snug truncate group-hover:underline">{event.title}</span>
           {isFair ? (
@@ -398,12 +381,12 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     );
   }
   // Phones have no side column: the campaign comes between the posts, after the first cards, never on top
-  if (props.campaign && props.campaignMember) {
+  if (props.campaigns && props.campaignMemberOf && props.onOpenCampaign) {
     cards[PHONE_CAMPAIGN_SLOT] = (
       <>
         {cards[PHONE_CAMPAIGN_SLOT]}
         <section className="lg:hidden py-5 border-b border-slate-200 empty:hidden">
-          <CampaignStrip campaign={props.campaign} member={props.campaignMember} />
+          <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} />
         </section>
       </>
     );
@@ -418,9 +401,9 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
       <div className="flex items-center gap-3">
         {event.hostAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.hostAvatar} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0" />
+          <img src={avatarImage(event.hostAvatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100 shrink-0" />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-[#FFF4EE] text-[#D04A1B] text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(event.hostName)}</span>
+          <span className="w-10 h-10 rounded-full bg-[#FFF4EE] text-[#C2410C] text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(event.hostName)}</span>
         )}
         <div className="min-w-0">
           <p className="text-sm text-slate-900 truncate">
@@ -439,7 +422,7 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
           </span>
         </Link>
         <div className="p-4">
-          <p className="text-xs font-semibold text-[#D04A1B]">{dayLine(event)}</p>
+          <p className="text-xs font-semibold text-[#C2410C]">{dayLine(event)}</p>
           <Link href={eventHref(event)} className="mt-0.5 block text-base font-bold text-slate-900 leading-snug hover:underline">{event.title}</Link>
           <div className="mt-3 flex items-center gap-2">
             <SeatDots event={event} />
@@ -470,7 +453,7 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
           เพราะคุณชอบ
           {liked.map((cat) => (
-            <Link key={cat.id} href={`/community?category=${cat.id}`} className="h-6 px-2 inline-flex items-center rounded-full bg-[#FFF4EE] text-[#D04A1B] font-semibold hover:opacity-80">
+            <Link key={cat.id} href={`/community?category=${cat.id}`} className="h-6 px-2 inline-flex items-center rounded-full bg-[#FFF4EE] text-[#C2410C] font-semibold hover:opacity-80">
               {cat.name}
             </Link>
           ))}
@@ -494,14 +477,13 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
 }
 
 /**
- * "ของฉัน": the four places a member goes back to, all outside this page. Own and saved moments are not here;
+ * "ของฉัน": the three places a member goes back to, all outside this page. Own and saved moments are not here;
  * they are views of the feed, in its ··· menu.
  */
-function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) {
+function Shortcuts({ savedCount, redeemable }: MemberLiveHomeProps) {
   const items: { href: string; label: string; Icon: typeof Gift; box: string; count?: number }[] = [
     // Each lands on its own section of My Hub, which scrolls there once the section has loaded
     { href: '/myhub#my-schedule', label: 'ตารางของฉัน', Icon: CalendarDays, box: 'bg-slate-100 text-slate-700' },
-    { href: PASSPORT_HREF, label: 'พาสปอร์ตของฉัน', Icon: Stamp, box: 'bg-[#F5F3FF] text-[#7C3AED]', count: stampCount },
     { href: '/myhub#my-saved', label: 'กิจกรรมที่บันทึก', Icon: Bookmark, box: 'bg-slate-100 text-slate-700', count: savedCount },
     { href: '/rewards', label: 'ของรางวัล', Icon: Gift, box: 'bg-amber-50 text-amber-600', count: redeemable },
   ];
@@ -516,7 +498,7 @@ function Shortcuts({ savedCount, redeemable, stampCount }: MemberLiveHomeProps) 
                 <Icon className="w-3.5 h-3.5" />
               </span>
               <span className="flex-1 min-w-0 truncate">{label}</span>
-              {count !== undefined && count > 0 && <span className="text-xs font-medium text-slate-400 tabular-nums">{count}</span>}
+              {count !== undefined && count > 0 && <span className="text-xs font-medium text-slate-500 tabular-nums">{count}</span>}
             </Link>
           </li>
         ))}
@@ -626,7 +608,7 @@ const FOLD_TILES = 6;
 type FoldKey = 'meetup' | 'challenge' | 'fair' | 'spot';
 /** Each pillar's colors (DESIGN_SYSTEM.md): the line's tint, its hover, the count badge and the hook text */
 const FOLD_TONE: Record<FoldKey, { bg: string; hover: string; badge: string; hook: string }> = {
-  meetup: { bg: 'bg-[#FFF4EE]', hover: 'hover:bg-[#FFE8DC]', badge: 'bg-[#F26430]', hook: 'text-[#D04A1B]' },
+  meetup: { bg: 'bg-[#FFF4EE]', hover: 'hover:bg-[#FFE8DC]', badge: 'bg-[#F26430]', hook: 'text-[#C2410C]' },
   challenge: { bg: 'bg-[#F5F3FF]', hover: 'hover:bg-[#EDE9FE]', badge: 'bg-[#7C3AED]', hook: 'text-[#5B21B6]' },
   fair: { bg: 'bg-[#EEF3F8]', hover: 'hover:bg-[#E1EAF3]', badge: 'bg-[#2B527A]', hook: 'text-[#1F3D5C]' },
   spot: { bg: 'bg-[#EEF5F0]', hover: 'hover:bg-[#E0EEE4]', badge: 'bg-[#4A7C59]', hook: 'text-[#2D5A3C]' },

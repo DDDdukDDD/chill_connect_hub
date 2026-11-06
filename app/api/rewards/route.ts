@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { RewardError, redeemReward, rewardsOf } from '@/lib/social/rewardsLedger';
+import { redeemRefusal } from '@/lib/campaigns/store';
 
 const EMPTY = { points: { total: 0, fromVisits: 0, fromQuests: 0, earned: 0, spent: 0, balance: 0 }, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [], redemptions: [] };
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const rewardId = typeof body.rewardId === 'string' ? body.rewardId : '';
+    const refusal = await redeemRefusal(member, rewardId);
+    if (refusal) return NextResponse.json({ success: false, message: refusal.message }, { status: refusal.status });
     return NextResponse.json({ success: true, ...(await redeemReward(member.id, rewardId)) }, { headers });
   } catch (error) {
     if (error instanceof RewardError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });

@@ -145,7 +145,7 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   try {
@@ -184,9 +184,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'content.edit');
+  const denied = await requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
 
   try {
     const body: unknown = await request.json();

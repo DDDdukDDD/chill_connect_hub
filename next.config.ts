@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { OPTIMIZED_REMOTE_IMAGES } from './lib/optimizedImage';
+import { SEARCH_INDEXING_ON } from './lib/site';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -38,10 +39,18 @@ const nextConfig: NextConfig = {
   // No "X-Powered-By: Next.js": it tells attackers the framework for free
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // Every page, image and file stays out of search results until the site is opened (lib/site.ts)
+      ...(SEARCH_INDEXING_ON ? [] : [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }]),
+      // The service worker must never be served stale, or a fix to it would not reach installed apps
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] },
+    ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],
+    // 75 for cards, 85 for a moment's own photos (components/moments/MomentPhotos.tsx)
+    qualities: [75, 85],
     // Organisers' posters resized for cards (lib/optimizedImage.ts); only these hosts, never any URL
     remotePatterns: OPTIMIZED_REMOTE_IMAGES.map((p) => ({ protocol: 'https' as const, hostname: p.hostname, pathname: p.pathname })),
   },

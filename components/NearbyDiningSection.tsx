@@ -99,7 +99,7 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, 
           );
         })}
       </ul>
-      {fromGoogle && <p className="text-[11px] text-slate-400">ข้อมูลร้านและคะแนน: Google Maps</p>}
+      {fromGoogle && <p className="text-[11px] text-slate-500">ข้อมูลร้านและคะแนน: Google Maps</p>}
     </section>
   );
 };

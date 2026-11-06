@@ -31,7 +31,7 @@ interface LocationPinPickerProps {
 
 const THAILAND_BOUNDS: [[number, number], [number, number]] = [[5.6, 97.3], [20.5, 105.7]];
 const PIN_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 32" width="30" height="40"><path d="M12 0C5.4 0 0 5.3 0 11.8 0 20.7 12 32 12 32s12-11.3 12-20.2C24 5.3 18.6 0 12 0z" fill="#2563EB"/><circle cx="12" cy="12" r="4.5" fill="#fff"/></svg>';
-const inputClass = 'w-full h-12 px-4 rounded-2xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/25 focus:border-[#2563EB]';
+const inputClass = 'w-full h-12 px-4 rounded-2xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/25 focus:border-[#2563EB]';
 const quietButton = 'inline-flex items-center justify-center gap-1.5 min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed';
 
 export function LocationPinPicker({ pin, onPinChange, mapUrl, onMapUrlChange, searchText, error }: LocationPinPickerProps) {
@@ -192,7 +192,7 @@ export function LocationPinPicker({ pin, onPinChange, mapUrl, onMapUrlChange, se
 
       <div className={`relative rounded-2xl overflow-hidden border ${error ? 'border-rose-400' : 'border-slate-200'}`}>
         <div ref={containerRef} role="application" aria-label="แผนที่สำหรับปักหมุด แตะเพื่อปักหมุด" className="h-56 w-full bg-slate-100 z-0" />
-        {!mapReady && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-slate-400" aria-hidden="true" /></div>}
+        {!mapReady && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-slate-500" aria-hidden="true" /></div>}
       </div>
 
       <p aria-live="polite" className={`flex items-start gap-1.5 text-xs font-medium leading-relaxed ${error ? 'text-rose-700' : note?.tone === 'warn' ? 'text-amber-700' : 'text-slate-600'}`} {...(error ? { 'data-field-error': true } : {})}>

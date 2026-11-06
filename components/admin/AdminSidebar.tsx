@@ -17,7 +17,6 @@ import {
   Bot,
   Gauge,
   Grid3x3,
-  GalleryHorizontal,
   Home,
   Image as ImageIcon,
   ShieldCheck,
@@ -25,6 +24,7 @@ import {
   UserRound,
   Megaphone,
   BadgeDollarSign,
+  Gift,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/permissions';
 import { AdminSessionStatus } from './AdminSessionStatus';
@@ -38,6 +38,7 @@ export type AdminModuleId =
   | 'spots'
   | 'quests'
   | 'campaigns'
+  | 'draws'
   | 'sponsored'
   | 'moments'
   | 'reports'
@@ -46,7 +47,6 @@ export type AdminModuleId =
   | 'taxonomy'
   | 'provinces'
   | 'venues'
-  | 'rails'
   | 'members'
   | 'staff'
   | 'audit'
@@ -89,6 +89,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'spots', label: 'พิกัดเที่ยว 77 จังหวัด', icon: Leaf, pillarColor: '#4A7C59' },
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
       { id: 'campaigns', label: 'แคมเปญ', icon: Megaphone },
+      { id: 'draws', label: 'จับรางวัล', icon: Gift },
       { id: 'sponsored', label: 'การ์ดสนับสนุน', icon: BadgeDollarSign },
       { id: 'moments', label: 'โมเมนต์', icon: Camera },
     ],
@@ -106,7 +107,6 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'taxonomy', label: 'หมวดหมู่ & แท็ก', icon: FolderTree },
       { id: 'provinces', label: '77 จังหวัด & โซน', icon: MapPin },
       { id: 'venues', label: 'สถานที่จัดงาน', icon: Building2 },
-      { id: 'rails', label: 'การ์ดแนะนำ (rail)', icon: GalleryHorizontal },
     ],
   },
   {
@@ -121,7 +121,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     groupLabel: 'ระบบ',
     modules: [
       { id: 'media', label: 'คลังรูปภาพ', icon: ImageIcon },
-      { id: 'cache', label: 'Cache & ประสิทธิภาพ', icon: Gauge },
+      { id: 'cache', label: 'แคชและประสิทธิภาพ', icon: Gauge },
     ],
   },
 ];
@@ -135,15 +135,16 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   spots: 'content.view',
   quests: 'content.view',
   campaigns: 'content.view',
+  // Winners' contact details are member data; the buttons also need content.edit
+  draws: 'members.manage',
   sponsored: 'content.view',
-  moments: 'content.view',
-  reports: 'content.view',
+  moments: 'community.review',
+  reports: 'community.review',
   scraper: 'content.view',
   coverage: 'content.view',
   taxonomy: 'content.view',
   provinces: 'content.view',
   venues: 'content.view',
-  rails: 'content.view',
   members: 'members.manage',
   staff: 'staff.manage',
   audit: 'audit.view',
@@ -164,6 +165,7 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   spots: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   quests: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าแรก' }],
+  draws: [{ permission: 'content.edit', what: 'สุ่ม ประกาศผล และบันทึกการส่งมอบรางวัล' }],
   sponsored: [{ permission: 'content.edit', what: 'เพิ่ม แก้ไข และลบการ์ดสนับสนุน' }],
   moments: [{ permission: 'community.review', what: 'ซ่อนและตรวจโมเมนต์และหลักฐาน' }],
   scraper: [{ permission: 'sources.run', what: 'จัดการแหล่งข้อมูลและรันการดึงข้อมูล' }],
@@ -171,7 +173,6 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   taxonomy: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดหมวดหมู่' }],
   provinces: [{ permission: 'master.edit', what: 'แก้จังหวัด รูป และโซน' }],
   venues: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดสถานที่จัดงาน' }],
-  rails: [{ permission: 'master.edit', what: 'แก้การ์ดแนะนำ' }],
   members: [{ permission: 'members.manage', what: 'ระงับ แบน และอนุมัติผู้จัด' }, { permission: 'staff.manage', what: 'ลบบัญชีสมาชิก' }],
   staff: [{ permission: 'staff.manage', what: 'เพิ่มทีมงาน เปลี่ยน role และปิดบัญชี' }],
   audit: [],
@@ -184,9 +185,18 @@ interface AdminSidebarProps {
   onModuleChange: (module: AdminModuleId) => void;
 }
 
-// Real review-queue counts (refreshed when the active module changes)
+export const ADMIN_QUEUE_CHANGED = 'cch:admin-queue-changed';
+
+// Real review-queue counts (refreshed when the active module changes or staff decide something)
 function useQueueCounts(activeModule: AdminModuleId) {
   const [counts, setCounts] = useState<Partial<Record<AdminModuleId, number>>>({});
+  // A decision in the review queue changes these numbers without leaving the screen
+  const [changes, setChanges] = useState(0);
+  useEffect(() => {
+    const onChanged = () => setChanges((count) => count + 1);
+    window.addEventListener(ADMIN_QUEUE_CHANGED, onChanged);
+    return () => window.removeEventListener(ADMIN_QUEUE_CHANGED, onChanged);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +215,7 @@ function useQueueCounts(activeModule: AdminModuleId) {
     return () => {
       cancelled = true;
     };
-  }, [activeModule]);
+  }, [activeModule, changes]);
 
   return counts;
 }
@@ -223,7 +233,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
           </div>
           <div>
             <p className="text-sm font-bold text-slate-800 leading-tight">Chillwaa</p>
-            <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Admin Console</p>
+            <p className="text-[11px] text-slate-500 font-semibold tracking-wider uppercase">Admin Console</p>
           </div>
         </div>
       </div>
@@ -235,7 +245,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
           return (
             <div key={group.groupLabel ?? 'main'}>
               {group.groupLabel && (
-                <p className="px-2 mb-1.5 text-[11px] font-semibold text-slate-400">{group.groupLabel}</p>
+                <p className="px-2 mb-1.5 text-[11px] font-semibold text-slate-500">{group.groupLabel}</p>
               )}
               <ul className="space-y-0.5">
                 {modules.map((mod) => {
@@ -252,13 +262,13 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
                           isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                         }`}
                       >
-                        <Icon size={15} className={`shrink-0 ${isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                        <Icon size={15} className={`shrink-0 ${isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-600'}`} />
                         <span className={`flex-1 min-w-0 truncate text-[13px] ${isActive ? 'font-bold' : 'font-semibold'}`}>{mod.label}</span>
                         {mod.pillarColor && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: mod.pillarColor }} />}
                         {count > 0 && (
                           <span
                             title="รายการรอตรวจ"
-                            className="min-w-[20px] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white shrink-0 tabular-nums"
+                            className="min-w-[20px] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-amber-950 shrink-0 tabular-nums"
                           >
                             {count}
                           </span>
@@ -278,7 +288,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
         <div className="mt-1">
           <Link
             href="/"
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors text-[12px] font-medium"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors text-[12px] font-medium"
           >
             <Home size={12} />
             <span>กลับหน้าหลัก</span>

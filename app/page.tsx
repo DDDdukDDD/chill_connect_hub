@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { connection } from 'next/server';
 import { discoverCounts, listPublicQuests, listUpcomingEvents } from '@/lib/publicContent';
 import { ALL_PROVINCES } from '@/lib/discoverMatch';
-import { liveCampaign } from '@/lib/campaigns/store';
+import { homeCampaigns } from '@/lib/campaigns/store';
 import { HOME_CARD_WIDTH, memberHomeData, sizedImage } from '@/lib/homeData';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { homeEvents } from '@/lib/homeFairs';
@@ -36,9 +36,7 @@ export default async function HomePage() {
   );
   // The member home's cards show photos as sent (the visitor tiles size their own): resized here for members
   const shownEvents = member ? listed.map(sizedImage) : listed;
-  // The prize sits in a box at most 144 px wide; the file is a 200 KB PNG
-  const campaign = await liveCampaign({ home: true });
-  const shownCampaign = campaign?.prizeImage ? { ...campaign, prizeImage: optimizedImage(campaign.prizeImage, 384) } : campaign;
+  const campaigns = await homeCampaigns();
   const shownQuests = member
     ? quests.map((quest) => ({ ...sizedImage(quest), badgeCoverImg: quest.badgeCoverImg && optimizedImage(quest.badgeCoverImg, HOME_CARD_WIDTH) }))
     : quests;
@@ -46,7 +44,7 @@ export default async function HomePage() {
     <HomeView
       initialEvents={shownEvents}
       initialQuests={shownQuests}
-      campaign={shownCampaign}
+      campaigns={campaigns}
       signedIn={Boolean(member)}
       // What GET /api/auth/member would answer, so the page knows who is here as it hydrates
       session={{ member: member ? toPublicMember(member) : null, providers: providerStatus() }}

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { notifyDecision } from '@/lib/social/notifications';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeMeetAgainOf } from '@/lib/social/meetAgain';
 import { removeWaitlistOf } from '@/lib/social/waitlist';
@@ -7,6 +8,8 @@ import { removeReviewsBy } from '@/lib/social/reviews';
 import { removeVisitsBy } from '@/lib/social/visits';
 import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
 import { removeQuestJoinsBy } from '@/lib/social/questJoins';
+import { removeCampaignEntriesBy } from '@/lib/campaigns/members';
+import { removeWinnerEntriesBy } from '@/lib/campaigns/winners';
 import { removeVouchersBy } from '@/lib/social/questVouchers';
 import { removeFinishesBy } from '@/lib/social/questFinishes';
 import { removeContentReportsBy } from '@/lib/social/contentReports';
@@ -95,7 +98,7 @@ async function overview() {
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage');
+  const denied = await requireAdminApiAccess(request, 'members.manage');
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
 
@@ -109,7 +112,7 @@ export async function GET(request: Request) {
     const member = await memberRepository.findById(exportId);
     if (!member) return NextResponse.json({ success: false, error: 'ไม่พบสมาชิก' }, { status: 404 });
     const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
-    recordAudit(getAdminActor(request), 'member.export', `ดาวน์โหลดข้อมูลของสมาชิก (คำขอข้อมูลส่วนบุคคล)`, { type: 'member', id: member.id });
+    recordAudit(await getAdminActor(request), 'member.export', `ดาวน์โหลดข้อมูลของสมาชิก (คำขอข้อมูลส่วนบุคคล)`, { type: 'member', id: member.id });
     return NextResponse.json(
       {
         success: true,
@@ -159,9 +162,9 @@ export async function GET(request: Request) {
 // | clear_flags {id, note?} (flags and reports looked at, nothing wrong)
 // | host_decision {id, decision: approve|reject, note? (required to reject)}
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage');
+  const denied = await requireAdminApiAccess(request, 'members.manage');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   const body = await request.json().catch(() => ({}));
   const member = typeof body.id === 'string' ? await memberRepository.findById(body.id) : null;
   if (!member) return NextResponse.json({ success: false, error: 'ไม่พบสมาชิก' }, { status: 404 });
@@ -209,6 +212,7 @@ export async function POST(request: Request) {
     const updated = await memberRepository.update(member.id, {
       hostApplication: { ...application, status: approve ? 'approved' : 'rejected', reviewedAt: new Date().toISOString(), reviewedBy: actor?.name, note: note || undefined },
     });
+    await notifyDecision(member.id, approve ? 'approved' : 'rejected', 'คำขอเปิดกิจกรรมของคุณ', '/profile/settings', approve ? undefined : note || undefined);
     recordAudit(actor, approve ? 'member.host_approve' : 'member.host_reject', `${approve ? 'อนุมัติ' : 'ไม่อนุมัติ'}คำขอเป็นโฮสต์ของ ${member.displayName}${note ? ` · ${note}` : ''}`, { type: 'member', id: member.id });
     return NextResponse.json({ success: true, member: toAdminMember(updated) });
   }
@@ -225,6 +229,8 @@ export async function POST(request: Request) {
     await removeVisitsBy(member.id);
     await removeRedemptionsBy(member.id);
     await removeQuestJoinsBy(member.id);
+    await removeCampaignEntriesBy(member.id);
+    await removeWinnerEntriesBy(member.id);
     await removeVouchersBy(member.id);
   await removeFinishesBy(member.id);
     await removeContentReportsBy(member.id);

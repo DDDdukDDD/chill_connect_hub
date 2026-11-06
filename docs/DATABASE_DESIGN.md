@@ -1,6 +1,6 @@
-# Database Design — Chill & Connect Hub
+# Database Design — Chillwaa
 
-Status: **approved by owner** (2026-10-25, decisions in §9). Nothing is migrated yet.
+Status: **built** (design approved by owner 2026-10-25, decisions in §9; live on Postgres since 2026-11-02). This file explains why the design is what it is, and "today" below means 2026-10-25, when the data was still in JSON files. For the tables as they are now, read `db/migrations/`: for example, stories were removed in `0014_remove_stories.sql`.
 Target: Supabase Postgres 17 (Singapore), used as plain Postgres + Realtime. Our own member/staff auth stays; images stay in Vercel Blob.
 
 Goals, in order: **security**, **performance**, **scalability** — while staying simple enough for a prototype team.
@@ -193,7 +193,7 @@ Redeem = one transaction: lock member_stats row → check balance → `stock_cou
 
 - **moment_images** `PK (moment_id, position)` · `url` (max 10, by `CHECK position < 10`)
 - **moment_likes** / **moment_saves** `PK (moment_id, member_id)`
-- **moment_comments** `id` · `moment_id FK` · `author_id FK?` · `text ≤ 300` · `hidden`
+- **moment_comments** `id` · `moment_id FK` · `author_id FK?` · `text ≤ 300` · `hidden` · `parent_id FK?` (0026: replies, one level) · likes in **moment_comment_likes** (0026)
 - **moment_reports** `PK (moment_id, member_id)` · `reason` (0013). Stories and story_views were dropped in 0014 (owner 2026-11-02, both empty).
 - **Added in 0013/0015:** `moments.target_type` + `target_ref` (the app's own target, kept even when it no longer resolves to a row), `author_badge`, `evidence_reason`, `evidence_rejected_at`, `edited_at`, `video_url`, `video_duration_s`; `moment_comments.slug` (the app's comment id) and `author_avatar` (samples).
 

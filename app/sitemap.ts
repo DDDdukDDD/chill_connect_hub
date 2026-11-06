@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { db } from '@/lib/db';
 import { isEventEnded } from '@/lib/dateUtils';
-import { absoluteUrl } from '@/lib/site';
+import { absoluteUrl, SEARCH_INDEXING_ON } from '@/lib/site';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { listMoments, type FeedItem } from '@/lib/moments/service';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
@@ -12,6 +12,8 @@ export const revalidate = 3600;
 
 /** Public pages only. Signed-in pages (my hub, profile, onboarding) and auth screens stay out. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Nothing to offer, and no database reads, until the site is opened to search engines
+  if (!SEARCH_INDEXING_ON) return [];
   // lastModified only where a real date is known: a date that is always "now" teaches search engines to ignore it
   const page = (path: string, changeFrequency: 'daily' | 'weekly' | 'monthly', priority: number, lastModified?: Date): MetadataRoute.Sitemap[number] => ({
     url: absoluteUrl(path),
@@ -24,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page('/', 'daily', 1),
     page('/community', 'daily', 0.9),
     page('/challenges', 'daily', 0.9),
+    page('/campaigns/results', 'weekly', 0.5),
     page('/events', 'daily', 0.85),
     page('/spots', 'weekly', 0.85),
     page('/moments', 'daily', 0.7),

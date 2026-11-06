@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ChevronDown, X, Zap } from 'lucide-react';
+import { ArrowRight, ChevronDown, X, Zap } from 'lucide-react';
 import { ALL_PROVINCES, ONLINE, discoverHref, type DiscoverCounts, type DiscoverKind } from '@/lib/discoverMatch';
 import { useDiscoverCounts } from '@/lib/useDiscoverCounts';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
@@ -16,7 +16,7 @@ const KINDS: { kind: DiscoverKind; label: string; dot: string; marker: string }[
 
 /** A picked filter wears its pillar's soft tint, border and dark text (DESIGN_SYSTEM.md, filters inside a pillar page) */
 const PICKED: Record<DiscoverKind, string> = {
-  meetups: 'bg-[#FFF4EE] border-[#F26430] text-[#D04A1B]',
+  meetups: 'bg-[#FFF4EE] border-[#F26430] text-[#C2410C]',
   fairs: 'bg-[#EEF4FA] border-[#2B527A] text-[#1F3D5C]',
   spots: 'bg-[#EBF3ED] border-[#4A7C59] text-[#2D5A3C]',
 };
@@ -140,7 +140,7 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
                 />
                 <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} aria-hidden="true" />
                 <span>{item.label}</span>
-                {count !== undefined && <span className={`text-xs font-medium tabular-nums ${isHere ? 'text-slate-600' : 'text-slate-400'}`}>{count.toLocaleString()}</span>}
+                {count !== undefined && <span className={`text-xs font-medium tabular-nums ${isHere ? 'text-slate-600' : 'text-slate-500'}`}>{count.toLocaleString()}</span>}
               </Link>
             );
           })}
@@ -171,8 +171,8 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
               <span>
                 ชาเลนจ์ที่ตรงกับ “{word}” {counts!.challenges} อัน
               </span>
-              <Link href={`/challenges?q=${encodeURIComponent(word)}`} className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
-                ดูชาเลนจ์ →
+              <Link href={`/challenges?q=${encodeURIComponent(word)}`} className="inline-flex items-center gap-1 font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+                ดูชาเลนจ์<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
             </span>
           )}
@@ -181,18 +181,20 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
 
       {lead}
 
-      {/* Phones: how many and how they are shown, with the create button, on one short row */}
-      <div className="sm:hidden flex items-center justify-between gap-3">
-        {summary && <div className="min-w-0 text-sm text-slate-500 font-medium truncate">{summary}</div>}
-        <div className="shrink-0 flex items-center gap-2">
-          {tools}
-          {action}
-        </div>
-      </div>
+      {summary && <div className="sm:hidden min-w-0 text-sm text-slate-500 font-medium truncate">{summary}</div>}
 
       {/* Filters on the left; how many and how they are shown on the right (wide screens) */}
       <div className="flex items-start gap-4">
-        <div className="flex-1 min-w-0">{children}</div>
+        {/* Phones: the create button and how they are shown start the row of filters that scrolls, so the first tiles sit higher */}
+        <div className="flex-1 min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:overflow-x-auto no-scrollbar max-sm:-mx-4 max-sm:px-4 max-sm:[&>div]:contents max-sm:[&_button]:shrink-0">
+          {(action || tools) && (
+            <div className="sm:hidden">
+              {action}
+              {tools}
+            </div>
+          )}
+          {children}
+        </div>
         {(summary || tools) && (
           <div className="hidden sm:flex shrink-0 items-center gap-3 min-h-9">
             {summary && <div className="text-sm text-slate-500 font-medium whitespace-nowrap">{summary}</div>}

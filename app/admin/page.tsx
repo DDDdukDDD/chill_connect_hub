@@ -10,6 +10,7 @@ import { ProvincesManagerView } from '@/components/admin/ProvincesManagerView';
 import { VenuesManagerView } from '@/components/admin/VenuesManagerView';
 import { QuestsManagerView } from '@/components/admin/QuestsManagerView';
 import { CampaignsManagerView } from '@/components/admin/CampaignsManagerView';
+import { CampaignDrawsView } from '@/components/admin/CampaignDrawsView';
 import { SponsoredSlotsView } from '@/components/admin/SponsoredSlotsView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
@@ -22,7 +23,6 @@ import { AuditLogView } from '@/components/admin/AuditLogView';
 import { AdminEmptyState } from '@/components/admin/AdminUI';
 import { SpotsManagerView } from '@/components/admin/SpotsManagerView';
 import { CoverageView } from '@/components/admin/CoverageView';
-import { FeaturedRailsView } from '@/components/admin/FeaturedRailsView';
 import { MembersManagerView } from '@/components/admin/MembersManagerView';
 import { MomentsManagerView } from '@/components/admin/MomentsManagerView';
 import { ReportsManagerView } from '@/components/admin/ReportsManagerView';
@@ -125,8 +125,6 @@ function AdminConsole() {
         return <ProvincesManagerView />;
       case 'venues':
         return <VenuesManagerView />;
-      case 'rails':
-        return <FeaturedRailsView />;
       case 'spots':
         return (
           <SpotsManagerView
@@ -146,6 +144,8 @@ function AdminConsole() {
         return <QuestsManagerView key={key} initialQuery={moduleFilters.q} />;
       case 'campaigns':
         return <CampaignsManagerView />;
+      case 'draws':
+        return <CampaignDrawsView />;
       case 'sponsored':
         return <SponsoredSlotsView />;
       case 'moments':

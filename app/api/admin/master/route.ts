@@ -3,21 +3,22 @@ import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { COLLECTION_LABELS } from '@/lib/masterData';
 import {
-  deleteMasterEntry, getMasterData, isMasterCollection, reorderMasterEntries, saveMasterEntry, setMasterEntryActive,
+  deleteMasterEntry, getMasterData, isMasterCollection, refreshMasterData, reorderMasterEntries, saveMasterEntry, setMasterEntryActive, storeMasterData,
 } from '@/lib/masterDataStore';
 
 // Every master data collection, including inactive entries
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
+  await refreshMasterData(true);
   return NextResponse.json({ success: true, ...getMasterData() }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // Actions: save {collection, item} | set_active {collection, id, active} | delete {collection, id} | reorder {collection, ids}
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'master.edit');
+  const denied = await requireAdminApiAccess(request, 'master.edit');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
 
   let body: Record<string, unknown>;
   try {
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
   }
+  await refreshMasterData(true);
   const { action, collection } = body;
   if (!isMasterCollection(collection)) {
     return NextResponse.json({ success: false, error: 'collection ไม่ถูกต้อง' }, { status: 400 });
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
     if (action === 'save') {
       if (!body.item || typeof body.item !== 'object') return NextResponse.json({ success: false, error: 'ไม่มีข้อมูลรายการ' }, { status: 400 });
       const { entry, created } = saveMasterEntry(collection, body.item as Record<string, unknown>);
+      await storeMasterData();
       const name = 'displayName' in entry ? entry.displayName : entry.name;
       recordAudit(actor, created ? 'master.create' : 'master.update', `${created ? 'เพิ่ม' : 'แก้ไข'}${label}: ${name}`, { type: collection, id: entry.id });
       return NextResponse.json({ success: true, entry });
@@ -42,18 +45,21 @@ export async function POST(request: Request) {
     if (action === 'set_active') {
       if (typeof body.id !== 'string' || typeof body.active !== 'boolean') return NextResponse.json({ success: false, error: 'ต้องระบุ id และ active' }, { status: 400 });
       const entry = setMasterEntryActive(collection, body.id, body.active);
+      await storeMasterData();
       recordAudit(actor, 'master.set_active', `${body.active ? 'เปิด' : 'ปิด'}ใช้งาน${label}: ${body.id}`, { type: collection, id: body.id });
       return NextResponse.json({ success: true, entry });
     }
     if (action === 'delete') {
       if (typeof body.id !== 'string') return NextResponse.json({ success: false, error: 'ต้องระบุ id' }, { status: 400 });
       deleteMasterEntry(collection, body.id);
+      await storeMasterData();
       recordAudit(actor, 'master.delete', `ลบ${label}: ${body.id}`, { type: collection, id: body.id });
       return NextResponse.json({ success: true });
     }
     if (action === 'reorder') {
       if (!Array.isArray(body.ids) || !body.ids.every((id) => typeof id === 'string')) return NextResponse.json({ success: false, error: 'ต้องระบุ ids' }, { status: 400 });
       reorderMasterEntries(collection, body.ids as string[]);
+      await storeMasterData();
       recordAudit(actor, 'master.reorder', `จัดลำดับ${label}ใหม่`, { type: collection });
       return NextResponse.json({ success: true });
     }

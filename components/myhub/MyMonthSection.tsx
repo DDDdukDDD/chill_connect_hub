@@ -6,11 +6,12 @@ import { Camera } from 'lucide-react';
 import { MomentComposer, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { nameInitial } from '@/lib/displayName';
 import { useMyMonth, type MonthItem } from '@/lib/useMyMonth';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=300&q=80';
-const FACE_COLORS = ['bg-amber-500', 'bg-pink-500', 'bg-sky-500'];
+const FACE_COLORS = ['bg-amber-700', 'bg-pink-700', 'bg-sky-700'];
 // Test-login ตี้ carry a "[ตัวอย่าง]" tag in the title (as MeetupTile)
 const cleanTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
@@ -24,13 +25,15 @@ const hrefOf = (item: MonthItem) =>
 /**
  * "เดือนนี้ของฉัน": what "ตี้ · ที่เที่ยว" on the home page counts. Meetups the member went to with the people
  * who came, places and fairs they visited, and a way to share a moment from any of them that has none yet.
+ * An empty month shows only to a member with no plan yet (showEmptyInvite): "ถัดไปของคุณ" already covers the rest.
  */
-export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; onToast: (message: string) => void }) {
+export function MyMonthSection({ isLoggedIn, onToast, showEmptyInvite }: { isLoggedIn: boolean; onToast: (message: string) => void; showEmptyInvite: boolean }) {
   const { isLoaded, month } = useMyMonth(isLoggedIn);
   const [composer, setComposer] = useState<MomentComposerInitial | null>(null);
   const [sharedKeys, setSharedKeys] = useState<string[]>([]);
 
   if (!isLoaded || !month) return null;
+  if (month.connect.length === 0 && month.chill.length === 0 && !showEmptyInvite) return null;
   const monthName = THAI_MONTHS[Number(month.month.slice(5, 7)) - 1];
   const keyOf = (item: MonthItem) => `${item.targetType}:${item.targetId}`;
   const hasMoment = (item: MonthItem) => item.hasMoment || sharedKeys.includes(keyOf(item));
@@ -39,7 +42,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
 
   const shareButton = (item: MonthItem) =>
     hasMoment(item) ? (
-      <span className="text-[11px] font-semibold text-[#E11D48] whitespace-nowrap">มีโมเมนต์แล้ว</span>
+      <span className="text-[11px] font-semibold text-[#BE123C] whitespace-nowrap">มีโมเมนต์แล้ว</span>
     ) : (
       <button
         type="button"
@@ -83,7 +86,7 @@ export function MyMonthSection({ isLoggedIn, onToast }: { isLoggedIn: boolean; o
                             {(item.people ?? []).map((p, i) =>
                               p.avatar ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img key={i} src={p.avatar} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
+                                <img key={i} src={avatarImage(p.avatar)} alt="" className="w-5 h-5 rounded-full ring-2 ring-white object-cover bg-slate-100" />
                               ) : (
                                 <span key={i} className={`w-5 h-5 rounded-full ring-2 ring-white ${FACE_COLORS[i % FACE_COLORS.length]} text-white text-[11px] font-bold flex items-center justify-center`}>
                                   {nameInitial(p.name)}

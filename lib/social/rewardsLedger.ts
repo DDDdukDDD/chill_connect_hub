@@ -24,7 +24,7 @@ export class RewardError extends Error {
 }
 
 /** A draw entry gets its own code from the redemption id; a voucher keeps the partner's code (null here) */
-const entryCodeOf = (redemptionId: string, rewardId: string): string | null =>
+export const entryCodeOf = (redemptionId: string, rewardId: string): string | null =>
   REWARD_SHOP_ITEMS.find((item) => item.id === rewardId)?.drawEntry ? `CC-${redemptionId.replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase()}` : null;
 
 /** How many times a reward was redeemed (prize entries, for campaign stats) */

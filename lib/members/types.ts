@@ -1,4 +1,4 @@
-import { tidyDisplayName } from '../displayName';
+import { tidyDisplayName, withoutSampleHandle } from '../displayName';
 import { trustOf } from './trust';
 
 /**
@@ -185,6 +185,8 @@ export interface PublicMember {
   onboarded: boolean;
   /** The province they picked in onboarding or settings (a master-data id, e.g. "กรุงเทพฯ"): the top bar's search starts there */
   province?: string;
+  /** Their own year of birth: the screens tell a bar ตี้'s age rule before they fill in anything. Only ever sent to themselves */
+  birthYear?: number;
   trust: MemberTrust;
 }
 
@@ -210,17 +212,20 @@ export interface MemberRepository {
   query(query: MemberQuery): Promise<{ items: Member[]; totalCount: number; counts: Record<MemberStatus | 'all', number> }>;
 }
 
+const sampleName = (name: string, member: Member) => (member.email?.endsWith('@sample.invalid') ? withoutSampleHandle(name) : name);
+
 export function toPublicMember(member: Member): PublicMember {
   return {
     id: member.id,
     // Names saved before the clean-up existed are tidied when shown
-    displayName: tidyDisplayName(member.displayName).trim() || member.displayName,
+    displayName: sampleName(tidyDisplayName(member.displayName).trim() || member.displayName, member),
     email: member.email,
     avatarUrl: member.avatarUrl,
     loginMethods: [...(member.passwordHash ? ['email' as const] : []), ...member.providers.map((p) => p.provider)],
     createdAt: member.createdAt,
     onboarded: Boolean(member.onboardedAt),
     province: member.preferences?.province || undefined,
+    birthYear: member.preferences?.birthYear,
     trust: trustOf(member),
   };
 }

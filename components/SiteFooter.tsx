@@ -31,7 +31,7 @@ export function SiteFooter({ className = '', children }: { className?: string; c
         ))}
       </nav>
       {children}
-      <p className="text-[11px] text-slate-400">© 2026 Chillwaa. All rights reserved.</p>
+      <p className="text-[11px] text-slate-500">© 2026 Chillwaa. All rights reserved.</p>
     </footer>
   );
 }

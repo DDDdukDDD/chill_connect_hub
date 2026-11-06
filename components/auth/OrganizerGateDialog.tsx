@@ -14,7 +14,7 @@ export function OrganizerGateDialog({ need, hasEmail, onClose }: { need: Organiz
       title={need === 'phone' ? 'ยืนยันเบอร์โทรก่อนนะ' : 'อีกนิดเดียว ก็สร้างได้แล้ว'}
       subtitle={
         need === 'phone'
-          ? 'คนที่ชวนเพื่อนออกไปเจอกันต้องยืนยันเบอร์โทร เพื่อให้ทุกคนมั่นใจว่าไปกับคนจริง เราไม่แสดงเบอร์นี้ให้ใครเห็น'
+          ? 'คนที่ชวนเพื่อนออกไปเจอกัน ต้องยืนยันเบอร์โทร เพื่อให้ทุกคนมั่นใจ ว่าไปกับคนจริง เราไม่แสดงเบอร์นี้ ให้ใครเห็น'
           : need === 'pledge'
             ? 'รับคำมั่นของคอมมูนิตี้ก่อน แล้วค่อยกลับมาสร้างได้เลย'
             : hasEmail
@@ -25,11 +25,15 @@ export function OrganizerGateDialog({ need, hasEmail, onClose }: { need: Organiz
       {need === 'phone' ? (
         <PhoneVerifyForm />
       ) : need === 'email' && !hasEmail ? (
-        <button type="button" className={dialogButton.primary} onClick={onClose}>เข้าใจแล้ว</button>
+        <div className="flex justify-center">
+          <button type="button" className={dialogButton.primary} onClick={onClose}>เข้าใจแล้ว</button>
+        </div>
       ) : (
-        <a href={need === 'pledge' ? '/onboarding?step=pledge' : '/profile/settings#trust'} className={dialogButton.primary}>
-          {need === 'pledge' ? 'อ่านคำมั่น' : 'ไปที่ตั้งค่าบัญชี'}
-        </a>
+        <div className="flex justify-center">
+          <a href={need === 'pledge' ? '/onboarding?step=pledge' : '/profile/settings#trust'} className={dialogButton.primary}>
+            {need === 'pledge' ? 'อ่านคำมั่น' : 'ไปที่ตั้งค่าบัญชี'}
+          </a>
+        </div>
       )}
     </DialogShell>
   );

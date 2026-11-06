@@ -163,6 +163,14 @@ export const activityActions = {
 /** Hearts toggled by older pages land in localStorage; this sends the difference to the account */
 async function pushLocalHearts() {
   if (!memberId || !state.isLoaded) return;
+  // Hearts on the home page and ตี้ pages stayed in this key until 2026-11-03 and never reached the account: bring them over once
+  const stranded = readList('favorite_events').filter((id) => !state.savedEventIds.includes(id));
+  try {
+    localStorage.removeItem('favorite_events');
+  } catch {
+    /* storage unavailable */
+  }
+  for (const id of stranded.slice(0, 50)) await activityActions.setSaved('event', id, true);
   for (const [kind, key, known] of [['event', MIRROR.events, state.savedEventIds], ['spot', MIRROR.spots, state.savedSpotIds]] as const) {
     const local = readList(key);
     const added = local.filter((id) => !known.includes(id));
@@ -173,13 +181,21 @@ async function pushLocalHearts() {
 }
 
 /** Mount once per page (the Navbar does): keeps the store in step with the signed-in member */
+const SYNC_FRESH_MS = 60_000;
+let lastSync: { id: string | null; at: number } = { id: null, at: 0 };
+
 export function useActivitySync() {
   const session = useMemberSession();
   const id = session.member?.id ?? null;
   useEffect(() => {
     if (!session.isLoaded) return;
     memberId = id;
-    void activityActions.refresh();
+    // The top bar is drawn anew on each page: a change here updates this state at once, so moving between pages need not ask again
+    const stillFresh = id && lastSync.id === id && state.isLoaded && Date.now() - lastSync.at < SYNC_FRESH_MS;
+    if (!stillFresh) {
+      lastSync = { id, at: Date.now() };
+      void activityActions.refresh();
+    }
     if (!id) return;
     const timer = setInterval(() => void pushLocalHearts(), 2500);
     return () => clearInterval(timer);

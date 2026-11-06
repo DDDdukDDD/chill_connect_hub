@@ -311,6 +311,26 @@ export async function followerCount(memberId: string): Promise<number> {
 }
 
 /**
+ * The member's own followers and following, for the lists on their profile. Only active members, and nobody either
+ * side has blocked, so the lists can come out shorter than the counts for a while.
+ */
+export async function followLists(member: Member) {
+  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
+  const following = new Set(member.followingIds ?? []);
+  const visible = items
+    .filter((m) => m.id !== member.id && !member.blockedIds?.includes(m.id) && !m.blockedIds?.includes(member.id))
+    .map((m) => ({
+      id: m.id,
+      name: tidyDisplayName(m.displayName).trim() || m.displayName,
+      avatar: m.avatarUrl ?? '',
+      isFollowing: following.has(m.id),
+      followsMe: Boolean(m.followingIds?.includes(member.id)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  return { followers: visible.filter((p) => p.followsMe), following: visible.filter((p) => p.isFollowing) };
+}
+
+/**
  * Members worth following: active, verified, with published moments, most recent posters first.
  * Leaves out the viewer, members they already follow or blocked, and members with open risk flags.
  */

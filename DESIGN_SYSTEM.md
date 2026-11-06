@@ -1,4 +1,4 @@
-# Design System: Chill & Connect Hub
+# Design System: Chillwaa
 
 The single source of truth for how the product looks and reads. It covers the public site and the admin console.
 
@@ -28,11 +28,11 @@ The product has five content areas. Each has one color, used only as described i
 
 | Pillar | Route | Data rule | Color | Soft tint | Main components |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Community meetups | `/community` | `eventType: 'community'`. Shows attendee count (`4/10 คน`) and recruitment status (`เปิดรับสมัคร` / `เต็มแล้ว`) | Sunset Amber `#F26430` (dark `#D04A1B`) | `#FFF4EE` | `EventGrid`, `CommunityCategoryRail` |
+| Community meetups | `/community` | `eventType: 'community'`. Shows attendee count (`4/10 คน`) and recruitment status (`เปิดรับสมัคร` / `เต็มแล้ว`) | Sunset Amber `#F26430` (dark `#C2410C`) | `#FFF4EE` | `EventGrid`, `CommunityCategoryRail` |
 | Fairs and expos | `/events` | `eventType: 'public_venue'`. **No** attendee count, **no** recruitment status, **no** bottom attendee bar. Shows venue, organizer and date range | Slate Blue `#2B527A` (dark `#1F3D5C`) | `#EEF4FA` | `EventGrid`, `FairCategoryRail` |
 | Lifestyle spots | `/spots` | `LifestyleSpotItem` plus the published catalog, 7 vibe categories, 77 provinces | Forest Green `#4A7C59` (dark `#2D5A3C`) | `#EBF3ED` | `SpotCard`, `SpotCategoryRail` |
 | Challenges | `/challenges` | Quests that give XP and badges | Royal Violet `#7C3AED` | `#F5F3FF` | quest cards |
-| Moments | `/moments` | Member photo posts | Rose Pink `#F43F5E` | `#FFF1F2` | `CommunityMomentsStrip`, `MomentsStoriesRail`, `JourneyMomentCard` |
+| Moments | `/moments` | Member photo posts | Rose Pink `#F43F5E` (dark `#BE123C`) | `#FFF1F2` | `MomentShowcase`, `HomeMomentFeed` |
 
 Filters in one section never affect another section.
 
@@ -64,7 +64,7 @@ Filters in one section never affect another section.
 
 - **Allowed on:** cards, category chips and rails, badges, icons inside a card, and section headings of that pillar.
 - **Never on:** action buttons, links, or screens that belong to no pillar (login, onboarding, account, dialogs shared across pillars).
-- **One exception (owner, 2026-10-19):** the create button at the top of a pillar page (ตั้งตี้เอง, เพิ่มอีเวนต์, แนะนำที่ใหม่, เสนอชาเลนจ์) is filled with its pillar colour, flat (no gradient), white text: meetups `bg-[#F26430] hover:bg-[#E2551F]` (the plain pillar orange, like สมัครฟรี; owner chose it over the darker `#D04A1B` although white on it is 3.2:1), fairs `bg-[#2B527A] hover:bg-[#1F3D5C]`, spots `bg-[#4A7C59] hover:bg-[#2D5A3C]`, challenges `bg-[#7C3AED] hover:bg-[#6D28D9]`. Every other button keeps the rules below.
+- **One exception (owner, 2026-10-19):** the create button at the top of a pillar page (ตั้งตี้เอง, เพิ่มอีเวนต์, แนะนำที่ใหม่, เสนอชาเลนจ์) is filled with its pillar colour, flat (no gradient), white text: meetups `bg-[#F26430] hover:bg-[#E2551F]` (the plain pillar orange, like สมัครฟรี; owner chose it over the darker pillar colour although white on it is 3.2:1), fairs `bg-[#2B527A] hover:bg-[#1F3D5C]`, spots `bg-[#4A7C59] hover:bg-[#2D5A3C]`, challenges `bg-[#7C3AED] hover:bg-[#6D28D9]`. Every other button keeps the rules below.
 - Forest Green is the Spots color and the logo color. It is **not** a general brand color for buttons.
 
 ### Status colors
@@ -81,6 +81,7 @@ Always pair the color with an icon and text. Never show a state by color alone.
 ### Gradients
 
 - **Allowed:** a dark transparent overlay on a photo, only to keep text on the photo readable.
+- **Allowed (owner, 2026-11-05):** a fade from white to transparent at the edge of a sideways-scrolling category row, only to show that it scrolls.
 - **Not allowed:** gradients on buttons, badges, pills, banners or text-box backgrounds. Use a flat color.
 
 ---
@@ -89,14 +90,14 @@ Always pair the color with an icon and text. Never show a state by color alone.
 
 | Level | Classes | Use for |
 | :--- | :--- | :--- |
-| Primary | `bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | The one main action of a screen or dialog: search, log in, create account, next, save |
+| Primary | `bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm` | The one main action of a screen or dialog: log in, create account, next, save |
 | Secondary | `bg-slate-900 hover:bg-slate-800 text-white` | A second strong action: page-header "create" buttons, the Navbar login trigger, "sign up with email" |
-| Quiet | `bg-slate-100 hover:bg-slate-200 text-slate-700` | Back, cancel, close, skip |
+| Quiet | `bg-slate-100 hover:bg-slate-200 text-slate-700` | Back, cancel, close, skip, and the search button inside a search box (typing already searches, so it does not compete with the main action) |
 | Provider | `bg-white border border-slate-300 text-slate-800` | Google / Apple / Facebook sign-in |
 | Danger | `bg-rose-600 hover:bg-rose-700 text-white` | Only the final confirmation of something that cannot be undone (delete account). Logging out is not a danger action |
 | Disabled | `bg-slate-200 text-slate-400 cursor-not-allowed` | Any level when unavailable |
 
-- One primary button per screen or dialog.
+- One primary button per screen or dialog. **Exception (owner, 2026-11-05):** the round search button in the top bar is blue on every page and does not count, since it belongs to the bar and not to the screen.
 - Shape: `rounded-full` for standalone buttons, `rounded-2xl` inside dense toolbars.
 - A button label stays on one line (`whitespace-nowrap`). If it does not fit at 360px, shorten the label.
 - A button that starts a request shows a spinner and a "กำลัง…" label, and is disabled until the request ends.
@@ -199,8 +200,10 @@ A slim horizontal strip, never a large box: `bg-slate-50/80 rounded-2xl p-4 sm:p
 - Esc closes it, focus stays inside it, and focus returns to the trigger on close.
 - Overlay `bg-black/65`; panel white, up to `max-w-[520px]`, `max-h-[92vh] overflow-y-auto`.
 - The close button is a quiet round button in the top-right corner.
-- Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs.
-- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice.
+- Account dialogs (login, sign-up, log out, terms and privacy, join prompts) use `DialogShell` and `dialogButton` from `components/auth/DialogShell.tsx`, which implement all of the above. Reuse them for new dialogs. A dialog with its own frame uses `useDialogBehavior` from the same file, never its own Esc or focus code.
+- A dialog that opens on a list of choices passes `focusField={false}`: focus on the first choice looks like an answer already picked.
+- A confirmation has a quiet "ยกเลิก" on the left and the action on the right. Focus starts on the safe choice. 
+- `DialogShell`'s heading is centered, so a dialog's buttons are never pushed to one side: two buttons take equal widths (`grid grid-cols-2 gap-3`), or `flex flex-wrap justify-center gap-2.5` when a label is too long for half the panel; one button is centered or full width.
 
 ### Short messages (toasts)
 - Use `<Toast message={…} />` from `components/Toast.tsx` on every member-facing page; never draw a new one. Light: white, thin slate border, soft shadow, top centre under the top bar (clear of the phone's bottom bar). Never black (owner 2026-10-25).
@@ -281,35 +284,35 @@ Bright, sharp photos of real Thai places. A dark overlay is allowed for text con
 
 ## 12. Known gaps in existing code
 
-Measured on 2026-10-10 in user-facing files (`app/`, `components/`, admin excluded). Fix these when you touch the file.
+Measured on 2026-11-05 by opening the screens in a browser, not only by reading code (BE-259). Fix these when you touch the file.
 
 | Rule | Current state |
 | :--- | :--- |
-| Minimum 11px | Fixed on 2026-11-03 (BE-228): none left on member-facing screens |
-| No gradients on UI surfaces | `bg-gradient-to-*` in 133 places (some are allowed photo overlays) |
-| No pillar color on buttons | Forest Green `bg-[#4A7C59]` in 52 places, many of them buttons |
-| No solid black for selected items | `bg-slate-900` in 198 places; those used as a selected state need the pillar tint |
+| Minimum 11px | Fixed on 2026-11-05, admin included |
+| No gradients on UI surfaces | None left outside the two allowed uses |
+| No pillar color on buttons | Forest Green `bg-[#4A7C59]` in 14 places, none on a button written on one line; split-line buttons not checked |
+| No solid black for selected items | None found on the walked screens |
 | No horizontal scroll at 360px | Fixed on 2026-10-10 (the header row in `components/Navbar.tsx` needed 429px). Keep checking new pages at 360px |
-| No looping decoration | 15 pulsing dots on the homepage, 16 on `/community` |
+| No looping decoration | None left; `animate-pulse` remains on loading skeletons, which section 14.6 allows |
+| Contrast 4.5:1 | Small text passes on the walked screens, avatar initials included. The orange create buttons are the owner's recorded exception |
 
-**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing))
+**Sample data to remove before launch** (allowed during development, see [section 9](#9-writing)): the list is stage 6 of [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).
 
-| Where | What |
-| :--- | :--- |
-| `components/EventGrid.tsx` | A host with no rating shows "4.9" |
-| Homepage "Member Privileges" | Sample offers: "ลด 10%", "จอยตี้ฟรี", "ลด 15%" |
-| `/moments` | The 24 seeded sample posts and their like counts (`isSample`) |
-| Community meetups | Sample events whose dates roll forward so the feed is never empty |
-| Host and member names on sample events and posts | Sample people |
-| `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` | 24 sample accounts (`isSample`, email `…@sample.invalid`, cannot sign in) that own the sample moments, with made-up profiles. Remove the two files, the `ensureSampleMembers()` calls, and delete the accounts and their moments. |
-
-A page-by-page audit with rendered counts is in [docs/HANDOFF.md](docs/HANDOFF.md) item BE-020.
+A page-by-page audit from 2026-10-10 is in [the archived board](docs/archive/handoff-until-2026-11-03.md), item BE-020.
 
 Compliant references to copy from: `components/auth/AuthPanel.tsx`, `app/onboarding/OnboardingFlow.tsx`.
 
 ---
 
 ## 13. Revision notes
+
+**2026-11-05: two exceptions (owner)**
+
+The top bar search button is not counted as a screen's primary button, and a white fade may mark the edge of a scrolling category row.
+
+**2026-11-05: pillar dark colours (BE-259)**
+
+Meetup dark moved from `#D04A1B` to `#C2410C`: the old one measured 4.49:1 on white and 4.15:1 on its own tint, under the 4.5:1 this file asks for. Moments gained a dark colour, `#BE123C`, for text on its tint.
 
 **2026-10-10: rewritten as one rule set** (owner's decisions, edited by Claude Code)
 
@@ -343,7 +346,7 @@ Sections 1 to 13 stop the product from looking bad. This section is what makes i
 
 ### 14.1 Signature elements
 
-These make a screen recognisably Chill & Connect. Use them; do not invent look-alikes.
+These make a screen recognisably Chillwaa. Use them; do not invent look-alikes.
 
 | Element | What it is | Reference |
 | :--- | :--- | :--- |

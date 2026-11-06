@@ -2,6 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { IS_SERVERLESS } from './db/databaseFile';
+import { sql, USE_POSTGRES } from './db/postgres/client';
 import {
   buildSeedMasterData, CATEGORY_COLLECTIONS, COLOR_KEYS, FEATURED_GROUP_COLLECTIONS, FIXED_COLLECTIONS, ICON_OPTIONS,
   MasterCategory, MasterCollection, MasterData, MasterEntry, MasterFeaturedGroup, MasterProvince, MasterVenue,
@@ -56,7 +57,50 @@ function readFile(file: string): Partial<MasterData> | null {
   }
 }
 
+// With the database on, what staff changed is one row of app.app_settings; the bundled file is the starting point.
+// Pages read a copy kept in memory. It asks whether the row changed at most this often, and reads it only if it did
+const CHECK_EVERY_MS = 30_000;
+const SETTINGS_KEY = 'master_data';
+const fromDb = globalThis as unknown as { _cchMasterDb?: MasterData; _cchMasterDbVersion?: string; _cchMasterDbCheckedAt?: number; _cchMasterDbChecking?: Promise<void> };
+
+/** Brings the copy in memory up to the stored row. `now`: an edit is about to start from it, so it may not be old */
+export function refreshMasterData(now = false): Promise<void> {
+  if (!USE_POSTGRES) return Promise.resolve();
+  if (!now && Date.now() - (fromDb._cchMasterDbCheckedAt ?? 0) < CHECK_EVERY_MS) return Promise.resolve();
+  if (fromDb._cchMasterDbChecking) return fromDb._cchMasterDbChecking;
+  fromDb._cchMasterDbCheckedAt = Date.now();
+  fromDb._cchMasterDbChecking = (async () => {
+    const db = sql();
+    const [row] = await db`select updated_at::text as version from app.app_settings where key = ${SETTINGS_KEY}`;
+    if (!row || row.version === fromDb._cchMasterDbVersion) return;
+    const [stored] = await db`select value, updated_at::text as version from app.app_settings where key = ${SETTINGS_KEY}`;
+    fromDb._cchMasterDb = withSeedDefaults(stored.value as Partial<MasterData>);
+    fromDb._cchMasterDbVersion = stored.version as string;
+  })()
+    .catch((error) => console.error('MASTER DATA READ FAILED:', error))
+    .finally(() => {
+      fromDb._cchMasterDbChecking = undefined;
+    });
+  return fromDb._cchMasterDbChecking;
+}
+
+/** Stores the copy in memory; the admin route awaits this before it says "saved" */
+export async function storeMasterData(): Promise<void> {
+  if (!USE_POSTGRES || !fromDb._cchMasterDb) return;
+  const value = fromDb._cchMasterDb as unknown as Parameters<ReturnType<typeof sql>['json']>[0];
+  const db = sql();
+  const [row] = await db`
+    insert into app.app_settings (key, value, updated_at) values (${SETTINGS_KEY}, ${db.json(value)}, now())
+    on conflict (key) do update set value = excluded.value, updated_at = now()
+    returning updated_at::text as version`;
+  fromDb._cchMasterDbVersion = row.version as string;
+}
+
 export function getMasterData(): MasterData {
+  if (USE_POSTGRES) {
+    void refreshMasterData();
+    return (fromDb._cchMasterDb ??= withSeedDefaults(readFile(BUNDLED_FILE) ?? {}));
+  }
   const file = sourceFile();
   const fileChangedAt = changedAt(file);
   if (globalForMaster._cchMasterData && globalForMaster._cchMasterChangedAt === fileChangedAt) return globalForMaster._cchMasterData;
@@ -72,6 +116,10 @@ export function getMasterData(): MasterData {
 
 function save(data: MasterData) {
   data.updatedAt = new Date().toISOString();
+  if (USE_POSTGRES) {
+    fromDb._cchMasterDb = data;
+    return;
+  }
   globalForMaster._cchMasterData = data;
   try {
     fs.mkdirSync(path.dirname(WRITE_FILE), { recursive: true });
@@ -93,12 +141,9 @@ export function getPublicMasterData() {
     communityMoods: active(data.communityMoods),
     communityCategories: active(data.communityCategories),
     fairCategories: active(data.fairCategories),
-    questCategories: active(data.questCategories),
     venues: active(data.venues),
     provinces: active(data.provinces),
     zones: active(data.zones),
-    communityClubs: active(data.communityClubs),
-    venueGroups: active(data.venueGroups),
   };
 }
 

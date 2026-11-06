@@ -391,7 +391,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             <Link href={target.href} className="group block rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100">
                 {/* A photo that fails to load leaves the plain frame, not a broken-image icon (the ref catches one that failed before the page came alive) */}
-                {target.image && <img src={optimizedImage(target.image, 384)} alt="" loading="lazy" ref={(el) => { if (el?.complete && el.naturalWidth === 0) el.style.display = 'none'; }} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+                {target.image && <img src={optimizedImage(target.image, 384)} alt="" loading="lazy" ref={(el) => { if (el?.complete && el.naturalWidth === 0) el.style.display = 'none'; }} onError={(e) => { e.currentTarget.style.display = 'none'; }} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />}
                 {target.visited && (
                   <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 border border-emerald-200 text-[11px] sm:text-xs font-bold text-emerald-800">
                     <Check className="w-3 h-3" aria-hidden="true" />
@@ -411,7 +411,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   return chrome(
     <>
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
-      <section className="mt-2 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-center">
+      <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
           <img src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} className="w-full h-full object-cover" />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800">
@@ -501,7 +501,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         </div>
       </section>
 
-      <div className="mt-10 sm:mt-14 grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:items-start">
+      <div className="mt-10 sm:mt-14 grid gap-10 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-start">
         {/* What you get: the reason to join, so it comes first on a phone and stays in view on a desktop */}
         {/* No space-y here: it put a margin under the reward box even while the places below it are hidden on phones */}
         <aside className={`lg:order-2 ${placesBesideReward ? '' : 'lg:sticky lg:top-24'}`}>
@@ -709,7 +709,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                   value={leaveNote}
                   onChange={(e) => setLeaveNote(e.target.value)}
                   placeholder="เล่าสั้นๆ ได้เลย"
-                  className="mt-2 w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400"
+                  className="mt-2 w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-500"
                 />
               </>
             )}

@@ -49,7 +49,7 @@ export function AdminPageHeader({ icon: Icon, title, description, badge, actions
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{title}</h1>
           {badge}
         </div>
-        <p className="text-sm text-slate-500">{description}</p>
+        <p className="text-sm text-slate-600">{description}</p>
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
     </div>
@@ -63,13 +63,13 @@ export function AdminBadge({ tone = 'slate', children }: { tone?: 'slate' | 'amb
     amber: 'bg-amber-50 text-amber-700 border-amber-200',
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold ${tones[tone]}`}>{children}</span>
+    <span className={`px-2 py-0.5 rounded-full border text-[11px] sm:text-xs font-bold ${tones[tone]}`}>{children}</span>
   );
 }
 
 /** Pillar identity for badges only (AGENTS.md: section colors never go on buttons). */
 export const PILLAR_STYLES = {
-  community: { label: 'ตี้', className: 'bg-[#FFF4EE] text-[#D04A1B] border-[#F26430]/30' },
+  community: { label: 'ตี้', className: 'bg-[#FFF4EE] text-[#C2410C] border-[#F26430]/30' },
   fairs: { label: 'อีเวนต์', className: 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/30' },
   spots: { label: 'พิกัดเที่ยว', className: 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/30' },
   quests: { label: 'ชาเลนจ์', className: 'bg-[#F5F3FF] text-[#6D28D9] border-[#7C3AED]/30' },
@@ -79,7 +79,7 @@ export type AdminPillar = keyof typeof PILLAR_STYLES;
 
 export function PillarBadge({ pillar }: { pillar: AdminPillar }) {
   const style = PILLAR_STYLES[pillar];
-  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+  return <span className={`px-2 py-0.5 rounded-full border text-[11px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
 }
 
 /** One lifecycle vocabulary for every entity: draft → pending → published → ended, plus rejected. */
@@ -95,7 +95,7 @@ export type AdminStatus = keyof typeof STATUS_STYLES;
 
 export function AdminStatusChip({ status }: { status: AdminStatus }) {
   const style = STATUS_STYLES[status];
-  return <span className={`px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
+  return <span className={`px-2 py-0.5 rounded-full border text-[11px] sm:text-xs font-bold whitespace-nowrap ${style.className}`}>{style.label}</span>;
 }
 
 /** Slim inline empty state (AGENTS.md hygiene rule 5). */

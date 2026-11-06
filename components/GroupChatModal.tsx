@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
 import { Flag, Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { ReportSafetyModal } from './ReportSafetyModal';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface ChatMessage {
   id: string;
@@ -89,12 +91,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages.length]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogBehavior(panelRef, onClose, { active: Boolean(isOpen && room), focusField: false });
 
   if (!isOpen || !room) return null;
 
@@ -131,10 +129,13 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
+        ref={panelRef}
+        data-dialog-shell
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="group-chat-title"
-        className="bg-white w-full sm:max-w-lg h-[88dvh] sm:h-[78vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden"
+        className="focus:outline-hidden bg-white w-full sm:max-w-lg h-[88dvh] sm:h-[78vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-100">
@@ -157,7 +158,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
               {!m.isMine &&
                 (m.authorAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element -- member upload
-                  <img src={m.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
+                  <img src={avatarImage(m.authorAvatar)} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
                 ) : (
                   <span className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 text-sm font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(m.authorName)}</span>
                 ))}
@@ -206,7 +207,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
               maxLength={500}
               autoComplete="off"
               placeholder="พิมพ์ข้อความ"
-              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-full px-4 py-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-white border border-slate-300 rounded-full px-4 py-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] placeholder:text-slate-500"
             />
             <button type="submit" disabled={!text.trim() || isSending} className="shrink-0 w-12 h-12 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-200 disabled:text-slate-400 text-white flex items-center justify-center cursor-pointer disabled:cursor-not-allowed" aria-label="ส่งข้อความ">
               <Send className="w-5 h-5" aria-hidden="true" />

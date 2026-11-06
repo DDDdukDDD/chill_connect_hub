@@ -2,11 +2,12 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import { DialogShell } from '@/components/auth/DialogShell';
+import { readPushStatus } from '@/lib/appClient';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { optimizedImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
 interface NotificationItem {
   id: string;
@@ -27,6 +28,9 @@ interface NotificationItem {
 }
 
 const REFRESH_MS = 60_000;
+type BellData = { items: NotificationItem[]; unread: number };
+// The top bar is drawn anew on each page, so the last answer is kept outside it
+let lastRead: { memberId: string; at: number; data: BellData } | null = null;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const bangkokDay = (time: Date | string) => new Date(time).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
@@ -46,7 +50,7 @@ function sectionsOf(items: NotificationItem[]): { title: string; items: Notifica
   return sections.filter((section) => section.items.length > 0);
 }
 
-const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' ? '#comments' : ''}` : `/profile?id=${n.actorId}`);
+const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' || n.type === 'reply' || n.type === 'comment_like' ? '#comments' : ''}` : `/profile?id=${n.actorId}`);
 
 /**
  * Bell for the signed-in member: follows, likes and comments on their moments (GET /api/notifications).
@@ -56,10 +60,19 @@ const hrefOf = (n: NotificationItem) => n.href ?? (n.momentId ? `/moments/${enco
 export function NotificationBell() {
   const { member } = useMemberSession();
   const memberId = member?.id;
-  const [data, setData] = useState<{ items: NotificationItem[]; unread: number }>({ items: [], unread: 0 });
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [remembered] = useState(() => (lastRead?.memberId === memberId ? lastRead : null));
+  const [data, setDataNow] = useState<BellData>(remembered?.data ?? { items: [], unread: 0 });
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(remembered ? 'ready' : 'loading');
+  const setData = useCallback((next: BellData | ((now: BellData) => BellData)) => {
+    setDataNow((now) => {
+      const value = typeof next === 'function' ? next(now) : next;
+      if (lastRead) lastRead = { ...lastRead, data: value };
+      return value;
+    });
+  }, []);
   const [isOpen, setIsOpen] = useState(false);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [canTurnOnPush, setCanTurnOnPush] = useState(false);
   const listOpen = useRef(false);
 
   const load = useCallback(async () => {
@@ -71,15 +84,23 @@ export function NotificationBell() {
 
   const refresh = useCallback(() => {
     // The list on screen is not swapped under the reader
-    if (listOpen.current) return;
+    if (listOpen.current || !memberId) return;
+    // Moving between pages or back to this tab within the minute shows what was read; the timer keeps the minute
+    if (lastRead?.memberId === memberId && Date.now() - lastRead.at < REFRESH_MS - 1000) return;
+    lastRead = { memberId, at: Date.now(), data: lastRead?.memberId === memberId ? lastRead.data : { items: [], unread: 0 } };
     load().then(
       (next) => {
+        // Kept here too: this bar may be gone by now, and the next page's bar reads this
+        lastRead = { memberId, at: Date.now(), data: next };
         setData(next);
         setStatus('ready');
       },
-      () => setStatus((now) => (now === 'loading' ? 'failed' : now))
+      () => {
+        lastRead = null;
+        setStatus((now) => (now === 'loading' ? 'failed' : now));
+      }
     );
-  }, [load]);
+  }, [load, memberId, setData]);
 
   useEffect(() => {
     if (!memberId) return;
@@ -109,6 +130,7 @@ export function NotificationBell() {
   const open = () => {
     listOpen.current = true;
     setIsOpen(true);
+    readPushStatus().then((push) => setCanTurnOnPush(push === 'off' || push === 'needs-install'), () => undefined);
     // What is already here shows at once, while the newest arrives
     showNew(data);
     fetchForList();
@@ -140,6 +162,12 @@ export function NotificationBell() {
 
       {isOpen && (
         <DialogShell onClose={close} title="การแจ้งเตือน" size="sm">
+          {canTurnOnPush && (
+            <Link href="/profile/settings#app" onClick={close} className="mb-3 flex items-center justify-between gap-2 min-h-10 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700">
+              ไม่พลาดอะไร เปิดแจ้งเตือนบนเครื่องนี้เลย
+              <ChevronRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+            </Link>
+          )}
           {data.items.length > 0 ? (
             <div className="-mx-2 max-h-[60dvh] overflow-y-auto overscroll-contain space-y-3">
               {sectionsOf(data.items).map((section) => (
@@ -153,7 +181,7 @@ export function NotificationBell() {
                           <Link href={hrefOf(n)} onClick={close} className={`flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
                             {n.actorAvatar ? (
                               // eslint-disable-next-line @next/next/no-img-element -- member upload
-                              <img src={n.actorAvatar} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
+                              <img src={avatarImage(n.actorAvatar)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
                             ) : (
                               <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
                                 {nameInitial(n.actorName)}

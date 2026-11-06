@@ -1,5 +1,6 @@
 'use client';
 
+import { ADMIN_QUEUE_CHANGED } from './AdminSidebar';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, CircleAlert, CircleCheck, ExternalLink, Inbox, Loader2, Pencil, RefreshCw, Search, X } from 'lucide-react';
 import { SpotCard } from '@/components/SpotCard';
@@ -194,6 +195,7 @@ export function ReviewQueueView({ onNavigate, initialPillar }: { onNavigate: (mo
       setReason('');
       setNotice(`${action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ'}แล้ว ${data.updated} รายการ`);
       refetch(() => setReloadToken((token) => token + 1));
+      window.dispatchEvent(new Event(ADMIN_QUEUE_CHANGED));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'บันทึกไม่สำเร็จ');
     } finally {
@@ -248,17 +250,18 @@ export function ReviewQueueView({ onNavigate, initialPillar }: { onNavigate: (mo
             key={t.id}
             type="button"
             onClick={() => refetch(() => { setTab(t.id); setPage(1); })}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${tab === t.id ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {t.label} <span className="tabular-nums opacity-70">{counts ? counts[t.id] : '—'}</span>
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-64">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input
             type="search"
             value={query}
             onChange={(e) => { const value = e.target.value; refetch(() => { setQuery(value); setPage(1); }); }}
+            aria-label="ค้นหาชื่อหรือแหล่งที่มา"
             placeholder="ค้นหาชื่อหรือแหล่งที่มา"
             className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
           />
@@ -334,7 +337,7 @@ export function ReviewQueueView({ onNavigate, initialPillar }: { onNavigate: (mo
                       </button>
                       <span
                         title={item.quality.requiredFailures ? `ขาดข้อบังคับ ${item.quality.requiredFailures} ข้อ` : 'ผ่านข้อบังคับครบ'}
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] sm:text-xs font-bold tabular-nums ${scoreTone(item.quality)}`}
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] sm:text-xs font-bold tabular-nums ${scoreTone(item.quality)}`}
                       >
                         {item.quality.score}%
                       </span>

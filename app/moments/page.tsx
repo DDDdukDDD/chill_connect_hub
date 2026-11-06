@@ -58,7 +58,7 @@ export default async function MomentsPage({ searchParams }: Props) {
           )}
         />
       )}
-      <MomentShowcase initialMoments={moments} initialHasMore={list.pagination.hasNextPage} initialChip={chip} place={place} counts={counts} />
+      <MomentShowcase initialMoments={moments} initialHasMore={list.pagination.hasNextPage} initialCursor={list.pagination.nextCursor} initialChip={chip} place={place} counts={counts} />
     </>
   );
 }

@@ -7,7 +7,7 @@ import { DialogShell, dialogButton } from './auth/DialogShell';
 interface ReportSafetyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message';
+  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message' | 'comment';
   targetId: string;
   targetTitle: string;
   /** A part of the target the report is about, such as a meet-up group inside a fair */
@@ -32,7 +32,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
   const uid = useId();
   // A place is reported for wrong details first; an event for how people behave
   // Words someone wrote (a review, a chat message) are not a place or a meeting, so those two reasons do not apply
-  const isWords = targetType === 'review' || targetType === 'chat_message';
+  const isWords = targetType === 'review' || targetType === 'chat_message' || targetType === 'comment';
   const reasons = isWords ? REASONS.filter((r) => r.id !== 'unsafe_location' && r.id !== 'wrong_info') : targetType === 'spot' ? [...REASONS.filter((r) => r.places), ...REASONS.filter((r) => !r.places && r.id !== 'unsafe_location')] : REASONS;
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -73,7 +73,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
   }
 
   return (
-    <DialogShell onClose={onClose} size="md" title="รายงานให้ทีมงาน" subtitle={subject ? `${subject} · ${targetTitle}` : targetTitle}>
+    <DialogShell onClose={onClose} size="md" focusField={false} title="รายงานให้ทีมงาน" subtitle={subject ? `${subject} · ${targetTitle}` : targetTitle}>
       <form onSubmit={submit} className="space-y-5 text-left">
         <p className="text-sm font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
           รายงานนี้ส่งถึงทีมงานเท่านั้น ผู้ถูกรายงานจะไม่เห็นว่าใครเป็นคนส่ง
@@ -104,7 +104,7 @@ function ReportDialog({ onClose, targetType, targetId, targetTitle, subject, onR
             {reason !== 'other' && <span className="ml-1.5 text-xs font-medium text-slate-500">(ไม่บังคับ)</span>}
           </label>
           <textarea id={`${uid}-details`} rows={3} value={details} maxLength={500} onChange={(e) => { setDetails(e.target.value); setError(null); }} placeholder="สิ่งที่เห็นหรือข้อความที่ได้รับ ช่วยให้ทีมงานตรวจได้เร็วขึ้น"
-            className="w-full px-4 py-3 border border-slate-300 rounded-2xl text-base sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20" />
+            className="w-full px-4 py-3 border border-slate-300 rounded-2xl text-base sm:text-sm font-semibold text-slate-900 placeholder:text-slate-500 placeholder:font-medium focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20" />
         </div>
 
         {error && <p role="alert" className="text-xs font-bold text-rose-600">{error}</p>}

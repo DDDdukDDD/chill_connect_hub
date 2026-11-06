@@ -32,7 +32,7 @@ async function optionsOf(pillar: SponsorPillar): Promise<Option[]> {
 
 // The slots, plus the items each page can show (for the form's search)
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
   try {
     const [community, events, spots, challenges] = await Promise.all([optionsOf('community'), optionsOf('events'), optionsOf('spots'), optionsOf('challenges')]);
@@ -45,9 +45,9 @@ export async function GET(request: Request) {
 
 // { action: 'save', slot } (new when slot.id is empty) · { action: 'delete', id }
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'content.edit');
+  const denied = await requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   try {
     const body = await request.json();
     if (body?.action === 'save' && body.slot && typeof body.slot === 'object') {

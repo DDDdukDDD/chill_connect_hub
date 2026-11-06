@@ -6,6 +6,7 @@ import { Camera, ChevronDown, Flag, MapPin, Tent, Trophy, Users } from 'lucide-r
 import type { LiveCounts, LiveItem, LiveKind } from '@/lib/social/liveActivity';
 import { nameInitial } from '@/lib/displayName';
 import { recall, remember } from '@/lib/clientMemory';
+import { avatarImage } from '@/lib/optimizedImage';
 
 const POLL_MS = 30_000;
 const TICK_MS = 4_500;
@@ -81,11 +82,11 @@ const VERB: Record<LiveKind, string> = {
 
 // Pillar colors (DESIGN_SYSTEM.md): meetups amber, challenges violet, places green, fairs slate blue, moments rose
 const TARGET_STYLE = {
-  community: { text: 'text-[#D04A1B]', chip: 'bg-[#FFF4EE] text-[#F26430]', Icon: Users },
+  community: { text: 'text-[#C2410C]', chip: 'bg-[#FFF4EE] text-[#C2410C]', Icon: Users },
   challenge: { text: 'text-[#6D28D9]', chip: 'bg-[#F5F3FF] text-[#7C3AED]', Icon: Flag },
   spot: { text: 'text-[#2D5A3C]', chip: 'bg-[#EBF3ED] text-[#4A7C59]', Icon: MapPin },
   fair: { text: 'text-[#1F3D5C]', chip: 'bg-[#EEF4FA] text-[#2B527A]', Icon: Tent },
-  general: { text: 'text-[#E11D48]', chip: 'bg-[#FFF1F2] text-[#F43F5E]', Icon: Camera },
+  general: { text: 'text-[#BE123C]', chip: 'bg-[#FFF1F2] text-[#F43F5E]', Icon: Camera },
 } as const;
 
 export function liveHref(target: LiveItem['target']): string {
@@ -108,7 +109,7 @@ export function liveHref(target: LiveItem['target']): string {
 function Avatar({ name, src, className }: { name: string; src?: string; className: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
+    <img src={avatarImage(src)} alt="" className={`${className} rounded-full object-cover bg-slate-100 shrink-0`} />
   ) : (
     <span className={`${className} rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center shrink-0`} aria-hidden="true">
       {nameInitial(name)}
@@ -120,7 +121,6 @@ export function LiveDot() {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-red-500">
       <span className="relative flex w-2 h-2" aria-hidden="true">
-        <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 motion-safe:animate-ping" />
         <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
       </span>
       สด
@@ -151,7 +151,7 @@ export function LiveActivityList({ live }: { live: LiveState }) {
               <span className="min-w-0 flex-1 text-[13px] leading-snug text-slate-700">
                 <strong className="font-semibold text-slate-900">{item.person.name}</strong> {VERB[item.kind]}{' '}
                 <span className={`font-semibold ${style.text} group-hover:underline`}>{item.target.title}</span>
-                <span className="block mt-0.5 text-[11px] font-medium text-slate-400">{item.timeAgo}</span>
+                <span className="block mt-0.5 text-[11px] font-medium text-slate-500">{item.timeAgo}</span>
               </span>
               <span className={`mt-1 w-6 h-6 rounded-full ${style.chip} flex items-center justify-center shrink-0`} aria-hidden="true">
                 {item.kind === 'quest_finish' ? <Trophy className="w-3.5 h-3.5" /> : <style.Icon className="w-3.5 h-3.5" />}
@@ -189,7 +189,7 @@ export function LiveTicker({ live }: { live: LiveState }) {
           <Avatar name={item.person.name} src={item.person.avatar} className="w-6 h-6 text-[11px]" />
           <span className="min-w-0 truncate">
             <strong className="font-semibold text-slate-900">{item.person.name}</strong> {VERB[item.kind]} <span className={`font-semibold ${style.text}`}>{item.target.title}</span>
-            <span className="text-slate-400"> · {item.timeAgo}</span>
+            <span className="text-slate-500"> · {item.timeAgo}</span>
           </span>
         </Link>
         <button
@@ -239,7 +239,6 @@ export function LiveJoinsLine({ faces, short = false }: { faces?: React.ReactNod
   return (
     <span className="inline-flex items-center gap-2">
       <span className="relative flex w-2 h-2 shrink-0" aria-hidden="true">
-        <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 motion-safe:animate-ping" />
         <span className="relative inline-flex w-2 h-2 rounded-full bg-red-500" />
       </span>
       {faces}

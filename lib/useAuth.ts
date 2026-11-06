@@ -31,7 +31,7 @@ const ROLE_BADGES: Record<UserRole, string> = {
   admin: 'Super Admin',
 };
 
-const AVATAR_COLORS = ['#4A7C59', '#2563EB', '#D04A1B', '#7C3AED', '#0F766E', '#B45309'];
+const AVATAR_COLORS = ['#4A7C59', '#2563EB', '#C2410C', '#7C3AED', '#0F766E', '#B45309'];
 
 /** Initial-letter avatar for members without a photo (no third-party avatar service) */
 export function initialsAvatar(name: string, seed = name): string {
