@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-272 · Share picture drawn in code, new site tagline (owner 2026-11-06)
+- **Why:** links shared in LINE showed `hero-bg-70.png`, the hero background (a square JPEG named .png, empty in the middle where the page puts its text), so the preview was two small groups of people.
+- **What changed:** new `app/opengraph-image.tsx` draws a 1200×630 picture at build time: logo, "Chillwaa", "Social platform สำหรับคนชอบออกไปใช้ชีวิต" over the hero illustration. `DEFAULT_SHARE_IMAGE` in `lib/site.ts` and the root layout use `/opengraph-image`; pages with their own picture keep it. The fonts are in `assets/fonts/` (IBM Plex Sans Thai, OFL). Site title and share text: "Chillwaa | Social platform สำหรับคนชอบออกไปใช้ชีวิต" / "Social platform คนรุ่นใหม่ และคอมมูนิตี้ ที่ทำให้ทุกการใช้ชีวิตมีความหมาย".
+- **What to do about it:** the image renderer cannot stack two marks on one Thai letter (ที่, ตี้ come out wrong), so keep such words out of text inside the picture.
+
 ### BE-271 · Admin: staff, audit log and master data survive; tighter permissions (owner 2026-11-06)
 - **Why:** on Vercel these three lived in files under `/tmp`: a staff account or a master data edit vanished on the next deploy and differed from server to server, and the audit log kept nothing.
 - **What changed:** staff accounts are read from `app.staff_accounts` on every admin request, so disabling someone or changing a role takes effect at once on every server. The audit log writes to `app.audit_log`, which the website can only add to. Master data is one document in `app.app_settings` on top of the bundled file. **`requireAdminApiAccess`, `getAdminActor`, `hasAdminCredentials` and the staff functions are now async: always `await` them.** Reading reports and moments in admin needs `community.review`, not `content.view` (they hold reporters' names and reported words). Resetting all events is refused in production. The rail screen and the `communityClubs`, `venueGroups`, `questCategories` lists are gone from admin and `/api/master`: no public page used them. The moods stay, the server still files events by them.
