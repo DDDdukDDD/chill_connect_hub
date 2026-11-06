@@ -19,6 +19,8 @@ export interface ShowcaseSnapshot {
   moments: FeedItem[];
   page: number;
   hasMore: boolean;
+  /** Where the loaded posts end, for the next page */
+  cursor?: string;
   scrollY: number;
   /** The Home feed's tab, when the snapshot comes from there */
   view?: string;

@@ -18,7 +18,7 @@ interface NominatimPlace {
 
 export async function GET(request: Request) {
   const member = await getSessionMember(request);
-  if (!member && !getAdminActor(request)) {
+  if (!member && !await getAdminActor(request)) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   }
   if (isRateLimited(`place-search:${member?.id ?? clientIp(request)}`, 20, 10 * 60 * 1000)) {

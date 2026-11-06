@@ -17,7 +17,6 @@ import {
   Bot,
   Gauge,
   Grid3x3,
-  GalleryHorizontal,
   Home,
   Image as ImageIcon,
   ShieldCheck,
@@ -48,7 +47,6 @@ export type AdminModuleId =
   | 'taxonomy'
   | 'provinces'
   | 'venues'
-  | 'rails'
   | 'members'
   | 'staff'
   | 'audit'
@@ -109,7 +107,6 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'taxonomy', label: 'หมวดหมู่ & แท็ก', icon: FolderTree },
       { id: 'provinces', label: '77 จังหวัด & โซน', icon: MapPin },
       { id: 'venues', label: 'สถานที่จัดงาน', icon: Building2 },
-      { id: 'rails', label: 'การ์ดแนะนำ (rail)', icon: GalleryHorizontal },
     ],
   },
   {
@@ -141,14 +138,13 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   // Winners' contact details are member data; the buttons also need content.edit
   draws: 'members.manage',
   sponsored: 'content.view',
-  moments: 'content.view',
-  reports: 'content.view',
+  moments: 'community.review',
+  reports: 'community.review',
   scraper: 'content.view',
   coverage: 'content.view',
   taxonomy: 'content.view',
   provinces: 'content.view',
   venues: 'content.view',
-  rails: 'content.view',
   members: 'members.manage',
   staff: 'staff.manage',
   audit: 'audit.view',
@@ -177,7 +173,6 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   taxonomy: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดหมวดหมู่' }],
   provinces: [{ permission: 'master.edit', what: 'แก้จังหวัด รูป และโซน' }],
   venues: [{ permission: 'master.edit', what: 'เพิ่ม แก้ไข และปิดสถานที่จัดงาน' }],
-  rails: [{ permission: 'master.edit', what: 'แก้การ์ดแนะนำ' }],
   members: [{ permission: 'members.manage', what: 'ระงับ แบน และอนุมัติผู้จัด' }, { permission: 'staff.manage', what: 'ลบบัญชีสมาชิก' }],
   staff: [{ permission: 'staff.manage', what: 'เพิ่มทีมงาน เปลี่ยน role และปิดบัญชี' }],
   audit: [],

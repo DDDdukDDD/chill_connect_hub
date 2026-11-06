@@ -13,7 +13,7 @@ const OPEN_PATHS = ['/onboarding', '/login', '/legal', '/verify-email', '/reset-
  * then onboarding returns them to the page they opened. Renders nothing.
  */
 export function OnboardingResume() {
-  const session = useMemberSession();
+  const session = useMemberSession({ background: true });
   const pathname = usePathname();
   const router = useRouter();
   const needsOnboarding = session.isLoaded && Boolean(session.member) && !session.member?.onboarded;

@@ -15,6 +15,7 @@ import { ChallengeTile, prizeReasons } from '@/components/ChallengeTile';
 import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import type { CampaignView } from '@/lib/campaigns/types';
@@ -103,7 +104,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   const myInterests = useMyInterests(isLoggedIn);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Whole rows at every width of the tile grid (2, 3, 4 and 6 columns)
   const itemsPerPage = useResponsiveItemsPerPage(TILE_BATCH);
   const [storedQuestList, setQuestList] = useState<QuestWithDuration[]>(() => (initialQuests ?? []).map(toListQuest));
@@ -309,7 +310,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
               <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="flex-1 min-w-0" />
               <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Phones: tighter, so the three menus keep one row on a 360 px screen */}
+            <div className="flex flex-wrap items-center gap-2 max-sm:gap-1.5 max-sm:[&_button[aria-haspopup]]:px-2.5">
               <FilterMenu
                 id="when"
                 label="ช่วงเวลา"

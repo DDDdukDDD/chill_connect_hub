@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { removeNotifications } from '@/lib/social/notifications';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { Moment, momentRepository, MomentStatus } from '@/lib/moments';
@@ -57,7 +58,7 @@ function toAdminItem(moment: Moment, people: Map<string, Member>, counted: Map<s
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
   const filterParam = searchParams.get('filter') as Filter | null;
@@ -102,9 +103,9 @@ export async function GET(request: Request) {
  * · reject_evidence {id, note} (the post stays but is no longer a visit; the author is told) · accept_evidence {id}
  */
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'community.review');
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   const body = await request.json().catch(() => ({}));
   const moment = typeof body.id === 'string' ? await momentRepository.findById(body.id) : null;
   if (!moment) return NextResponse.json({ success: false, error: 'ไม่พบโมเมนต์' }, { status: 404 });
@@ -152,9 +153,13 @@ export async function POST(request: Request) {
       await momentRepository.mutate(moment.id, (m) => ({
         ...m,
         comments: body.action === 'delete_comment'
-          ? m.comments.filter((c) => c.id !== comment.id)
+          ? m.comments.filter((c) => c.id !== comment.id && c.parentId !== comment.id)
           : m.comments.map((c) => (c.id === comment.id ? { ...c, hidden: body.action === 'hide_comment' } : c)),
       }));
+      if (body.action === 'delete_comment') {
+        const removedIds = moment.comments.filter((c) => c.id === comment.id || c.parentId === comment.id).map((c) => c.id);
+        await Promise.all(removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like'], commentId })));
+      }
       const verb = body.action === 'delete_comment' ? 'ลบ' : body.action === 'hide_comment' ? 'ซ่อน' : 'แสดง';
       audit(body.action, `${verb}ความคิดเห็นของ ${comment.authorName}: "${comment.text.slice(0, 40)}"`);
       break;

@@ -111,13 +111,13 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
         </div>
       )}
 
-      {member && joinBlocker(member) && <div className="mt-3"><JoinReadinessNotice member={member} returnTo={returnTo} /></div>}
+      {member && joinBlocker(member, series) && <div className="mt-3"><JoinReadinessNotice member={member} event={series} returnTo={returnTo} /></div>}
       {error && <p className="mt-2 text-sm font-semibold text-rose-700" role="alert">{error}</p>}
       {choice && (
         <button
           type="button"
           onClick={join}
-          disabled={busy || Boolean(member && joinBlocker(member))}
+          disabled={busy || Boolean(member && joinBlocker(member, series))}
           className="mt-4 h-12 px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-300 text-white font-semibold cursor-pointer disabled:cursor-not-allowed"
         >
           {busy ? 'กำลังลงทะเบียน…' : `ลงทะเบียน ${choice.label}`}

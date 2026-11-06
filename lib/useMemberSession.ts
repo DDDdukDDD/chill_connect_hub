@@ -180,12 +180,28 @@ export const memberActions = {
   },
 };
 
-export function useMemberSession() {
+// Long enough for a page that brings its own session (the home page) or its top bar to come first
+const BACKGROUND_WAIT_MS = 1500;
+
+/**
+ * `background`: for the parts of the root layout (AppSetup, OnboardingResume). They hydrate before the page, so asking
+ * at once sent GET /api/auth/member even when the home page was about to hand over the session it read on the server.
+ */
+export function useMemberSession(options?: { background?: boolean }) {
   const snapshot = useSyncExternalStore(subscribe, () => state, () => INITIAL);
+  const background = options?.background ?? false;
 
   useEffect(() => {
-    if (!state.isLoaded) void refreshMemberSession();
-  }, []);
+    if (state.isLoaded) return;
+    if (!background) {
+      void refreshMemberSession();
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (!state.isLoaded) void refreshMemberSession();
+    }, BACKGROUND_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [background]);
 
   return {
     ...snapshot,

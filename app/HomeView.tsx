@@ -29,7 +29,6 @@ import { formatEventDateRange, isClosedToJoin, isEventEnded, nearDayLabel, parse
 import { useAuth } from '@/lib/useAuth';
 import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
-import { useMyMonth } from '@/lib/useMyMonth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
 import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
@@ -332,9 +331,6 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
   // Everything the member joined or hosts, ended ones too: the journey band asks for a moment from a ตี้ they went to
   // A host is also among the joined, so their own ตี้ comes once
   const myEvents = useMemo(() => [...new Map([...joined, ...hosted].map((e) => [e.id, e])).values()], [joined, hosted]);
-  // This month's Chill (places) and Connect (meetups) behind the greeting
-  const myMonth = useMyMonth(isMember);
-  const monthCounts = myMonth.month ? { chill: myMonth.month.chill.length, connect: myMonth.month.connect.length } : null;
   const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
   const redeemable = REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
 
@@ -488,7 +484,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
             mine={myEvents}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
-            month={monthCounts}
+            noXpYet={myRewards.isLoaded && myRewards.earned === 0}
             savedCount={activity.savedEventIds.length + activity.savedSpotIds.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}

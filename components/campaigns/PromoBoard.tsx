@@ -125,7 +125,7 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
       )}
 
       {rewards.length > 0 && (
-        <div ref={rewardRailRef} {...rewardHandlers} aria-label="ของรางวัลแลกด้วย XP" className={`${railClass} ${rewardsOnPhone ? '' : 'max-sm:hidden'} min-w-0`}>
+        <div ref={rewardRailRef} {...rewardHandlers} aria-label="ของรางวัลแลกด้วย XP" className={`${railClass} ${rewardsOnPhone || !hasCampaigns ? '' : 'max-sm:hidden'} min-w-0`}>
           {rewards.map((item, index) => (
             <div key={item.id} className={`${rewardWidth} shrink-0 snap-start`}>
               <RewardCard item={item} tint={TINTS[index % TINTS.length]} canRedeem={canRedeem(item)} />

@@ -17,6 +17,7 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
@@ -65,7 +66,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Saved and joined come from the account, so a heart here shows in My Hub and on every device
   const myActivity = useMyActivity();
   const favoriteSpots = isLoggedIn ? myActivity.savedSpotIds : [];
@@ -398,7 +399,8 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 
             {/* Show more, Meetup-style */}
             {totalSpots > paginatedSpots.length && (
-              <ShowMoreButton shown={paginatedSpots.length} total={totalSpots} onClick={() => setCurrentPage(currentPage + 1)} />
+              // Counted from what is on screen: the server page's first answer can hold more than one batch
+              <ShowMoreButton shown={paginatedSpots.length} total={totalSpots} onClick={() => setCurrentPage(Math.floor(paginatedSpots.length / itemsPerPage) + 1)} />
             )}
           </>
         ) : (

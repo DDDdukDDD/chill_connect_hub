@@ -34,7 +34,7 @@ export function ChallengeSearch({ query, onQueryChange, idPrefix, className = ''
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
-      <button type="submit" aria-label="ค้นหา" className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm cursor-pointer">
+      <button type="submit" aria-label="ค้นหา" className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
         <Search className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
       </button>
     </form>

@@ -8,16 +8,16 @@ const headers = { 'Cache-Control': 'private, no-store' };
 
 // Campaigns with a prize draw, their entries and winners. Winners' contact details are member data
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage');
+  const denied = await requireAdminApiAccess(request, 'members.manage');
   if (denied) return denied;
   return NextResponse.json({ success: true, campaigns: await drawCampaigns() }, { headers });
 }
 
 // { action: 'draw' | 'announce', campaignId } · { action: 'confirm' | 'forfeit', winnerId, campaignId }
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage') ?? requireAdminApiAccess(request, 'content.edit');
+  const denied = await requireAdminApiAccess(request, 'members.manage') ?? await requireAdminApiAccess(request, 'content.edit');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   try {
     const body = await request.json();
     const campaignId = typeof body?.campaignId === 'string' ? body.campaignId : '';

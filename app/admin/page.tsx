@@ -23,7 +23,6 @@ import { AuditLogView } from '@/components/admin/AuditLogView';
 import { AdminEmptyState } from '@/components/admin/AdminUI';
 import { SpotsManagerView } from '@/components/admin/SpotsManagerView';
 import { CoverageView } from '@/components/admin/CoverageView';
-import { FeaturedRailsView } from '@/components/admin/FeaturedRailsView';
 import { MembersManagerView } from '@/components/admin/MembersManagerView';
 import { MomentsManagerView } from '@/components/admin/MomentsManagerView';
 import { ReportsManagerView } from '@/components/admin/ReportsManagerView';
@@ -126,8 +125,6 @@ function AdminConsole() {
         return <ProvincesManagerView />;
       case 'venues':
         return <VenuesManagerView />;
-      case 'rails':
-        return <FeaturedRailsView />;
       case 'spots':
         return (
           <SpotsManagerView

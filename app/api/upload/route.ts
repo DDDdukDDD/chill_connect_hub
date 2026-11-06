@@ -13,8 +13,8 @@ const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 const globalForUploads = globalThis as unknown as { _cchUploadHits?: Map<string, number[]> };
 const uploadHits = (globalForUploads._cchUploadHits ??= new Map());
 
-function isRateLimited(request: Request): boolean {
-  if (hasAdminCredentials(request)) return false;
+async function isRateLimited(request: Request): Promise<boolean> {
+  if (await hasAdminCredentials(request)) return false;
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
   const now = Date.now();
   const recent = (uploadHits.get(ip) ?? []).filter((time: number) => now - time < UPLOAD_WINDOW_MS);
@@ -37,10 +37,10 @@ function detectImageType(buffer: Buffer): string | null {
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
-  if (!hasAdminCredentials(request) && !(await getSessionMember(request))) {
+  if (!await hasAdminCredentials(request) && !(await getSessionMember(request))) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดรูป' }, { status: 401 });
   }
-  if (isRateLimited(request)) {
+  if (await isRateLimited(request)) {
     return NextResponse.json(
       { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },
       { status: 429 }

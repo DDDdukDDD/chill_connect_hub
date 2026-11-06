@@ -39,6 +39,8 @@ export interface ShowcasePlace {
 interface MomentShowcaseProps {
   initialMoments: FeedItem[];
   initialHasMore: boolean;
+  /** Where the first page ended, for the next one */
+  initialCursor?: string;
   initialChip: Chip;
   place: ShowcasePlace | null;
   /** How many moments each tab holds (counted on the server); left out on one place's moments */
@@ -224,8 +226,8 @@ function Collage() {
 
 const tabHref = (chip: Chip) => (chip === 'all' ? '/moments' : `/moments?type=${chip}`);
 
-const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number) => {
-  const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
+const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number, cursor?: string) => {
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page), ...(cursor ? { cursor } : {}) });
   if (place?.tag) {
     params.set('tag', place.tag);
   } else if (place?.targetType && place.targetId) {
@@ -243,26 +245,28 @@ const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number) => {
  * /moments: a playful header (the landing page's cream band, tilted prints and stickers) over a full-width grid
  * of moment posts. Posting happens on Home; a card opens the moment's own page.
  */
-export function MomentShowcase({ initialMoments, initialHasMore, initialChip, place, counts }: MomentShowcaseProps) {
+export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, initialChip, place, counts }: MomentShowcaseProps) {
   const [chip, setChip] = useState<Chip>(initialChip);
   const [moments, setMoments] = useState(initialMoments);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [cursor, setCursor] = useState(initialCursor);
   const [isLoading, setIsLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef(0);
 
   const load = useCallback(
-    async (nextChip: Chip, nextPage: number) => {
+    async (nextChip: Chip, nextPage: number, after?: string) => {
       const request = ++requestRef.current;
       setIsLoading(true);
       try {
-        const json = await fetch(listUrl(nextChip, place, nextPage), { cache: 'no-store' }).then((res) => res.json());
+        const json = await fetch(listUrl(nextChip, place, nextPage, after), { cache: 'no-store' }).then((res) => res.json());
         if (request !== requestRef.current) return;
         const list: FeedItem[] = (json.moments ?? []).filter((m: FeedItem) => m.images?.[0]);
         setMoments((prev) => (nextPage === 1 ? list : [...prev, ...list.filter((m) => !prev.some((p) => p.id === m.id))]));
         setPage(nextPage);
         setHasMore(Boolean(json.pagination?.hasNextPage));
+        setCursor(json.pagination?.nextCursor);
       } catch {
         if (request === requestRef.current) setHasMore(false);
       } finally {
@@ -303,6 +307,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     setMoments(snapshot.moments);
     setPage(snapshot.page);
     setHasMore(snapshot.hasMore);
+    setCursor(snapshot.cursor);
     requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, snapshot.scrollY)));
     // once, on arriving at the page
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -313,17 +318,17 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialChip, pl
     const href = (e.target as HTMLElement).closest('a')?.getAttribute('href');
     const momentId = href?.startsWith('/moments/') ? decodeURIComponent(href.slice('/moments/'.length)) : null;
     if (!momentId) return;
-    saveShowcase({ url: window.location.pathname + window.location.search, momentId, moments, page, hasMore, scrollY: window.scrollY });
+    saveShowcase({ url: window.location.pathname + window.location.search, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY });
   };
 
   // More cards as the reader nears the end
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel || !hasMore || isLoading) return;
-    const observer = new IntersectionObserver((entries) => entries[0]?.isIntersecting && void load(chip, page + 1), { rootMargin: '600px' });
+    const observer = new IntersectionObserver((entries) => entries[0]?.isIntersecting && void load(chip, page + 1, cursor), { rootMargin: '600px' });
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [chip, hasMore, isLoading, load, page]);
+  }, [chip, hasMore, isLoading, load, page, cursor]);
 
   // After signing in, the member's own hearts are filled into the cards already on screen, so the grid stays where
   // the reader is; a restored grid already carries them

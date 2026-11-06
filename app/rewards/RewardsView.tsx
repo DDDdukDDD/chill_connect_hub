@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useId } from 'react';
+import { PhraseText } from '@/components/auth/PhraseText';
 import Link from 'next/link';
 import { Activity, ArrowLeft, Camera, Check, ChevronRight, Coffee, Copy, Dices, Gift, Palette, ShoppingBag, Sparkles, Ticket, Trophy, Users, type LucideIcon } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -204,7 +205,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                   </>
                 ) : (
                   <>
-                    <p className="mt-1 text-sm font-medium text-slate-800">ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริงจากร้านพาร์ทเนอร์</p>
+                    <p className="mt-1 text-sm font-medium text-slate-800"><PhraseText text="ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริง จากร้านพาร์ทเนอร์" /></p>
                     <button type="button" onClick={() => setIsAuthModalOpen(true)} className={`${dialogButton.primary} mt-4 w-full`}>
                       เข้าสู่ระบบเพื่อดู XP
                     </button>
@@ -548,7 +549,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
 /** A few still confetti bits in the wallet's top corner: the card should look like good news */
 function WalletConfetti() {
   return (
-    <svg className="pointer-events-none absolute right-4 top-4 w-28 h-20" viewBox="0 0 112 80" aria-hidden="true">
+    <svg className="pointer-events-none absolute right-4 top-4 w-20 h-14 sm:w-28 sm:h-20" viewBox="0 0 112 80" aria-hidden="true">
       <rect x="70" y="6" width="9" height="9" rx="2" fill="#F26430" transform="rotate(18 74 10)" />
       <circle cx="98" cy="22" r="4.5" fill="#2563EB" />
       <rect x="86" y="44" width="12" height="5" rx="2.5" fill="#10B981" transform="rotate(-30 92 46)" />

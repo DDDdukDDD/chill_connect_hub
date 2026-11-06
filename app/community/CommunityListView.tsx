@@ -13,6 +13,7 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ViewModeToggle, ViewMode } from '@/components/ViewModeToggle';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
+import { useShownBatches } from '@/lib/useShownBatches';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { EventDateList } from '@/components/discover/EventDateList';
@@ -58,7 +59,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
   const [openOnly, setOpenOnly] = useState(searchParams.get('seats') === 'open');
   const [sortBy, setSortBy] = useState<SortOption>('soonest');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useShownBatches();
   // Saved and joined ตี้ come from the account, so a heart here shows in My Hub and on every device
   const myActivity = useMyActivity();
   const favorites = isLoggedIn ? myActivity.savedEventIds : [];
@@ -211,15 +212,6 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
 
     return counts;
   }, [eventsList, statusFilter, openOnly]);
-
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
-
-  // Pagination clamp: reset to page 1 if filter changes reduce totalPages below currentPage
-  React.useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen
@@ -457,7 +449,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         {/* High-Density Community Events Grid / List */}
         {/* The list view is dated, like /challenges: this week on top, then by month */}
         {viewMode === 'list' && filteredEvents.length > 0 ? (
-          <EventDateList kind="meetups" events={filteredEvents} renderTile={tileFor} />
+          <EventDateList kind="meetups" events={filteredEvents} />
         ) : paginatedEvents.length > 0 ? (
           // The landing's tiles at the landing's widths, plus a line for host, rating and price (owner 2026-10-27)
           <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8 pt-1">
@@ -471,6 +463,15 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
 
         {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
           <ShowMoreButton shown={paginatedEvents.length} total={filteredEvents.length} onClick={() => setCurrentPage(currentPage + 1)} />
+        )}
+        {/* A visitor learns they can start one too, once they have looked through the list, not on top of it */}
+        {isAuthReady && !isLoggedIn && filteredEvents.length > 0 && (
+          <p className="pt-2 text-center text-sm text-slate-600">
+            ไม่เจอที่ชอบ?{' '}
+            <button type="button" onClick={openCreate} className="font-semibold text-[#C2410C] hover:underline underline-offset-4 cursor-pointer">
+              ตั้งตี้เองเลย
+            </button>
+          </p>
         )}
       </main>
 

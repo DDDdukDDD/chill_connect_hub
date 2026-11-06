@@ -31,7 +31,6 @@ import { useMemberSession } from '@/lib/useMemberSession';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { LifestyleSpotItem } from '@/data/spotsData';
-import { useSpotCatalog } from '@/lib/useSpotCatalog';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { Toast } from '@/components/Toast';
 import {
@@ -75,8 +74,7 @@ import {
   Ticket,
   Layers,
   Camera,
-  AlertCircle,
-} from 'lucide-react';
+  AlertCircle, Plus } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -475,30 +473,39 @@ function MyHubContent() {
   const hostedIdSet = useMemo(() => new Set(userCreatedEvents.map((e) => e.id)), [userCreatedEvents]);
   const guestEvents = useMemo(() => allJoinedEvents.filter((e) => !hostedIdSet.has(e.id)), [allJoinedEvents, hostedIdSet]);
   // For a member with an empty schedule: a few real meetups that are open now, the soonest first
-  const [suggestedEvents, setSuggestedEvents] = useState<EventItem[]>([]);
-  const needsSuggestions = activity.isLoaded && guestEvents.length === 0;
+  const [openEvents, setOpenEvents] = useState<EventItem[]>([]);
+  const emptySchedule = activity.isLoaded && guestEvents.length === 0;
+  // Nothing coming up, also for someone who has been out before: that is when an invite helps most
+  const needsSuggestions = activity.isLoaded && !guestEvents.some((e) => !isEventEnded(e));
   // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
   const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
   const [openedOnHosting, setOpenedOnHosting] = useState(false);
-  if (needsSuggestions && hasUpcomingHosted && !openedOnHosting && !searchParams.get('tab')) {
+  if (emptySchedule && hasUpcomingHosted && !openedOnHosting && !searchParams.get('tab')) {
     setOpenedOnHosting(true);
     setHubMainMode('hosting');
   }
+  // Read once: the member's own ตี้ are left out below, so a change to them does not ask the server again
   useEffect(() => {
     if (!needsSuggestions) return;
     let isActive = true;
     fetch('/api/events?type=community&status=recruiting&limit=40')
       .then((res) => res.json())
       .then((json: { events?: EventItem[] }) => {
-        if (!isActive) return;
-        const open = (json.events ?? []).filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id));
-        setSuggestedEvents(open.sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date)).slice(0, 4));
+        if (isActive) setOpenEvents(json.events ?? []);
       })
       .catch(() => undefined);
     return () => {
       isActive = false;
     };
-  }, [needsSuggestions, hostedIdSet]);
+  }, [needsSuggestions]);
+  const suggestedEvents = useMemo(
+    () =>
+      openEvents
+        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id))
+        .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
+        .slice(0, 4),
+    [openEvents, hostedIdSet, guestEvents]
+  );
 
   // Events the member saved but has not joined: they had no place on this page before
   const [savedEventItems, setSavedEventItems] = useState<EventItem[]>([]);
@@ -540,25 +547,22 @@ function MyHubContent() {
     [activity.hosted],
   );
 
-  // Live catalog (published spots + bundled ones saved earlier)
-  const spotCatalog = useSpotCatalog('home');
-
-  // The catalog here was read when the page opened and holds only some places, so a place saved since is asked for by id
+  // Saved places are asked for by id (30 at a time), not found in a whole catalog; a member with none asks for nothing
   const [extraSavedSpots, setExtraSavedSpots] = useState<LifestyleSpotItem[]>([]);
   const askedSpotIds = useRef(new Set<string>());
   useEffect(() => {
-    const missing = savedSpotIds.filter((id) => !askedSpotIds.current.has(id) && !spotCatalog.some((s) => s.id === id)).slice(0, 30);
+    const missing = savedSpotIds.filter((id) => !askedSpotIds.current.has(id)).slice(0, 30);
     if (missing.length === 0) return;
     missing.forEach((id) => askedSpotIds.current.add(id));
     fetch(`/api/spots?ids=${encodeURIComponent(missing.join(','))}`)
       .then((res) => res.json())
       .then((json: { spots?: LifestyleSpotItem[] }) => setExtraSavedSpots((prev) => [...prev, ...(json.spots ?? [])]))
       .catch(() => missing.forEach((id) => askedSpotIds.current.delete(id)));
-  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
+  }, [savedSpotIds, extraSavedSpots]);
   const savedSpotsList: LifestyleSpotItem[] = useMemo(() => {
-    const byId = new Map([...extraSavedSpots, ...spotCatalog].map((s) => [s.id, s]));
+    const byId = new Map(extraSavedSpots.map((s) => [s.id, s]));
     return savedSpotIds.flatMap((id) => byId.get(id) ?? []);
-  }, [savedSpotIds, spotCatalog, extraSavedSpots]);
+  }, [savedSpotIds, extraSavedSpots]);
 
   const removeSaved = async (kind: 'spot' | 'event', id: string, title: string) => {
     if (!(await activityActions.setSaved(kind, id, false))) return showToast('นำออกไม่สำเร็จ ลองอีกครั้งนะ');
@@ -940,9 +944,15 @@ function MyHubContent() {
     return (
       <div className="space-y-5">
         <section aria-label="งานที่กำลังจะถึง" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
-          <h2 className="text-sm sm:text-base font-bold text-slate-900">
-            งานที่กำลังจะถึง <span className="text-slate-500 font-bold tabular-nums">({hostedUpcoming.length})</span>
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900">
+              งานที่กำลังจะถึง <span className="text-slate-500 font-bold tabular-nums">({hostedUpcoming.length})</span>
+            </h2>
+            <button type="button" onClick={() => setIsCreateEventModalOpen(true)} className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#F26430] hover:bg-[#E25520] text-white text-sm font-semibold shadow-sm cursor-pointer transition-colors">
+              <Plus className="w-4 h-4" strokeWidth={2.5} aria-hidden="true" />
+              ตั้งตี้ใหม่
+            </button>
+          </div>
           {hostedUpcoming.length > 0 ? (
             <ul className="mt-3 divide-y divide-slate-100">{hostedUpcoming.map((ev) => row(ev, false))}</ul>
           ) : (
@@ -1014,19 +1024,8 @@ function MyHubContent() {
   };
 
   // A member with nothing on the schedule yet: no filters full of zeros, just three ways to get a first entry
-  const renderFirstSteps = (underTabs = false) => {
-    const steps = [
-      { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
-      { href: '/events', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
-      { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
-    ];
-    return (
-      <section aria-label="เริ่มที่ไหนดี" className={underTabs ? undefined : scheduleDivider}>
-        <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
-        <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
-
-        {/* Real meetups that are open now: something to say yes to, not only doors to other pages */}
-        {suggestedEvents.length > 0 && (
+  const renderSuggested = () =>
+    suggestedEvents.length > 0 && (
           <div className="mt-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xs font-bold text-slate-500">ตี้ที่เปิดรับอยู่ตอนนี้</h3>
@@ -1060,7 +1059,21 @@ function MyHubContent() {
               })}
             </ul>
           </div>
-        )}
+    );
+
+  const renderFirstSteps = (underTabs = false) => {
+    const steps = [
+      { href: '/community', Icon: Users, tint: 'bg-[#EBF3ED] text-[#2D5A3C]', title: 'ไปตี้กับเพื่อนใหม่', text: 'วิ่ง บอร์ดเกม เวิร์กช็อป หรือจิบกาแฟ กลุ่มเล็กๆ ไม่กดดัน', cta: 'หาตี้' },
+      { href: '/events', Icon: Calendar, tint: 'bg-[#EEF4FA] text-[#2B527A]', title: 'ปักหมุดอีเวนต์', text: 'งานหนังสือ งานกาแฟ นิทรรศการที่กำลังจะมา', cta: 'ดูอีเวนต์' },
+      { href: '/challenges', Icon: Trophy, tint: 'bg-[#F5F3FF] text-[#7C3AED]', title: 'เริ่มชาเลนจ์แรก', text: 'ไปให้ครบตามเป้า แล้วรับ XP กับของรางวัล', cta: 'ดูชาเลนจ์' },
+    ];
+    return (
+      <section aria-label="เริ่มที่ไหนดี" className={underTabs ? undefined : scheduleDivider}>
+        <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
+        <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
+
+        {/* Real meetups that are open now: something to say yes to, not only doors to other pages */}
+        {renderSuggested()}
 
         {suggestedEvents.length > 0 && <h3 className="mt-3 text-xs font-bold text-slate-500">หรือเลือกดูเอง</h3>}
         <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${suggestedEvents.length > 0 ? 'mt-2' : 'mt-4'}`}>
@@ -1620,6 +1633,7 @@ function MyHubContent() {
             )}
 
             {scheduleRows.length === 0 ? (
+              <>
               <div className="bg-slate-50/80 rounded-2xl p-6 sm:p-8 border border-dashed border-slate-200 text-center space-y-3 max-w-lg mx-auto">
                 <div className="w-10 h-10 rounded-xl bg-white text-slate-500 flex items-center justify-center mx-auto border border-slate-200 shadow-2xs">
                   <CalendarDays className="w-5 h-5" />
@@ -1644,7 +1658,7 @@ function MyHubContent() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    <span>หากิจกรรม</span>
+                    <span>หาตี้</span>
                   </Link>
                   <Link
                     href="/events"
@@ -1655,6 +1669,8 @@ function MyHubContent() {
                   </Link>
                 </div>
               </div>
+              {scheduleView === 'list' && scheduleWhen === 'upcoming' && calendarCategoryFilter !== 'quests' && renderSuggested()}
+              </>
             ) : (
               <div>
                 {scheduleRows.map((ev, idx) => {
@@ -2050,7 +2066,8 @@ function MyHubContent() {
                     </div>
                   </div>
 
-                  {activity.hosted.length > 0 && (
+                  {/* Always there: this is also where someone who has never hosted finds "ตั้งตี้ใหม่" */}
+                  {activity.isLoaded && (
                     <div className="flex items-center gap-5" role="group" aria-label="บทบาท">
                       {([
                         { mode: 'calendar', label: 'ของฉัน', Icon: Users },
@@ -2548,6 +2565,7 @@ function MyHubContent() {
       {/* 8. Create Event Modal */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
+        initialType="community"
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent) => {
           setUserCreatedEvents((prev) => [newEvent, ...prev]);

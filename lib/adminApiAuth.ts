@@ -52,35 +52,35 @@ function isSameOriginRequest(request: Request): boolean {
 
 // Resolves the session cookie to an actor. Staff sessions are re-checked against the store on every
 // request, so disabling an account, changing its role or forcing logout takes effect immediately.
-function getSessionActor(request: Request): AdminActor | null {
+async function getSessionActor(request: Request): Promise<AdminActor | null> {
   if (!isSameOriginRequest(request)) return null;
   const payload = readAdminSessionToken(readCookie(request, ADMIN_SESSION_COOKIE));
   if (!payload) return null;
   if (payload.sub === ENV_OWNER_SUBJECT) {
     return process.env.ADMIN_PASSWORD ? { id: ENV_OWNER_SUBJECT, name: 'เจ้าของระบบ', role: 'owner' } : null;
   }
-  const account = findStaffById(payload.sub);
+  const account = await findStaffById(payload.sub);
   if (!account || account.status !== 'active' || account.sessionVersion !== payload.ver) return null;
   return { id: account.id, name: account.name, role: account.role };
 }
 
 /** The verified actor from a Bearer ADMIN_API_TOKEN or a signed session cookie, or null. */
-export function getCredentialActor(request: Request): AdminActor | null {
+export async function getCredentialActor(request: Request): Promise<AdminActor | null> {
   if (hasValidBearerToken(request)) return { id: 'api-token', name: 'Admin API token', role: 'owner' };
   return getSessionActor(request);
 }
 
 /** Whether the request carries real, server-verified admin credentials. Never trusts client-sent roles. */
-export function hasAdminCredentials(request: Request): boolean {
-  return getCredentialActor(request) !== null;
+export async function hasAdminCredentials(request: Request): Promise<boolean> {
+  return (await getCredentialActor(request)) !== null;
 }
 
 /**
  * The actor for this request, including the local-development bypass
  * (no credentials configured and not production → full access as a local owner).
  */
-export function getAdminActor(request: Request): AdminActor | null {
-  const actor = getCredentialActor(request);
+export async function getAdminActor(request: Request): Promise<AdminActor | null> {
+  const actor = await getCredentialActor(request);
   if (actor) return actor;
   if (process.env.NODE_ENV !== 'production' && !isAdminAuthConfigured()) {
     return { id: 'local-dev', name: 'Local developer', role: 'owner' };
@@ -89,8 +89,8 @@ export function getAdminActor(request: Request): AdminActor | null {
 }
 
 /** Whether admin access is granted, including the local-development bypass. */
-export function isAdminAccessGranted(request: Request): boolean {
-  return getAdminActor(request) !== null;
+export async function isAdminAccessGranted(request: Request): Promise<boolean> {
+  return (await getAdminActor(request)) !== null;
 }
 
 export function actorCan(actor: AdminActor | null, permission: AdminPermission): boolean {
@@ -101,8 +101,8 @@ export function actorCan(actor: AdminActor | null, permission: AdminPermission):
  * Guard for admin route handlers. Returns a response to send when access is denied, or null.
  * 401 = not signed in, 403 = signed in but the role lacks `permission`.
  */
-export function requireAdminApiAccess(request: Request, permission: AdminPermission = 'content.view'): NextResponse | null {
-  const actor = getAdminActor(request);
+export async function requireAdminApiAccess(request: Request, permission: AdminPermission = 'content.view'): Promise<NextResponse | null> {
+  const actor = await getAdminActor(request);
   if (actor) {
     if (roleHasPermission(actor.role, permission)) return null;
     return NextResponse.json(

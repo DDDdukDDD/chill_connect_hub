@@ -1,28 +1,50 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getCommunityEventCategory } from '@/data/masterHub';
+import { NIGHTLIFE_CATEGORY, nightlifeAgeMessage } from '@/lib/members/nightlife';
+import type { EventItem } from '@/data/mockData';
 import Link from 'next/link';
 import { MailCheck, ShieldCheck } from 'lucide-react';
 import type { PublicMember } from '@/lib/members/types';
 import { memberActions } from '@/lib/useMemberSession';
+
+type BarCheckEvent = Pick<EventItem, 'eventType' | 'lifestyleCategory' | 'category' | 'title' | 'tag'>;
 
 /**
  * What a member still needs before the server lets them join a ตี้ (lib/members/activity.ts: a "new" account,
  * i.e. email not confirmed or pledge not accepted, is refused). Said up front in the confirm dialog instead of
  * as a refusal after "ยืนยันการเข้าร่วม".
  */
-export function joinBlocker(member: PublicMember | null | undefined): 'email' | 'pledge' | null {
+export function joinBlocker(member: PublicMember | null | undefined, event?: BarCheckEvent): 'email' | 'pledge' | 'age' | null {
   if (!member) return null;
+  if (event && event.eventType !== 'public_venue' && getCommunityEventCategory(event as Parameters<typeof getCommunityEventCategory>[0]) === NIGHTLIFE_CATEGORY && nightlifeAgeMessage(member.birthYear)) return 'age';
   if (!member.trust.identityConfirmed) return 'email';
   if (!member.trust.pledged) return 'pledge';
   return null;
 }
 
 /** `returnTo`: where the email link and the pledge screen bring the member back (this ตี้, ready to join) */
-export function JoinReadinessNotice({ member, returnTo }: { member: PublicMember; returnTo: string }) {
+export function JoinReadinessNotice({ member, event, returnTo }: { member: PublicMember; event?: BarCheckEvent; returnTo: string }) {
   const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; devUrl?: string }>({ status: 'idle' });
-  const blocker = joinBlocker(member);
+  const blocker = joinBlocker(member, event);
   if (!blocker) return null;
+
+  if (blocker === 'age') {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700" role="status">
+        <p className="flex items-center gap-2 font-bold text-slate-900">
+          <ShieldCheck className="w-4 h-4 text-amber-700" aria-hidden="true" />
+          {nightlifeAgeMessage(member.birthYear)}
+        </p>
+        {!member.birthYear && (
+          <Link href={`/onboarding?returnTo=${encodeURIComponent(returnTo)}`} className="mt-3 inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">
+            ไปบอกปีเกิด
+          </Link>
+        )}
+      </div>
+    );
+  }
 
   if (blocker === 'pledge') {
     return (

@@ -10,6 +10,7 @@ import { compressImage } from '@/lib/media/compressor';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { NIGHTLIFE_CATEGORY, nightlifeAgeMessage } from '@/lib/members/nightlife';
 import { activityActions } from '@/lib/useMyActivity';
 import { DialogShell, dialogButton } from './auth/DialogShell';
 import { OrganizerGateDialog } from './auth/OrganizerGateDialog';
@@ -208,12 +209,15 @@ const DESCRIPTION_TEMPLATES: Partial<Record<CreationEntityType, string>> = {
 const hasTemplatePrompt = (description: string): boolean => /\[[^\]]{3,}\]/.test(stripHtmlToPlainText(description));
 
 /** What must be filled in on each step; the server checks again */
-function validate(type: CreationEntityType, step: number, f: Form, minDate: string, publishesNow = false): Errors {
+function validate(type: CreationEntityType, step: number, f: Form, minDate: string, publishesNow = false, birthYear?: number): Errors {
   const e: Errors = {};
   const need = (key: keyof Form, ok: boolean, message: string) => { if (!ok && !e[key]) e[key] = message; };
   if (step === 0) {
     need('title', f.title.trim().length >= 5, 'ตั้งชื่ออย่างน้อย 5 ตัวอักษร');
     if (type === 'community') need('lifestyleCategory', Boolean(f.lifestyleCategory), 'เลือกหมวดตี้');
+    // Said here, not after all four steps (the server decides in the end)
+    const barRule = type === 'community' && f.lifestyleCategory === NIGHTLIFE_CATEGORY ? nightlifeAgeMessage(birthYear) : null;
+    if (barRule) e.lifestyleCategory = barRule;
     if (type === 'fair') need('fairCategory', Boolean(f.fairCategory), 'เลือกประเภทงาน');
     if (type === 'fair') need('organizer', f.organizer.trim().length >= 2, 'ใส่ชื่อผู้จัดงาน');
     if (type === 'spot') need('spotCategory', Boolean(f.spotCategory), 'เลือกประเภทสถานที่');
@@ -615,7 +619,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const goNext = () => {
     if (!type) return;
-    const found = validate(type, step, form, minDate, publishesNow);
+    const found = validate(type, step, form, minDate, publishesNow, member?.birthYear);
     setErrors(found);
     if (Object.values(found).some(Boolean)) {
       requestAnimationFrame(() => bodyRef.current?.querySelector('[data-field-error]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
@@ -833,7 +837,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   // A meetup picks one of the categories, most popular first; the mood behind it is set from it but not shown
   // (owner 2026-10-25: kept for grouping later, not a choice members make)
   const categoryField = (
-    <Field label="หมวดตี้" error={errors.lifestyleCategory}>
+    <Field label="หมวดตี้" error={errors.lifestyleCategory ?? (form.lifestyleCategory === NIGHTLIFE_CATEGORY ? nightlifeAgeMessage(member?.birthYear) ?? undefined : undefined)}>
       <div className="flex flex-wrap gap-2">
         {questCategories.map((item) => {
           const selected = form.lifestyleCategory === item.id;
@@ -997,7 +1001,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     if (step === 0) {
       return (
         <>
-          {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ แล้วไปกินกาแฟ')}
+          {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ')}
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}

@@ -374,7 +374,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 {isEnrichingSpots ? 'กำลังเติมรูป...' : 'เติมรูปที่ขาด'}
               </button>
             )}
-            {sourceTypeFilter === 'events' && (
+            {process.env.NODE_ENV !== 'production' && sourceTypeFilter === 'events' && (
               <button
                 onClick={handleResetAndSeed}
                 disabled={isResetting || isScraping}

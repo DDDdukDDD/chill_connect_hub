@@ -124,7 +124,7 @@ async function buildHealth(events: AdminEventItem[], spots: LifestyleSpotItem[])
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   const { searchParams } = new URL(request.url);
@@ -180,9 +180,9 @@ export async function GET(request: Request) {
 
 // { action: 'approve' | 'reject', items: [{ kind, id }], reason? }
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'community.review');
+  const denied = await requireAdminApiAccess(request, 'community.review');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
 
   let body: { action?: unknown; items?: unknown; reason?: unknown };
   try {

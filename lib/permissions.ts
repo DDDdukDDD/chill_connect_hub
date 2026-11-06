@@ -6,11 +6,11 @@
 export type StaffRole = 'owner' | 'editor' | 'moderator' | 'data_ops';
 
 export type AdminPermission =
-  | 'content.view' // read every admin screen
+  | 'content.view' // read content and catalog screens; reports, moments, members and staff need their own permission
   | 'community.review' // approve or reject community meetups; safety reports and moments
   | 'content.edit' // create, edit, publish and delete spots, fairs, quests and campaigns; review fairs and spots
   | 'sources.run' // manage data sources and run scrapers
-  | 'master.edit' // master data: categories, provinces and zones, venues, rails
+  | 'master.edit' // master data: categories, provinces and zones, venues
   | 'system.manage' // media library, cache, reseeding events
   | 'audit.view' // read the audit log
   | 'members.manage' // member accounts: view, suspend, ban
@@ -33,7 +33,7 @@ export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
 };
 
 export const PERMISSION_LABELS: Record<AdminPermission, string> = {
-  'content.view': 'ดูทุกหน้า',
+  'content.view': 'ดูเนื้อหาและข้อมูลหลัก',
   'community.review': 'ตรวจตี้ รายงานความปลอดภัย และโมเมนต์',
   'content.edit': 'แก้ไข / เผยแพร่ที่เที่ยว อีเวนต์ ชาเลนจ์ แคมเปญ',
   'sources.run': 'จัดการแหล่งข้อมูล / รันการดึงข้อมูล',

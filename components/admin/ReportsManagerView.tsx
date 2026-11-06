@@ -9,7 +9,7 @@ import type { AdminModuleId } from './AdminSidebar';
 
 interface Report {
   id: string;
-  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message';
+  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message' | 'comment';
   excerpt?: string;
   roomId?: string;
   targetId: string;
@@ -26,11 +26,11 @@ interface Report {
   note?: string;
 }
 
-const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', chat_message: 'ข้อความแชตกลุ่ม' };
+const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', comment: 'ความคิดเห็น', chat_message: 'ข้อความแชตกลุ่ม' };
 // Reviews and chat messages have no page of their own; staff read the reported words in the report
 const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/events/', spot: '/spots/' };
 const MODULES: Partial<Record<Report['targetType'], AdminModuleId>> = { community: 'community', fair: 'fairs', spot: 'spots' };
-const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message';
+const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message' || report.targetType === 'comment';
 interface RoomMessage {
   id: string;
   authorId: string;
@@ -186,7 +186,7 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                 )}
                 {report.status === 'open' && isWords(report) && can('community.review') && (
                   <button type="button" disabled={busyId === report.id} onClick={() => close(report, 'remove_content')} className={adminButton.danger}>
-                    {report.targetType === 'review' ? 'ลบรีวิวนี้' : 'ลบข้อความนี้'}
+                    {report.targetType === 'review' ? 'ลบรีวิวนี้' : report.targetType === 'comment' ? 'ลบความคิดเห็นนี้' : 'ลบข้อความนี้'}
                   </button>
                 )}
                 {report.hostMemberId && can('members.manage') && <button type="button" onClick={() => onNavigate('members')} className={adminButton.secondary}>ไปที่สมาชิก</button>}

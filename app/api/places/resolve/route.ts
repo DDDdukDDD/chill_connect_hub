@@ -8,7 +8,7 @@ import { clientIp, isRateLimited } from '@/lib/rateLimit';
 // Reads the pin from a Google Maps link so the create dialog and the admin spot editor can show it before saving.
 export async function POST(request: Request) {
   const member = await getSessionMember(request);
-  if (!member && !getAdminActor(request)) {
+  if (!member && !await getAdminActor(request)) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   }
   if (isRateLimited(`map-resolve:${member?.id ?? clientIp(request)}`, 30, 10 * 60 * 1000)) {

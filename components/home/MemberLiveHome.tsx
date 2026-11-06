@@ -39,8 +39,8 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** This month's count, to tell a member who has not been out yet; null until it loads */
-  month: { chill: number; connect: number } | null;
+  /** Never earned any XP: the greeting tells them how the first comes. False until their rewards load */
+  noXpYet: boolean;
   savedCount: number;
   likedCategories: string[];
   isLoaded: boolean;
@@ -94,7 +94,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
               one slim line when there is something to do next. Laptops have both beside the feed */}
-          <div className="lg:hidden mb-6">
+          <div className="lg:hidden">
             <Greeting {...props} layout="row" />
           </div>
           <UpNextLine {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />
@@ -144,9 +144,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
  * "สวัสดี Duke" and the XP. This month's counts left for My Hub (owner 2026-11-04: "ของฉัน" already leads there);
  * before anything counts, one line says how the first one comes.
  */
-function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
-  const isNew = month !== null && month.chill + month.connect === 0;
-  const nudge = isNew && plans.length === 0 && (
+function Greeting({ name, now, xp, noXpYet, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
+  const nudge = noXpYet && plans.length === 0 && (
     <p className="mt-1 text-[13px] text-slate-600">
       ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
     </p>
@@ -155,9 +154,9 @@ function Greeting({ name, now, xp, month, plans, layout }: MemberLiveHomeProps &
   if (layout === 'row') {
     return (
       <div className="min-w-0">
-        <p className="text-xs text-slate-500">{dayPart(now)}</p>
-        <h1 className="text-[22px] sm:text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</h1>
-        {nudge}
+        {/* Phones and upright iPads start with the feed (owner 2026-11-05); the heading stays for screen readers */}
+        <h1 className="sr-only">สวัสดี {name}</h1>
+        {nudge && <div className="mb-4">{nudge}</div>}
       </div>
     );
   }

@@ -60,7 +60,7 @@ function pickParam<T extends string>(value: string | null, allowed: Set<string>,
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request);
+  const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
 
   const { searchParams } = new URL(request.url);
@@ -101,9 +101,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(req: Request) {
-  const denied = requireAdminApiAccess(req, 'community.review');
+  const denied = await requireAdminApiAccess(req, 'community.review');
   if (denied) return denied;
-  const actor = getAdminActor(req);
+  const actor = await getAdminActor(req);
 
   try {
     const body = await req.json();
@@ -145,6 +145,10 @@ export async function POST(req: Request) {
     }
 
     if (action === 'reset_and_seed') {
+      if (process.env.NODE_ENV === 'production') {
+        recordAudit(actor, 'event.reset_refused', 'พยายามรีเซ็ตกิจกรรมทั้งหมดบนเว็บจริง (ระบบไม่ให้ทำ)');
+        return NextResponse.json({ success: false, error: 'คำสั่งนี้ใช้ได้เฉพาะตอนพัฒนา เพราะจะลบกิจกรรมทั้งหมด' }, { status: 403 });
+      }
       const result = await resetAndSeedAllEvents();
       recordAudit(actor, 'event.reset_and_seed', `รีเซ็ตกิจกรรมทั้งหมด (${result.totalCount} รายการ)`);
       return NextResponse.json({

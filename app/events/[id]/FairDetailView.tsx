@@ -223,7 +223,7 @@ export default function FairDetailPage({
 
   const toggleFavorite = (eventId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลงมายฮับ');
       setPendingAction(`favorite:${eventId}`);
       setIsRequireMembershipOpen(true);
       return;
@@ -242,7 +242,7 @@ export default function FairDetailPage({
   const toggleInHub = () => {
     if (!eventData) return;
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกงานนี้ลง MyHub');
+      setMembershipActionTitle('เพื่อบันทึกงานนี้ลงมายฮับ');
       setPendingAction(`hub:${eventData.id}`);
       setIsRequireMembershipOpen(true);
       return;

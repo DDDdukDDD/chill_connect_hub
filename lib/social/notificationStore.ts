@@ -4,7 +4,7 @@ import { momentRepository } from '../moments';
 import { USE_POSTGRES, sql, type Sql } from '../db/postgres/client';
 import { createJsonStore } from './jsonStore';
 
-export type NotificationType = 'follow' | 'like' | 'comment' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result' | 'tee_changed';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'reply' | 'comment_like' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result' | 'tee_changed';
 
 export interface StoredNotification {
   id: string;

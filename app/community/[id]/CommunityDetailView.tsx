@@ -1121,7 +1121,7 @@ export default function CommunityDetailPage({
                   <User className="w-4 h-4 text-[#F26430] shrink-0" />
                   <div className="flex items-center gap-1.5">
                     <span className="text-slate-500 text-[11px]">ผู้จัด:</span>
-                    <span className="font-bold text-slate-900">{eventData.hostName || 'Verified Community Host'}</span>
+                    <span className="font-bold text-slate-900">{eventData.hostName || 'ผู้จัดตี้'}</span>
                     <ShieldCheck className="w-3.5 h-3.5 text-[#F26430]" />
                   </div>
                 </div>
@@ -1133,13 +1133,13 @@ export default function CommunityDetailPage({
                   <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                     <QrCode className="w-3.5 h-3.5" />
                   </div>
-                  <span>ระบบจะสร้าง <strong>QR E-Ticket</strong> และบันทึกเข้าหน้า <strong>MyHub</strong> ให้อัตโนมัติ</span>
+                  <span>ระบบจะสร้าง <strong>บัตรเข้างาน (QR)</strong> และบันทึกไว้ใน <strong>มายฮับ</strong> ให้อัตโนมัติ</span>
                 </div>
               </div>
             </div>
 
             {/* What the account still needs, said before the button rather than as a refusal after it */}
-            {hostCheckMember && <JoinReadinessNotice member={hostCheckMember} returnTo={joinReturnPath} />}
+            {hostCheckMember && <JoinReadinessNotice member={hostCheckMember} event={eventData} returnTo={joinReturnPath} />}
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3.5 pt-1">
@@ -1153,7 +1153,7 @@ export default function CommunityDetailPage({
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                disabled={Boolean(joinBlocker(hostCheckMember))}
+                disabled={Boolean(joinBlocker(hostCheckMember, eventData))}
                 className="w-full py-3.5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold shadow-sm transition-colors active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>ยืนยันการเข้าร่วม</span>

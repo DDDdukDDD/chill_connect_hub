@@ -98,7 +98,7 @@ async function overview() {
 }
 
 export async function GET(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage');
+  const denied = await requireAdminApiAccess(request, 'members.manage');
   if (denied) return denied;
   const { searchParams } = new URL(request.url);
 
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
     const member = await memberRepository.findById(exportId);
     if (!member) return NextResponse.json({ success: false, error: 'ไม่พบสมาชิก' }, { status: 404 });
     const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
-    recordAudit(getAdminActor(request), 'member.export', `ดาวน์โหลดข้อมูลของสมาชิก (คำขอข้อมูลส่วนบุคคล)`, { type: 'member', id: member.id });
+    recordAudit(await getAdminActor(request), 'member.export', `ดาวน์โหลดข้อมูลของสมาชิก (คำขอข้อมูลส่วนบุคคล)`, { type: 'member', id: member.id });
     return NextResponse.json(
       {
         success: true,
@@ -162,9 +162,9 @@ export async function GET(request: Request) {
 // | clear_flags {id, note?} (flags and reports looked at, nothing wrong)
 // | host_decision {id, decision: approve|reject, note? (required to reject)}
 export async function POST(request: Request) {
-  const denied = requireAdminApiAccess(request, 'members.manage');
+  const denied = await requireAdminApiAccess(request, 'members.manage');
   if (denied) return denied;
-  const actor = getAdminActor(request);
+  const actor = await getAdminActor(request);
   const body = await request.json().catch(() => ({}));
   const member = typeof body.id === 'string' ? await memberRepository.findById(body.id) : null;
   if (!member) return NextResponse.json({ success: false, error: 'ไม่พบสมาชิก' }, { status: 404 });
