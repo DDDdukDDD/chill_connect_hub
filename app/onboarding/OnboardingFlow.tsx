@@ -400,6 +400,15 @@ const clearFinishedRun = () => {
 
 /* ---------- Flow ---------- */
 
+/** A picked สาย on a small chip: the drawn icon pack, or the line icon for a สาย added in admin without a drawing */
+function SaiIcon({ id, fallback }: { id: string; fallback: React.ComponentType<{ className?: string }> }) {
+  return (
+    <span aria-hidden="true" className="inline-flex">
+      {React.createElement(meetupCategoryIcon(id) ?? fallback, { className: 'w-4 h-4' })}
+    </span>
+  );
+}
+
 export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor }: { preview: boolean; pledgeOnly?: boolean; returnTo: string; cameFor?: CameFor }) {
   const router = useRouter();
   const session = useMemberSession();
@@ -952,7 +961,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     <div className="mt-4 pt-4 border-t border-dashed border-slate-200 flex flex-wrap gap-1.5">
                       {pickedSai.slice(0, 5).map((cat, i) => (
                         <span key={cat.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${SAI_LOOK.get(cat.id)?.iconBg ?? 'bg-slate-100'} ${SAI_LOOK.get(cat.id)?.iconColor ?? 'text-slate-700'} ${i % 2 ? 'rotate-2' : '-rotate-1'}`}>
-                          <cat.icon className="w-3.5 h-3.5" aria-hidden="true" />
+                          <SaiIcon id={cat.id} fallback={cat.icon} />
                           {cat.name.split(' & ')[0]}
                         </span>
                       ))}
@@ -1126,7 +1135,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                   <p className="lg:hidden -mt-3 mb-6 flex flex-wrap gap-1.5">
                     {pickedSai.slice(0, 4).map((cat) => (
                       <span key={cat.id} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${SAI_LOOK.get(cat.id)?.iconBg ?? 'bg-slate-100'} ${SAI_LOOK.get(cat.id)?.iconColor ?? 'text-slate-700'}`}>
-                        <cat.icon className="w-3.5 h-3.5" aria-hidden="true" />
+                        <SaiIcon id={cat.id} fallback={cat.icon} />
                         {cat.name.split(' & ')[0]}
                       </span>
                     ))}

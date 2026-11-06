@@ -29,9 +29,10 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MomentLinkTarget[]>([]);
   const [searching, setSearching] = useState(false);
-  const [general, setGeneral] = useState<{ query: string; places: GeneralPlace[]; error?: string } | null>(null);
-  const [generalBusy, setGeneralBusy] = useState(false);
+  const [general, setGeneral] = useState<{ query: string; places: GeneralPlace[]; used: GeneralPlace[]; error?: string } | null>(null);
   const [nearby, setNearby] = useState<NearbyState>({ status: 'idle' });
+  // Where the member is, once they allowed it: the map search puts places near them first
+  const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const q = query.trim();
 
   const findNearby = useCallback(() => {
@@ -39,6 +40,7 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
     setNearby({ status: 'loading' });
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
+        setNear({ lat: coords.latitude, lng: coords.longitude });
         const url = `/api/places/nearby?lat=${coords.latitude}&lng=${coords.longitude}`;
         const get = (address: string) => fetch(address, { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
         const ours = await get(url);
@@ -97,14 +99,25 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
     return [...own, ...results.filter((r) => !own.some((item) => item.type === r.type && item.id === r.id))];
   }, [q, mine, results]);
 
-  // OpenStreetMap asks for few requests, so this runs on a press, never while typing
-  const searchGeneral = async () => {
-    if (q.length < 2 || generalBusy) return;
-    setGeneralBusy(true);
-    const json = await fetch(`/api/places/search?q=${encodeURIComponent(q)}`, { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
-    setGeneral(json?.success ? { query: q, places: json.places } : { query: q, places: [], error: json?.message || 'ค้นหาไม่ได้ในตอนนี้ ลองอีกครั้งนะ' });
-    setGeneralBusy(false);
-  };
+  // Places on the map, and names members already put on posts, as typing pauses (a little longer than our own
+  // search: the map service asks for fair use, and the server keeps each answer for 10 minutes)
+  useEffect(() => {
+    if (q.length < 2) return;
+    let active = true;
+    const timer = setTimeout(async () => {
+      const params = new URLSearchParams({ q, used: '1', ...(near ? { lat: String(near.lat), lng: String(near.lng) } : {}) });
+      const json = await fetch(`/api/places/search?${params}`, { cache: 'no-store' }).then((res) => res.json()).catch(() => null);
+      if (!active) return;
+      const used = ((json?.used ?? []) as { name: string; posts: number }[]).map(({ name, posts }) => ({ name, detail: `เพื่อนๆ แท็กไว้ ${posts.toLocaleString()} โพสต์` }));
+      const places = ((json?.places ?? []) as GeneralPlace[]).filter((place) => !used.some((u) => u.name === place.name));
+      setGeneral(json?.success ? { query: q, places, used } : { query: q, places: [], used: [], error: json?.message || 'ค้นหาบนแผนที่ไม่ได้ในตอนนี้ ใช้ชื่อที่พิมพ์ไว้ได้เลย' });
+    }, 450);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [q, near]);
+  const generalReady = general?.query === q;
 
   const targetRow = (target: MomentLinkTarget) => (
     <li key={`${target.type}-${target.id}`}>
@@ -135,10 +148,7 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
         <form
           role="search"
           className="relative"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void searchGeneral();
-          }}
+          onSubmit={(e) => e.preventDefault()}
         >
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
@@ -162,19 +172,18 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
                 {matches.length > 0 ? <ul className={listBox}>{matches.map(targetRow)}</ul> : <p className="text-sm text-slate-500">กำลังค้นหา…</p>}
               </div>
             )}
+            {generalReady && general.used.length > 0 && (
+              <div>
+                <p className={groupTitle}>ที่เพื่อนๆ เคยไป</p>
+                <ul className={listBox}>{general.used.map(nameRow)}</ul>
+              </div>
+            )}
             <div>
               <p className={groupTitle}>สถานที่ทั่วไป</p>
-              {general?.query === q && general.places.length > 0 && <ul className={`${listBox} mb-2`}>{general.places.map(nameRow)}</ul>}
-              {general?.query === q && general.places.length === 0 && <p role="status" className="mb-2 text-sm text-slate-500">{general.error ?? 'ไม่เจอที่นี่บนแผนที่ ใช้ชื่อที่พิมพ์ไว้ได้เลย'}</p>}
+              {generalReady && general.places.length > 0 && <ul className={`${listBox} mb-2 max-h-72 overflow-y-auto`}>{general.places.map(nameRow)}</ul>}
+              {generalReady && general.places.length === 0 && <p role="status" className="mb-2 text-sm text-slate-500">{general.error ?? 'ไม่เจอบนแผนที่ ใช้ชื่อที่พิมพ์ไว้ได้เลย เพื่อนคนต่อไปจะค้นเจอ'}</p>}
+              {!generalReady && <p role="status" className="mb-2 text-sm text-slate-500">กำลังค้นหาบนแผนที่…</p>}
               <ul className={listBox}>
-                {general?.query !== q && (
-                  <li>
-                    <button type="button" className={row} onClick={searchGeneral} disabled={generalBusy}>
-                      <Search className="w-4 h-4 shrink-0 text-[#2563EB]" aria-hidden="true" />
-                      <span className="min-w-0 text-sm font-semibold text-[#2563EB] truncate">{generalBusy ? 'กำลังค้นหา…' : `ค้นหา "${q}" บนแผนที่`}</span>
-                    </button>
-                  </li>
-                )}
                 <li>
                   <button type="button" className={row} onClick={() => onPickName(q)}>
                     <MapPin className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />

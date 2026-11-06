@@ -568,8 +568,12 @@ Both need a signed-in member or a staff session, and are rate limited per accoun
 Body: `{ url }` (a Google Maps link, `https://` only). Answer: `{ success, coordinates: { latitude, longitude } | null }`.
 Reads the coordinates in the link's address. A short link (`maps.app.goo.gl`) is followed on Google hosts only. `null` means the link carries no pin inside Thailand, which is common for links shared from the phone app; ask for a pin on the map instead. No Google API is called.
 
-### `GET /api/places/search?q=`
-Answer: `{ success, places: [{ name, detail, latitude, longitude }] }` (at most 5, Thailand only), from OpenStreetMap (Nominatim). Call it on a button press, not while typing. `502` when the search service does not answer.
+### `GET /api/places/search?q=[&lat=&lng=][&used=1]`
+Answer: `{ success, places: [{ name, detail, latitude, longitude }], used?: [{ name, posts }] }`. Thailand only.
+- `places` (at most 8): OpenStreetMap through Photon, which finds a name from its first letters, so it may be called while typing after a pause (the moment picker waits 450 ms). The same name within about 1 km is listed once. Nominatim answers when Photon is down. The server keeps each answer for 10 minutes.
+- `lat`/`lng` (optional) put places near that point first. They are rounded to about 1 km and not kept.
+- `used=1` (members only) adds `used` (at most 5): names members already put on published moments that contain the words, most used first. A place missing from the map is found once someone has posted it.
+- Rate limit: 120 per 10 minutes per account. `502` only when the map search fails and there are no `used` names.
 
 ### `/api/admin/review` — places need a pin
 `POST { action: 'approve' }` answers `400` when a place in the request has no coordinates inside Thailand. Nothing in the request is approved; staff set the pin in the spot editor first.
