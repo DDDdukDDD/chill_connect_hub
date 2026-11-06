@@ -86,16 +86,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Invalid request body' }, { status: 400 });
   }
 
-  const hasEmail = typeof email === 'string' && email.trim() !== '';
-  let session: { subject: string; version: number; actor: AdminActor } | null = null;
-  if (typeof password === 'string') {
-    if (hasEmail) {
-      const account = await authenticateStaff(email as string, password);
-      if (account) session = { subject: account.id, version: account.sessionVersion, actor: { id: account.id, name: account.name, role: account.role } };
-    } else if (verifyAdminPassword(password)) {
-      session = { subject: ENV_OWNER_SUBJECT, version: 0, actor: { id: ENV_OWNER_SUBJECT, name: 'เจ้าของระบบ', role: 'owner' } };
-    }
-  }
+  // Both checks always run, and the session comes only from their results: what the request sends never picks
+  // which check runs or skips one. It also keeps the response time the same for staff and owner logins
+  const emailText = typeof email === 'string' ? email.trim() : '';
+  const passwordText = typeof password === 'string' ? password : '';
+  const hasEmail = emailText !== '';
+  const account = await authenticateStaff(emailText, passwordText);
+  const ownerPasswordMatches = verifyAdminPassword(passwordText);
+  const session: { subject: string; version: number; actor: AdminActor } | null = account
+    ? { subject: account.id, version: account.sessionVersion, actor: { id: account.id, name: account.name, role: account.role } }
+    : !hasEmail && passwordText !== '' && ownerPasswordMatches
+      ? { subject: ENV_OWNER_SUBJECT, version: 0, actor: { id: ENV_OWNER_SUBJECT, name: 'เจ้าของระบบ', role: 'owner' } }
+      : null;
 
   if (!session) {
     recordFailure(clientKey, now);
