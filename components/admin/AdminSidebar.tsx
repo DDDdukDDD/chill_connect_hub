@@ -25,8 +25,10 @@ import {
   Megaphone,
   BadgeDollarSign,
   Gift,
+  Ticket,
 } from 'lucide-react';
 import type { AdminPermission } from '@/lib/permissions';
+import { BrandLogo } from '@/components/BrandLogo';
 import { AdminSessionStatus } from './AdminSessionStatus';
 import { useAdminSession } from './AdminAuthGate';
 
@@ -39,6 +41,7 @@ export type AdminModuleId =
   | 'quests'
   | 'campaigns'
   | 'draws'
+  | 'rewards'
   | 'sponsored'
   | 'moments'
   | 'reports'
@@ -90,8 +93,9 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { id: 'quests', label: 'ชาเลนจ์ & ภารกิจ', icon: Zap, pillarColor: '#7C3AED' },
       { id: 'campaigns', label: 'แคมเปญ', icon: Megaphone },
       { id: 'draws', label: 'จับรางวัล', icon: Gift },
+      { id: 'rewards', label: 'ของรางวัล & การแลก', icon: Ticket },
       { id: 'sponsored', label: 'การ์ดสนับสนุน', icon: BadgeDollarSign },
-      { id: 'moments', label: 'โมเมนต์', icon: Camera },
+      { id: 'moments', label: 'โมเมนต์', icon: Camera, pillarColor: '#F43F5E' },
     ],
   },
   {
@@ -137,6 +141,8 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   campaigns: 'content.view',
   // Winners' contact details are member data; the buttons also need content.edit
   draws: 'members.manage',
+  // Who redeemed what names members
+  rewards: 'members.manage',
   sponsored: 'content.view',
   moments: 'community.review',
   reports: 'community.review',
@@ -166,6 +172,7 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   quests: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าแรก' }],
   draws: [{ permission: 'content.edit', what: 'สุ่ม ประกาศผล และบันทึกการส่งมอบรางวัล' }],
+  rewards: [],
   sponsored: [{ permission: 'content.edit', what: 'เพิ่ม แก้ไข และลบการ์ดสนับสนุน' }],
   moments: [{ permission: 'community.review', what: 'ซ่อนและตรวจโมเมนต์และหลักฐาน' }],
   scraper: [{ permission: 'sources.run', what: 'จัดการแหล่งข้อมูลและรันการดึงข้อมูล' }],
@@ -228,9 +235,7 @@ export function AdminSidebar({ activeModule, onModuleChange }: AdminSidebarProps
     <aside className="flex flex-col w-64 shrink-0 bg-white border-r border-slate-200/80 h-screen sticky top-0 overflow-y-auto shadow-sm">
       <div className="px-5 py-5 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shadow-2xs">
-            <Leaf size={16} className="text-white" />
-          </div>
+          <BrandLogo size="md" />
           <div>
             <p className="text-sm font-bold text-slate-800 leading-tight">Chillwaa</p>
             <p className="text-[11px] text-slate-500 font-semibold tracking-wider uppercase">Admin Console</p>

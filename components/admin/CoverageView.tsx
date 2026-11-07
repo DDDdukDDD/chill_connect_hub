@@ -144,7 +144,7 @@ export function CoverageView({ onOpenSpots, onScanProvince }: CoverageViewProps)
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="ค้นหาจังหวัด" placeholder="ค้นหาจังหวัด"
-                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                className="w-full rounded-2xl border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
               />
             </div>
             <select aria-label="เรียงลำดับ" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">

@@ -530,7 +530,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
         >
           <label className="block flex-1">
             <span className="sr-only">รหัสรางวัล</span>
-            <input value={voucherCode} onChange={(event) => setVoucherCode(event.target.value)} placeholder="เช่น ARI-BREW-XXXXXXXX" autoComplete="off" className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm uppercase focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            <input value={voucherCode} onChange={(event) => setVoucherCode(event.target.value)} placeholder="เช่น ARI-BREW-XXXXXXXX" autoComplete="off" className="h-10 w-full rounded-2xl border border-slate-300 px-3 text-sm uppercase focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
           </label>
           <button type="submit" disabled={isCheckingVoucher || !voucherCode.trim()} className="h-10 whitespace-nowrap rounded-md bg-[#2563EB] px-4 text-sm font-semibold text-white hover:bg-[#1D4ED8] disabled:opacity-50">
             {isCheckingVoucher ? 'กำลังตรวจ…' : 'ตรวจรหัส'}
@@ -574,7 +574,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
           <label className="relative block w-full sm:w-72">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} aria-label="ค้นหาภารกิจหรือเหรียญตรา"
-            placeholder="ค้นหาภารกิจหรือเหรียญตรา" className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            placeholder="ค้นหาภารกิจหรือเหรียญตรา" className="h-10 w-full rounded-2xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" />
           </label>
         </div>
 

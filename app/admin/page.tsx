@@ -11,6 +11,7 @@ import { VenuesManagerView } from '@/components/admin/VenuesManagerView';
 import { QuestsManagerView } from '@/components/admin/QuestsManagerView';
 import { CampaignsManagerView } from '@/components/admin/CampaignsManagerView';
 import { CampaignDrawsView } from '@/components/admin/CampaignDrawsView';
+import { RewardsView } from '@/components/admin/RewardsView';
 import { SponsoredSlotsView } from '@/components/admin/SponsoredSlotsView';
 import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
@@ -146,6 +147,8 @@ function AdminConsole() {
         return <CampaignsManagerView />;
       case 'draws':
         return <CampaignDrawsView />;
+      case 'rewards':
+        return <RewardsView />;
       case 'sponsored':
         return <SponsoredSlotsView />;
       case 'moments':

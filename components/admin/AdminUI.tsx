@@ -12,22 +12,22 @@ import React from 'react';
  */
 export const adminButton = {
   primary:
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   dark:
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   secondary:
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   danger:
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   /** Compact variants for table rows */
   primarySm:
-    'inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   secondarySm:
-    'inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   dangerSm:
-    'inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
   icon:
-    'inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center p-2 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
 } as const;
 
 interface AdminPageHeaderProps {
@@ -73,6 +73,7 @@ export const PILLAR_STYLES = {
   fairs: { label: 'อีเวนต์', className: 'bg-[#EEF4FA] text-[#1F3D5C] border-[#2B527A]/30' },
   spots: { label: 'พิกัดเที่ยว', className: 'bg-[#EBF3ED] text-[#2D5A3C] border-[#4A7C59]/30' },
   quests: { label: 'ชาเลนจ์', className: 'bg-[#F5F3FF] text-[#6D28D9] border-[#7C3AED]/30' },
+  moments: { label: 'โมเมนต์', className: 'bg-[#FFF1F2] text-[#BE123C] border-[#F43F5E]/30' },
 } as const;
 
 export type AdminPillar = keyof typeof PILLAR_STYLES;
