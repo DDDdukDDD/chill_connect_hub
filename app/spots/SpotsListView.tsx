@@ -36,8 +36,13 @@ import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
 import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
 import { Toast } from '@/components/Toast';
+import { ActiveChip, ChoiceGroup, FilterButton, FilterSheet, QuickChip, pillClass } from '@/components/discover/FilterControls';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
 
 // The list view's rows use an animation library (~120 KB); it loads only when someone picks the list view (2026-10-28)
+/** Districts shown in the sheet before "ดูทั้งหมด" */
+const DISTRICTS_FIRST = 12;
+
 const SpotListItem = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItem));
 const SpotListItemSkeleton = dynamic(() => import('@/components/SpotListItem').then((m) => m.SpotListItemSkeleton));
 
@@ -59,8 +64,21 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const [selectedProvince, setSelectedProvince] = useState<string>(searchParams.get('province') || 'all');
   useOwnProvinceDefault(searchParams.get('province'), selectedProvince, setSelectedProvince);
   const [priceFilter, setPriceFilter] = useState<'all' | 'free'>((searchParams.get('price') as any) || 'all');
+  // A district inside the picked province, and places open right now (owner 2026-11-07: filters like the other list pages)
+  // Several districts can be picked: people plan by area (owner 2026-11-07)
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>(() => (searchParams.get('district') || '').split(',').filter(Boolean));
+  // The sheet shows the districts with most places first; the rest wait behind "ดูทั้งหมด"
+  const [allDistrictsShown, setAllDistrictsShown] = useState(false);
+  const toggleDistrict = (name: string) => {
+    setSelectedDistricts((picked) => (picked.includes(name) ? picked.filter((d) => d !== name) : [...picked, name]));
+    setCurrentPage(1);
+  };
+  const [openNow, setOpenNow] = useState(searchParams.get('open') === 'now');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Filters only the sheet sets; the quick ones show in the row already
+  const sheetCount = (selectedProvince !== 'all' ? 1 : 0) + (selectedDistricts.length > 0 ? 1 : 0);
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
-  useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, price: priceFilter });
+  useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, district: selectedDistricts.join(','), price: priceFilter, open: openNow ? 'now' : '' });
   const [sortByNearMe, setSortByNearMe] = useState(false);
   const [openedAt] = useState(() => serverOpenedAt ?? Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -152,13 +170,15 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 
   // The list comes from the server (GET /api/spots/browse): the same filters, order and counts, only the places on screen.
   // It used to download all ~2,000 places (7 MB) and filter them here, which made phones slow (2026-10-28).
-  const [result, setResult] = useState<SpotBrowseResult>(() => initial ?? { spots: [], total: 0, counts: {}, railIds: NATIONWIDE_SPOT_CATEGORIES.map((c) => c.id), openedAt });
+  const [result, setResult] = useState<SpotBrowseResult>(() => initial ?? { spots: [], total: 0, counts: {}, districts: [], railIds: NATIONWIDE_SPOT_CATEGORIES.map((c) => c.id), openedAt });
   const [isFetching, setIsFetching] = useState(!initial);
   const wanted = currentPage * itemsPerPage;
   const browseQuery = useMemo(() => {
     const params = new URLSearchParams({ t: String(openedAt) });
     if (searchQuery.trim()) params.set('q', searchQuery.trim());
     if (selectedProvince !== 'all') params.set('province', selectedProvince);
+    if (selectedProvince !== 'all' && selectedDistricts.length) params.set('district', selectedDistricts.join(','));
+    if (openNow) params.set('open', 'now');
     if (selectedCategory !== 'all') params.set('category', selectedCategory);
     if (priceFilter === 'free') params.set('price', 'free');
     if (sortBy === 'favorites') params.set('ids', favoriteSpots.join(','));
@@ -167,7 +187,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
       params.set('lng', String(userLocation.lng));
     }
     return params.toString();
-  }, [openedAt, searchQuery, selectedProvince, selectedCategory, priceFilter, sortBy, favoriteSpots, sortByNearMe, userLocation]);
+  }, [openedAt, searchQuery, selectedProvince, selectedDistricts, openNow, selectedCategory, priceFilter, sortBy, favoriteSpots, sortByNearMe, userLocation]);
 
   // The server page already answered the address's own filters for the first batch
   const answered = useRef(initial ? { query: browseQuery, count: initial.spots.length, total: initial.total } : null);
@@ -183,7 +203,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
         .then((json) => {
           if (!json?.success) return;
           answered.current = { query: browseQuery, count: json.spots.length, total: json.total };
-          setResult({ spots: json.spots, total: json.total, counts: json.counts, railIds: json.railIds, openedAt });
+          setResult({ spots: json.spots, total: json.total, counts: json.counts, districts: json.districts ?? [], railIds: json.railIds, openedAt });
         })
         .catch(() => {})
         .finally(() => !controller.signal.aborted && setIsFetching(false));
@@ -200,14 +220,25 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const totalSpots = result.total;
   // The sponsored place takes the third card while the list is not narrowed to something it may not fit (lib/sponsored)
   const showSponsored =
-    sponsoredSpot !== null && !searchQuery.trim() && selectedCategory === 'all' && priceFilter === 'all' && sortBy === 'newest' && !sortByNearMe &&
+    sponsoredSpot !== null && !searchQuery.trim() && selectedCategory === 'all' && priceFilter === 'all' && selectedDistricts.length === 0 && !openNow && sortBy === 'newest' && !sortByNearMe &&
     (selectedProvince === ALL_PROVINCES || spotInProvince(sponsoredSpot, selectedProvince));
   const gridSpots = useMemo(() => withSponsored(paginatedSpots, showSponsored ? sponsoredSpot : null), [paginatedSpots, showSponsored, sponsoredSpot]);
+
+  // A district belongs to one province, so a new province starts without one
+  const chooseProvince = (province: string) => {
+    setSelectedProvince(province);
+    setSelectedDistricts([]);
+    setAllDistrictsShown(false);
+    setCurrentPage(1);
+  };
 
   const handleResetAll = () => {
     setSearchQuery('');
     setSelectedCategory('all');
     setSelectedProvince('all');
+    setSelectedDistricts([]);
+    setAllDistrictsShown(false);
+    setOpenNow(false);
     setPriceFilter('all');
     setSortBy('newest');
     setSortByNearMe(false);
@@ -243,10 +274,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
               setCurrentPage(1);
             }}
             province={selectedProvince}
-            onProvinceChange={(p) => {
-              setSelectedProvince(p);
-              setCurrentPage(1);
-            }}
+            onProvinceChange={chooseProvince}
           />
         }
       />
@@ -261,10 +289,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
             setCurrentPage(1);
           }}
           province={selectedProvince}
-          onProvinceChange={(p) => {
-            setSelectedProvince(p);
-            setCurrentPage(1);
-          }}
+          onProvinceChange={chooseProvince}
           initialCounts={initialCounts}
           // Shown to members only: a visitor's job here is to find something to join (owner 2026-10-25)
           action={
@@ -283,14 +308,13 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
             <DestinationCircles
               selected={selectedProvince}
               onSelect={(prov) => {
-                setSelectedProvince(prov ?? 'all');
+                chooseProvince(prov ?? 'all');
                 setSelectedCategory('all');
-                setCurrentPage(1);
               }}
             />
           }
           summary={
-            (searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
+            (searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || selectedDistricts.length > 0 || openNow || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
               <button type="button" onClick={handleResetAll} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
                 ล้างตัวกรองทั้งหมด
               </button>
@@ -322,23 +346,17 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
             </>
           }
         >
-          {/* Filters as pills: one row that scrolls on phones */}
+          {/* ตัวกรอง (province and district), then the quick ones, then a chip for each place filter set in the sheet; one row that scrolls on phones */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+            <FilterButton kind="spots" count={sheetCount} onClick={() => setIsFilterOpen(true)} />
             <button type="button" onClick={handleToggleNearMe} disabled={isLocating} aria-pressed={sortByNearMe} className={filterPillClass('spots', sortByNearMe)}>
               {isLocating ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <LocateFixed className="w-4 h-4" aria-hidden="true" />}
               <span>{isLocating ? 'กำลังหาพิกัด...' : 'ใกล้ฉัน'}</span>
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
-                setCurrentPage(1);
-              }}
-              aria-pressed={priceFilter === 'free'}
-              className={filterPillClass('spots', priceFilter === 'free')}
-            >
-              เข้าฟรี
-            </button>
+            <QuickChip kind="spots" on={openNow} onToggle={() => { setOpenNow(!openNow); setCurrentPage(1); }}>เปิดอยู่ตอนนี้</QuickChip>
+            <QuickChip kind="spots" on={priceFilter === 'free'} onToggle={() => { setPriceFilter(priceFilter === 'free' ? 'all' : 'free'); setCurrentPage(1); }}>เข้าฟรี</QuickChip>
+            {selectedProvince !== 'all' && <ActiveChip kind="spots" label={selectedProvince} onClear={() => chooseProvince('all')} />}
+            {selectedDistricts.map((name) => <ActiveChip key={name} kind="spots" label={name} onClear={() => toggleDistrict(name)} />)}
           </div>
         </DiscoverHeader>
 
@@ -432,6 +450,45 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
 
       </main>
 
+      {isFilterOpen && (
+        <FilterSheet onClose={() => setIsFilterOpen(false)} onReset={() => { chooseProvince('all'); setOpenNow(false); setPriceFilter('all'); }} canReset={sheetCount > 0 || openNow || priceFilter === 'free'} resultLabel={`ดู ${totalSpots.toLocaleString()} ที่`}>
+          <div className="space-y-2.5">
+            <label htmlFor="spots-province" className="block text-sm font-bold text-slate-900">จังหวัด</label>
+            <select id="spots-province" value={selectedProvince} onChange={(e) => chooseProvince(e.target.value)} className="w-full h-11 px-3.5 rounded-2xl border border-slate-300 bg-white text-sm font-medium text-slate-900 cursor-pointer">
+              <option value="all">ทั่วประเทศ</option>
+              {MASTER_77_PROVINCES.map((name) => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+          <fieldset className="space-y-2.5">
+            <legend className="text-sm font-bold text-slate-900">เขต / อำเภอ <span className="font-medium text-slate-500">เลือกได้หลายเขต</span></legend>
+            {selectedProvince === 'all' ? (
+              <p className="text-sm text-slate-500">เลือกจังหวัดก่อน แล้วเขตในจังหวัดนั้นจะขึ้นตรงนี้</p>
+            ) : result.districts.length === 0 ? (
+              <p className="text-sm text-slate-500">ยังไม่มีเขตให้เลือกในจังหวัดนี้</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => { setSelectedDistricts([]); setCurrentPage(1); }} aria-pressed={selectedDistricts.length === 0} className={pillClass('spots', selectedDistricts.length === 0)}>ทุกเขต</button>
+                {result.districts
+                  .filter((d, index) => allDistrictsShown || index < DISTRICTS_FIRST || selectedDistricts.includes(d.name))
+                  .map((d) => (
+                    <button key={d.name} type="button" onClick={() => toggleDistrict(d.name)} aria-pressed={selectedDistricts.includes(d.name)} className={pillClass('spots', selectedDistricts.includes(d.name))}>
+                      {d.name} <span className="text-xs font-medium opacity-70 tabular-nums">{d.count}</span>
+                    </button>
+                  ))}
+                {!allDistrictsShown && result.districts.length > DISTRICTS_FIRST && (
+                  <button type="button" onClick={() => setAllDistrictsShown(true)} className="inline-flex items-center h-9 px-2 text-sm font-semibold text-[#2D5A3C] hover:underline cursor-pointer">
+                    ดูทั้งหมด ({result.districts.length})
+                  </button>
+                )}
+              </div>
+            )}
+          </fieldset>
+          <ChoiceGroup kind="spots" title="เวลาเปิด" options={[['ทั้งหมด', 'any'], ['เปิดอยู่ตอนนี้', 'now']]} value={openNow ? 'now' : 'any'} onChange={(v) => { setOpenNow(v === 'now'); setCurrentPage(1); }} />
+          <ChoiceGroup kind="spots" title="ค่าเข้า" options={[['ทั้งหมด', 'all'], ['เข้าฟรี', 'free']]} value={priceFilter} onChange={(v) => { setPriceFilter(v); setCurrentPage(1); }} />
+        </FilterSheet>
+      )}
+
+
       {/* Modals & Helpers */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
@@ -474,7 +531,6 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
       <MobileNav
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
-        favoritesCount={favoriteSpots.length}
       />
 
       <Toast message={toastMessage} />

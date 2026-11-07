@@ -20,6 +20,39 @@ Item template:
 
 ---
 
+### BE-288 · /spots: several districts, top 12 first, Bangkok แขวง counted under their เขต (owner 2026-11-07)
+- **What changed:** `district` on `GET /api/spots/browse` takes a comma-separated list (`docs/API.md`); the sheet toggles districts, shows the 12 with most places then "ดูทั้งหมด", and puts one chip per district in the row. `data/bangkokDistricts.ts` maps about 150 Bangkok sub-districts to their district (dev data: 46 names became 24 districts); names starting with "จังหวัด" are dropped.
+- **Known:** other provinces still have some ตำบล in the district field (e.g. ช่อแล, Chiang Mai); 18 Bangkok places have no district. Fix those in the place data.
+- **Also:** reward cards in the promo row lay out from the top again (BE-286 made them buttons, which centred their content).
+
+### BE-287 · /spots gets ตัวกรอง: district and "open now" (owner 2026-11-07)
+- **What changed:** the /spots row is now ตัวกรอง · ใกล้ฉัน · เปิดอยู่ตอนนี้ · เข้าฟรี, like the other list pages. The sheet has all 77 provinces and the picked province's districts with counts. `GET /api/spots/browse` takes `district` and `open=now` and returns `districts` (`docs/API.md`); both filters also go in the page address.
+- **Shared utility:** `parseSpotOpenStatus` moved from the place page to `lib/openHours.ts`, next to the new `isSpotOpenNow` (only a readable time or 24 hours counts as open). Districts are compared without "เขต" / "อำเภอ" / "อ." (`districtName` in `lib/spotBrowse.ts`).
+- **Checked:** type check, and `isSpotOpenNow` against sample hours (incl. past midnight). Not walked in a browser.
+
+### BE-286 · Promo row: lower, rewards on the landing too, reward popup on the same page (owner 2026-11-07)
+- **What changed:** cards are 100 px (104 px on laptops; were 108 to 128). The landing shows rewards beside campaigns, like /challenges (reverses the 2026-11-04 "campaigns only" choice). A reward card and "แลกสิทธิ์ลุ้น" in a campaign open the reward popup on the page you are on instead of going to /rewards: `components/rewards/RewardDialog.tsx` (used by /rewards too), opened through `useCampaigns().openReward`. Campaign and reward popups are both 520 px wide.
+- **Checked:** type check and lint only.
+
+### BE-285 · No number on the phone menu's กิจกรรม tab (owner 2026-11-07)
+- **What changed:** the orange count was the number of saved items, counted differently per page and read as "something new". `MobileNav` no longer takes `favoritesCount`.
+
+### BE-284 · Moments: tall posts by default in plain words; cards stay still on hover (owner 2026-11-07)
+- **What changed:** a new photo post starts 4:5; the buttons say แนวตั้ง / สี่เหลี่ยม (no ratios). Older posts stay square. On /moments a pointed-at photo only dims a little (no lift or tilt).
+
+### BE-283 · Posters show whole on ตี้ and ชาเลนจ์ cards and the challenge page header (owner 2026-11-07)
+- **What changed:** `MeetupTile`, `ChallengeTile` and the challenge page header use `PosterPhoto` like อีเวนต์ tiles: a tall poster shows whole over a blurred copy, a photo fills. A square poster in a 16:10 page header is still cropped.
+
+### BE-282 · Create dialog: examples per step, card preview for the cover, icon tiles for categories (owner 2026-11-07)
+- **What changed:** each step has a closed "ดูตัวอย่าง" panel (`components/CreateStepGuide.tsx`) with a filled example per field and where it shows. The cover comes right after the name, with upload first and a preview of the real card plus the best size (`components/CoverPreview.tsx`). Categories for ตี้, อีเวนต์, ชาเลนจ์ and สถานที่ are icon tiles; place types got icons (`placeTypeIcon`, ที่นั่งทำงาน and Co-working borrow the work icon).
+- **Checked:** type check and lint; not seen in a browser (needs sign-in).
+
+
+### BE-281 · Challenges done by plan: a calendar, daily stamps, sharing progress (owner 2026-11-07)
+- **What changed:** a challenge can follow a plan instead of counting visits (`plan` on `ChallengeQuest`, stored in `details`; `docs/API.md`). Staff set it in the admin challenge form ("นับจากการไป" / "แผนรายวัน"): how many weeks (no 30-day limit, owner), then fixed weekdays with a task each, or "สัปดาห์ละ N ครั้ง" on any days, and how many misses are allowed (default one in seven). Each member's plan starts the day they join. `lib/social/questPlan.ts` holds the rules for both server and pages: stamp today or yesterday, once a day, only planned days (fixed) or up to N a week (flexible). Stamps live in `app.quest_stamps` (**migration 0029**, `lib/social/questStampStore.ts`); `progressOf` counts them, so finishing pays XP and badges like every challenge. Pages: the challenge page shows the plan, then once joined today's task with one stamp button, progress, the weeks as a calendar, "แชร์โมเมนต์วันนี้" (linked to the day's stamp) and "แชร์ความคืบหน้า" (a stamp-card picture opened in the post editor); My Hub's schedule starts with "วันนี้ตามแผน" (stamp in place); "กำลังทำอยู่" says "stamp แล้ว" for these.
+- **What to do about it:** run `npm run db:migrate` on live when this reaches `main` (0029 already ran on the dev database). Stamps cannot be checked, so give plan challenges XP, not prizes that cost money. Checked on the dev database through the API and headless Chrome (fixed and flexible plans, duplicate and early stamps refused, a finish paid +40 XP, undo blocked after a finish); test challenges and member deleted.
+- **Dev server note:** `stores.ts` changes were not picked up by the running `next dev` (an old module instance stayed in memory), so the stamp store lives in its own file.
+
 ### BE-280 · One simple filter row on the four list pages; campaigns and rewards swipe together on phones (owner 2026-11-07)
 - **Filters:** /community, /events and /challenges share `components/discover/FilterControls.tsx`: "ตัวกรอง" (with how many are set) opens a sheet with every filter in groups and "ล้าง" / "ดู N …"; the one or two filters used most stay as quick chips (ตี้: สุดสัปดาห์นี้, ยังมีที่ว่าง · อีเวนต์: สุดสัปดาห์นี้, เข้าชมฟรี · ชาเลนจ์: ทำได้เลยตอนนี้, ของรางวัลแบรนด์, ที่ฉันทำอยู่); anything set in the sheet shows as a chip with ✕. Dates gained วันนี้ / พรุ่งนี้ / สุดสัปดาห์นี้ (same DD/MM/YYYY range as the date picker, which stays under "เลือกวันเอง") and read in words. /spots has only two filters, so it keeps them as chips without a sheet. On phones the row starts with the filters and ends with ♡ and the view switch. The challenge dropdowns (`ChallengeFilters.tsx`) and `FilterSelect` are gone; "ที่ฉันทำอยู่" moved from the phone header into the row, so the XP pill shows on phones again.
 - **Campaigns and rewards:** on phones `PromoBoard` shows one row to swipe: campaigns, then rewards, then "ดูของรางวัลทั้งหมด" (rewards used to be hidden on phones). Tablets and computers unchanged.

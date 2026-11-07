@@ -14,10 +14,13 @@ import { EventAttendees } from '@/components/EventAttendees';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
+import { ChallengePlan } from '@/components/detail/ChallengePlan';
+import { planNeeded, planSummary, planTotal } from '@/lib/social/questPlan';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { RelatedChallengeTiles } from '@/components/detail/RelatedTiles';
 import { Toast } from '@/components/Toast';
 import { optimizedImage } from '@/lib/optimizedImage';
+import { PosterPhoto } from '@/components/PosterPhoto';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -156,7 +159,9 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const isEnded = quest.status === 'ended' || (quest.daysRemaining !== undefined && quest.daysRemaining <= 0);
   const points = quest.rewardPoints ?? 0;
   const participants = quest.participantsCount ?? 0;
-  const total = (tracked ? detail.mine?.total ?? quest.rule?.count : undefined) ?? (parseInt(quest.total || '3', 10) || 3);
+  // A challenge done by plan (owner 2026-11-07): stamps on its own calendar instead of places to go
+  const plan = quest.plan;
+  const total = (tracked ? detail.mine?.total ?? quest.rule?.count ?? (plan ? planNeeded(plan) : undefined) : undefined) ?? (parseInt(quest.total || '3', 10) || 3);
   const current = Math.min(total, tracked ? detail.mine?.current ?? 0 : notedProgress);
   const earned = Boolean(tracked && detail.mine?.completed);
   const selfDone = !tracked && joined && notedProgress >= total;
@@ -164,7 +169,14 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const rules = tracked ? describeQuestRule(quest.rule, detail.minEvidence) : null;
   const period = questDateRange(quest) || (quest.endDate ? `ถึง ${questDay(quest.endDate)}` : 'ไม่กำหนดวันสิ้นสุด');
   const about = quest.objective && quest.objective !== quest.targetGoal ? quest.objective : '';
-  const steps = rules
+  const steps = plan
+    ? [
+        'กดร่วมชาเลนจ์ในหน้านี้ ไม่มีค่าใช้จ่าย แผนของคุณเริ่มนับวันที่กดร่วม',
+        `ทำตามแผน: ${planSummary(plan)}`,
+        'ทำเสร็จแต่ละครั้ง กด stamp ในหน้านี้ ลืมได้ 1 วัน stamp ย้อนหลังได้ จะแชร์รูปเป็นโมเมนต์ด้วยก็ได้',
+        `stamp ครบ ${total} ครั้ง ${isPartner ? 'ระบบมอบ XP และออกรหัสรับสิทธิ์ให้ในหน้านี้ทันที' : 'ระบบมอบ XP เข้าบัญชีให้ทันที'}`,
+      ]
+    : rules
     ? [
         'กดร่วมชาเลนจ์ในหน้านี้ ไม่มีค่าใช้จ่าย',
         `${rules.goStep.replace('{n}', String(total))}${quest.endDate ? ` ภายในวันที่ ${questDay(quest.endDate)}` : ''}`,
@@ -172,7 +184,16 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         isPartner ? 'เมื่อครบ ระบบมอบ XP และออกรหัสรับสิทธิ์ให้ในหน้านี้ทันที' : 'เมื่อครบ ระบบมอบ XP เข้าบัญชีให้ทันที',
       ]
     : ['กดร่วมชาเลนจ์ในหน้านี้ ไม่มีค่าใช้จ่าย', 'ทำตามเป้าหมายของชาเลนจ์ในแบบของคุณ', 'กลับมาบันทึกความคืบหน้าด้วยตนเองในหน้านี้ทุกครั้งที่ทำ'];
-  const terms: { label: string; text: string }[] = rules
+  const terms: { label: string; text: string }[] = plan
+    ? [
+        { label: 'ระยะเวลา', text: `${plan.weeks} สัปดาห์ นับจากวันที่คุณกดร่วม${quest.endDate ? ` กดร่วมได้ถึง ${questDay(quest.endDate)}` : ''}` },
+        { label: 'แผน', text: planSummary(plan) },
+        { label: 'การยืนยัน', text: 'กด stamp ด้วยตนเองในวันที่ทำ ย้อนหลังได้ถึงเมื่อวาน' },
+        { label: 'การนับ', text: `ครบ ${total} จาก ${planTotal(plan)} ครั้งก็สำเร็จ${planTotal(plan) > total ? ` พลาดได้ ${planTotal(plan) - total} ครั้ง` : ''}` },
+        { label: 'ผู้มีสิทธิ์ร่วม', text: 'สมาชิก Chillwaa ทุกคน ไม่มีค่าใช้จ่าย' },
+        { label: 'ผู้จัด', text: reward.partnerName },
+      ]
+    : rules
     ? [
         { label: 'ระยะเวลา', text: `${period} นับเฉพาะการไปในช่วงนี้` },
         { label: 'สิ่งที่นับ', text: rules.scope },
@@ -191,7 +212,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       ];
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
   // with nothing in the period yet it says so instead of leaving the question open
-  const showPlaces = tracked && !earned && !isEnded;
+  const showPlaces = tracked && !plan && !earned && !isEnded;
   // On a desktop, places sit under the reward while deciding (what you get, then where); once joined they move to the main column
   const placesBesideReward = showPlaces && !joined;
   // A host challenge is done by hosting: it offers to open a ตี้ instead of places to go
@@ -269,6 +290,14 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
       </button>
     );
+  } else if (plan) {
+    // Joined a plan: today's stamp is the next thing to do
+    mainAction = (
+      <a href="#plan" className={dialogButton.primary}>
+        แผนของฉัน
+        <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
+      </a>
+    );
   } else if (tracked && isHostQuest) {
     mainAction = (
       <Link href="/community?create=1" className={dialogButton.primary}>
@@ -333,6 +362,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           <button type="button" onClick={handleJoin} disabled={isSaving} className={`${barButton} bg-[#2563EB] hover:bg-[#1D4ED8] text-white`}>
             {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
           </button>
+        ) : plan ? (
+          <a href="#plan" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>แผนของฉัน</a>
         ) : tracked ? (
           <a href="#places" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{isHostQuest ? 'ตั้งตี้ของฉัน' : placesButton}</a>
         ) : (
@@ -413,7 +444,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
       <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
-          <img src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} className="w-full h-full object-cover" />
+          {/* A tall poster shows whole over a blurred copy of itself, as on a ตี้ page (DetailHero) */}
+          <PosterPhoto src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} fetchPriority="high" />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" aria-hidden="true" />
             ชาเลนจ์
@@ -671,6 +703,11 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           {/* Deciding: on phones and tablets the places come right after the rules (owner 2026-10-16).
               Doing: where to go is the page's job, so they lead the main column on every screen. */}
           {showPlaces && <div className={joined ? 'order-0' : 'lg:hidden order-5'}>{placesSection('places')}</div>}
+          {plan && (
+            <div className={joined ? 'order-0' : 'order-2'}>
+              <ChallengePlan questId={questId} title={quest.title} plan={plan} joined={joined} isEnded={isEnded} onProgress={() => void load()} onToast={showToast} />
+            </div>
+          )}
 
           <div className="order-6">
             <EventAttendees

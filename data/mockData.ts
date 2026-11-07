@@ -138,6 +138,21 @@ export interface QuestReward {
  * What counts toward a challenge: visits (lib/social/visits.ts) to places, community events or fairs.
  * Every filter given must match. Progress is the number of different targets visited, worked out by the server.
  */
+/**
+ * A challenge done by plan (owner 2026-11-07): each member's plan starts the day they join and runs `weeks` weeks. Either
+ * fixed days (what to do on each weekday) or any days (`perWeek` times a week). Each time done, the member stamps it.
+ */
+export interface QuestPlan {
+  weeks: number;
+  /** Fixed days: what to do on each weekday (1 = Monday … 7 = Sunday); days not listed are rest */
+  days?: { weekday: number; task: string }[];
+  /** Any days: this many times a week, each time `task` */
+  perWeek?: number;
+  task?: string;
+  /** Planned times a member may miss and still finish; by default one in seven */
+  allowMisses?: number;
+}
+
 export interface QuestRule {
   targetTypes: ('spot' | 'community' | 'fair')[];
   /** How many different places or events must be visited */
@@ -205,6 +220,8 @@ export interface ChallengeQuest {
   brandReward?: QuestReward;
   /** When set, the server counts the member's visits toward this challenge */
   rule?: QuestRule;
+  /** When set, a challenge done by plan: the member stamps each planned day (lib/social/questPlan.ts) */
+  plan?: QuestPlan;
   /** Set by the server when a member proposed this challenge (it starts as a draft for staff to review) */
   createdByMemberId?: string;
   /** Set when a member's proposal was rejected in the review queue (it stays a hidden draft) */

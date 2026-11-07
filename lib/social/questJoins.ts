@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { questMemberStore } from './stores';
+import { questStampStore } from './questStampStore';
 
 /**
  * Which challenges a member has joined, kept with the account (lib/social/stores.ts).
@@ -50,4 +51,5 @@ export async function leaveQuest(memberId: string, questId: string): Promise<voi
 /** Account deletion */
 export async function removeQuestJoinsBy(memberId: string): Promise<void> {
   await questMemberStore.removeBy(memberId);
+  await questStampStore.removeBy(memberId);
 }

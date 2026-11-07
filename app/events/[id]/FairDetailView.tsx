@@ -1000,7 +1000,7 @@ export default function FairDetailPage({
 
       {chatGroup && <GroupChatModal isOpen onClose={() => setChatGroup(null)} event={eventData} roomId={chatGroup.id} roomTitle={chatGroup.title} />}
 
-      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
     </div>
   );
 }

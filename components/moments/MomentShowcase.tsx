@@ -80,8 +80,6 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
   const href = `/moments/${encodeURIComponent(moment.id)}${moment.video ? '?full=1' : ''}`;
-  // Photos lean a little left or right when pointed at, like prints picked up from a table
-  const tilt = index % 2 ? 'group-hover:rotate-1' : 'group-hover:-rotate-1';
   return (
     <article className="min-w-0 flex flex-col">
       <div className="flex items-center gap-2 lg:gap-2.5 min-w-0 mb-2 lg:mb-3">
@@ -97,7 +95,8 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
 
       <Link href={href} className={`group block rounded-xl lg:rounded-2xl ${focusRing}`}>
         <span className="relative block">
-          <span className={`${frameClass} transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-lg ${tilt}`}>
+          {/* Pointing at a photo only dims it a touch; the card stays still (owner 2026-11-07) */}
+          <span className={`${frameClass} transition-[filter] duration-200 group-hover:brightness-95`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
             <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place || moment.userName}`} loading="lazy" className="w-full h-full object-cover" />
             {moment.video?.previewUrl && <ClipPlayer url={moment.video.url} preview={moment.video.previewUrl} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}

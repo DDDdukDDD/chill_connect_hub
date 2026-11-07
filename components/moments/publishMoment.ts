@@ -99,14 +99,23 @@ const ratioOf = (src: string) =>
     probe.src = src;
   });
 
-export async function publishMoment(draft: MomentDraft, report: ReportProgress): Promise<{ moment: PostedMoment; counted: CountedQuest | null }> {
+/**
+ * What one post has uploaded so far. The composer keeps one per post, so "ลองใหม่" after a failure carries on from here
+ * instead of uploading the same files again and leaving the first copies unused in storage.
+ */
+export interface UploadsSoFar {
+  images: string[];
+  video?: Record<string, unknown>;
+}
+
+export async function publishMoment(draft: MomentDraft, report: ReportProgress, done: UploadsSoFar = { images: [] }): Promise<{ moment: PostedMoment; counted: CountedQuest | null }> {
   const { clip } = draft;
-  const imageUrls: string[] = [];
-  let video: Record<string, unknown> | undefined;
 
   if (clip) {
     report(0.02, 'กำลังอัปโหลดปก…');
-    imageUrls.push(await uploadPicture(await (await fetch(clip.cover)).blob()));
+    done.images[0] ??= await uploadPicture(await (await fetch(clip.cover)).blob());
+  }
+  if (clip && !done.video) {
     // Only the chosen part, made small on this phone; the original goes when this device cannot do that
     report(0.05, 'กำลังเตรียมคลิป…');
     const small = await compressClip(clip.file, clip.startS, clip.fullSeconds, (share) => report(0.05 + share * 0.45, 'กำลังเตรียมคลิป…'), { texts: clip.texts, muted: clip.muted });
@@ -120,17 +129,21 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress):
     if (!clipUrl) throw new PostingError('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
     // The silent loop feeds autoplay; without it the post still goes, its clip then waits for a tap
     const previewUrl = small?.preview ? await uploadClip(small.preview).catch(() => null) : null;
-    video = small
+    done.video = small
       ? { url: clipUrl, durationS: small.durationS, startS: 0, ...(previewUrl ? { previewUrl } : {}) }
       : { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.fullSeconds - clip.startS), startS: clip.startS };
-  } else {
+  }
+  if (!clip) {
     report(0.03, 'กำลังเตรียมรูป…');
-    const pictures = await Promise.all(draft.photos.map((photo) => exportPhoto(photo, draft.shape)));
-    for (const [index, picture] of pictures.entries()) {
-      report(0.08 + (index / pictures.length) * 0.84, pictures.length > 1 ? `กำลังอัปโหลดรูป ${index + 1}/${pictures.length}` : 'กำลังอัปโหลดรูป…');
-      imageUrls.push(await uploadPicture(picture));
+    const count = draft.photos.length;
+    for (const [index, photo] of draft.photos.entries()) {
+      if (done.images[index]) continue;
+      report(0.08 + (index / count) * 0.84, count > 1 ? `กำลังอัปโหลดรูป ${index + 1}/${count}` : 'กำลังอัปโหลดรูป…');
+      done.images[index] = await uploadPicture(await exportPhoto(photo, draft.shape));
     }
   }
+  const imageUrls = done.images;
+  const video = done.video;
 
   report(0.95, 'กำลังโพสต์…');
   const { target } = draft;

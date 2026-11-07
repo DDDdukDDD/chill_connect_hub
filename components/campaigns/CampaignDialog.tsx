@@ -21,6 +21,8 @@ interface CampaignDialogProps {
   onJoin: () => void;
   onLeave: () => void;
   onClaim: () => void;
+  /** "แลกสิทธิ์ลุ้น": opens the prize's reward popup on this page (owner 2026-11-07: stay where you are) */
+  onRedeemPrize: () => void;
 }
 
 /** A winner's part of the popup: warm like the rest of the rewards, with the one thing left for them to do */
@@ -58,7 +60,7 @@ function WinnerPanel({ win, isBusy, onClaim, resultsHref }: { win: NonNullable<M
  * One campaign: the prize, what to do, the rules, and the one action always in view at the bottom. Guests are asked to
  * sign up, members join here, and a member who joined comes back to see where they stand (owner 2026-11-04).
  */
-export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnrolling, rewards, onClose, onJoin, onLeave, onClaim }: CampaignDialogProps) {
+export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnrolling, rewards, onClose, onJoin, onLeave, onClaim, onRedeemPrize }: CampaignDialogProps) {
   const titleId = useId();
   const { prize, cost, short, entered, ready, percent, done, total } = campaignStanding(campaign, rewards);
   // ตี้ and moments count only after these two; joining a campaign does not need them, so it says so here
@@ -74,8 +76,9 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
     ['แลกสิทธิ์', prize ? `${cost.toLocaleString()} XP` : undefined],
   ].filter((fact): fact is [string, string] => Boolean(fact[1]));
 
+  // The same width as a reward popup (components/rewards/RewardDialog.tsx), owner 2026-11-07
   return (
-    <DialogShell onClose={onClose} size="lg" bare labelledBy={titleId}>
+    <DialogShell onClose={onClose} size="md" bare labelledBy={titleId}>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7 pt-5 sm:pt-7 pb-4">
         {campaign.eyebrow && <p className="pr-12 text-xs font-semibold text-slate-500">{campaign.eyebrow}</p>}
         <h2 id={titleId} className="pr-12 mt-1 text-lg sm:text-xl font-bold leading-snug text-slate-900">{campaign.headline}</h2>
@@ -83,7 +86,7 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
         <div className="mt-4 sm:flex sm:items-start sm:gap-5">
           {image && (
             // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
-            <img src={image} alt="" className="w-full h-32 sm:w-56 sm:h-40 shrink-0 rounded-2xl border border-[#F5E6B8] bg-white object-contain p-2" />
+            <img src={image} alt="" className="w-full h-32 sm:w-40 sm:h-32 shrink-0 rounded-2xl border border-[#F5E6B8] bg-white object-contain p-2" />
           )}
           <div className="min-w-0 flex-1 mt-4 sm:mt-0">
             {campaign.text && <p className="text-sm text-slate-600 leading-relaxed">{campaign.text}</p>}
@@ -181,9 +184,9 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
             {isEnrolling ? 'กำลังเข้าร่วม…' : isLoggedIn ? 'เข้าร่วมแคมเปญ' : 'สมัครสมาชิกเพื่อเข้าร่วม'}
           </button>
         ) : ready ? (
-          <Link href={`/rewards?reward=${encodeURIComponent(prize?.id ?? '')}`} className={`${dialogButton.primary} w-full`}>
+          <button type="button" onClick={onRedeemPrize} className={`${dialogButton.primary} w-full`}>
             แลกสิทธิ์ลุ้น
-          </Link>
+          </button>
         ) : (
           <div>
             <p className="flex items-baseline justify-between gap-3 text-sm">

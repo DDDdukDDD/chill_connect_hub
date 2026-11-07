@@ -142,14 +142,16 @@ What `/spots` shows: published places filtered, ranked and counted with the page
 |---|---|---|
 | `q` | search words (same matching as the ค้นพบ search) | — |
 | `province` | Thai province name (aliases like "เชียงใหม่" work as on the page) | all |
+| `district` | one or more districts of the picked province, comma-separated, as listed in `districts` ("เขต"/"อำเภอ"/"อ." prefixes are ignored; in Bangkok a sub-district counts as its district, `data/bangkokDistricts.ts`); ignored without `province` (2026-11-07) | all |
 | `category` | a vibe group id (`MASTER_SPOT_CATEGORIES`) or a plain spot category | all |
 | `price` | `free` | — |
+| `open` | `now`: only places whose opening hours say they are open at this moment, Thai time (24 hours or a matching time; hours that cannot be read are left out) (2026-11-07) | — |
 | `ids` | comma-separated place ids (the member's saved places; ≤ 500) | — |
 | `lat`, `lng` | a position: nearest first, each place gets `distanceKm` | ranked order |
 | `t` | ms timestamp the list was opened (keeps "new" places in place across "แสดงเพิ่มเติม") | now |
 | `limit` | 1–200 | `24` |
 
-Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail.
+Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, districts: { name, count }[], railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail. `districts` lists the picked province's districts with their number of shown places, most first, at most 60 (empty for the whole country); it ignores the other filters, so every district stays offered.
 
 ### `GET /api/spots/[id]` — one spot
 
@@ -640,6 +642,22 @@ With `&month=1` the answer adds `month: { month: "2026-10", chill: MonthItem[], 
 - `{ action: 'mark', targetType: 'spot' | 'fair', targetId, rating? }`: "I have been here". `rating` is a whole number 1 to 5 and is optional; sending the action again updates the rating. A fair can be marked from its start date. `community` is refused: the host's check-in is its evidence.
 - `{ action: 'unmark', targetType, targetId }`.
 - Answer: `{ success, mark | null, proof, points, quests }` (`proof` has the fields of one target above, without `quests`). Errors: 401 signed out, 403 inactive account, 404 unknown target, 429 more than 30 marks an hour.
+
+### Challenges done by plan (`plan` on a quest, added 2026-11-07, BE-281)
+A challenge counts visits (`rule`) **or** follows a plan the member stamps (`plan`), never both. `GET /api/quests` and the detail return it:
+```
+plan?: { weeks: number,                                   // 1..104, from the day the member joins
+         days?: { weekday: 1..7, task: string }[],        // fixed days (1 = Monday); days not listed are rest
+         perWeek?: 1..7, task?: string,                   // or any days, this many times a week
+         allowMisses?: number }                           // default floor(total / 7)
+```
+Needed stamps = total − allowMisses (`lib/social/questPlan.ts`). The detail's `tracked` is true and `mine.current/total` count stamps; a finish works like any other (XP, badge, notification).
+- `GET /api/quests/[id]/stamps` → `{ state: { start, stamps: [{ day, momentId? }], status } | null }` (null when not joined). `status`: `start, end, total, needed, done, finished, week, ended, today, todayTask, todayStamped, todayProblem, yesterdayOpen, missed`. Days are Thai dates `YYYY-MM-DD`.
+- `POST /api/quests/[id]/stamps` `{ day?: 'today' | 'yesterday' }` → `{ state, finished }`; 409 with a Thai `message` when not joined or the day cannot be stamped (rest day, week full, before the start, after the end, already stamped).
+- `DELETE /api/quests/[id]/stamps` `{ day }` → takes back a stamp; refused once the challenge is finished.
+- `PATCH /api/quests/[id]/stamps` `{ day, momentId }` → links the member's own moment to that day's stamp.
+- `GET /api/quests/plans` → `{ plans: [{ questId, title, image, status }] }`: the member's unfinished plans, for My Hub.
+- Admin `POST /api/admin/quests` create/update accept `plan`; setting a plan clears the rule and the other way round.
 
 ### Challenge rules (`rule` on a quest)
 `GET /api/quests` now returns `rule` when a challenge counts visits:

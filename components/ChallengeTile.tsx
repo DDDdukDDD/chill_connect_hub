@@ -7,6 +7,7 @@ import { CalendarClock, CalendarDays, Clock, Flame, Footprints, Gift, Medal, Zap
 import type { ChallengeQuest } from '@/data/mockData';
 import { getQuestBrandReward, questDateRange, questPrizeLabel } from '@/lib/questDisplay';
 import { optimizedImage } from '@/lib/optimizedImage';
+import { PosterPhoto } from './PosterPhoto';
 import type { QuestProgress } from '@/lib/useMyRewards';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80';
@@ -94,16 +95,15 @@ export function ChallengeTile({ quest, index, reason, mine, isJoined = false, sh
       <span
         className={`relative block transition-transform duration-300 ${isEnded ? '' : `${tilt ? `${TILTS[index % TILTS.length]} group-hover:rotate-0 ` : ''}group-hover:-translate-y-1`}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* A tall poster shows whole over a blurred copy of itself, as on an อีเวนต์ tile */}
+        <span
           data-row-photo
-          src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE}
-          alt=""
-          loading="lazy"
-          className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'opacity-70' : ''} ${
+          className={`relative block aspect-square overflow-hidden rounded-3xl bg-slate-100 shadow-md ${isEnded ? 'opacity-70' : ''} ${
             isJoined && !isEnded ? 'ring-2 ring-[#7C3AED] ring-offset-2' : ''
           }`}
-        />
+        >
+          <PosterPhoto src={optimizedImage(quest.image || quest.badgeCoverImg, 384) || FALLBACK_IMAGE} />
+        </span>
         {sponsored && <SponsoredBadge className="right-2.5 top-2.5" />}
         {isEnded ? (
           <span className="absolute -top-2.5 -left-1.5 inline-flex items-center rounded-full bg-slate-200 text-slate-700 px-2.5 py-1 text-xs font-bold shadow-md">จบแล้ว</span>

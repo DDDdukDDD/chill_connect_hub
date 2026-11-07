@@ -17,7 +17,7 @@ interface MomentPhotosProps {
   images: string[];
   /** One short clip: played here in place of the photos, and `images[0]` is its cover */
   video?: { url: string; startS?: number; durationS?: number; previewUrl?: string };
-  /** Width / height of the post. Photo posts are square, except those made tall (4:5) in the editor since 2026-11-07 */
+  /** Width / height of the post. Photo posts made before 2026-11-07 are square; new ones start tall (4:5) and can be made square in the editor */
   ratio?: number;
   alt: string;
   /** Opens the photo viewer at this photo */

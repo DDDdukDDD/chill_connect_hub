@@ -295,7 +295,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
           )}
         </header>
 
-        <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} redeemedRewardIds={myRewards.redeemedRewardIds} balance={isLoggedIn ? myRewards.balance : undefined} />
+        <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} onOpenReward={myCampaigns.openReward} redeemedRewardIds={myRewards.redeemedRewardIds} balance={isLoggedIn ? myRewards.balance : undefined} />
 
         {/* 2. Choosing, laid out like the ค้นพบ pages: filters on the left, what is mine and how to view on the right,
             then the category tabs right above the list (owner 2026-10-19) */}
