@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-291 · Report a question on a ตี้; host hides it from the page (2026-11-07)
+- **What changed:** each question on a ตี้ page has รายงาน for signed-in members (target `question`, id `"{eventId}/{questionId}"`), and the host gets ซ่อนคำถามนี้ (the server already allowed it, the button was missing). Staff see question reports in รายงาน and "remove" hides the question. A report from a pair chat now reads "ข้อความในแชตคู่กับ …" for staff; pair chats already had รายงาน on each message.
+
 ### BE-290 · Trips: real attendance only, and short trips are called off (2026-11-07)
 - **What changed:** to open a Spot Buddy trip a member must have been checked in by the host of someone else's ตี้, or had a photo moment at a ตี้ or อีเวนต์ passed by staff; an อีเวนต์ plan or meet-up group that is over no longer counts. A trip still short of 3 people 2 hours before the start becomes `status: 'cancelled'` and everyone in it is told (new notification `trip_cancelled`, migration 0031). `isEventEnded` treats `cancelled` as over; the ตี้ page says ทริปนี้ยกเลิกแล้ว and hides check-in and the after-ตี้ panel.
 - **New:** `GET /api/cron/hourly` (needs `CRON_SECRET`), called hourly by GitHub Actions and daily by Vercel Cron. Put later timed jobs there.

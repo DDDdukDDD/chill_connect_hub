@@ -5,16 +5,17 @@ import type { Member } from '../members/types';
 import { commentOfReport, removeReportedComment } from '../moments/service';
 import { removeNotifications } from './notifications';
 import { chatMessageForReport, chatRoomForStaff, removeChatMessageAsStaff } from './chat';
-import { contentReportStore } from './stores';
+import { contentReportStore, questionStore } from './stores';
 import { removeReview, reviewById } from './reviews';
+import { pairMembersOf } from './meetAgain';
 
 /**
  * Safety reports members send about an event, a fair or a place (the "รายงาน" button on detail pages),
- * about a review on a host's profile, or about a message in a group chat.
+ * about a review on a host's profile, a message in a group or pair chat, or a question on a ตี้ page.
  * Staff read and close them in the admin console. The reported side never sees who reported.
  */
-// A 'comment' target is "momentId/commentId"
-export const REPORT_TARGET_TYPES = ['community', 'fair', 'spot', 'review', 'chat_message', 'comment'] as const;
+// A 'comment' target is "momentId/commentId", a 'question' target "eventId/questionId" (a question on a ตี้ page)
+export const REPORT_TARGET_TYPES = ['community', 'fair', 'spot', 'review', 'chat_message', 'comment', 'question'] as const;
 export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
 
 export const CONTENT_REPORT_REASONS = [
@@ -78,10 +79,19 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
     targetTitle = `ความคิดเห็นในโมเมนต์ของ ${found.moment.authorName}`;
     hostMemberId = found.comment.authorId ?? undefined;
     excerpt = found.comment.text;
+  } else if (targetType === 'question') {
+    const cut = targetId.lastIndexOf('/');
+    const eventId = targetId.slice(0, cut);
+    const question = cut > 0 ? await questionStore.find(targetId.slice(cut + 1), eventId) : undefined;
+    const event = question ? await db.findEventById(eventId) : null;
+    if (!question || question.hidden || !event) throw new MemberAuthError('ไม่พบคำถามนี้ อาจถูกลบไปแล้ว', 404);
+    targetTitle = `คำถามในตี้ "${event.title}"`;
+    hostMemberId = question.authorId;
+    excerpt = question.text;
   } else if (targetType === 'chat_message') {
     // Throws unless the reporter can read that room
     const { message, roomTitle } = await chatMessageForReport(reporter, targetId);
-    targetTitle = `ข้อความในแชตกลุ่ม "${roomTitle}"`;
+    targetTitle = pairMembersOf(message.roomId) ? `ข้อความในแชตคู่กับ ${roomTitle}` : `ข้อความในแชตกลุ่ม "${roomTitle}"`;
     hostMemberId = message.authorId;
     excerpt = message.text;
     roomId = message.roomId;
@@ -148,17 +158,18 @@ export async function removeChatMessageOfReport(id: string, messageId: string): 
 }
 
 /**
- * Staff take down the reported review or chat message. Every open report about it is closed with it.
+ * Staff take down the reported review, comment, question or chat message. Every open report about it is closed with it.
  * Returns null when the report is not about a review or a message, or is already closed.
  */
 export async function removeReportedContent(id: string, closedBy: string, note: string): Promise<ContentReport | null> {
   const report = (await contentReportStore.all()).find((item) => item.id === id && item.status === 'open');
-  if (!report || (report.targetType !== 'review' && report.targetType !== 'chat_message' && report.targetType !== 'comment')) return null;
+  if (!report || !['review', 'chat_message', 'comment', 'question'].includes(report.targetType)) return null;
   if (report.targetType === 'review') await removeReview(report.targetId);
   else if (report.targetType === 'comment') {
     const removedIds = await removeReportedComment(report.targetId);
     await Promise.all(removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like'], commentId })));
   }
+  else if (report.targetType === 'question') await questionStore.hide(report.targetId.slice(report.targetId.lastIndexOf('/') + 1));
   else await removeChatMessageAsStaff(report.targetId);
   const closedAt = new Date().toISOString();
   const closingNote = ['ลบเนื้อหาที่ถูกรายงานแล้ว', note].filter(Boolean).join(' · ');

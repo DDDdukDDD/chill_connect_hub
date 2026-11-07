@@ -593,7 +593,7 @@ For a signed-in member the server ignores `participantsCount` in the body: the e
 ## Reports for reviews and chat messages; blocking in event lists (added 2026-10-11, BE-032)
 
 ### `POST /api/reports` — two more targets
-`targetType` may also be `review` (`targetId` = review id, as returned in a profile's `hostReviews.latest[].id`) or `chat_message` (`targetId` = message id from `GET /api/chat/{roomId}`). The server reads the words and their author from its own data; `targetTitle` in the body is ignored for these two. A chat message can be reported only by someone who can read that room (`403` otherwise). Reporting one's own review or message answers `400`.
+`targetType` may also be `review` (`targetId` = review id, as returned in a profile's `hostReviews.latest[].id`), `chat_message` (`targetId` = message id from `GET /api/chat/{roomId}`, group or pair room) or `question` (`targetId` = `"{eventId}/{questionId}"`, a question on a ตี้ page; staff "remove" hides it, 2026-11-07). The server reads the words and their author from its own data; `targetTitle` in the body is ignored for these two. A chat message can be reported only by someone who can read that room (`403` otherwise). Reporting one's own review or message answers `400`.
 
 ### `/api/admin/reports`
 - Each report may carry `excerpt` (the reported words when the report was sent). `hostMemberId` / `hostName` is the author for these two target types.

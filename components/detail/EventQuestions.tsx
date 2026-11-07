@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 
 export interface QuestionItem {
   id: string;
@@ -19,7 +20,8 @@ interface QuestionsState {
 
 /**
  * "ถามผู้จัดก่อนไป" (owner 2026-10-23): public questions on a ตี้ with the host's answers. The first list comes from the
- * server (in the HTML for visitors and search engines); members can ask, the host answers here.
+ * server (in the HTML for visitors and search engines); members can ask, the host answers here. The host can hide a
+ * question on their ตี้, and anyone signed in can report one to staff.
  */
 export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }: { eventId: string; initial: QuestionsState | null; isLoggedIn: boolean; onRequireLogin: () => void }) {
   const [state, setState] = useState<QuestionsState>(initial ?? { canAnswer: false, questions: [] });
@@ -27,6 +29,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [reporting, setReporting] = useState<QuestionItem | null>(null);
 
   // Signed in: read again so "canAnswer" and "isMine" reflect the member
   useEffect(() => {
@@ -89,8 +92,13 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
             ) : (
               <p className="mt-1 text-xs text-slate-500">รอคนจัดตอบ</p>
             )}
-            {q.isMine && (
+            {q.isMine ? (
               <button type="button" onClick={() => void post({ action: 'remove', id: q.id })} className="mt-1 text-xs text-slate-500 underline cursor-pointer">ลบคำถามของฉัน</button>
+            ) : isLoggedIn && (
+              <div className="mt-1 flex gap-3 text-xs text-slate-500">
+                {state.canAnswer && <button type="button" onClick={() => void post({ action: 'remove', id: q.id })} className="underline cursor-pointer">ซ่อนคำถามนี้</button>}
+                <button type="button" onClick={() => setReporting(q)} className="underline hover:text-rose-600 cursor-pointer" aria-label={`รายงานคำถามของ ${q.authorName}`}>รายงาน</button>
+              </div>
             )}
           </li>
         ))}
@@ -110,6 +118,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
         </form>
       )}
       {error && <p className="text-sm font-semibold text-rose-700" role="alert">{error}</p>}
+      {reporting && <ReportSafetyModal isOpen onClose={() => setReporting(null)} targetType="question" targetId={`${eventId}/${reporting.id}`} targetTitle={`คำถามของ ${reporting.authorName}`} />}
       <p className="text-xs text-slate-500">คำถามและคำตอบทุกคนเห็น · เรื่องส่วนตัวคุยในแชตกลุ่มหลังลงทะเบียน</p>
     </section>
   );
