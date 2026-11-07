@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-275 · Old clips shrunk; clip posts failed until 0028 ran (owner 2026-11-07)
+- **Why:** after PR #72 reached `main`, every clip post failed with "โพสต์ไม่สำเร็จ" because live had no `video_preview_url` column yet; the owner ran `npm run db:migrate` on live. The 5 clips posted before BE-274 were still 9–29 MB, mostly `.mov`, with no preview.
+- **What changed:** new `db/shrink-old-clips.mjs` (`npm run db:shrink-clips`, dev dependency `ffmpeg-static`) does what the phone does: cuts the chosen part, 720p H.264 MP4, plus the 3 s preview; it moves the post first and deletes the old file after. Run on live: 88 MB became 8.7 MB, all 5 have previews.
+- **What to do about it:** Blob login for scripts: `npx vercel env pull .env.vercel --environment=production`, and the store's connection must allow Development for the OIDC token (turned off again afterwards). Never let `vercel link` or `env pull` write `VERCEL_OIDC_TOKEN` into `.env.local`: the local server would then use the live Blob store.
+
 ### BE-274 · Clips shrunk on the phone; feeds autoplay a small preview (owner 2026-11-07)
 - **Why:** Vercel Blob Data Transfer reached 75% of the free 10 GB: every autoplay downloaded the whole original (20–40 MB `.mov`). Plan in stages: [VIDEO_PLAN.md](VIDEO_PLAN.md).
 - **What changed:** `lib/media/clipCompress.ts` (Mediabunny 1.62.1, WebCodecs) cuts the chosen 15 s, makes it 720p H.264 MP4 and a 3 s 360p silent preview; a device that cannot falls back to the original. `video.previewUrl` is new (API.md). `ClipPlayer` takes `preview`: feeds and grids autoplay it and load the full file only on sound or opening; clips without one show their cover until tapped, and grid tiles show only the cover. Clip uploads per hour 10 → 20 (two files per clip).
