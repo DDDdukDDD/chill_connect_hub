@@ -1,4 +1,5 @@
 import { MAX_VIDEO_SECONDS } from '@/lib/moments/types';
+import { drawText, type PhotoText } from './photoEdit';
 
 /**
  * Shrinks a member's clip on their own phone before it uploads (owner 2026-11-07, after Blob transfer reached 75% of
@@ -8,6 +9,9 @@ import { MAX_VIDEO_SECONDS } from '@/lib/moments/types';
  *
  * Uses the browser's own encoder (WebCodecs) through Mediabunny, loaded only when a clip is posted. When this device
  * cannot do it (an older browser, a codec it cannot read), the answer is null and the original uploads as before.
+ *
+ * The clip editor's text and "no sound" are done here too (owner 2026-11-07): the text is drawn onto every frame and
+ * the sound track is left out, so the post stays one plain MP4 that looks and sounds the same everywhere.
  */
 
 const SHORT_SIDE = 720;
@@ -18,6 +22,11 @@ const PREVIEW_SHORT_SIDE = 360;
 const PREVIEW_FRAME_RATE = 24;
 
 export type CompressedClip = { file: File; durationS: number; preview: File | null };
+/** What the member changed in the clip editor */
+export type ClipEdits = { texts?: PhotoText[]; muted?: boolean };
+
+/** Whether this device can shrink a clip, and so also put text on it or take its sound out */
+export const canShrinkClips = () => typeof VideoEncoder !== 'undefined' && typeof VideoDecoder !== 'undefined';
 type Mediabunny = typeof import('mediabunny');
 
 /** Width and height with the short side at most `shortSide`, both even (H.264 encoders refuse odd sizes) */
@@ -27,8 +36,11 @@ function fitShortSide(width: number, height: number, shortSide: number) {
   return { width: even(width), height: even(height) };
 }
 
-export async function compressClip(file: File, startS: number, fullSeconds: number, onProgress?: (share: number) => void): Promise<CompressedClip | null> {
-  if (typeof VideoEncoder === 'undefined' || typeof VideoDecoder === 'undefined') return null;
+export async function compressClip(file: File, startS: number, fullSeconds: number, onProgress?: (share: number) => void, edits: ClipEdits = {}): Promise<CompressedClip | null> {
+  if (!canShrinkClips()) return null;
+  const texts = edits.texts?.filter((t) => t.text.trim()) ?? [];
+  const edited = texts.length > 0 || Boolean(edits.muted);
+  const font = getComputedStyle(document.body).fontFamily;
   try {
     const mb = await import('mediabunny');
     if (!(await mb.canEncodeVideo('avc'))) return null;
@@ -40,28 +52,45 @@ export async function compressClip(file: File, startS: number, fullSeconds: numb
       input,
       output,
       trim: { start: startS, end },
-      video: async (track) => ({
-        ...fitShortSide(await track.getDisplayWidth(), await track.getDisplayHeight(), SHORT_SIDE),
-        fit: 'fill',
-        codec: 'avc',
-        quality: new mb.Quality('medium'),
-        frameRate: MAX_FRAME_RATE,
-        forceTranscode: true,
-      }),
+      video: async (track) => {
+        const size = fitShortSide(await track.getDisplayWidth(), await track.getDisplayHeight(), SHORT_SIDE);
+        return {
+          ...size,
+          fit: 'fill' as const,
+          codec: 'avc' as const,
+          quality: new mb.Quality('medium'),
+          frameRate: MAX_FRAME_RATE,
+          forceTranscode: true,
+          ...(texts.length ? { process: textOnFrames(size.width, size.height, texts, font) } : {}),
+        };
+      },
       // Sound is copied as it is when the file allows (iPhone AAC), otherwise re-encoded to AAC
-      audio: { codec: 'aac' },
+      audio: edits.muted ? { discard: true } : { codec: 'aac' },
       showWarnings: false,
     });
     // A clip that would lose its picture or its sound here is better sent whole
     if (!conversion.isValid || conversion.discardedTracks.some((t) => t.reason !== 'discarded_by_user' && t.reason !== 'max_track_count_of_type_reached')) return null;
     conversion.onProgress = (share) => onProgress?.(share);
     await conversion.execute();
-    if (!target.buffer || target.buffer.byteLength >= file.size) return null;
+    // Edits must go through even when the result is not smaller; without them a bigger file is not worth it
+    if (!target.buffer || (!edited && target.buffer.byteLength >= file.size)) return null;
     const small = new File([target.buffer], 'clip.mp4', { type: 'video/mp4' });
     return { file: small, durationS: end - startS, preview: await makePreview(mb, small) };
   } catch {
     return null;
   }
+}
+
+/** Draws each frame with the text on top. One canvas is reused: the encoder copies each frame before the next one */
+function textOnFrames(width: number, height: number, texts: PhotoText[], font: string) {
+  const canvas = Object.assign(document.createElement('canvas'), { width, height });
+  const ctx = canvas.getContext('2d');
+  return (sample: import('mediabunny').VideoSample) => {
+    if (!ctx) return sample;
+    sample.draw(ctx, 0, 0, width, height);
+    texts.forEach((t) => drawText(ctx, t, width, height, font));
+    return canvas;
+  };
 }
 
 /** The first seconds of the small clip, smaller still and silent; null when it fails, and the post then simply has none */

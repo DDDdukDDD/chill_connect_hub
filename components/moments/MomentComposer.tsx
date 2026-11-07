@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
@@ -8,14 +8,14 @@ import { PlacePicker } from '@/components/moments/PlacePicker';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { DialogShell, dialogButton, useDialogBehavior } from '@/components/auth/DialogShell';
-import { ClipTrimmer } from '@/components/moments/ClipTrimmer';
+import { ClipEditor } from '@/components/moments/ClipEditor';
 import { PhotoEditor } from '@/components/moments/PhotoEditor';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { uploadPresigned } from '@vercel/blob/client';
-import { clipFrame, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
-import { compressClip } from '@/lib/media/clipCompress';
-import { drawBase, drawOverlays, exportPhoto, newPhoto, type EditedPhoto } from '@/lib/media/photoEdit';
+import { clipFrame, coverWithText, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
+import { canShrinkClips, compressClip } from '@/lib/media/clipCompress';
+import { drawBase, drawOverlays, exportPhoto, newPhoto, type EditedPhoto, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
@@ -101,16 +101,20 @@ export function PostOptionFields({ value, onChange }: { value: PostOptions; onCh
 }
 
 /** A small picture of the edited photo, with everything on it */
-function EditedThumb({ photo }: { photo: EditedPhoto }) {
+function EditedThumb({ photo, shape }: { photo: EditedPhoto; shape: PostShape }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const height = Math.round(200 / shape);
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
-    drawBase(ctx, photo, 200);
-    drawOverlays(ctx, photo, 200);
-  }, [photo]);
-  return <canvas ref={canvas} width={200} height={200} className="w-full h-full" aria-hidden="true" />;
+    drawBase(ctx, photo, 200, height);
+    drawOverlays(ctx, photo, 200, height);
+  }, [photo, height]);
+  return <canvas ref={canvas} width={200} height={height} className="w-full h-full object-cover" aria-hidden="true" />;
 }
+
+/** A clip on its way to a post: the chosen part, the cover's moment, text on it, and whether it keeps its sound */
+type ClipDraft = { file: File; fullSeconds: number; startS: number; coverAtS: number; texts: PhotoText[]; muted: boolean; cover?: string };
 
 export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
   const session = useMemberSession();
@@ -120,7 +124,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [isPosting, setIsPosting] = useState(false);
   const [step, setStep] = useState<'pick' | 'photos' | 'clip' | 'details'>('pick');
   const [photos, setPhotos] = useState<EditedPhoto[]>([]);
-  const [clip, setClip] = useState<{ file: File; fullSeconds: number; startS: number; cover?: string } | null>(null);
+  const [shape, setShape] = useState<PostShape>(1);
+  const [clip, setClip] = useState<ClipDraft | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [uploadNote, setUploadNote] = useState('');
   const [options, setOptions] = useState<PostOptions>({ commentsOff: false, likesOff: false, sharesOff: false });
@@ -137,6 +142,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [savedSpotTargets, setSavedSpotTargets] = useState<MomentLinkTarget[]>([]);
   const [savedEvents, setSavedEvents] = useState<EventItem[]>([]);
   const [openedAt] = useState(() => Date.now());
+  // Steady, because the clip editor keeps the cover inside the chosen part with an effect that calls it
+  const setCoverAt = useCallback((coverAtS: number) => setClip((prev) => (prev && prev.coverAtS !== coverAtS ? { ...prev, coverAtS } : prev)), []);
   const activity = useMyActivity();
   const { joinedQuestIds } = useMyRewards(true);
 
@@ -263,11 +270,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const addClip = async (picked: File) => {
     const file = withClipType(picked);
     if (!file) return onToast(`ยังไม่รองรับไฟล์ ${picked.name.split('.').pop()?.toUpperCase() ?? 'นี้'} ใช้คลิป MP4, MOV หรือ WEBM นะ`);
-    if (file.size > MAX_VIDEO_BYTES) return onToast(`คลิปนี้ ${Math.round(file.size / 1024 / 1024)}MB ใหญ่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองถ่ายที่ความละเอียดต่ำลงนะ`);
+    // Only the chosen part uploads, shrunk on this phone, so a big file is fine here; a device that cannot shrink sends the whole file
+    if (file.size > MAX_VIDEO_BYTES && !canShrinkClips()) return onToast(`คลิปนี้ ${Math.round(file.size / 1024 / 1024)}MB เครื่องนี้ส่งได้ไม่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองโพสต์จากมือถือ หรือตัดคลิปให้สั้นลงก่อนนะ`);
     setIsPreparing(true);
     try {
       const fullSeconds = await readClipDuration(file);
-      setClip({ file, fullSeconds, startS: 0 });
+      setClip({ file, fullSeconds, startS: 0, coverAtS: 0, texts: [], muted: false });
       setStep('clip');
     } catch {
       onToast('อุปกรณ์นี้เปิดคลิปนี้ไม่ได้ ลองเลือกจากมือถือ หรือแปลงเป็น MP4 นะ');
@@ -287,11 +295,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Leaving the clip step: the first frame of the chosen part becomes the cover every grid shows */
+  /** Leaving the clip step: the chosen frame, with the clip's text on it, becomes the cover every grid shows */
   const finishClip = async () => {
     if (!clip) return;
     setIsPreparing(true);
-    const cover = (await clipFrame(clip.file, clip.startS)) ?? plainCover();
+    const frame = await clipFrame(clip.file, clip.coverAtS);
+    const cover = frame ? await coverWithText(frame, clip.texts) : plainCover();
     setClip({ ...clip, cover });
     setIsPreparing(false);
     setStep('details');
@@ -361,7 +370,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
     setIsPosting(true);
     try {
-      const pictures = clip?.cover ? [await (await fetch(clip.cover)).blob()] : await Promise.all(photos.map(exportPhoto));
+      const pictures = clip?.cover ? [await (await fetch(clip.cover)).blob()] : await Promise.all(photos.map((photo) => exportPhoto(photo, shape)));
       const imageUrls: string[] = [];
       for (const [index, picture] of pictures.entries()) {
         setUploadNote(pictures.length > 1 ? `กำลังอัปโหลดรูป ${index + 1}/${pictures.length}` : 'กำลังอัปโหลด…');
@@ -374,7 +383,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       }
       // Only the chosen part, made small on this phone; the original goes when this device cannot do that
       if (clip) setUploadNote('กำลังเตรียมคลิป…');
-      const small = clip ? await compressClip(clip.file, clip.startS, clip.fullSeconds, (share) => setUploadNote(`กำลังเตรียมคลิป ${Math.round(share * 100)}%`)) : null;
+      const small = clip ? await compressClip(clip.file, clip.startS, clip.fullSeconds, (share) => setUploadNote(`กำลังเตรียมคลิป ${Math.round(share * 100)}%`), { texts: clip.texts, muted: clip.muted }) : null;
+      if (clip && !small) {
+        // Text and "no sound" exist only in the shrunk clip, and the whole file must fit the upload limit
+        if (clip.muted || clip.texts.some((t) => t.text.trim())) return onToast('เครื่องนี้ใส่ข้อความหรือปิดเสียงคลิปไม่สำเร็จ ลองเอาออกแล้วโพสต์อีกครั้งนะ');
+        if (clip.file.size > MAX_VIDEO_BYTES) return onToast(`ย่อคลิปบนเครื่องนี้ไม่สำเร็จ และไฟล์ใหญ่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองเลือกคลิปที่สั้นลงนะ`);
+      }
       if (clip) setUploadNote('กำลังอัปโหลดคลิป…');
       const clipUrl = clip ? await uploadClip(small?.file ?? clip.file).catch(() => null) : null;
       if (clip && !clipUrl) return onToast('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
@@ -388,7 +402,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             probe.onerror = () => resolve(undefined);
             probe.src = clip.cover as string;
           })
-        : 1;
+        : shape;
       const capture = linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') ? await currentPosition() : undefined;
       const result = await postJson('/api/moments', {
         caption: caption.trim(),
@@ -429,8 +443,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
   // Where it is from, and who was there: one optional row each, like Instagram
   const rowButton = 'w-full flex items-center gap-3 min-h-12 py-2 text-left cursor-pointer';
-  const placeField = (
-    <div className="divide-y divide-slate-100 border-y border-slate-100">
+  const placeRow = (
       <div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setPickerOpen('place')} className={`${rowButton} flex-1 min-w-0`}>
@@ -468,6 +481,10 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
           </p>
         )}
       </div>
+  );
+  const placeField = (
+    <div className="divide-y divide-slate-100 border-y border-slate-100">
+      {placeRow}
       <button type="button" onClick={() => setPickerOpen('friends')} className={rowButton}>
         <UserPlus className={`w-5 h-5 shrink-0 ${tagged.length ? 'text-[#2563EB]' : 'text-slate-500'}`} aria-hidden="true" />
         <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 truncate">
@@ -517,7 +534,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                   <label className="rounded-2xl bg-[#FFF1F2] hover:bg-[#FFE4E6] transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-[#F43F5E]">
                     <ImageIcon className="w-7 h-7 text-[#F43F5E]" aria-hidden="true" />
                     <span className="text-base font-bold text-slate-900">โพสต์รูป</span>
-                    <span className="text-xs text-slate-600 leading-relaxed">สูงสุด {MAX_MOMENT_IMAGES} รูป แต่งรูปได้</span>
+                    <span className="text-xs text-slate-600 leading-relaxed">สูงสุด {MAX_MOMENT_IMAGES} รูป แต่งรูป ติดสติกเกอร์ได้</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -533,7 +550,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                   <label className="rounded-2xl bg-slate-100 hover:bg-slate-200 transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-slate-500">
                     <Video className="w-7 h-7 text-slate-700" aria-hidden="true" />
                     <span className="text-base font-bold text-slate-900">โพสต์คลิป</span>
-                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วง {MAX_VIDEO_SECONDS} วินาที ไฟล์ไม่เกิน {MAX_VIDEO_BYTES / 1024 / 1024}MB</span>
+                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วง {MAX_VIDEO_SECONDS} วินาที เลือกปก ใส่ข้อความได้</span>
                     {/* video/*, not a list of types: phones then open the gallery as well as the camera */}
                     <input
                       type="file"
@@ -561,15 +578,32 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             }}
             onAddFiles={(files) => void addPhotos(Array.from(files))}
             maxPhotos={MAX_MOMENT_IMAGES}
+            shape={shape}
+            onShapeChange={setShape}
             placeTitle={placeTitle}
-            placeField={placeField}
+            placeField={<div className="border-y border-slate-100">{placeRow}</div>}
             onBack={leave}
             onNext={() => setStep('details')}
           />
         )}
 
         {step === 'clip' && clip && (
-          <ClipTrimmer file={clip.file} fullSeconds={clip.fullSeconds} startS={clip.startS} onStartChange={(startS) => setClip({ ...clip, startS })} isBusy={isPreparing} onBack={leave} onNext={() => void finishClip()} />
+          <ClipEditor
+            file={clip.file}
+            fullSeconds={clip.fullSeconds}
+            startS={clip.startS}
+            onStartChange={(startS) => setClip({ ...clip, startS })}
+            coverAtS={clip.coverAtS}
+            onCoverChange={setCoverAt}
+            texts={clip.texts}
+            onTextsChange={(texts) => setClip({ ...clip, texts })}
+            muted={clip.muted}
+            onMutedChange={(muted) => setClip({ ...clip, muted })}
+            canEdit={canShrinkClips()}
+            isBusy={isPreparing}
+            onBack={leave}
+            onNext={() => void finishClip()}
+          />
         )}
 
         {step === 'details' && (
@@ -597,7 +631,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                       </span>
                     </>
                   ) : (
-                    photos[0] && <EditedThumb photo={photos[0]} />
+                    photos[0] && <EditedThumb photo={photos[0]} shape={shape} />
                   )}
                   {photos.length > 1 && <span className="absolute top-1 right-1 rounded-full bg-black/60 px-1.5 text-[11px] font-bold text-white tabular-nums">{photos.length}</span>}
                 </div>

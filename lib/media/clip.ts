@@ -1,4 +1,5 @@
 import { VIDEO_TYPES } from '@/lib/moments/types';
+import { drawText, type PhotoText } from './photoEdit';
 
 /**
  * Reading a member's clip on their own device, before anything uploads. A phone's camera roll is less tidy than a
@@ -128,4 +129,23 @@ export function plainCover(): string {
   return canvas.toDataURL('image/jpeg', 0.8);
 }
 
-export const clipClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+/** The cover with the clip's text drawn on it, so grids show the same picture the clip starts with */
+export async function coverWithText(cover: string, texts: PhotoText[]): Promise<string> {
+  const shown = texts.filter((t) => t.text.trim());
+  if (!shown.length) return cover;
+  const image = new Image();
+  image.src = cover;
+  try {
+    await image.decode();
+  } catch {
+    return cover;
+  }
+  const canvas = Object.assign(document.createElement('canvas'), { width: image.naturalWidth, height: image.naturalHeight });
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return cover;
+  ctx.drawImage(image, 0, 0);
+  shown.forEach((t) => drawText(ctx, t, canvas.width, canvas.height));
+  return canvas.toDataURL('image/jpeg', 0.86);
+}
+
+export const clipClock =(seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
