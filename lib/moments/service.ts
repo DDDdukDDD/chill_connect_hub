@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { tidyDisplayName, withoutSampleHandle } from '../displayName';
+import { ownUploadFolder } from '../media/ownMedia';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
@@ -19,14 +20,14 @@ const TARGET_TYPES = new Set<MomentTargetType>(['spot', 'community', 'fair', 'ch
 const CATEGORIES = new Set<MomentCategory>(['heal', 'move', 'chill', 'learn']);
 const text =(value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
-/** Only images uploaded through /api/upload (local disk or Vercel Blob) may be attached */
+/** Only images uploaded through /api/upload (local disk, Cloudflare R2 or Vercel Blob) may be attached */
 export function isAllowedMomentImage(url: string): boolean {
-  return url.startsWith('/uploads/') || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(url);
+  return ownUploadFolder(url) !== null;
 }
 
 /** A clip comes from the video upload route, into the moments folder */
 export function isAllowedMomentVideo(url: string): boolean {
-  return url.startsWith('/uploads/moments/') || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/moments\//i.test(url);
+  return ownUploadFolder(url) === 'moments';
 }
 
 /** Every stored file a moment shows, for deleting them with it */

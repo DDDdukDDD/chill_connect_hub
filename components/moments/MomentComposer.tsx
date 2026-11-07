@@ -300,6 +300,26 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   /** Sends the clip straight to storage when the site can sign that; a local server keeps it itself */
   const uploadClip = async (file: File, showProgress = true): Promise<string | null> => {
     const { mode } = await fetch('/api/upload/video', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ mode: 'off' }));
+    if (mode === 'r2') {
+      // A signed link for exactly this file (its size and type), then the file goes straight to Cloudflare R2
+      const ticket: { success?: boolean; uploadUrl?: string; url?: string; cacheControl?: string } | null = await fetch('/api/upload/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentType: file.type, size: file.size, preview: file.name === 'clip-preview.mp4' }),
+      }).then((r) => r.json()).catch(() => null);
+      if (!ticket?.success || !ticket.uploadUrl || !ticket.url) return null;
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', ticket.uploadUrl as string);
+        xhr.setRequestHeader('Content-Type', file.type);
+        if (ticket.cacheControl) xhr.setRequestHeader('Cache-Control', ticket.cacheControl);
+        if (showProgress) xhr.upload.onprogress = (e) => e.lengthComputable && setUploadNote(`กำลังอัปโหลดคลิป ${Math.round((e.loaded / e.total) * 100)}%`);
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 upload ${xhr.status}`)));
+        xhr.onerror = () => reject(new Error('R2 upload failed'));
+        xhr.send(file);
+      });
+      return ticket.url;
+    }
     if (mode === 'direct') {
       const name = `moments/${file.name === 'clip-preview.mp4' ? 'clip-preview' : 'clip'}.${file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'}`;
       const blob = await uploadPresigned(name, file, {

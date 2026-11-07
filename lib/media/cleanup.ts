@@ -1,4 +1,5 @@
 import { mediaStorage } from './index';
+import { ownUploadFolder } from './ownMedia';
 
 // Folders members upload into; event and place photos are never removed from here
 const MEMBER_FOLDERS = ['moments', 'avatars'];
@@ -7,9 +8,9 @@ const MEMBER_FOLDERS = ['moments', 'avatars'];
 function memberUploadKey(url: string): string | null {
   const local = /^\/uploads\/([\w-]+)\/[\w\-.]+$/.exec(url);
   if (local) return MEMBER_FOLDERS.includes(local[1]) ? url.slice('/uploads/'.length) : null;
-  const blob = /^https:\/\/[\w-]+\.public\.blob\.vercel-storage\.com\/([\w-]+)\//.exec(url);
-  // The blob store deletes by URL
-  return blob && MEMBER_FOLDERS.includes(blob[1]) ? url : null;
+  // R2 and Blob both delete by URL
+  const folder = ownUploadFolder(url);
+  return folder && MEMBER_FOLDERS.includes(folder) ? url : null;
 }
 
 /**

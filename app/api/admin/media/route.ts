@@ -16,6 +16,12 @@ async function collectAllPages<T>(fetchPage: (page: number) => Promise<{ items: 
   return items;
 }
 
+/**
+ * Members' moments, clips and avatars are not in the lists below; their files leave with the post or account
+ * (lib/media/cleanup.ts), so this page never calls them unused and never deletes them.
+ */
+const MEMBER_FOLDERS = new Set(['moments', 'avatars']);
+
 // Helper to gather all referenced images across the platform
 async function getAllReferencedImageUrls(): Promise<Set<string>> {
   const referenced = new Set<string>();
@@ -62,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     // Mark files as orphan if neither its full URL nor its key is referenced
     const enrichedFiles = files.map((file) => {
-      const isReferenced = referencedUrls.has(file.url) || Array.from(referencedUrls).some((url) => url.includes(file.key));
+      const isReferenced = MEMBER_FOLDERS.has(file.folder) || referencedUrls.has(file.url) || Array.from(referencedUrls).some((url) => url.includes(file.key));
       return {
         ...file,
         isOrphan: !isReferenced,
@@ -139,7 +145,7 @@ export async function POST(request: NextRequest) {
       let freedBytes = 0;
 
       for (const file of files) {
-        const isReferenced = referencedUrls.has(file.url) || Array.from(referencedUrls).some((url) => url.includes(file.key));
+        const isReferenced = MEMBER_FOLDERS.has(file.folder) || referencedUrls.has(file.url) || Array.from(referencedUrls).some((url) => url.includes(file.key));
         if (!isReferenced) {
           const ok = await mediaStorage.delete(file.key);
           if (ok) {

@@ -368,8 +368,8 @@ Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
 - Cached for 60 seconds (`s-maxage=60`).
 
 ### `/api/upload/video` — a moment's clip (trial, 2026-11-02)
-- `GET` → `{ mode: "direct" | "server" | "off" }`: `direct` = send it straight to Vercel Blob with a signed URL, `server` = a local server keeps it, `off` = hosted without Blob storage, so clips cannot be uploaded.
-- `POST`: Same rules as posting a moment (signed in, verified, pledge), 20 files an hour per member (a clip and its preview are two). MP4, MOV or WEBM, up to 50 MB. In `direct` mode it answers `uploadPresigned`'s request from `@vercel/blob/client` and the signed URL holds the type and size limits (works with the store's OIDC login, no `BLOB_READ_WRITE_TOKEN`); in `server` mode it takes `multipart/form-data` with `file` and checks the file's first bytes.
+- `GET` → `{ mode: "r2" | "direct" | "server" | "off" }`: `r2` = send it straight to Cloudflare R2 with a signed link (since 2026-11-07), `direct` = send it straight to Vercel Blob with a signed URL, `server` = a local server keeps it, `off` = hosted without Blob storage, so clips cannot be uploaded.
+- `POST`: Same rules as posting a moment (signed in, verified, pledge), 20 files an hour per member (a clip and its preview are two). MP4, MOV or WEBM, up to 50 MB. In `r2` mode it takes JSON `{ contentType, size, preview? }` and answers `{ uploadUrl, url, cacheControl }`: the phone `PUT`s the file to `uploadUrl` within 10 minutes with headers `Content-Type` and `Cache-Control` exactly as given, and posts `url`; the size and type are signed into the link, so R2 refuses any other file (`preview: true` names it as the clip's preview). In `direct` mode it answers `uploadPresigned`'s request from `@vercel/blob/client` and the signed URL holds the type and size limits (works with the store's OIDC login, no `BLOB_READ_WRITE_TOKEN`); in `server` mode it takes `multipart/form-data` with `file` and checks the file's first bytes.
 - The 15 seconds is read on the phone and the number is checked when posting. The server does not open the file to measure it, so a modified client could send a longer clip within the 50 MB.
 
 ### `POST /api/upload` — image upload
@@ -382,7 +382,7 @@ Needs a signed-in member or a staff session (`401` otherwise, since 2026-11-01);
 | `file` | JPEG, PNG, WebP or AVIF, ≤ 5 MB. The bytes must match the declared type. **SVG is rejected.** |
 | `folder` | Optional, e.g. `community`, `fair`, `spot` (letters, digits, `-`, `_`) |
 
-Storage: **Vercel Blob** when the server has `BLOB_READ_WRITE_TOKEN`, or `BLOB_STORE_ID` with Vercel OIDC (automatic on Vercel) (persistent; `url` is an absolute `https://…public.blob.vercel-storage.com/…` address). Without it (local dev), files go to `public/uploads` and `url` is a site path such as `/uploads/spot/….webp`. Treat `url` as opaque either way.
+Storage: **Cloudflare R2** when the server has the `R2_*` settings (since 2026-11-07; `url` is `https://media.chillwaa.com/<folder>/…`, `media-dev.chillwaa.com` for `npm run dev`). Otherwise **Vercel Blob** when the server has `BLOB_READ_WRITE_TOKEN`, or `BLOB_STORE_ID` with Vercel OIDC (automatic on Vercel) (persistent; `url` is an absolute `https://…public.blob.vercel-storage.com/…` address). Without it (local dev), files go to `public/uploads` and `url` is a site path such as `/uploads/spot/….webp`. Treat `url` as opaque either way.
 Limit: 20 uploads per 10 minutes per IP for non-admin callers → `429 { success: false, message }`.
 
 Compress on the client first (`compressImage()` → WebP). Response `200`:
