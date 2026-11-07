@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-294 · No Vercel previews for `tester` and `office-notebook` (2026-11-07)
+- **What changed:** `vercel.json` turns off Vercel builds for pushes to `tester` and `office-notebook` (`git.deploymentEnabled`). Old deployments filled the free Functions Storage (10 GB). The owner also set deployment retention: previews 1 day, production 1 week.
+- **What to do about it:** office-notebook work gets a preview only once it reaches `claude`. Push in batches: one push is one build.
+
 ### BE-293 · See who liked your moment (owner 2026-11-07)
 - **What changed:** on your own moment the heart count is a link that opens คนที่ส่งหัวใจให้, newest first, each with a follow button (`GET /api/moments/[id]/likes`, owner only; others still see just the number). The person row with photo, name and follow button is shared with the follower lists (`components/members/PeopleList.tsx`).
 
