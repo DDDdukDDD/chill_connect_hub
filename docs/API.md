@@ -641,6 +641,22 @@ With `&month=1` the answer adds `month: { month: "2026-10", chill: MonthItem[], 
 - `{ action: 'unmark', targetType, targetId }`.
 - Answer: `{ success, mark | null, proof, points, quests }` (`proof` has the fields of one target above, without `quests`). Errors: 401 signed out, 403 inactive account, 404 unknown target, 429 more than 30 marks an hour.
 
+### Challenges done by plan (`plan` on a quest, added 2026-11-07, BE-281)
+A challenge counts visits (`rule`) **or** follows a plan the member stamps (`plan`), never both. `GET /api/quests` and the detail return it:
+```
+plan?: { weeks: number,                                   // 1..104, from the day the member joins
+         days?: { weekday: 1..7, task: string }[],        // fixed days (1 = Monday); days not listed are rest
+         perWeek?: 1..7, task?: string,                   // or any days, this many times a week
+         allowMisses?: number }                           // default floor(total / 7)
+```
+Needed stamps = total − allowMisses (`lib/social/questPlan.ts`). The detail's `tracked` is true and `mine.current/total` count stamps; a finish works like any other (XP, badge, notification).
+- `GET /api/quests/[id]/stamps` → `{ state: { start, stamps: [{ day, momentId? }], status } | null }` (null when not joined). `status`: `start, end, total, needed, done, finished, week, ended, today, todayTask, todayStamped, todayProblem, yesterdayOpen, missed`. Days are Thai dates `YYYY-MM-DD`.
+- `POST /api/quests/[id]/stamps` `{ day?: 'today' | 'yesterday' }` → `{ state, finished }`; 409 with a Thai `message` when not joined or the day cannot be stamped (rest day, week full, before the start, after the end, already stamped).
+- `DELETE /api/quests/[id]/stamps` `{ day }` → takes back a stamp; refused once the challenge is finished.
+- `PATCH /api/quests/[id]/stamps` `{ day, momentId }` → links the member's own moment to that day's stamp.
+- `GET /api/quests/plans` → `{ plans: [{ questId, title, image, status }] }`: the member's unfinished plans, for My Hub.
+- Admin `POST /api/admin/quests` create/update accept `plan`; setting a plan clears the rule and the other way round.
+
 ### Challenge rules (`rule` on a quest)
 `GET /api/quests` now returns `rule` when a challenge counts visits:
 ```

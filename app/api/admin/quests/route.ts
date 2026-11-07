@@ -6,6 +6,7 @@ import { db, CreateQuestDTO, UpdateQuestDTO } from '@/lib/db';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { parseQuestRule, targetsOfQuest } from '@/lib/social/questProgress';
+import { parseQuestPlan } from '@/lib/social/questPlan';
 import { findVoucherByCode, markVoucherUsed } from '@/lib/social/questVouchers';
 import { memberRepository } from '@/lib/members';
 import { getMasterData } from '@/lib/masterDataStore';
@@ -19,7 +20,7 @@ const MUTABLE_QUEST_FIELDS = new Set<keyof ChallengeQuest>([
   'badgeIcon', 'badgeCoverImg', 'completedCountInfo', 'category', 'visibility',
   'creatorName', 'creatorAvatar', 'participantsCount', 'rewardPoints', 'targetGoal',
   'isOfficial', 'objective', 'steps', 'verificationMethod', 'rewardsText',
-  'startDate', 'endDate', 'status', 'image', 'brandReward', 'rule',
+  'startDate', 'endDate', 'status', 'image', 'brandReward', 'rule', 'plan',
 ]);
 const REWARD_TYPES = new Set(['brand_partner', 'hub_central']);
 const PLATFORM_PARTNER_NAME = 'Chillwaa';
@@ -31,7 +32,8 @@ function optionalText(value: unknown, maxLength: number): string | undefined {
 }
 
 const REWARD_REQUIRED_ERROR = 'ทุกชาเลนจ์ต้องมีรางวัล กรุณาระบุประเภทและชื่อรางวัล';
-const RULE_REQUIRED_ERROR = 'ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ กรุณาเลือกสิ่งที่ระบบจะนับ';
+const RULE_REQUIRED_ERROR = 'ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ กรุณาเลือกสิ่งที่ระบบจะนับ หรือตั้งแผนรายวัน';
+const PLAN_INVALID_ERROR = 'แผนรายวันไม่ครบ: ใส่จำนวนสัปดาห์ และวันที่ต้องทำพร้อมสิ่งที่ทำ หรือจำนวนครั้งต่อสัปดาห์';
 
 /**
  * Normalizes a brandReward payload. Returns null when none was sent, a string error, or the clean object.
@@ -103,10 +105,12 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
   if (typeof brandReward === 'string') return brandReward;
   const image = parseImageUrl(input.image);
   if (image === false) return 'URL รูปภาพต้องขึ้นต้นด้วย https:// หรือ /';
-  // And with a rule the system can check, or the reward could never be given
-  if (!input.rule) return RULE_REQUIRED_ERROR;
-  const rule = parseQuestRule(input.rule);
-  if (!rule) return 'Invalid quest rule';
+  // And with a rule the system can check, or a plan the member stamps (owner 2026-11-07), or the reward could never be given
+  if (!input.rule && !input.plan) return RULE_REQUIRED_ERROR;
+  const plan = input.plan ? parseQuestPlan(input.plan) : undefined;
+  if (plan === null) return PLAN_INVALID_ERROR;
+  const rule = plan ? undefined : parseQuestRule(input.rule);
+  if (rule === null) return 'Invalid quest rule';
   const startDate = optionalText(input.startDate, 40);
   const endDate = optionalText(input.endDate, 40);
   const validationError = validateQuest({ ...quest, startDate, endDate, status: 'draft' });
@@ -141,6 +145,7 @@ function createQuestRecord(input: Record<string, unknown>): CreateQuestDTO | str
     image,
     brandReward,
     rule,
+    plan,
   };
 }
 
@@ -219,12 +224,24 @@ export async function POST(request: Request) {
       const safeFields = Object.fromEntries(
         Object.entries(body.updatedFields).filter(([key]) => MUTABLE_QUEST_FIELDS.has(key as keyof ChallengeQuest))
       ) as UpdateQuestDTO;
-      if ('rule' in safeFields) {
-        // The rule can be changed but not removed
-        if (!safeFields.rule) return NextResponse.json({ success: false, error: RULE_REQUIRED_ERROR }, { status: 400 });
-        const rule = parseQuestRule(safeFields.rule);
-        if (!rule) return NextResponse.json({ success: false, error: 'Invalid quest rule' }, { status: 400 });
-        safeFields.rule = rule;
+      if ('plan' in safeFields) {
+        if (safeFields.plan) {
+          const plan = parseQuestPlan(safeFields.plan);
+          if (!plan) return NextResponse.json({ success: false, error: PLAN_INVALID_ERROR }, { status: 400 });
+          // A challenge is counted one way: a plan replaces the visit rule
+          safeFields.plan = plan;
+          safeFields.rule = undefined;
+        } else safeFields.plan = undefined;
+      }
+      if ('rule' in safeFields && !safeFields.plan) {
+        // The rule can be changed, or removed for a plan, but a challenge always keeps one of the two
+        if (!safeFields.rule && !('plan' in safeFields ? safeFields.plan : existing.plan)) return NextResponse.json({ success: false, error: RULE_REQUIRED_ERROR }, { status: 400 });
+        if (safeFields.rule) {
+          const rule = parseQuestRule(safeFields.rule);
+          if (!rule) return NextResponse.json({ success: false, error: 'Invalid quest rule' }, { status: 400 });
+          safeFields.rule = rule;
+          safeFields.plan = undefined;
+        }
       }
       if ('brandReward' in safeFields) {
         // The reward can be changed but not removed

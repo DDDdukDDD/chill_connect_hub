@@ -72,7 +72,7 @@ export async function buildQuestDetail(quest: ChallengeQuest, member: Member) {
     success: true,
     quest: { ...quest, participantsCount: (quest.participantsCount ?? 0) + ((await joinCounts()).get(quest.id) ?? 0) },
     /** False when the server cannot count this challenge: the member only notes progress for themselves */
-    tracked: Boolean(quest.rule),
+    tracked: Boolean(quest.rule || quest.plan),
     minEvidence: quest.rule ? minEvidenceOf(quest) : null,
     targets: where?.targets ?? [],
     targetsTotal: where?.total ?? 0,

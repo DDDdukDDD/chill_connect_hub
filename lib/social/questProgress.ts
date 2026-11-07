@@ -1,4 +1,4 @@
-import type { ChallengeQuest, EventItem, QuestRule } from '@/data/mockData';
+import type { ChallengeQuest, EventItem, QuestPlan, QuestRule } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { db } from '../db';
@@ -6,8 +6,10 @@ import { parseQuestDate } from '../questLifecycle';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '../dateUtils';
 import { momentRepository } from '../moments';
 import { memberRepository } from '../members';
-import { joinedQuestIdsOf } from './questJoins';
+import { joinsOf } from './questJoins';
+import { bangkokDay, countedStamps, planNeeded } from './questPlan';
 import { questMemberStore } from './stores';
+import { questStampStore } from './questStampStore';
 import { checkedInTogether, friendIdsOf } from './friends';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
@@ -166,6 +168,12 @@ export function ruleMatchesTarget(rule: QuestRule, target: RuleTarget): boolean 
   if (rule.vibes && !rule.vibes.includes(target.vibe ?? '')) return false;
   if (rule.keywords && !rule.keywords.some((word) => target.title.toLowerCase().includes(word.toLowerCase()))) return false;
   return true;
+}
+
+/** Challenges done by plan: they count the member's stamps instead of visits (lib/social/questPlan.ts) */
+async function questsWithPlans(): Promise<(ChallengeQuest & { plan: QuestPlan })[]> {
+  const { items } = await db.findQuests({ page: 1, limit: 200, status: 'all' });
+  return items.filter((q): q is ChallengeQuest & { plan: QuestPlan } => Boolean(q.plan) && !q.rule && q.status !== 'draft');
 }
 
 async function questsWithRules(): Promise<(ChallengeQuest & { rule: QuestRule })[]> {
@@ -397,7 +405,9 @@ export async function progressOf(memberId: string) {
   };
 
   // Leaving a finished challenge keeps what it earned (E2E 2026-11-04: leaving took 180 XP back and undid a campaign step)
-  const joined = new Set([...(await joinedQuestIdsOf(memberId)), ...(await questMemberStore.finishes({ memberId })).map((finish) => finish.questId)]);
+  const joinList = await joinsOf(memberId);
+  const finishedIds = new Set((await questMemberStore.finishes({ memberId })).map((finish) => finish.questId));
+  const joined = new Set([...joinList.map((join) => join.questId), ...finishedIds]);
   const quests: QuestProgress[] = [];
   for (const quest of await questsWithRules()) {
     const counted: Visit[] = [];
@@ -408,6 +418,17 @@ export async function progressOf(memberId: string) {
     }
     const current = Math.min(quest.rule.count, progressCount(quest.rule, counted));
     quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
+  }
+
+  // Plans: the stamps inside the member's own plan, which starts the day they joined. A finish already recorded stays
+  const planQuests = await questsWithPlans();
+  const stamps = planQuests.length && joinList.length ? await questStampStore.stamps({ memberId }) : [];
+  for (const quest of planQuests) {
+    const needed = planNeeded(quest.plan);
+    const join = joinList.find((item) => item.questId === quest.id);
+    const days = stamps.filter((stamp) => stamp.questId === quest.id).map((stamp) => stamp.day);
+    const current = finishedIds.has(quest.id) ? needed : join ? Math.min(needed, countedStamps(quest.plan, bangkokDay(join.joinedAt), days).length) : 0;
+    quests.push({ questId: quest.id, title: quest.title, current, total: needed, completed: current >= needed, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
   }
 
   // A visit to something that no longer exists earns nothing; hosting earns through its challenge only. A photo still
