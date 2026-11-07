@@ -514,11 +514,16 @@ interface WaitlistStore {
   /** Takes out those whose offer ran out and marks those now offered a seat */
   move(eventId: string, expiredIds: string[], offerIds: string[]): Promise<void>;
   removeOf(memberId: string): Promise<void>;
+  /** Every ตี้ that has someone in line (for the hourly job) */
+  eventIds(): Promise<string[]>;
 }
 
 function jsonWaitlist(): WaitlistStore {
   const store = createJsonStore<WaitlistEntry>('waitlist');
   return {
+    async eventIds() {
+      return [...new Set(store.read().map((e) => e.eventId))];
+    },
     async line(eventId) {
       return store.read().filter((e) => e.eventId === eventId).sort((a, b) => a.at.localeCompare(b.at));
     },
@@ -547,6 +552,10 @@ function jsonWaitlist(): WaitlistStore {
 
 function pgWaitlist(): WaitlistStore {
   return {
+    async eventIds() {
+      const rows = await sql()`select distinct e.slug from app.event_waitlist w join app.events e on e.id = w.event_id`;
+      return rows.map((r) => r.slug as string);
+    },
     async line(eventId) {
       const db = sql();
       const rows = await db`
