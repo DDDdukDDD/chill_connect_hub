@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-288 · /spots: several districts, top 12 first, Bangkok แขวง counted under their เขต (owner 2026-11-07)
+- **What changed:** `district` on `GET /api/spots/browse` takes a comma-separated list (`docs/API.md`); the sheet toggles districts, shows the 12 with most places then "ดูทั้งหมด", and puts one chip per district in the row. `data/bangkokDistricts.ts` maps about 150 Bangkok sub-districts to their district (dev data: 46 names became 24 districts); names starting with "จังหวัด" are dropped.
+- **Known:** other provinces still have some ตำบล in the district field (e.g. ช่อแล, Chiang Mai); 18 Bangkok places have no district. Fix those in the place data.
+- **Also:** reward cards in the promo row lay out from the top again (BE-286 made them buttons, which centred their content).
+
 ### BE-287 · /spots gets ตัวกรอง: district and "open now" (owner 2026-11-07)
 - **What changed:** the /spots row is now ตัวกรอง · ใกล้ฉัน · เปิดอยู่ตอนนี้ · เข้าฟรี, like the other list pages. The sheet has all 77 provinces and the picked province's districts with counts. `GET /api/spots/browse` takes `district` and `open=now` and returns `districts` (`docs/API.md`); both filters also go in the page address.
 - **Shared utility:** `parseSpotOpenStatus` moved from the place page to `lib/openHours.ts`, next to the new `isSpotOpenNow` (only a readable time or 24 hours counts as open). Districts are compared without "เขต" / "อำเภอ" / "อ." (`districtName` in `lib/spotBrowse.ts`).

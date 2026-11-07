@@ -142,7 +142,7 @@ What `/spots` shows: published places filtered, ranked and counted with the page
 |---|---|---|
 | `q` | search words (same matching as the ค้นพบ search) | — |
 | `province` | Thai province name (aliases like "เชียงใหม่" work as on the page) | all |
-| `district` | a district of the picked province, as listed in `districts` ("เขต"/"อำเภอ"/"อ." prefixes are ignored); ignored without `province` (2026-11-07) | all |
+| `district` | one or more districts of the picked province, comma-separated, as listed in `districts` ("เขต"/"อำเภอ"/"อ." prefixes are ignored; in Bangkok a sub-district counts as its district, `data/bangkokDistricts.ts`); ignored without `province` (2026-11-07) | all |
 | `category` | a vibe group id (`MASTER_SPOT_CATEGORIES`) or a plain spot category | all |
 | `price` | `free` | — |
 | `open` | `now`: only places whose opening hours say they are open at this moment, Thai time (24 hours or a matching time; hours that cannot be read are left out) (2026-11-07) | — |

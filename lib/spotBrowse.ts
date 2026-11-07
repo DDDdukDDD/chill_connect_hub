@@ -7,6 +7,7 @@ import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
 import { spotListItem } from '@/lib/listItems';
 import { planCandidates } from '@/lib/spotDayPlan';
 import { isSpotOpenNow } from '@/lib/openHours';
+import { bangkokDistrictOf } from '@/data/bangkokDistricts';
 
 /**
  * The /spots list worked out on the server. The browser used to download the whole catalog (~2,000 places, about 7 MB
@@ -20,9 +21,13 @@ const VIBE_IDS = new Set<string>(MASTER_SPOT_CATEGORIES.map((c) => c.id));
 
 type Indexed = { spot: LifestyleSpotItem; text: string; vibe: string; shown: boolean; district: string };
 
-/** A district as people say it: "เขตบางรัก", "อ.เมือง" and "อำเภอเมือง" read as "บางรัก" and "เมือง" */
-export function districtName(district?: string): string {
-  return (district || '').trim().replace(/^(เขต|อำเภอ|อ.)s*/, '').trim();
+/** A district as people say it: "เขตบางรัก", "อ.เมือง" and "อำเภอเมือง" read as "บางรัก" and "เมือง". In Bangkok a
+ *  sub-district (แขวง) counts as its district: "ลุมพินี" is ปทุมวัน (data/bangkokDistricts.ts) */
+export function districtName(district?: string, province?: string): string {
+  const name = (district || '').trim().replace(/^(เขต|อำเภอ|อ.)s*/, '').trim();
+  // "จังหวัดเชียงใหม่" in the district field names the province, not a district
+  if (name.startsWith('จังหวัด')) return '';
+  return name && /กรุงเทพ/.test(province || '') ? bangkokDistrictOf(name) : name;
 }
 
 /** At most this many districts are offered in the filter, the ones with the most places */
@@ -31,8 +36,8 @@ const DISTRICTS_SHOWN = 60;
 export type SpotBrowseParams = {
   q?: string;
   province?: string;
-  /** A district inside the province, as districtName() gives it */
-  district?: string;
+  /** Districts inside the province, as districtName() gives them; a place in any of them shows */
+  districts?: string[];
   /** Only places whose hours say they are open now */
   openNow?: boolean;
   /** A vibe group id, or a plain spot category */
@@ -72,7 +77,7 @@ async function catalogIndex() {
     spots.push(...next.items);
     if (!next.hasNextPage) break;
   }
-  const all = spots.map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot), district: districtName(spot.district) }));
+  const all = spots.map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot), district: districtName(spot.district, spot.province) }));
   const nationwide: Record<string, number> = {};
   for (const entry of all) if (entry.shown) nationwide[entry.vibe] = (nationwide[entry.vibe] || 0) + 1;
   const index = { all, rail: MASTER_SPOT_CATEGORIES.filter((c) => (nationwide[c.id] || 0) >= MIN_SPOTS_PER_GROUP).map((c) => c.id) };
@@ -87,7 +92,7 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
   const category = params.category && params.category !== 'all' ? params.category : '';
   const ids = params.ids ? new Set(params.ids) : null;
   const openedAt = params.openedAt ?? Date.now();
-  const district = province !== ALL_PROVINCES ? districtName(params.district) : '';
+  const districts = province !== ALL_PROVINCES && params.districts?.length ? new Set(params.districts.map((name) => districtName(name, province))) : null;
   const now = Date.now();
   const districtCounts = new Map<string, number>();
 
@@ -96,7 +101,7 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
   for (const entry of all) {
     if (!spotInProvince(entry.spot, province, entry.text)) continue;
     if (province !== ALL_PROVINCES && entry.shown && entry.district) districtCounts.set(entry.district, (districtCounts.get(entry.district) || 0) + 1);
-    if (district && entry.district !== district) continue;
+    if (districts && !districts.has(entry.district)) continue;
     if (entry.shown) {
       counts.all += 1;
       counts[entry.vibe] = (counts[entry.vibe] || 0) + 1;
@@ -133,7 +138,7 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
   };
 }
 
-/** The browse parameters from an address (`/spots?q=…&province=…&district=…&category=…&price=free&open=now`) or the API's query string */
+/** The browse parameters from an address (`/spots?q=…&province=…&district=a,b&category=…&price=free&open=now`) or the API's query string */
 export function browseParamsFrom(get: (key: string) => string | null | undefined): SpotBrowseParams {
   const num = (key: string) => {
     const value = Number(get(key));
@@ -145,7 +150,7 @@ export function browseParamsFrom(get: (key: string) => string | null | undefined
   return {
     q: get('q') ?? undefined,
     province: get('province') ?? undefined,
-    district: get('district') ?? undefined,
+    districts: get('district')?.split(',').map((name) => name.trim()).filter(Boolean),
     openNow: get('open') === 'now',
     category: get('category') ?? undefined,
     free: get('price') === 'free',
