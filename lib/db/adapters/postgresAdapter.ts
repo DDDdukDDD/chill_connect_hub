@@ -634,15 +634,16 @@ export class PostgresAdapter implements IDataRepository {
 
   public async bulkUpdateSpots(spots: Array<Partial<LifestyleSpotItem> & { id: string }>): Promise<number> {
     if (spots.length === 0) return 0;
-    const count = await sql().begin(async (tx) => {
+    const changed = await sql().begin(async (tx) => {
       const rows = await tx`select * from app.places where slug in ${tx(spots.map((s) => s.id))}`;
       const current = new Map(rows.map((row) => [row.slug as string, rowToPlace(row) as LifestyleSpotItem]));
       const next = spots.filter((s) => current.has(s.id)).map((s) => ({ ...current.get(s.id)!, ...s }));
       await this.writeSpots(tx, next);
-      return next.length;
+      return next.map((s) => s.id);
     });
-    if (count) cacheManager.invalidateTag('spots');
-    return count;
+    // Each place page is cached on its own too, so a bulk change (publish, "นัดเจอได้") must reach those pages
+    if (changed.length) cacheManager.invalidateTags(['spots', ...changed.map((id) => `spot:${id}`)]);
+    return changed.length;
   }
 
   public async deleteSpot(id: string): Promise<boolean> {

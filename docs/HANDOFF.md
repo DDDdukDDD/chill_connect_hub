@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-292 · Admin places: tick many, then tag นัดเจอได้ or publish (2026-11-07)
+- **What changed:** the places list in admin has a tick box per row, เลือกทั้งหน้า, and a bar for ติดป้ายนัดเจอได้ / เอาป้ายออก / เผยแพร่ / ถอนเผยแพร่ on the ticked places (new action `set_meetup`; bars are skipped). A นัดเจอได้ filter, count and row label show which places can host trips. `bulkUpdateSpots` now also clears each changed place's own page cache.
+
 ### BE-291 · Report a question on a ตี้; host hides it from the page (2026-11-07)
 - **What changed:** each question on a ตี้ page has รายงาน for signed-in members (target `question`, id `"{eventId}/{questionId}"`), and the host gets ซ่อนคำถามนี้ (the server already allowed it, the button was missing). Staff see question reports in รายงาน and "remove" hides the question. A report from a pair chat now reads "ข้อความในแชตคู่กับ …" for staff; pair chats already had รายงาน on each message.
 

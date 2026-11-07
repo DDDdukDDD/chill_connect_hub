@@ -104,11 +104,17 @@ export async function GET(request: Request) {
       filtered = filtered.filter((spot) => spot.publicationStatus !== 'draft');
     }
 
+    // meetup=yes | no: places staff opened for Spot Buddy trips (the "นัดเจอได้" tag)
+    const meetup = searchParams.get('meetup');
+    if (meetup === 'yes') filtered = filtered.filter((spot) => spot.meetupAllowed === true);
+    else if (meetup === 'no') filtered = filtered.filter((spot) => spot.meetupAllowed !== true);
+
     const imageStatuses = allSpots.map((s) => getImageStatus(s.image));
     const missingImagesCount = imageStatuses.filter((status) => status === 'missing').length;
     const brokenImagesCount = imageStatuses.filter((status) => status === 'broken').length;
     const uncheckedImagesCount = imageStatuses.filter((status) => status === 'unchecked').length;
     const draftCount = allSpots.filter((s) => s.publicationStatus === 'draft').length;
+    const meetupCount = allSpots.filter((s) => s.meetupAllowed === true).length;
     const distinctProvinces = new Set(allSpots.map((s) => s.province)).size;
     const withImageStatus = (spot: LifestyleSpotItem) => ({ ...spot, imageStatus: getImageStatus(spot.image) });
 
@@ -122,6 +128,7 @@ export async function GET(request: Request) {
       totalCount: allSpots.length,
       filteredCount: filtered.length,
       draftCount,
+      meetupCount,
       missingImagesCount,
       brokenImagesCount,
       uncheckedImagesCount,
@@ -256,6 +263,29 @@ export async function POST(request: Request) {
         spot: updatedSpot,
         spots: await getAllSpots(),
       });
+    }
+
+    // Action: the "นัดเจอได้" tag on many places at once ({ spotIds, allowed }). Bars never take it (spotAllowsMeetups)
+    if (action === 'set_meetup') {
+      const { spotIds, allowed } = body as { spotIds?: unknown; allowed?: unknown };
+      const ids = Array.isArray(spotIds) ? new Set(spotIds.filter((id): id is string => typeof id === 'string')) : null;
+      if (!ids || ids.size === 0 || ids.size > 500 || typeof allowed !== 'boolean') {
+        return NextResponse.json({ success: false, error: 'ระบุ spotIds (1-500) และ allowed' }, { status: 400 });
+      }
+      const chosen = (await getAllSpots()).filter((spot) => ids.has(spot.id));
+      const skippedBars = allowed ? chosen.filter((spot) => spot.category === 'bar').length : 0;
+      const targets = chosen.filter((spot) => (spot.meetupAllowed === true) !== allowed && !(allowed && spot.category === 'bar'));
+      const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, meetupAllowed: allowed })));
+      recordAudit(
+        actor,
+        'spot.update',
+        targets.length === 1
+          ? `${allowed ? 'ติดป้าย' : 'เอาป้าย'} "นัดเจอได้" ${allowed ? 'ให้' : 'ออกจาก'} "${targets[0].title}"`
+          : `${allowed ? 'ติดป้าย' : 'เอาป้าย'} "นัดเจอได้" ${allowed ? 'ให้' : 'ออกจาก'} ${updated} สถานที่`,
+        targets.length === 1 ? { type: 'spot', id: targets[0].id } : { type: 'spot' }
+      );
+      const message = `${allowed ? 'ติดป้ายนัดเจอได้' : 'เอาป้ายนัดเจอได้ออก'} ${updated} แห่งแล้ว${skippedBars ? ` (ข้ามบาร์ ${skippedBars} แห่ง เพราะเปิดทริปที่บาร์ไม่ได้)` : ''}`;
+      return NextResponse.json({ success: true, updated, skippedBars, message });
     }
 
     // Action 4: Delete Spot
