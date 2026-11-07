@@ -6,6 +6,7 @@ import { ALL_PROVINCES, matchesQuery, spotInProvince, spotSearchText } from '@/l
 import { compareSpotsByRank, shownWhenBrowsing } from '@/lib/spotRanking';
 import { spotListItem } from '@/lib/listItems';
 import { planCandidates } from '@/lib/spotDayPlan';
+import { isSpotOpenNow } from '@/lib/openHours';
 
 /**
  * The /spots list worked out on the server. The browser used to download the whole catalog (~2,000 places, about 7 MB
@@ -17,11 +18,23 @@ import { planCandidates } from '@/lib/spotDayPlan';
 const MIN_SPOTS_PER_GROUP = 10;
 const VIBE_IDS = new Set<string>(MASTER_SPOT_CATEGORIES.map((c) => c.id));
 
-type Indexed = { spot: LifestyleSpotItem; text: string; vibe: string; shown: boolean };
+type Indexed = { spot: LifestyleSpotItem; text: string; vibe: string; shown: boolean; district: string };
+
+/** A district as people say it: "เขตบางรัก", "อ.เมือง" and "อำเภอเมือง" read as "บางรัก" and "เมือง" */
+export function districtName(district?: string): string {
+  return (district || '').trim().replace(/^(เขต|อำเภอ|อ.)s*/, '').trim();
+}
+
+/** At most this many districts are offered in the filter, the ones with the most places */
+const DISTRICTS_SHOWN = 60;
 
 export type SpotBrowseParams = {
   q?: string;
   province?: string;
+  /** A district inside the province, as districtName() gives it */
+  district?: string;
+  /** Only places whose hours say they are open now */
+  openNow?: boolean;
   /** A vibe group id, or a plain spot category */
   category?: string;
   free?: boolean;
@@ -38,6 +51,8 @@ export type SpotBrowseResult = {
   total: number;
   /** Places per vibe group in the picked province, for the category tabs */
   counts: Record<string, number>;
+  /** Districts of the picked province with their number of places, most first (empty for the whole country) */
+  districts: { name: string; count: number }[];
   /** Vibe groups with enough places nationwide to show on the rail */
   railIds: string[];
   /** The time the order was worked out for (pass it back as `t` so "แสดงเพิ่มเติม" keeps the order) */
@@ -57,7 +72,7 @@ async function catalogIndex() {
     spots.push(...next.items);
     if (!next.hasNextPage) break;
   }
-  const all = spots.map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot) }));
+  const all = spots.map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot), district: districtName(spot.district) }));
   const nationwide: Record<string, number> = {};
   for (const entry of all) if (entry.shown) nationwide[entry.vibe] = (nationwide[entry.vibe] || 0) + 1;
   const index = { all, rail: MASTER_SPOT_CATEGORIES.filter((c) => (nationwide[c.id] || 0) >= MIN_SPOTS_PER_GROUP).map((c) => c.id) };
@@ -72,11 +87,16 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
   const category = params.category && params.category !== 'all' ? params.category : '';
   const ids = params.ids ? new Set(params.ids) : null;
   const openedAt = params.openedAt ?? Date.now();
+  const district = province !== ALL_PROVINCES ? districtName(params.district) : '';
+  const now = Date.now();
+  const districtCounts = new Map<string, number>();
 
   const counts: Record<string, number> = { all: 0 };
   const found: Indexed[] = [];
   for (const entry of all) {
     if (!spotInProvince(entry.spot, province, entry.text)) continue;
+    if (province !== ALL_PROVINCES && entry.shown && entry.district) districtCounts.set(entry.district, (districtCounts.get(entry.district) || 0) + 1);
+    if (district && entry.district !== district) continue;
     if (entry.shown) {
       counts.all += 1;
       counts[entry.vibe] = (counts[entry.vibe] || 0) + 1;
@@ -84,6 +104,7 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
     if (category && (VIBE_IDS.has(category) ? entry.vibe !== category : entry.spot.category !== category)) continue;
     if (ids && !ids.has(entry.spot.id)) continue;
     if (params.free && !entry.spot.price?.includes('ฟรี')) continue;
+    if (params.openNow && !isSpotOpenNow(entry.spot.openHours, now)) continue;
     if (!matchesQuery(entry.text, query)) continue;
     // Places curated as hidden show only when searched for (saved ones still show in the saved list)
     if (!query && !ids && !entry.shown) continue;
@@ -106,12 +127,13 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
     spots: ranked.slice(0, limit).map((spot) => ({ ...spotListItem(spot), ...(spot.distanceKm !== undefined ? { distanceKm: spot.distanceKm } : {}) })),
     total: ranked.length,
     counts,
+    districts: [...districtCounts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'th')).slice(0, DISTRICTS_SHOWN),
     railIds: category && !rail.includes(category) ? [...rail, category] : rail,
     openedAt,
   };
 }
 
-/** The browse parameters from an address (`/spots?q=…&province=…&category=…&price=free`) or the API's query string */
+/** The browse parameters from an address (`/spots?q=…&province=…&district=…&category=…&price=free&open=now`) or the API's query string */
 export function browseParamsFrom(get: (key: string) => string | null | undefined): SpotBrowseParams {
   const num = (key: string) => {
     const value = Number(get(key));
@@ -123,6 +145,8 @@ export function browseParamsFrom(get: (key: string) => string | null | undefined
   return {
     q: get('q') ?? undefined,
     province: get('province') ?? undefined,
+    district: get('district') ?? undefined,
+    openNow: get('open') === 'now',
     category: get('category') ?? undefined,
     free: get('price') === 'free',
     ids: ids != null ? ids.split(',').filter(Boolean) : undefined,

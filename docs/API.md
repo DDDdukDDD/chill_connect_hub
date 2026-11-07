@@ -142,14 +142,16 @@ What `/spots` shows: published places filtered, ranked and counted with the page
 |---|---|---|
 | `q` | search words (same matching as the ค้นพบ search) | — |
 | `province` | Thai province name (aliases like "เชียงใหม่" work as on the page) | all |
+| `district` | a district of the picked province, as listed in `districts` ("เขต"/"อำเภอ"/"อ." prefixes are ignored); ignored without `province` (2026-11-07) | all |
 | `category` | a vibe group id (`MASTER_SPOT_CATEGORIES`) or a plain spot category | all |
 | `price` | `free` | — |
+| `open` | `now`: only places whose opening hours say they are open at this moment, Thai time (24 hours or a matching time; hours that cannot be read are left out) (2026-11-07) | — |
 | `ids` | comma-separated place ids (the member's saved places; ≤ 500) | — |
 | `lat`, `lng` | a position: nearest first, each place gets `distanceKm` | ranked order |
 | `t` | ms timestamp the list was opened (keeps "new" places in place across "แสดงเพิ่มเติม") | now |
 | `limit` | 1–200 | `24` |
 
-Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail.
+Response `200`: `{ success: true, spots: LifestyleSpotItem[], total, counts: Record<vibeId | 'all', number>, districts: { name, count }[], railIds: string[], openedAt }`. `spots` are list items: no gallery, contact or source fields, description cut to 280 characters, `curation` reduced to tier and score. Open `/spots/[id]` (or `GET /api/spots/[id]`) for the full place. `counts` are per vibe group in the picked province (for the category tabs); `railIds` are the groups with enough places to show on the rail. `districts` lists the picked province's districts with their number of shown places, most first, at most 60 (empty for the whole country); it ignores the other filters, so every district stays offered.
 
 ### `GET /api/spots/[id]` — one spot
 

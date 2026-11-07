@@ -3,7 +3,7 @@ import { browseParamsFrom, browseSpots } from '@/lib/spotBrowse';
 
 /**
  * GET /api/spots/browse — the /spots list filtered, ranked and counted on the server (see lib/spotBrowse.ts).
- * ?q, ?province, ?category, ?price=free, ?ids=a,b (saved), ?lat&lng (nearest first), ?t (opened at), ?limit (≤ 200).
+ * ?q, ?province, ?district, ?category, ?price=free, ?open=now, ?ids=a,b (saved), ?lat&lng (nearest first), ?t (opened at), ?limit (≤ 200).
  */
 export async function GET(request: Request) {
   try {
