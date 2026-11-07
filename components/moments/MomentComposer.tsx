@@ -16,7 +16,7 @@ import { clipFrame, coverWithText, plainCover, readClipDuration, withClipType } 
 import { canShrinkClips } from '@/lib/media/clipCompress';
 import { drawBase, drawOverlays, newPhoto, type EditedPhoto, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { startPosting } from '@/lib/moments/postingJobs';
-import { publishMoment } from '@/components/moments/publishMoment';
+import { publishMoment, type UploadsSoFar } from '@/components/moments/publishMoment';
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
@@ -325,8 +325,10 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     };
     // The photo links must outlive the form: the background job still reads them, and they go with the page
     photoUrls.current = [];
+    // Kept across "ลองใหม่", so a retry does not upload the same files twice
+    const uploaded: UploadsSoFar = { images: [] };
     startPosting(clip?.cover ?? thumbnailOf(photos[0], shape), async (report) => {
-      const { moment, counted } = await publishMoment(draft, report);
+      const { moment, counted } = await publishMoment(draft, report, uploaded);
       onPosted(moment, counted);
     });
     onClose();
