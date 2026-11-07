@@ -23,8 +23,11 @@ const r2Client = (config: R2Config) => (client ??= new AwsClient({ accessKeyId: 
 export const r2ObjectUrl = (config: R2Config, key: string) =>
   `https://${config.accountId}.r2.cloudflarestorage.com/${config.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
 
-export async function r2Fetch(config: R2Config, url: string, init?: RequestInit): Promise<Response> {
-  return r2Client(config).fetch(url, init);
+export async function r2Fetch(config: R2Config, url: string, init: RequestInit = {}): Promise<Response> {
+  // Signed first, then sent with the body itself: aws4fetch's own fetch passes a Request, whose body Next.js sends as
+  // a stream without Content-Length, and R2 answers 411 Length Required
+  const signed = await r2Client(config).sign(url, init);
+  return fetch(signed.url, { method: signed.method, headers: signed.headers, body: init.body, cache: 'no-store' });
 }
 
 /**
