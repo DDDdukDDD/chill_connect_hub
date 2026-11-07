@@ -206,6 +206,13 @@ export interface MemberRepository {
   findByEmail(email: string): Promise<Member | null>;
   findByProvider(provider: OAuthProvider, subject: string): Promise<Member | null>;
   findByVerifiedPhone(phone: string): Promise<Member | null>;
+  findByInviteCode(code: string): Promise<Member | null>;
+  /** Members who signed up with this member's invite link, newest first */
+  findInvitees(id: string): Promise<Member[]>;
+  /** How many active members follow this member; counted in the database, not by reading every member */
+  countFollowers(id: string): Promise<number>;
+  /** How many active members picked at least one of these community สาย in onboarding (a number only) */
+  countCommunityInterest(codes: string[]): Promise<number>;
   create(member: Member): Promise<Member>;
   update(id: string, changes: Partial<Member>): Promise<Member>;
   remove(id: string): Promise<boolean>;

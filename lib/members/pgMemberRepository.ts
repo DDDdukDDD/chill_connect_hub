@@ -243,6 +243,33 @@ export const pgMemberRepository: MemberRepository = {
   async findByVerifiedPhone(phone) {
     return findOne(sql(), sql()`m.phone = ${phone} and m.phone_verified_at is not null`);
   },
+  // The next three used to read every member (158 KB on 2026-11-07) for one answer
+  async findByInviteCode(code) {
+    return findOne(sql(), sql()`m.invite_code = ${code}`);
+  },
+  async findInvitees(id) {
+    const rows = await hydrate(sql(), sql()`m.invited_by = (select o.id from app.members o where o.legacy_id = ${id})`);
+    return rows.map((row) => rowToMember(row) as Member).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async countFollowers(id) {
+    return cacheManager.getOrSet(`followers:${id}`, async () => {
+      const [{ n }] = await sql()`
+        select count(*)::int as n from app.follows f
+        join app.members fr on fr.id = f.follower_id and fr.status = 'active'
+        join app.members me on me.id = f.followee_id and me.legacy_id = ${id}`;
+      return n as number;
+    }, { ttlMs: 30 * 1000, tags: ['member-lists'] });
+  },
+  async countCommunityInterest(codes) {
+    const wanted = [...new Set(codes)].sort();
+    return cacheManager.getOrSet(`interest-count:${wanted.join(',')}`, async () => {
+      const [{ n }] = await sql()`
+        select count(distinct i.member_id)::int as n from app.member_interests i
+        join app.members m on m.id = i.member_id and m.status = 'active'
+        where i.pillar = 'community' and i.code = any(${wanted})`;
+      return n as number;
+    }, { ttlMs: 30 * 1000, tags: ['member-lists'] });
+  },
   async findByProvider(provider: OAuthProvider, subject: string) {
     return findOne(sql(), sql()`m.id = (select member_id from app.member_auth_providers where provider = ${provider} and subject = ${subject})`);
   },

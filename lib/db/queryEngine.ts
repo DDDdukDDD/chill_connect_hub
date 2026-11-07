@@ -249,10 +249,12 @@ export function filterSpots(
     searchQuery,
     hasImageOnly = false,
     includeDrafts = false,
+    suggestedBy,
     sortBy = 'popular',
   } = params;
 
   const filtered = spots.filter((spot) => {
+    if (suggestedBy) return spot.suggestedByMemberId === suggestedBy;
     if (!includeDrafts && spot.publicationStatus === 'draft') {
       return false;
     }

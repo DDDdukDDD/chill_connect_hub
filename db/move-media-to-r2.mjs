@@ -38,7 +38,8 @@ const mb = (n) => `${(n / 1e6).toFixed(1)} MB`;
 const blobs = [];
 for (let cursor; ; ) {
   const page = await list({ cursor, limit: 1000, token });
-  blobs.push(...page.blobs);
+  // A name ending in "/" is an empty folder made in the Blob dashboard, not a file
+  blobs.push(...page.blobs.filter((b) => !b.pathname.endsWith('/')));
   if (!page.hasMore) break;
   cursor = page.cursor;
 }

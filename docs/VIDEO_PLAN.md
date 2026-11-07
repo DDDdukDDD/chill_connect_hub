@@ -43,7 +43,7 @@
 
 - ตั้งแล้ว: bucket `chillwaa-media` ที่ `media.chillwaa.com` และ `chillwaa-media-dev` ที่ `media-dev.chillwaa.com` (APAC), กุญแจแยกกันต่อ bucket, ค่า `R2_*` ของจริงอยู่ใน Vercel Production เท่านั้น ของ dev อยู่ใน `.env.development.local`
 - โค้ด: `lib/media/r2.ts`, `lib/media/adapters/r2StorageAdapter.ts` เว็บใช้ R2 เมื่อมีค่า `R2_*` ไม่งั้นใช้ Blob แบบเดิม คลิปส่งจากมือถือตรงไป R2 ด้วยลิงก์ที่เซ็นขนาดและชนิดไฟล์ไว้
-- ย้ายไฟล์เดิม: `node db/move-media-to-r2.mjs` (ดูวิธีใช้ในไฟล์) เก็บไฟล์บน Blob ไว้ราวหนึ่งสัปดาห์ก่อนลบ
+- ย้ายไฟล์เดิมแล้ว 2026-11-07: 114 ไฟล์ 91.5 MB และลิงก์ในฐานข้อมูล 105 แถวชี้ไป `media.chillwaa.com` แล้ว รูปและคลิปผ่าน cache ของ Cloudflare (MISS แล้ว HIT) ไฟล์บน Blob เก็บไว้ถึงราว 2026-11-14 แล้วลบด้วย `node db/move-media-to-r2.mjs --delete-blob`
 
 - R2 ไม่คิดค่าส่งออก คิดแค่ค่าเก็บ $0.015 ต่อ GB ต่อเดือน และค่าเรียกอ่าน $0.36 ต่อล้านครั้ง ได้ฟรี 10 GB และอ่านฟรี 10 ล้านครั้งต่อเดือน
 - คนดูมากขึ้นแทบไม่เพิ่มต้นทุน ต่างจาก Blob ที่คิดเงินตามจำนวน GB ที่ส่งออก

@@ -53,6 +53,8 @@ export interface SpotQueryParams extends PaginationParams {
   searchQuery?: string | null;
   hasImageOnly?: boolean;
   includeDrafts?: boolean;
+  /** Only the places this member suggested, drafts included (My Hub). Postgres reads just those rows. */
+  suggestedBy?: string;
 }
 
 export interface QuestQueryParams extends PaginationParams {
