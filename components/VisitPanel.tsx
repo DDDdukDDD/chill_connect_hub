@@ -386,8 +386,8 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
             onPosted={(_moment, countedQuest) => {
               setIsComposerOpen(false);
               setReloadCount((n) => n + 1);
+              // The progress card says โพสต์แล้ว
               if (countedQuest) setCounted(countedQuest);
-              else onShowToast('แชร์โมเมนต์แล้ว');
             }}
           />
         )}

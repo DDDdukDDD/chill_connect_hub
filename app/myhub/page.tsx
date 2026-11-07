@@ -2018,8 +2018,8 @@ function MyHubContent() {
             onToast={showToast}
             onPosted={(_moment, counted) => {
               setShareInitial(null);
+              // The progress card says โพสต์แล้ว
               if (counted) setCountedQuest(counted);
-              else showToast('แชร์โมเมนต์แล้ว');
             }}
           />
         )}
