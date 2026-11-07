@@ -306,8 +306,7 @@ export async function setFollowing(member: Member, targetId: string, follow: boo
 
 /** How many active members follow this member */
 export async function followerCount(memberId: string): Promise<number> {
-  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
-  return items.filter((m) => m.followingIds?.includes(memberId)).length;
+  return memberRepository.countFollowers(memberId);
 }
 
 /**
@@ -373,7 +372,5 @@ export { accountAgeDays };
  */
 export async function interestPeopleCount(ids: string[]): Promise<number> {
   if (!ids.length) return 0;
-  const wanted = new Set(ids);
-  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
-  return items.filter((m) => m.preferences?.interests?.communityCategories?.some((id) => wanted.has(id))).length;
+  return memberRepository.countCommunityInterest(ids);
 }

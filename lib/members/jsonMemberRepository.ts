@@ -48,6 +48,19 @@ export const jsonMemberRepository: MemberRepository = {
   async findByVerifiedPhone(phone) {
     return load().find((m) => m.phone === phone && m.phoneVerifiedAt) ?? null;
   },
+  async findByInviteCode(code) {
+    return load().find((m) => m.inviteCode === code) ?? null;
+  },
+  async findInvitees(id) {
+    return load().filter((m) => m.invitedBy === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async countFollowers(id) {
+    return load().filter((m) => m.status === 'active' && m.followingIds?.includes(id)).length;
+  },
+  async countCommunityInterest(codes) {
+    const wanted = new Set(codes);
+    return load().filter((m) => m.status === 'active' && m.preferences?.interests?.communityCategories?.some((c) => wanted.has(c))).length;
+  },
   async findByProvider(provider: OAuthProvider, subject: string) {
     return load().find((m) => m.providers.some((p) => p.provider === provider && p.subject === subject)) ?? null;
   },

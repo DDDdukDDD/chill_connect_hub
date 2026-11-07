@@ -39,14 +39,12 @@ export async function inviteCodeOf(member: Member): Promise<string> {
 export async function memberByInviteCode(code: string): Promise<Member | null> {
   const wanted = code.trim().toUpperCase();
   if (!/^[A-Z0-9]{4,12}$/.test(wanted)) return null;
-  const { items } = await memberRepository.query({ status: 'all', page: 1, limit: 100_000 });
-  return items.find((m) => m.inviteCode === wanted) ?? null;
+  return memberRepository.findByInviteCode(wanted);
 }
 
 /** Members who signed up with this member's link, newest first */
 export async function inviteesOf(memberId: string): Promise<Member[]> {
-  const { items } = await memberRepository.query({ status: 'all', page: 1, limit: 100_000 });
-  return items.filter((m) => m.invitedBy === memberId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return memberRepository.findInvitees(memberId);
 }
 
 /**
