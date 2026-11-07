@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   if (member.status !== 'active') return NextResponse.json({ success: false, message: 'บัญชีนี้ยังใช้งานส่วนนี้ไม่ได้' }, { status: 403 });
-  if (isRateLimited(`reward-redeem:${member.id}`, 20, 60 * 60 * 1000)) {
+  if (await isRateLimited(`reward-redeem:${member.id}`, 20, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
   }
   try {

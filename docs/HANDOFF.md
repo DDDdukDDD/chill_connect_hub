@@ -20,6 +20,25 @@ Item template:
 
 ---
 
+### BE-293 · See who liked your moment (owner 2026-11-07)
+- **What changed:** on your own moment the heart count is a link that opens คนที่ส่งหัวใจให้, newest first, each with a follow button (`GET /api/moments/[id]/likes`, owner only; others still see just the number). The person row with photo, name and follow button is shared with the follower lists (`components/members/PeopleList.tsx`).
+
+### BE-292 · Admin places: tick many, then tag นัดเจอได้ or publish (2026-11-07)
+- **What changed:** the places list in admin has a tick box per row, เลือกทั้งหน้า, and a bar for ติดป้ายนัดเจอได้ / เอาป้ายออก / เผยแพร่ / ถอนเผยแพร่ on the ticked places (new action `set_meetup`; bars are skipped). A นัดเจอได้ filter, count and row label show which places can host trips. `bulkUpdateSpots` now also clears each changed place's own page cache.
+
+### BE-291 · Report a question on a ตี้; host hides it from the page (2026-11-07)
+- **What changed:** each question on a ตี้ page has รายงาน for signed-in members (target `question`, id `"{eventId}/{questionId}"`), and the host gets ซ่อนคำถามนี้ (the server already allowed it, the button was missing). Staff see question reports in รายงาน and "remove" hides the question. A report from a pair chat now reads "ข้อความในแชตคู่กับ …" for staff; pair chats already had รายงาน on each message.
+
+### BE-290 · Trips: real attendance only, and short trips are called off (2026-11-07)
+- **What changed:** to open a Spot Buddy trip a member must have been checked in by the host of someone else's ตี้, or had a photo moment at a ตี้ or อีเวนต์ passed by staff; an อีเวนต์ plan or meet-up group that is over no longer counts. A trip still short of 3 people 2 hours before the start becomes `status: 'cancelled'` and everyone in it is told (new notification `trip_cancelled`, migration 0031). `isEventEnded` treats `cancelled` as over; the ตี้ page says ทริปนี้ยกเลิกแล้ว and hides check-in and the after-ตี้ panel.
+- **New:** `GET /api/cron/hourly` (needs `CRON_SECRET`), called hourly by GitHub Actions and daily by Vercel Cron. Put later timed jobs there.
+- **What to do about it:** owner sets `CRON_SECRET` (a long random string) on Vercel Production and as a GitHub repository secret with the same value, and runs `npm run db:migrate` on live (0031) on merge.
+
+### BE-289 · Rate limits shared by every server; TR-002 first cards (2026-11-07)
+- **What changed:** `isRateLimited` in `lib/rateLimit.ts` is now async and counts in `app.rate_limits` (migration 0030), so every server shares one count; the 60 call sites `await` it. Admin login failures and the upload limit use it too (new `isOverRateLimit`, `clearRateLimit`). JSON mode still counts in memory; a database error lets the request through.
+- **TR-002:** `PosterPhoto` also swaps in the stand-in when a server-rendered image failed before the page woke up.
+- **What to do about it:** run `npm run db:migrate` on the live database (0030) when this reaches `main`. Until then every limited route logs an error and falls back to per-server counting.
+
 ### BE-288 · /spots: several districts, top 12 first, Bangkok แขวง counted under their เขต (owner 2026-11-07)
 - **What changed:** `district` on `GET /api/spots/browse` takes a comma-separated list (`docs/API.md`); the sheet toggles districts, shows the 12 with most places then "ดูทั้งหมด", and puts one chip per district in the row. `data/bangkokDistricts.ts` maps about 150 Bangkok sub-districts to their district (dev data: 46 names became 24 districts); names starting with "จังหวัด" are dropped.
 - **Known:** other provinces still have some ตำบล in the district field (e.g. ช่อแล, Chiang Mai); 18 Bangkok places have no district. Fix those in the place data.

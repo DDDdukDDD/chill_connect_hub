@@ -9,7 +9,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
-  if (isRateLimited(`review:${member.id}`, 20, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
+  if (await isRateLimited(`review:${member.id}`, 20, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
   try {
     const review = await reviewEvent(member, (await context.params).id, await request.json().catch(() => ({})));
     return NextResponse.json({ success: true, review: { id: review.id, rating: review.rating, text: review.text } }, { status: 201 });

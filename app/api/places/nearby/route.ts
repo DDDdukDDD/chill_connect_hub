@@ -87,7 +87,7 @@ async function areaName(lat: number, lng: number) {
 export async function GET(request: Request) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
-  if (isRateLimited(`place-nearby:${member.id}`, 40, 10 * 60 * 1000)) {
+  if (await isRateLimited(`place-nearby:${member.id}`, 40, 10 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ค้นหาหลายครั้งเกินไป รอสักครู่แล้วลองใหม่นะ' }, { status: 429 });
   }
   const params = new URL(request.url).searchParams;

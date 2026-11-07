@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดคลิป' }, { status: 401 });
   try {
     await guardPosting(member, 'moment', '');
-    if (isRateLimited(`moment-video:${member.id}`, VIDEOS_AN_HOUR, 60 * 60 * 1000)) {
+    if (await isRateLimited(`moment-video:${member.id}`, VIDEOS_AN_HOUR, 60 * 60 * 1000)) {
       return NextResponse.json({ success: false, message: 'อัปโหลดคลิปบ่อยเกินไป ลองใหม่อีกสักครู่นะ' }, { status: 429 });
     }
     const mode = uploadMode();

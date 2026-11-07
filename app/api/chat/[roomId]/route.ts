@@ -30,7 +30,7 @@ export async function POST(request: Request, context: Context) {
       await deleteChatMessage(member, String(body.id ?? ''));
       return NextResponse.json({ success: true });
     }
-    if (isRateLimited(`chat:${member.id}`, 30, 60 * 1000)) return NextResponse.json({ success: false, message: 'ส่งข้อความเร็วเกินไป รอสักครู่นะ' }, { status: 429 });
+    if (await isRateLimited(`chat:${member.id}`, 30, 60 * 1000)) return NextResponse.json({ success: false, message: 'ส่งข้อความเร็วเกินไป รอสักครู่นะ' }, { status: 429 });
     const message = await sendChatMessage(member, (await context.params).roomId, body.text);
     return NextResponse.json({ success: true, message: { id: message.id, createdAt: message.createdAt } }, { status: 201 });
   } catch (error) {

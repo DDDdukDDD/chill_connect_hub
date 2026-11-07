@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
-  if (isRateLimited(`verify-phone:${member.id}`, 5, 60 * 60 * 1000)) {
+  if (await isRateLimited(`verify-phone:${member.id}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ขอรหัสบ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   const body = (await request.json().catch(() => ({}))) as { phone?: unknown };

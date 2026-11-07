@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const eventId = typeof body.eventId === 'string' ? body.eventId : '';
   try {
     if (body.action === 'join') {
-      if (isRateLimited(`event-join:${member.id}`, 40, 60 * 60 * 1000)) {
+      if (await isRateLimited(`event-join:${member.id}`, 40, 60 * 60 * 1000)) {
         return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
       }
       const result = await joinEvent(member, eventId, typeof body.date === 'string' ? body.date : undefined);

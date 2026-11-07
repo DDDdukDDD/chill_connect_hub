@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   if (body.action === 'remove_content') {
     const removed = await removeReportedContent(body.id, actor?.name ?? 'staff', note);
     if (!removed) return NextResponse.json({ success: false, error: 'ไม่พบรายงาน ปิดไปแล้ว หรือไม่ใช่รายงานรีวิวหรือข้อความแชต' }, { status: 404 });
-    recordAudit(actor, 'report.remove_content', `ลบ${removed.targetType === 'review' ? 'รีวิว' : removed.targetType === 'comment' ? 'ความคิดเห็น' : 'ข้อความแชต'}ที่ถูกรายงาน: ${removed.targetTitle}${note ? ` · ${note}` : ''}`, { type: 'report', id: removed.id });
+    recordAudit(actor, 'report.remove_content', `ลบ${removed.targetType === 'review' ? 'รีวิว' : removed.targetType === 'comment' ? 'ความคิดเห็น' : removed.targetType === 'question' ? 'คำถาม' : 'ข้อความแชต'}ที่ถูกรายงาน: ${removed.targetTitle}${note ? ` · ${note}` : ''}`, { type: 'report', id: removed.id });
     return NextResponse.json({ success: true, report: removed });
   }
   const report = await closeContentReport(body.id, actor?.name ?? 'staff', note);

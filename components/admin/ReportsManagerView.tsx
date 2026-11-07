@@ -9,7 +9,7 @@ import type { AdminModuleId } from './AdminSidebar';
 
 interface Report {
   id: string;
-  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message' | 'comment';
+  targetType: 'community' | 'fair' | 'spot' | 'review' | 'chat_message' | 'comment' | 'question';
   excerpt?: string;
   roomId?: string;
   targetId: string;
@@ -26,11 +26,11 @@ interface Report {
   note?: string;
 }
 
-const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', comment: 'ความคิดเห็น', chat_message: 'ข้อความแชตกลุ่ม' };
+const TYPE_LABELS = { community: 'ตี้', fair: 'อีเวนต์', spot: 'สถานที่', review: 'รีวิว', comment: 'ความคิดเห็น', chat_message: 'ข้อความแชต', question: 'คำถามในตี้' };
 // Reviews and chat messages have no page of their own; staff read the reported words in the report
 const PUBLIC_PATHS: Partial<Record<Report['targetType'], string>> = { community: '/community/', fair: '/events/', spot: '/spots/' };
 const MODULES: Partial<Record<Report['targetType'], AdminModuleId>> = { community: 'community', fair: 'fairs', spot: 'spots' };
-const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message' || report.targetType === 'comment';
+const isWords = (report: Report) => report.targetType === 'review' || report.targetType === 'chat_message' || report.targetType === 'comment' || report.targetType === 'question';
 interface RoomMessage {
   id: string;
   authorId: string;
@@ -172,6 +172,11 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                 {report.status === 'closed' && <div className="sm:col-span-2"><dt className="font-semibold text-slate-500">ปิดโดย</dt><dd className="mt-0.5 text-slate-800">{report.closedBy}{report.note ? ` · ${report.note}` : ''}</dd></div>}
               </dl>
               <div className="flex items-center gap-2 flex-wrap border-t border-slate-100 pt-3">
+                {report.targetType === 'question' && (
+                  <a href={`/community/${encodeURIComponent(report.targetId.slice(0, report.targetId.lastIndexOf('/')))}#questions`} target="_blank" rel="noopener noreferrer" className={adminButton.secondary}>
+                    เปิดหน้าตี้ <ExternalLink size={12} />
+                  </a>
+                )}
                 {PUBLIC_PATHS[report.targetType] && (
                   <a href={`${PUBLIC_PATHS[report.targetType]}${report.targetId}`} target="_blank" rel="noopener noreferrer" className={adminButton.secondary}>
                     เปิดหน้าเว็บ <ExternalLink size={12} />
@@ -186,7 +191,7 @@ export function ReportsManagerView({ onNavigate }: { onNavigate: (module: AdminM
                 )}
                 {report.status === 'open' && isWords(report) && can('community.review') && (
                   <button type="button" disabled={busyId === report.id} onClick={() => close(report, 'remove_content')} className={adminButton.danger}>
-                    {report.targetType === 'review' ? 'ลบรีวิวนี้' : report.targetType === 'comment' ? 'ลบความคิดเห็นนี้' : 'ลบข้อความนี้'}
+                    {report.targetType === 'review' ? 'ลบรีวิวนี้' : report.targetType === 'comment' ? 'ลบความคิดเห็นนี้' : report.targetType === 'question' ? 'ซ่อนคำถามนี้' : 'ลบข้อความนี้'}
                   </button>
                 )}
                 {report.hostMemberId && can('members.manage') && <button type="button" onClick={() => onNavigate('members')} className={adminButton.secondary}>ไปที่สมาชิก</button>}

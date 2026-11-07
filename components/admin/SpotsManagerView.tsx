@@ -27,11 +27,13 @@ type ImageStatus = 'ok' | 'broken' | 'missing' | 'unchecked';
 type AdminSpot = LifestyleSpotItem & { imageStatus: ImageStatus };
 type PublicationFilter = 'all' | 'draft' | 'published';
 type ImageFilter = 'all' | 'problem' | 'missing' | 'broken';
+type MeetupFilter = 'all' | 'yes' | 'no';
 
 interface SpotStats {
   totalCount: number;
   filteredCount: number;
   draftCount: number;
+  meetupCount: number;
   missingImagesCount: number;
   brokenImagesCount: number;
   uncheckedImagesCount: number;
@@ -76,7 +78,10 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
   const [imageFilter, setImageFilter] = useState<ImageFilter>(
     IMAGE_FILTERS.has(initialImage as ImageFilter) ? (initialImage as ImageFilter) : 'all'
   );
+  const [meetupFilter, setMeetupFilter] = useState<MeetupFilter>('all');
   const [page, setPage] = useState(1);
+  // Places ticked for a bulk change; kept across pages and filters so a list can be built up, cleared after a change
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   // Thumbnails that failed to load in this browser (shown immediately, before a server check)
   const [failedThumbs, setFailedThumbs] = useState<Set<string>>(new Set());
 
@@ -98,6 +103,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
       if (category !== 'all') params.set('category', category);
       if (publication !== 'all') params.set('status', publication);
       if (imageFilter !== 'all') params.set('image', imageFilter);
+      if (meetupFilter !== 'all') params.set('meetup', meetupFilter);
 
       const res = await fetch(`/api/admin/spots?${params}`, { cache: 'no-store' });
       if (handleAdminUnauthorized(res)) return;
@@ -118,7 +124,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
     } finally {
       if (!refetchPending) setIsLoading(false);
     }
-  }, [page, searchQuery, province, category, publication, imageFilter]);
+  }, [page, searchQuery, province, category, publication, imageFilter, meetupFilter]);
 
   useEffect(() => {
     const timer = setTimeout(refresh, 0);
@@ -137,6 +143,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || data.message || 'ดำเนินการไม่สำเร็จ');
       showToast(successMessage || data.message || 'ดำเนินการเรียบร้อย');
+      if (body.spotIds) setSelected(new Set());
       await refresh();
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'ดำเนินการไม่สำเร็จ');
@@ -165,8 +172,29 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
     setCategory('all');
     setPublication('all');
     setImageFilter('all');
+    setMeetupFilter('all');
     setPage(1);
   };
+
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const pageIds = spots.map((spot) => spot.id);
+  const wholePageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const toggleWholePage = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of pageIds) {
+        if (wholePageSelected) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  const bulk = (key: string, body: Record<string, unknown>) => postAction(key, { ...body, spotIds: [...selected] });
 
   const withPageReset = <T,>(setter: (value: T) => void) => (value: T) => {
     setter(value);
@@ -211,10 +239,11 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           { label: 'สถานที่ทั้งหมด', value: stats?.totalCount, color: 'text-slate-950 border-slate-200', onClick: resetFilters },
           { label: 'แบบร่าง', value: stats?.draftCount, color: 'text-amber-900 border-amber-200', onClick: () => withPageReset(setPublication)('draft') },
+          { label: 'นัดเจอได้', value: stats?.meetupCount, color: 'text-emerald-900 border-emerald-200', onClick: () => withPageReset(setMeetupFilter)('yes') },
           { label: 'ไม่มีรูป', value: stats?.missingImagesCount, color: 'text-amber-900 border-amber-200', onClick: () => withPageReset(setImageFilter)('missing') },
           {
             label: stats?.uncheckedImagesCount ? `รูปเสีย · ยังไม่ตรวจ ${stats.uncheckedImagesCount}` : 'รูปเสีย',
@@ -262,6 +291,11 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
           <option value="broken">รูปเสีย</option>
           <option value="missing">ไม่มีรูป</option>
         </select>
+        <select value={meetupFilter} onChange={(e) => withPageReset(setMeetupFilter)(e.target.value as MeetupFilter)} aria-label="กรองป้ายนัดเจอได้" className={selectClass}>
+          <option value="all">นัดเจอได้ทุกแบบ</option>
+          <option value="yes">ติดป้ายนัดเจอได้แล้ว</option>
+          <option value="no">ยังไม่ติดป้าย</option>
+        </select>
       </div>
 
       {/* List */}
@@ -281,6 +315,31 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
         </div>
       ) : (
         <div className={`space-y-3 ${isLoading ? 'opacity-60' : ''}`}>
+          {/* Bulk changes for the ticked places: the "นัดเจอได้" tag that opens Spot Buddy trips, and publishing */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="inline-flex items-center gap-2 text-slate-600 cursor-pointer">
+              <input type="checkbox" checked={wholePageSelected} onChange={toggleWholePage} className="w-4 h-4 accent-[#4A7C59]" />
+              เลือกทั้งหน้า
+            </label>
+            {selected.size > 0 && (
+              <>
+                <span className="font-semibold text-slate-900 tabular-nums">เลือก {selected.size} แห่ง</span>
+                <button type="button" disabled={busyAction !== null} onClick={() => bulk('meetup-on', { action: 'set_meetup', allowed: true })} className={adminButton.primary}>
+                  ติดป้ายนัดเจอได้
+                </button>
+                <button type="button" disabled={busyAction !== null} onClick={() => bulk('meetup-off', { action: 'set_meetup', allowed: false })} className={adminButton.secondary}>
+                  เอาป้ายออก
+                </button>
+                <button type="button" disabled={busyAction !== null} onClick={() => bulk('pub-on', { action: 'set_publication', status: 'published' })} className={adminButton.secondary}>
+                  เผยแพร่
+                </button>
+                <button type="button" disabled={busyAction !== null} onClick={() => bulk('pub-off', { action: 'set_publication', status: 'draft' })} className={adminButton.secondary}>
+                  ถอนเผยแพร่
+                </button>
+                <button type="button" onClick={() => setSelected(new Set())} className="text-slate-500 underline cursor-pointer">ล้างที่เลือก</button>
+              </>
+            )}
+          </div>
           <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
             {spots.map((spot) => {
               const thumbFailed = failedThumbs.has(spot.id);
@@ -294,8 +353,9 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
               return (
                 <div
                   key={spot.id}
-                  className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-3 last:border-b-0 sm:flex sm:items-center sm:gap-4 sm:px-4"
+                  className="grid grid-cols-[20px_48px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b border-slate-100 px-3 py-3 last:border-b-0 sm:flex sm:items-center sm:gap-4 sm:px-4"
                 >
+                  <input type="checkbox" checked={selected.has(spot.id)} onChange={() => toggleSelected(spot.id)} aria-label={`เลือก ${spot.title}`} className="w-4 h-4 accent-[#4A7C59] cursor-pointer" />
                   <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-slate-100">
                     {imageStatus !== 'missing' && imageStatus !== 'broken' ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -320,10 +380,11 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
                       <span className="px-1.5 py-0.5 bg-[#EBF3ED] text-[#2D5A3C] border border-[#4A7C59]/20 rounded text-[11px] font-semibold truncate">
                         {spot.categoryLabel || defaultSpotCategoryLabel(spot.category)}
                       </span>
+                      {spot.meetupAllowed && <span className="text-[11px] font-semibold text-emerald-700 shrink-0">นัดเจอได้</span>}
                     </div>
                   </div>
 
-                  <div className="col-span-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-2 sm:ml-auto sm:col-span-1 sm:border-0 sm:pt-0">
+                  <div className="col-span-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-2 sm:ml-auto sm:col-span-1 sm:border-0 sm:pt-0">
                     <div className="flex items-center gap-3">
                       <AdminStatusChip status={spot.reviewRejectedAt ? 'rejected' : isDraft ? 'draft' : 'published'} />
                       <span

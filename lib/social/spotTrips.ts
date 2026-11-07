@@ -5,11 +5,11 @@ import { formatThaiDateBE, isEventEnded } from '../dateUtils';
 import { MemberAuthError } from '../members/accounts';
 import { hasOpenRisk } from '../members/trust';
 import type { Member } from '../members/types';
-import { myFairGroups } from './fairGroups';
 import {
   MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE,
   SPOT_TRIP_MEETING_POINTS, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT,
 } from '../spotTripRules';
+import { visitsOf } from './visits';
 
 /**
  * Spot Buddy trips: a member invites others to a place from the Spots pillar.
@@ -31,20 +31,19 @@ async function openTripsOf(memberId: string): Promise<number> {
   return (await db.listAllEvents()).filter((ev) => ev.spotId && hostOf(ev) === memberId && ev.approvalStatus !== 'rejected' && !isEventEnded(ev)).length;
 }
 
-/** Has the member been to something before: checked in by a host, or a fair (their plan or a meet-up group) that is over */
+/**
+ * Has the member really been to a ตี้ or an อีเวนต์ before: a host checked them in at someone else's ตี้, or staff
+ * passed a photo moment they posted at a ตี้ or อีเวนต์. A plan for an อีเวนต์ that is over, a meet-up group or a
+ * "ไปแล้ว" mark proves nothing, so none of them counts (launch checklist, 2026-11-07).
+ */
 async function hasAttendedBefore(member: Member): Promise<boolean> {
-  for (const p of await db.listParticipations(member.id)) {
-    const event = await db.findEventById(p.eventId);
-    if (!event || hostOf(event) === member.id) continue;
-    if (event.eventType === 'public_venue') {
-      if (isEventEnded(event)) return true;
-      continue;
+  for (const visit of await visitsOf(member.id)) {
+    if (visit.targetType === 'spot' || visit.pending) continue;
+    if (visit.evidence === 'moment') return true;
+    if (visit.evidence === 'checkin') {
+      const event = await db.findEventById(visit.targetId);
+      if (event && hostOf(event) !== member.id) return true;
     }
-    if (p.checkedInAt) return true;
-  }
-  for (const group of await myFairGroups(member.id)) {
-    const fair = await db.findEventById(group.fairId);
-    if (fair && isEventEnded(fair)) return true;
   }
   return false;
 }
@@ -55,7 +54,7 @@ export async function spotTripHostStatus(member: Member): Promise<{ canHost: boo
   if ((await openTripsOf(member.id)) >= MAX_OPEN_SPOT_TRIPS) return { canHost: false, reason: `เปิดทริปค้างไว้ได้ไม่เกิน ${MAX_OPEN_SPOT_TRIPS} ทริป รอให้ทริปเดิมจบก่อนนะ` };
   // Hosts the team approved are already vetted; everyone else joins something first
   if (member.hostApplication?.status !== 'approved' && !(await hasAttendedBefore(member))) {
-    return { canHost: false, reason: 'ไปร่วมตี้หรืออีเวนต์สักครั้งก่อนนะ แล้วจะชวนเพื่อนไปที่ต่างๆ ได้' };
+    return { canHost: false, reason: 'ไปร่วมตี้สักครั้งให้คนจัดเช็กอิน หรือแชร์โมเมนต์จากตี้หรืออีเวนต์ที่ไปมาก่อนนะ แล้วจะชวนเพื่อนไปที่ต่างๆ ได้' };
   }
   return { canHost: true };
 }

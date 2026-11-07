@@ -33,9 +33,13 @@ export function PosterPhoto({
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const shown = failedSrc === src ? PHOTO_STAND_IN : src;
   const measure = (img: HTMLImageElement) => img.naturalWidth > 0 && setIsPoster(img.naturalHeight / img.naturalWidth >= posterFrom);
-  // A cached image may finish before the page wakes up, so its load event is missed
+  // A server-rendered image may load or fail before the page wakes up, so its load or error event is missed:
+  // a finished image with no width failed (TR-002)
   useEffect(() => {
-    if (ref.current?.complete) measure(ref.current);
+    const img = ref.current;
+    if (!img?.complete) return;
+    if (img.naturalWidth === 0 && img.currentSrc) setFailedSrc(src);
+    else measure(img);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 

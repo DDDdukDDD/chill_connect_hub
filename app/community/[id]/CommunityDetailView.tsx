@@ -478,6 +478,8 @@ export default function CommunityDetailPage({
   // A recurring ตี้ (the series, not one of its dates) goes on: seats and dates come from its dates
   const isSeriesEvent = eventData.scheduleType === 'recurring' && Boolean(eventData.recurrence?.daysOfWeek?.length) && !eventData.seriesId;
   const isEnded = !isSeriesEvent && isEventEnded(eventData);
+  // A trip short of 3 people 2 hours before the start is called off (lib/social/tripAutoCancel.ts)
+  const isCancelled = eventData.status === 'cancelled';
   // Joining closes when the ตี้ starts (owner 2026-10-29); people already in keep their ticket and chat
   const isStarted = !isSeriesEvent && !isEnded && hasMeetupStarted(eventData);
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
@@ -547,7 +549,7 @@ export default function CommunityDetailPage({
             isSeriesEvent
               ? { icon: Users, text: `จัดประจำ · รับวันละ ${eventData.maxParticipants} คน`, tone: 'open' }
               : isEnded
-              ? { icon: Users, text: `ตี้นี้จบแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
+              ? { icon: Users, text: isCancelled ? 'ทริปนี้ยกเลิกแล้ว เพราะคนไม่ครบ 3 คนก่อนเวลานัด' : `ตี้นี้จบแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
               : isStarted
               ? { icon: Users, text: `ตี้กำลังเริ่มแล้ว · ไป ${eventData.participantsCount} คน`, tone: 'closed' }
               : isFull
@@ -602,7 +604,7 @@ export default function CommunityDetailPage({
                   </button>
                 </>
               ) : isEnded || isStarted ? (
-                <button type="button" disabled className={heroButton.primary}>{isEnded ? 'ตี้นี้จบแล้ว' : 'ปิดรับแล้ว ตี้เริ่มไปแล้ว'}</button>
+                <button type="button" disabled className={heroButton.primary}>{isCancelled ? 'ทริปนี้ยกเลิกแล้ว' : isEnded ? 'ตี้นี้จบแล้ว' : 'ปิดรับแล้ว ตี้เริ่มไปแล้ว'}</button>
               ) : isSeriesPage ? (
                 <a href="#dates" className={heroButton.primary}>เลือกวันที่จะไป</a>
               ) : isFull ? (
@@ -658,10 +660,10 @@ export default function CommunityDetailPage({
         {isJoined && !isHost && isToday(eventData) && (
           <DayOfPanel event={eventData} onOpenTicket={() => setIsETicketOpen(true)} onOpenChat={() => setIsChatOpen(true)} onCancel={() => setIsCancelModalOpen(true)} />
         )}
-        {isHost && memberHost && (isToday(eventData) || isEnded) && <HostCheckIn eventId={eventData.id} />}
+        {isHost && memberHost && !isCancelled && (isToday(eventData) || isEnded) && <HostCheckIn eventId={eventData.id} />}
 
         {/* After the ตี้: review, "อยากเจออีก" and a moment (shown once the host confirmed the member came, or it ended) */}
-        <AfterTeePanel event={eventData} isHost={isHost} onOpenPairChat={(roomId, title) => setPairChat({ roomId, title })} />
+        {!isCancelled && <AfterTeePanel event={eventData} isHost={isHost} onOpenPairChat={(roomId, title) => setPairChat({ roomId, title })} />}
         </div>
 
         {/* Like the challenge page: the story, the rules as a plain table and the way there on the left; on the right
@@ -1203,7 +1205,9 @@ export default function CommunityDetailPage({
             <p className={`text-[11px] sm:text-xs font-bold truncate ${
               isEnded || (isStarted && !isJoined) ? 'text-slate-500' : isJoined ? 'text-emerald-700' : fillRatio >= 1 ? 'text-rose-600' : isAlmostFull ? 'text-amber-700' : 'text-emerald-700'
             }`}>
-              {isEnded
+              {isCancelled
+                ? 'ทริปนี้ยกเลิกแล้ว'
+                : isEnded
                 ? 'ตี้นี้จบแล้ว'
                 : isStarted && !isJoined
                 ? 'ตี้เริ่มไปแล้ว'
@@ -1234,7 +1238,7 @@ export default function CommunityDetailPage({
           </button>
           {isEnded || (isStarted && !isJoined) ? (
             <button type="button" disabled className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs sm:text-sm font-bold shrink-0 cursor-not-allowed">
-              {isEnded ? 'สิ้นสุดแล้ว' : 'ปิดรับแล้ว'}
+              {isCancelled ? 'ยกเลิกแล้ว' : isEnded ? 'สิ้นสุดแล้ว' : 'ปิดรับแล้ว'}
             </button>
           ) : fillRatio >= 1 && !isJoined ? (
             <button type="button" disabled className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs sm:text-sm font-bold shrink-0 cursor-not-allowed">

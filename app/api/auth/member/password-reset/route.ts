@@ -9,7 +9,7 @@ import { clientIp, isRateLimited } from '@/lib/rateLimit';
 // server and returned as devResetUrl.
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
-  if (isRateLimited(`member-reset:${clientIp(request)}`, 5, 15 * 60 * 1000)) {
+  if (await isRateLimited(`member-reset:${clientIp(request)}`, 5, 15 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   try {

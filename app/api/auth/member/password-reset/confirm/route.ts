@@ -8,7 +8,7 @@ import { clientIp, isRateLimited } from '@/lib/rateLimit';
 export async function POST(request: Request) {
   if (!getSessionSecret()) return NextResponse.json({ success: false, message: 'ระบบสมาชิกยังไม่ได้ตั้งค่า (AUTH_SECRET)' }, { status: 503 });
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
-  if (isRateLimited(`member-reset-confirm:${clientIp(request)}`, 10, 15 * 60 * 1000)) {
+  if (await isRateLimited(`member-reset-confirm:${clientIp(request)}`, 10, 15 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ลองหลายครั้งเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   try {
