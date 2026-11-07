@@ -20,6 +20,7 @@ import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { RelatedChallengeTiles } from '@/components/detail/RelatedTiles';
 import { Toast } from '@/components/Toast';
 import { optimizedImage } from '@/lib/optimizedImage';
+import { PosterPhoto } from '@/components/PosterPhoto';
 
 /**
  * One challenge on its own page. It answers one question for the state the visitor is in:
@@ -443,7 +444,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
       <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
-          <img src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} className="w-full h-full object-cover" />
+          {/* A tall poster shows whole over a blurred copy of itself, as on a ตี้ page (DetailHero) */}
+          <PosterPhoto src={optimizedImage(quest.badgeCoverImg || quest.image, 1080) || FALLBACK_PHOTO} alt={quest.title} fetchPriority="high" />
           <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-bold text-slate-800">
             <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]" aria-hidden="true" />
             ชาเลนจ์

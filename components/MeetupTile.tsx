@@ -10,8 +10,8 @@ import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { placeName } from '@/lib/placeName';
 import { optimizedImage } from '@/lib/optimizedImage';
+import { PosterPhoto } from './PosterPhoto';
 
-const PHOTO_STAND_IN = 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80';
 
 type Face = { id: string; name: string; avatar: string };
 
@@ -186,15 +186,8 @@ export function MeetupTile({
         data-row-photo
         className={`relative block aspect-square overflow-hidden rounded-3xl bg-slate-200 shadow-md ${isJoined && !isEnded ? 'ring-2 ring-[#F26430] ring-offset-2' : ''}`}
       >
-        <img
-          src={optimizedImage(event.image, 384)}
-          onError={(e) => {
-            if (e.currentTarget.src !== PHOTO_STAND_IN) e.currentTarget.src = PHOTO_STAND_IN;
-          }}
-          alt=""
-          loading="lazy"
-          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105`}
-        />
+        {/* A tall poster shows whole over a blurred copy of itself, as on an อีเวนต์ tile */}
+        <PosterPhoto src={optimizedImage(event.image, 384)} zoom />
         {badge ? (
           <span className="absolute right-2.5 bottom-2.5 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 whitespace-nowrap shadow-sm">{badge}</span>
         ) : isEnded ? (
