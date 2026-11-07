@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AuthModal } from '@/components/AuthModal';
 import { CampaignDialog } from '@/components/campaigns/CampaignDialog';
+import { RewardDialog } from '@/components/rewards/RewardDialog';
+import { REWARD_SHOP_ITEMS, type RewardShopItem } from '@/data/rewardsData';
 import { recall, remember } from '@/lib/clientMemory';
 import type { CampaignView, MyCampaign } from '@/lib/campaigns/types';
 import type { useMyRewards } from '@/lib/useMyRewards';
@@ -48,6 +50,9 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
   const [openId, setOpenId] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  // A reward opened from a campaign or the promo row shows here, on the same page
+  const [rewardItem, setRewardItem] = useState<RewardShopItem | null>(null);
+  const [isRewardAuthOpen, setIsRewardAuthOpen] = useState(false);
   const linkRead = useRef(false);
   const { refresh: refreshRewards } = rewards;
   const onToastRef = useRef(onToast);
@@ -185,6 +190,12 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
         rewards={rewards}
         onClose={close}
         onLeave={() => void leave(shown.id)}
+        onRedeemPrize={() => {
+          const prize = REWARD_SHOP_ITEMS.find((item) => item.id === shown.rewardId);
+          if (!prize) return;
+          close();
+          setRewardItem(prize);
+        }}
         onJoin={() => {
           if (isLoggedIn) {
             void enroll(shown.id);
@@ -207,5 +218,41 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
     </>
   ) : null;
 
-  return { mine, isLoaded, open: setOpenId as (id: string) => void, dialog };
+  const rewardDialog = (
+    <>
+      {rewardItem && (
+        <RewardDialog
+          key={rewardItem.id}
+          item={rewardItem}
+          rewards={rewards}
+          isLoggedIn={isLoggedIn}
+          onClose={() => setRewardItem(null)}
+          onNeedLogin={() => setIsRewardAuthOpen(true)}
+          onToast={onToast}
+        />
+      )}
+      <AuthModal
+        isOpen={isRewardAuthOpen}
+        onClose={() => setIsRewardAuthOpen(false)}
+        onLoginSuccess={() => {
+          setIsRewardAuthOpen(false);
+          onLoggedIn();
+        }}
+      />
+    </>
+  );
+
+  return {
+    mine,
+    isLoaded,
+    open: setOpenId as (id: string) => void,
+    /** Opens a reward's popup on this page (the promo row's reward cards) */
+    openReward: setRewardItem as (item: RewardShopItem) => void,
+    dialog: (
+      <>
+        {dialog}
+        {rewardDialog}
+      </>
+    ),
+  };
 }

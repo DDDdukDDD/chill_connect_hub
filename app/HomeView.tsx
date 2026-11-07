@@ -566,9 +566,9 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
             A search from the header window opens the ค้นพบ pages. */}
         {!isMember && !isMemberPending && (
           <>
-            {/* Under the hero: the running campaigns only (owner 2026-11-04); pressing one opens its popup. Rewards are on /challenges */}
+            {/* Under the hero: running campaigns and the rewards XP buys, as on /challenges (owner 2026-11-07: campaigns come and go, the rewards keep the row interesting) */}
             <div className={`${CONTAINER} pt-6 sm:pt-8 empty:hidden`}>
-              <PromoBoard campaigns={campaigns} onOpen={myCampaigns.open} withRewards={false} />
+              <PromoBoard campaigns={campaigns} onOpen={myCampaigns.open} onOpenReward={myCampaigns.openReward} />
             </div>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
               {/* 2. Proof of the community the hero names ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต"): people and their moments
@@ -691,7 +691,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
       </main>
 
       {/* Mobile Sticky Navigation */}
-      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={activity.savedEventIds.length + activity.savedSpotIds.length} />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
 
       {/* Global Modals */}
 
