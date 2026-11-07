@@ -10,9 +10,10 @@ import { encodeForUpload } from './compressor';
 
 /** Width / height of a post's frame */
 export type PostShape = 1 | 0.8;
+/** Plain words, not ratios (owner 2026-11-07); tall comes first and is where a new post starts */
 export const POST_SHAPES: { ratio: PostShape; label: string }[] = [
-  { ratio: 1, label: 'จัตุรัส 1:1' },
-  { ratio: 0.8, label: 'แนวตั้ง 4:5' },
+  { ratio: 0.8, label: 'แนวตั้ง' },
+  { ratio: 1, label: 'สี่เหลี่ยม' },
 ];
 
 export interface PhotoText {

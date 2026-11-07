@@ -122,7 +122,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
   const [step, setStep] = useState<'pick' | 'photos' | 'clip' | 'details'>('pick');
   const [photos, setPhotos] = useState<EditedPhoto[]>([]);
-  const [shape, setShape] = useState<PostShape>(1);
+  const [shape, setShape] = useState<PostShape>(0.8);
   const [clip, setClip] = useState<ClipDraft | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [options, setOptions] = useState<PostOptions>({ commentsOff: false, likesOff: false, sharesOff: false });
