@@ -13,11 +13,21 @@ import { useMasterData } from '@/lib/useMasterData';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
 import { ImageField } from './masterAdmin';
 import { ChallengeList } from '@/components/ChallengeList';
+import { WEEKDAY_NAMES, parseQuestPlan, planNeeded, planSummary, planTotal } from '@/lib/social/questPlan';
 
 type QuestStatus = 'draft' | 'active' | 'ended';
 type QuestCategory = string;
 
 interface QuestDraft {
+  /** How the challenge counts: visits (the rule below) or a plan the member stamps (owner 2026-11-07) */
+  countBy: 'visits' | 'plan';
+  planWeeks: string;
+  planMode: 'days' | 'perWeek';
+  /** What to do on each weekday, by index 1 (Monday) … 7 (Sunday); empty is a rest day */
+  planDays: string[];
+  planPerWeek: string;
+  planTask: string;
+  planAllowMisses: string;
   title: string;
   badgeLabel: string;
   targetGoal: string;
@@ -131,7 +141,23 @@ const EMPTY_DRAFT: QuestDraft = {
   ruleWithFriends: '',
   ruleFriendsVia: 'any',
   rulePerWeekend: false,
+  countBy: 'visits',
+  planWeeks: '8',
+  planMode: 'days',
+  planDays: ['', '', '', '', '', '', '', ''],
+  planPerWeek: '2',
+  planTask: '',
+  planAllowMisses: '',
 };
+
+/** The plan being written, as the server will store it; null while it is not complete */
+function draftPlan(draft: QuestDraft) {
+  return parseQuestPlan(
+    draft.planMode === 'days'
+      ? { weeks: draft.planWeeks, days: draft.planDays.map((task, weekday) => ({ weekday, task })).filter((d) => d.weekday > 0 && d.task.trim()), allowMisses: draft.planAllowMisses }
+      : { weeks: draft.planWeeks, perWeek: draft.planPerWeek, task: draft.planTask, allowMisses: draft.planAllowMisses },
+  );
+}
 
 // Stored dates may be Thai ("31 ธ.ค. 2569") or ISO; the date input needs ISO
 function toIsoDate(value?: string): string {
@@ -143,13 +169,16 @@ function toIsoDate(value?: string): string {
 
 function toPayload(draft: QuestDraft) {
   const isPartner = draft.rewardType === 'brand_partner';
+  const plan = draft.countBy === 'plan' ? draftPlan(draft) : null;
   return {
+    plan: plan ?? undefined,
     title: draft.title,
     badgeLabel: draft.badgeLabel,
     targetGoal: draft.targetGoal,
     objective: draft.objective.trim() || draft.targetGoal,
     category: draft.category,
-    total: draft.total,
+    // A plan's "total" is the stamps that finish it
+    total: plan ? String(planNeeded(plan)) : draft.total,
     rewardPoints: Number(draft.rewardPoints) || 0,
     startDate: draft.startDate || undefined,
     endDate: draft.endDate || undefined,
@@ -165,7 +194,7 @@ function toPayload(draft: QuestDraft) {
       terms: draft.terms,
     },
     // The target number above is how many different places or events must be visited; null removes the rule
-    rule: draft.ruleType
+    rule: draft.countBy === 'visits' && draft.ruleType
       ? {
           targetTypes: draft.ruleType === 'all' ? (['spot', 'community', 'fair'] as const).slice() : [draft.ruleType],
           count: Math.max(1, Math.floor(Number(draft.total)) || 1),
@@ -231,6 +260,65 @@ async function fetchCampaignGroups(): Promise<CampaignGroup[]> {
   const response = await fetch('/api/admin/campaigns?lite=1', { cache: 'no-store' });
   const data = await response.json().catch(() => null);
   return response.ok && data?.success ? data.campaigns : [];
+}
+
+const fieldClass = 'h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100';
+
+/**
+ * A challenge done by plan (lib/social/questPlan.ts): how many weeks, then either what to do on which weekday or how
+ * many times a week. Each member's plan starts the day they join; they stamp each time they do it.
+ */
+function PlanFields({ draft, setDraft }: { draft: QuestDraft; setDraft: (draft: QuestDraft) => void }) {
+  const plan = draftPlan(draft);
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="block space-y-1.5 text-sm font-medium text-slate-800">ยาวกี่สัปดาห์
+          <input required type="number" min="1" max="104" value={draft.planWeeks} onChange={(e) => setDraft({ ...draft, planWeeks: e.target.value })} className={fieldClass} />
+        </label>
+        <label className="block space-y-1.5 text-sm font-medium text-slate-800">ทำแบบไหน
+          <select value={draft.planMode} onChange={(e) => setDraft({ ...draft, planMode: e.target.value as QuestDraft['planMode'] })} className={fieldClass}>
+            <option value="days">กำหนดวันในสัปดาห์</option>
+            <option value="perWeek">สัปดาห์ละกี่ครั้ง วันไหนก็ได้</option>
+          </select>
+        </label>
+        <label className="block space-y-1.5 text-sm font-medium text-slate-800">พลาดได้กี่ครั้ง
+          <input type="number" min="0" value={draft.planAllowMisses} placeholder={plan ? `ปกติ ${Math.floor(planTotal(plan) / 7)} ครั้ง` : 'ปกติ 1 ใน 7'} onChange={(e) => setDraft({ ...draft, planAllowMisses: e.target.value })} className={fieldClass} />
+        </label>
+      </div>
+      {draft.planMode === 'days' ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-slate-600">ใส่สิ่งที่ต้องทำในวันที่มีแผน วันที่เว้นว่างคือวันพัก</p>
+          {[1, 2, 3, 4, 5, 6, 7].map((weekday) => (
+            <label key={weekday} className="flex items-center gap-3 text-sm font-medium text-slate-800">
+              <span className="w-20 shrink-0">{WEEKDAY_NAMES[weekday]}</span>
+              <input
+                value={draft.planDays[weekday]}
+                maxLength={80}
+                placeholder="วันพัก"
+                onChange={(e) => setDraft({ ...draft, planDays: draft.planDays.map((task, i) => (i === weekday ? e.target.value : task)) })}
+                className={fieldClass}
+              />
+            </label>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className="block space-y-1.5 text-sm font-medium text-slate-800">สัปดาห์ละ (ครั้ง)
+            <input required type="number" min="1" max="7" value={draft.planPerWeek} onChange={(e) => setDraft({ ...draft, planPerWeek: e.target.value })} className={fieldClass} />
+          </label>
+          <label className="block space-y-1.5 text-sm font-medium text-slate-800 sm:col-span-2">แต่ละครั้งทำอะไร
+            <input required maxLength={80} value={draft.planTask} placeholder="เช่น วิ่ง 3 กม. หรือ เข้ายิม 1 ชั่วโมง" onChange={(e) => setDraft({ ...draft, planTask: e.target.value })} className={fieldClass} />
+          </label>
+        </div>
+      )}
+      <p className={`text-xs font-semibold ${plan ? 'text-slate-600' : 'text-rose-600'}`}>
+        {plan
+          ? `${planSummary(plan)} · สมาชิกต้อง stamp ${planNeeded(plan)} ครั้ง จาก ${planTotal(plan)} ครั้งในแผน เริ่มนับวันที่กดเข้าร่วม`
+          : 'ยังไม่ครบ: ใส่จำนวนสัปดาห์ และสิ่งที่ต้องทำอย่างน้อย 1 วัน'}
+      </p>
+    </div>
+  );
 }
 
 /** What kind of campaign challenge a rule makes, in a few words for the list */
@@ -399,6 +487,13 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
       exclusiveNotice: quest.brandReward?.exclusiveNotice || '',
       hubRewardNote: quest.brandReward?.hubRewardNote || '',
       terms: quest.brandReward?.terms || '',
+      countBy: quest.plan ? 'plan' : 'visits',
+      planWeeks: quest.plan ? String(quest.plan.weeks) : EMPTY_DRAFT.planWeeks,
+      planMode: quest.plan && !quest.plan.days?.length ? 'perWeek' : 'days',
+      planDays: [0, 1, 2, 3, 4, 5, 6, 7].map((weekday) => quest.plan?.days?.find((d) => d.weekday === weekday)?.task ?? ''),
+      planPerWeek: quest.plan?.perWeek ? String(quest.plan.perWeek) : EMPTY_DRAFT.planPerWeek,
+      planTask: quest.plan?.task ?? '',
+      planAllowMisses: quest.plan?.allowMisses !== undefined ? String(quest.plan.allowMisses) : '',
       ruleType: (quest.rule?.targetTypes.length ?? 0) > 1 ? 'all' : quest.rule?.targetTypes[0] || '',
       ruleEvidence: quest.rule?.minEvidence || 'marked',
       ruleCategories: quest.rule?.categories?.join(', ') || '',
@@ -620,6 +715,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
                         </span>
                       );
                     })()}
+                    {quest.plan && <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600">แผน {planSummary(quest.plan)}</span>}
                     {ruleKind(quest.rule) && <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600">{ruleKind(quest.rule)}</span>}
                     {describeTimeLeft(quest) && <span className="text-[11px] font-semibold text-slate-500">{describeTimeLeft(quest)}</span>}
                   </div>
@@ -698,6 +794,14 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
 
               <fieldset className="space-y-3 border-t border-slate-200 pt-4">
                 <legend className="text-sm font-bold text-slate-900">การนับความคืบหน้า</legend>
+                <div className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 p-0.5" role="group" aria-label="นับแบบไหน">
+                  {([['visits', 'นับจากการไป'], ['plan', 'แผนรายวัน (สมาชิก stamp เอง)']] as const).map(([value, label]) => (
+                    <button key={value} type="button" onClick={() => setDraft({ ...draft, countBy: value })} aria-pressed={draft.countBy === value} className={`h-8 px-3 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer ${draft.countBy === value ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {draft.countBy === 'plan' ? <PlanFields draft={draft} setDraft={setDraft} /> : (<>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <label className="block space-y-1.5 text-sm font-medium text-slate-800">นับจาก
                     <select required value={draft.ruleType} onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestDraft['ruleType'], ruleCategories: '', ruleVibes: '' })} className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100">
@@ -807,6 +911,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
                 ) : (
                   <p className="text-[11px] sm:text-xs font-semibold text-slate-500">ทุกชาเลนจ์ต้องมีวิธีที่ระบบตรวจได้ สมาชิกจึงจะได้ XP และรางวัลเมื่อทำครบ</p>
                 )}
+                </>)}
               </fieldset>
 
               <fieldset className="space-y-3 border-t border-slate-200 pt-4">

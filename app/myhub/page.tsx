@@ -14,6 +14,7 @@ import { MyCampaignsSection } from '@/components/myhub/MyCampaignsSection';
 import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
+import { TodayPlans } from '@/components/myhub/TodayPlans';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -144,13 +145,15 @@ function MyHubContent() {
         const quest = questCatalog?.find((entry) => entry.id === progress.questId);
         // Not started yet is not under way: it waits in the schedule on its first day
         const isRunning = quest && !quest.startsInDays && quest.status !== 'ended' && (quest.daysRemaining === undefined || quest.daysRemaining > 0);
-        return progress.joined && !progress.completed && isRunning ? [{ ...progress, daysRemaining: quest.daysRemaining }] : [];
+        // A challenge done by plan counts stamps, on the member's own weeks, so it has no days left to show here
+        return progress.joined && !progress.completed && isRunning ? [{ ...progress, isPlan: Boolean(quest.plan), daysRemaining: quest.plan ? undefined : quest.daysRemaining }] : [];
       }),
     [myRewards.quests, questCatalog]
   );
   const questRowProgress = (ev: EventItem) => {
     const progress = myRewards.quests.find((q) => q.questId === ev.id.replace('quest-', ''));
-    return progress && progress.total ? `ไปแล้ว ${progress.current} จาก ${progress.total}` : '';
+    const isPlan = Boolean(questCatalog?.find((entry) => entry.id === progress?.questId)?.plan);
+    return progress && progress.total ? `${isPlan ? 'stamp แล้ว' : 'ไปแล้ว'} ${progress.current} จาก ${progress.total}` : '';
   };
   useEffect(() => {
     let isActive = true;
@@ -1010,7 +1013,7 @@ function MyHubContent() {
                       <span className="block h-full rounded-full bg-[#7C3AED]" style={{ width: `${Math.round((challenge.current / challenge.total) * 100)}%` }} />
                     </span>
                     <span className="text-xs font-medium text-slate-500 tabular-nums whitespace-nowrap">
-                      ไปแล้ว {challenge.current} จาก {challenge.total}
+                      {challenge.isPlan ? 'stamp แล้ว' : 'ไปแล้ว'} {challenge.current} จาก {challenge.total}
                       {challenge.daysRemaining !== undefined ? ` · เหลือ ${challenge.daysRemaining} วัน` : ''}
                     </span>
                   </span>
@@ -2121,6 +2124,8 @@ function MyHubContent() {
                         <MyCampaignsSection campaigns={myCampaigns.mine} rewards={myRewards} onOpen={myCampaigns.open} />
                       </div>
                     )}
+                    {/* Challenges done by plan: today's task and its stamp, first thing in the schedule (owner 2026-11-07) */}
+                    {hubMainMode === 'calendar' && isLoggedIn && <TodayPlans onToast={showToast} />}
                     {hubMainMode === 'calendar' && renderDoingNow()}
                     {hubMainMode === 'calendar' && nextEvent && (() => {
                       const when = new Date(scheduleTs(nextEvent));
