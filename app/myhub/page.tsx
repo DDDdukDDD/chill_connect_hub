@@ -2445,7 +2445,6 @@ function MyHubContent() {
       <MobileNav
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
-        favoritesCount={0}
       />
 
       {/* ============================================================= */}

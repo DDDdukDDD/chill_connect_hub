@@ -595,7 +595,7 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
         }}
       />
 
-      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} favoritesCount={favorites.length} />
+      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
 
       <Toast message={toastMessage} />
     </div>

@@ -8,7 +8,6 @@ import { useMemberSession } from '@/lib/useMemberSession';
 interface MobileNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  favoritesCount?: number;
   /** A detail page's own bar (when, save, share, the main button), stacked above the menu so both stay in reach.
    *  It shows once the page's own buttons ([data-hero-actions]) have scrolled away, so the two never sit on one screen. Pages with a bar mark their buttons; without the mark the bar stays hidden */
   actionBar?: React.ReactNode;
@@ -17,7 +16,6 @@ interface MobileNavProps {
 export const MobileNav: React.FC<MobileNavProps> = ({
   activeTab,
   setActiveTab,
-  favoritesCount = 0,
   actionBar,
 }) => {
   const { isLoggedIn } = useMemberSession();
@@ -73,11 +71,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             >
               <div className="relative">
                 <Icon className={`w-5 h-5 transition-transform ${isActive ? 'text-[#2563EB] stroke-[2.5]' : 'stroke-2'}`} />
-                {item.id === 'explore' && favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-2 bg-[#F26430] text-white text-[11px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
-                    {favoritesCount}
-                  </span>
-                )}
               </div>
               <span className="text-[11px] mt-0.5 tracking-tight font-medium">
                 {item.label}
