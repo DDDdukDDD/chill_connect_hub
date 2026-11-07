@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, ChevronDown, X, Zap } from 'lucide-react';
+import { ArrowRight, X, Zap } from 'lucide-react';
 import { ALL_PROVINCES, ONLINE, discoverHref, type DiscoverCounts, type DiscoverKind } from '@/lib/discoverMatch';
 import { useDiscoverCounts } from '@/lib/useDiscoverCounts';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
@@ -21,44 +21,13 @@ const PICKED: Record<DiscoverKind, string> = {
   spots: 'bg-[#EBF3ED] border-[#4A7C59] text-[#2D5A3C]',
 };
 
-/** The shape of every filter pill (ค้นพบ pages and /challenges) */
+/** The shape of every filter pill (the four list pages, components/discover/FilterControls.tsx) */
 export const FILTER_PILL =
   'inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer';
 
 /** Classes for a filter pill on a ค้นพบ page */
 export const filterPillClass = (kind: DiscoverKind, picked: boolean) =>
   `${FILTER_PILL} ${picked ? `${PICKED[kind]} font-semibold` : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900'}`;
-
-/** A dropdown filter drawn as a pill; it shows as picked when its value is not `emptyValue` */
-export function FilterSelect({
-  kind,
-  label,
-  value,
-  emptyValue,
-  onChange,
-  children,
-}: {
-  kind: DiscoverKind;
-  label: string;
-  value: string;
-  emptyValue: string;
-  onChange: (value: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="relative shrink-0">
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${filterPillClass(kind, value !== emptyValue)} max-w-[13rem] truncate appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20`}
-      >
-        {children}
-      </select>
-      <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70" aria-hidden="true" />
-    </span>
-  );
-}
 
 /** The page heading in a friend's voice, saying where (like Meetup's "Events near Bangkok"); each page names itself for search */
 const titleOf = (kind: DiscoverKind, province: string) => {
@@ -185,15 +154,12 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
 
       {/* Filters on the left; how many and how they are shown on the right (wide screens) */}
       <div className="flex items-start gap-4">
-        {/* Phones: the create button and how they are shown start the row of filters that scrolls, so the first tiles sit higher */}
+        {/* Phones: one row that scrolls, so the first tiles sit higher: the create button, the filters (ตัวกรอง first),
+            then saved and how they are shown at the end */}
         <div className="flex-1 min-w-0 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:overflow-x-auto no-scrollbar max-sm:-mx-4 max-sm:px-4 max-sm:[&>div]:contents max-sm:[&_button]:shrink-0">
-          {(action || tools) && (
-            <div className="sm:hidden">
-              {action}
-              {tools}
-            </div>
-          )}
+          {action && <div className="sm:hidden">{action}</div>}
           {children}
+          {tools && <div className="sm:hidden">{tools}</div>}
         </div>
         {(summary || tools) && (
           <div className="hidden sm:flex shrink-0 items-center gap-3 min-h-9">
