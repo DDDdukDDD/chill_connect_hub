@@ -486,7 +486,7 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
   - _2026-10-23 (BE-105):_ `type` may also be `match` (someone picked the member back after a ตี้; `href` points to that ตี้ `#meet-again`).
 - Created by the server on follow, like and comment (never for one's own action; a repeated like or follow is one item). Deleted with the account.
 - Feed items of sample posts (`isSample`) are returned without decorative emoji.
-- `POST /api/moments` also accepts `imageRatio` (number, width / height of the first photo, stored between 0.3 and 3); feed items return `imageRatio` when it was saved.
+- `POST /api/moments` also accepts `imageRatio` (number, width / height of the post, stored between 0.3 and 3); feed items return `imageRatio` when it was saved. Photo posts send `1` (square) or `0.8` (4:5, since 2026-11-07); feeds show a photo post tall only when its ratio is about 0.8, any other ratio stays square. Clip posts send the cover's ratio.
 
 ## Member activity: joining events, saved places (added 2026-10-11)
 - `GET /api/auth/member/activity` → `{ success, joined, hosted, cancelled, joinedIds, savedSpotIds, savedEventIds }`. `joined` / `hosted` / `cancelled` are full events (`joinedAt`, `cancelledAt`, `isHost` added). Signed out: empty lists with `requiresLogin`.

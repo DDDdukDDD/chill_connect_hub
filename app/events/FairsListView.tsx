@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useOwnProvinceDefault } from '@/lib/useOwnProvince';
-import { Heart, X, Calendar, Plus } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { FairTile } from '@/components/FairTile';
@@ -28,7 +28,8 @@ import { getFairEventCategory } from '@/data/masterHub';
 import { VenueCircles } from '@/components/discover/VenueCircles';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import { eventInProvince, fairSearchText, matchesQuery, type DiscoverCounts } from '@/lib/discoverMatch';
-import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
+import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
+import { ActiveChip, ChoiceGroup, DATE_CHOICES, FilterButton, FilterSheet, QuickChip, datePresetOf, datePresetRange, dateRangeLabel, type DatePreset } from '@/components/discover/FilterControls';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
 import { useFiltersInUrl } from '@/lib/useFiltersInUrl';
@@ -297,6 +298,29 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
     <FairTile event={event} sponsored={sponsored} now={now} isSaved={isLoggedIn && favorites.includes(event.id)} onToggleSave={toggleFavorite} />
   );
 
+  // The sheet's filters (owner 2026-11-07): the date, price and past อีเวนต์; categories, venues and the search stay outside
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const datePreset = datePresetOf(customStartDate, customEndDate);
+  const sheetCount = [Boolean(customStartDate), priceFilter !== 'all', statusFilter !== 'upcoming'].filter(Boolean).length;
+  const setDates = (start: string, end: string) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setCurrentPage(1);
+  };
+  const chooseDate = (preset: DatePreset) => {
+    if (preset === 'any') return setDates('', '');
+    if (preset === 'custom') {
+      setIsFilterOpen(false);
+      return setIsDatePickerOpen(true);
+    }
+    setDates(...datePresetRange(preset));
+  };
+  const resetSheet = () => {
+    setDates('', '');
+    setPriceFilter('all');
+    setStatusFilter('upcoming');
+  };
+
   const handleResetAll = () => {
     setSearchQuery('');
     setSelectedCategory(null);
@@ -424,51 +448,13 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
             </>
           }
         >
-          {/* Filters as pills: one row that scrolls on phones */}
+          {/* ตัวกรอง, the two filters people use most, then a chip for each filter set in the sheet; one row that scrolls on phones */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-            <button type="button" onClick={() => setIsDatePickerOpen(true)} className={filterPillClass('fairs', Boolean(customStartDate))}>
-              <Calendar className="w-4 h-4" aria-hidden="true" />
-              <span>{customStartDate ? (customStartDate === customEndDate ? customStartDate : `${customStartDate} - ${customEndDate}`) : 'ช่วงไหนก็ได้'}</span>
-            </button>
-            {customStartDate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomStartDate('');
-                  setCustomEndDate('');
-                  setCurrentPage(1);
-                }}
-                aria-label="ล้างวันที่เลือก"
-                className="-ml-1 w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
-                setCurrentPage(1);
-              }}
-              aria-pressed={priceFilter === 'free'}
-              className={filterPillClass('fairs', priceFilter === 'free')}
-            >
-              เข้าชมฟรี
-            </button>
-            <FilterSelect
-              kind="fairs"
-              label="สถานะ"
-              value={statusFilter}
-              emptyValue="upcoming"
-              onChange={(v) => {
-                setStatusFilter(v as typeof statusFilter);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="upcoming">กำลังจะมาถึง</option>
-              <option value="ended">งานที่ผ่านมา</option>
-              <option value="all">ทุกสถานะ</option>
-            </FilterSelect>
+            <FilterButton kind="fairs" count={sheetCount} onClick={() => setIsFilterOpen(true)} />
+            <QuickChip kind="fairs" on={datePreset === 'weekend'} onToggle={() => chooseDate(datePreset === 'weekend' ? 'any' : 'weekend')}>สุดสัปดาห์นี้</QuickChip>
+            <QuickChip kind="fairs" on={priceFilter === 'free'} onToggle={() => { setPriceFilter(priceFilter === 'free' ? 'all' : 'free'); setCurrentPage(1); }}>เข้าชมฟรี</QuickChip>
+            {customStartDate && datePreset !== 'weekend' && <ActiveChip kind="fairs" label={dateRangeLabel(customStartDate, customEndDate)} onClear={() => setDates('', '')} />}
+            {statusFilter !== 'upcoming' && <ActiveChip kind="fairs" label={statusFilter === 'ended' ? 'งานที่ผ่านมา' : 'ทุกสถานะ'} onClear={() => { setStatusFilter('upcoming'); setCurrentPage(1); }} />}
           </div>
         </DiscoverHeader>
 
@@ -522,6 +508,14 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
         )}
 
       </main>
+
+      {isFilterOpen && (
+        <FilterSheet onClose={() => setIsFilterOpen(false)} onReset={resetSheet} canReset={sheetCount > 0} resultLabel={`ดู ${filteredEvents.length.toLocaleString()} อีเวนต์`}>
+          <ChoiceGroup kind="fairs" title="วันไหน" options={DATE_CHOICES} value={datePreset} onChange={chooseDate} />
+          <ChoiceGroup kind="fairs" title="ค่าเข้าชม" options={[['ทั้งหมด', 'all'], ['เข้าชมฟรี', 'free']]} value={priceFilter} onChange={(v) => { setPriceFilter(v); setCurrentPage(1); }} />
+          <ChoiceGroup kind="fairs" title="สถานะ" options={[['กำลังจะมาถึง', 'upcoming'], ['งานที่ผ่านมา', 'ended'], ['ทุกสถานะ', 'all']]} value={statusFilter} onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }} />
+        </FilterSheet>
+      )}
 
       <CustomDatePickerModal
         isOpen={isDatePickerOpen}

@@ -93,6 +93,9 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
   const { railRef: campaignRailRef, handlers: campaignHandlers, page: campaignPage, goTo: goToCampaign } = useDragRail(campaigns.length, { pressBringsIn: withRewards });
   // One more card at the end of the row: all the rewards
   const { railRef: rewardRailRef, handlers: rewardHandlers } = useDragRail(rewards.length + 1, { pressBringsIn: false });
+  // Phones: campaigns and rewards in one row to swipe (owner 2026-11-07: the rewards used to be hidden there)
+  const together = hasCampaigns && rewards.length > 0;
+  const { railRef: phoneRailRef, handlers: phoneHandlers } = useDragRail(campaigns.length + rewards.length + 1, { pressBringsIn: false });
   if (!hasCampaigns && rewards.length === 0) return null;
   const railClass = 'flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory select-none';
   // Two and the next one's edge beside a campaign; four and an edge on their own
@@ -100,8 +103,36 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
 
   const campaignWidth = campaigns.length === 1 ? 'w-full' : withRewards ? 'w-[calc(100%-2.25rem)] lg:w-full' : 'w-[calc(100%-2.25rem)] sm:w-[calc((100%-3.25rem)/2)]';
 
+  const allRewardsCard = (width: string) => (
+    <div className={`${width} shrink-0 snap-start last:snap-end`}>
+      <Link href="/rewards" draggable={false} className={`group flex flex-col justify-center ${CARD_HEIGHT} rounded-3xl bg-slate-100 px-3.5`}>
+        <span className="text-xs text-slate-600 leading-snug">ยังมีอีกเยอะ เลือกให้ปวดหัวเล่น</span>
+        <span className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-900">
+          ดูของรางวัลทั้งหมด
+          <ArrowRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+        </span>
+      </Link>
+    </div>
+  );
+
   return (
-    <section aria-label={withRewards ? 'แคมเปญและของรางวัล' : 'แคมเปญที่เปิดอยู่'} className={`grid gap-3 ${hasCampaigns && withRewards ? 'lg:grid-cols-2' : ''} ${className}`}>
+    <>
+    {together && (
+      <div ref={phoneRailRef} {...phoneHandlers} aria-label="แคมเปญและของรางวัล" className={`sm:hidden ${railClass} -mx-4 px-4 scroll-px-4 ${className}`}>
+        {campaigns.map((campaign) => (
+          <div key={campaign.id} className="w-[86%] shrink-0 snap-start">
+            <CampaignPanel campaign={campaign} onOpen={onOpen ?? (() => {})} />
+          </div>
+        ))}
+        {rewards.map((item, index) => (
+          <div key={item.id} className="w-[62%] shrink-0 snap-start">
+            <RewardCard item={item} tint={TINTS[index % TINTS.length]} canRedeem={canRedeem(item)} />
+          </div>
+        ))}
+        {allRewardsCard('w-[62%]')}
+      </div>
+    )}
+    <section aria-label={withRewards ? 'แคมเปญและของรางวัล' : 'แคมเปญที่เปิดอยู่'} className={`${together ? 'max-sm:hidden' : ''} grid gap-3 ${hasCampaigns && withRewards ? 'lg:grid-cols-2' : ''} ${className}`}>
       {hasCampaigns && (
         <div className="relative min-w-0">
           <div ref={campaignRailRef} {...campaignHandlers} className={railClass}>
@@ -131,17 +162,10 @@ export function PromoBoard({ campaigns, onOpen, redeemedRewardIds = [], withRewa
               <RewardCard item={item} tint={TINTS[index % TINTS.length]} canRedeem={canRedeem(item)} />
             </div>
           ))}
-          <div className={`${rewardWidth} shrink-0 snap-start last:snap-end`}>
-            <Link href="/rewards" draggable={false} className={`group flex flex-col justify-center ${CARD_HEIGHT} rounded-3xl bg-slate-100 px-3.5`}>
-              <span className="text-xs text-slate-600 leading-snug">ยังมีอีกเยอะ เลือกให้ปวดหัวเล่น</span>
-              <span className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-bold text-slate-900">
-                ดูของรางวัลทั้งหมด
-                <ArrowRight className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
-              </span>
-            </Link>
-          </div>
+          {allRewardsCard(rewardWidth)}
         </div>
       )}
     </section>
+    </>
   );
 }

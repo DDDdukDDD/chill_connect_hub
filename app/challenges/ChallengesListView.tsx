@@ -20,7 +20,7 @@ import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import type { CampaignView } from '@/lib/campaigns/types';
 import { ChallengeList } from '@/components/ChallengeList';
-import { FilterMenu, challengePillClass } from '@/components/ChallengeFilters';
+import { ActiveChip, ChoiceGroup, FilterButton, FilterSheet, QuickChip } from '@/components/discover/FilterControls';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { DiscoverCategoryTabs } from '@/components/discover/DiscoverCategoryTabs';
 import { ViewModeToggle } from '@/components/ViewModeToggle';
@@ -65,6 +65,9 @@ const toListQuest = (quest: ChallengeQuest): QuestWithDuration => ({
   image: quest.badgeCoverImg || quest.image });
 
 /** `initialQuests` comes from the server page, so the list is in the HTML search engines read; the browser refreshes it. */
+const WHEN_LABELS = { open: 'เปิดอยู่ทั้งหมด', running: 'ทำได้เลยตอนนี้', upcoming: 'เริ่มเร็วๆ นี้', ended: 'จบไปแล้ว' } as const;
+const BY_LABELS = { all: 'ทุกแบบ', spot: 'ไปที่เที่ยว', community: 'ร่วมตี้', fair: 'ไปอีเวนต์' } as const;
+
 export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = '', campaigns = [], sponsoredId = null }: { initialQuests?: ChallengeQuest[]; initialQuery?: string; campaigns?: CampaignView[]; sponsoredId?: string | null }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('challenges');
@@ -73,7 +76,7 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
   const [byFilter, setByFilter] = useState<'all' | 'spot' | 'community' | 'fair'>('all');
   const [rewardFilter, setRewardFilter] = useState<'all' | 'partner' | 'hub'>('all');
   const [mineOnly, setMineOnly] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   // A dated list by default (like the schedule in My Hub); the cards stay one tap away and the choice is remembered
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   useEffect(() => {
@@ -210,7 +213,6 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
         return 0;
       });
   }, [relevantQuests, selectedCategory, searchQuery]);
-  const isFiltered = whenFilter !== 'open' || byFilter !== 'all' || rewardFilter !== 'all' || mineOnly || selectedCategory !== null;
   const clearFilters = () => {
     setWhenFilter('open');
     setByFilter('all');
@@ -270,15 +272,10 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
           </div>
           {isLoggedIn && (
             <div className="flex items-center gap-2 shrink-0">
-              {/* Phone: "ที่ฉันทำอยู่" takes the XP pill's place, since the filter row has no room for it (XP is in มายฮับ on the bottom bar) */}
-              {hasMine && (
-                <button type="button" aria-pressed={mineOnly} onClick={toggleMine} className={`sm:hidden ${challengePillClass(mineOnly)}`}>
-                  ที่ฉันทำอยู่
-                </button>
-              )}
+              {/* "ที่ฉันทำอยู่" is in the filter row on every screen since 2026-11-07, so the XP pill shows on phones again */}
               <Link
                 href={joinedQuestIds.length > 0 ? '/myhub?tab=quests_rewards' : '/rewards'}
-                className={`${hasMine ? 'hidden sm:inline-flex' : 'inline-flex'} items-center gap-1.5 min-h-10 px-3.5 sm:px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer`}
+                className={`inline-flex items-center gap-1.5 min-h-10 px-3.5 sm:px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer`}
               >
                 <Zap className="w-4 h-4 text-[#7C3AED]" aria-hidden="true" />
                 <span className="tabular-nums">{userXp.toLocaleString()} XP</span>
@@ -310,82 +307,38 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
               <ChallengeSearch idPrefix="challenge-phone" query={searchQuery} onQueryChange={changeSearch} className="flex-1 min-w-0" />
               <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
             </div>
-            {/* Phones: tighter, so the three menus keep one row on a 360 px screen */}
-            <div className="flex flex-wrap items-center gap-2 max-sm:gap-1.5 max-sm:[&_button[aria-haspopup]]:px-2.5">
-              <FilterMenu
-                id="when"
-                label="ช่วงเวลา"
-                value={whenFilter}
-                defaultValue="open"
-                options={[
-                  { value: 'open', label: 'เปิดอยู่ทั้งหมด', count: whenCounts.open },
-                  { value: 'running', label: 'ทำได้เลยตอนนี้', count: whenCounts.running },
-                  { value: 'upcoming', label: 'เริ่มเร็วๆ นี้', count: whenCounts.upcoming },
-                  { value: 'ended', label: 'จบไปแล้ว', count: whenCounts.ended },
-                ]}
-                openId={openMenu}
-                setOpenId={setOpenMenu}
-                onChange={(value) => {
-                  setWhenFilter(value);
-                  setCurrentPage(1);
-                }}
-              />
-              <FilterMenu
-                id="by"
-                label="ทำอย่างไร"
-                value={byFilter}
-                defaultValue="all"
-                options={[
-                  { value: 'all', label: 'ทุกแบบ' },
-                  { value: 'spot', label: 'ไปที่เที่ยว' },
-                  { value: 'community', label: 'ร่วมตี้' },
-                  { value: 'fair', label: 'ไปอีเวนต์' },
-                ]}
-                openId={openMenu}
-                setOpenId={setOpenMenu}
-                onChange={(value) => {
-                  setByFilter(value);
-                  setCurrentPage(1);
-                }}
-              />
-              <FilterMenu
-                id="reward"
-                label="ของรางวัล"
-                value={rewardFilter}
-                defaultValue="all"
-                options={[
-                  { value: 'all', label: 'ทุกแบบ' },
-                  { value: 'partner', label: 'ของรางวัลจากร้านหรือแบรนด์' },
-                  { value: 'hub', label: 'XP และเหรียญจาก Hub' },
-                ]}
-                openId={openMenu}
-                setOpenId={setOpenMenu}
-                onChange={(value) => {
-                  setRewardFilter(value);
-                  setCurrentPage(1);
-                }}
-              />
-              {isFiltered && (
-                <button type="button" onClick={clearFilters} className="h-9 px-2 text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
-                  ล้างตัวกรอง
-                </button>
-              )}
-
-              <div className="flex items-center gap-2 ml-auto">
-                {/* What I am doing sits with the view, like ♡ ที่บันทึกไว้ on the ค้นพบ pages */}
-                {/* Only when there is something of mine to show; on a phone it sits in the header */}
-                {hasMine && (
-                  <span className="hidden sm:block">
-                    <button type="button" aria-pressed={mineOnly} onClick={toggleMine} className={challengePillClass(mineOnly)}>
-                      ที่ฉันทำอยู่
-                    </button>
-                  </span>
-                )}
-                <div className="hidden md:flex">
-                  <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
-                </div>
+            {/* ตัวกรอง, the filters people use most, then a chip for each filter set in the sheet (owner 2026-11-07); one row that scrolls on phones */}
+            <div className="flex items-center gap-2 max-sm:overflow-x-auto no-scrollbar max-sm:-mx-4 max-sm:px-4 sm:flex-wrap">
+              <FilterButton kind="challenges" count={[whenFilter !== 'open', byFilter !== 'all', rewardFilter !== 'all'].filter(Boolean).length} onClick={() => setIsFilterOpen(true)} />
+              <QuickChip kind="challenges" on={whenFilter === 'running'} onToggle={() => { setWhenFilter(whenFilter === 'running' ? 'open' : 'running'); setCurrentPage(1); }}>ทำได้เลยตอนนี้</QuickChip>
+              <QuickChip kind="challenges" on={rewardFilter === 'partner'} onToggle={() => { setRewardFilter(rewardFilter === 'partner' ? 'all' : 'partner'); setCurrentPage(1); }}>ของรางวัลแบรนด์</QuickChip>
+              {/* What I am doing, only when there is something of mine to show */}
+              {hasMine && <QuickChip kind="challenges" on={mineOnly} onToggle={toggleMine}>ที่ฉันทำอยู่</QuickChip>}
+              {whenFilter !== 'open' && whenFilter !== 'running' && <ActiveChip kind="challenges" label={WHEN_LABELS[whenFilter]} onClear={() => { setWhenFilter('open'); setCurrentPage(1); }} />}
+              {byFilter !== 'all' && <ActiveChip kind="challenges" label={BY_LABELS[byFilter]} onClear={() => { setByFilter('all'); setCurrentPage(1); }} />}
+              {rewardFilter === 'hub' && <ActiveChip kind="challenges" label="XP และเหรียญจาก Hub" onClear={() => { setRewardFilter('all'); setCurrentPage(1); }} />}
+              <div className="hidden md:flex ml-auto">
+                <ViewModeToggle viewMode={viewMode === 'cards' ? 'grid' : 'list'} onChange={(mode) => chooseView(mode === 'grid' ? 'cards' : 'list')} />
               </div>
             </div>
+            {isFilterOpen && (
+              <FilterSheet
+                onClose={() => setIsFilterOpen(false)}
+                onReset={() => { setWhenFilter('open'); setByFilter('all'); setRewardFilter('all'); setCurrentPage(1); }}
+                canReset={whenFilter !== 'open' || byFilter !== 'all' || rewardFilter !== 'all'}
+                resultLabel={`ดู ${filteredQuests.length.toLocaleString()} ชาเลนจ์`}
+              >
+                <ChoiceGroup
+                  kind="challenges"
+                  title="ช่วงเวลา"
+                  options={(['open', 'running', 'upcoming', 'ended'] as const).map((value) => [`${WHEN_LABELS[value]} (${whenCounts[value]})`, value] as [string, WhenFilter])}
+                  value={whenFilter}
+                  onChange={(value) => { setWhenFilter(value); setCurrentPage(1); }}
+                />
+                <ChoiceGroup kind="challenges" title="ทำอย่างไร" options={(Object.keys(BY_LABELS) as (keyof typeof BY_LABELS)[]).map((value) => [BY_LABELS[value], value])} value={byFilter} onChange={(value) => { setByFilter(value); setCurrentPage(1); }} />
+                <ChoiceGroup kind="challenges" title="ของรางวัล" options={[['ทุกแบบ', 'all'], ['ของรางวัลจากร้านหรือแบรนด์', 'partner'], ['XP และเหรียญจาก Hub', 'hub']]} value={rewardFilter} onChange={(value) => { setRewardFilter(value); setCurrentPage(1); }} />
+              </FilterSheet>
+            )}
 
             {/* The ค้นพบ category tabs, violet; only categories that have challenges */}
             <DiscoverCategoryTabs

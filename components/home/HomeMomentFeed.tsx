@@ -813,10 +813,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             setMoments((list) => [moment as unknown as FeedItem, ...list.filter((m) => m.id !== moment.id)]);
             setIsComposerOpen(false);
             setComposerInitial(null);
+            // The progress card says โพสต์แล้ว; the member keeps their place in the feed, like Instagram
             if (countedQuest) setCounted(countedQuest);
-            else showToast('แชร์โมเมนต์แล้ว');
             onPosted?.();
-            topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
         />
       )}

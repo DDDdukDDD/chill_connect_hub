@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useOwnProvinceDefault } from '@/lib/useOwnProvince';
-import { Heart, X, Calendar, Plus } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import { isClosedToJoin, isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -28,7 +28,8 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useResponsiveItemsPerPage } from '@/lib/useResponsiveItemsPerPage';
 import type { EventItem } from '@/data/mockData';
 import { ONLINE, eventInProvince, matchesQuery, meetupSearchText, type DiscoverCounts } from '@/lib/discoverMatch';
-import { DiscoverHeader, FilterSelect, filterPillClass } from '@/components/discover/DiscoverHeader';
+import { DiscoverHeader, filterPillClass } from '@/components/discover/DiscoverHeader';
+import { ActiveChip, ChoiceGroup, DATE_CHOICES, FilterButton, FilterSheet, QuickChip, datePresetOf, datePresetRange, dateRangeLabel, type DatePreset } from '@/components/discover/FilterControls';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useMyInterests } from '@/lib/useMyInterests';
 import { Toast } from '@/components/Toast';
@@ -251,6 +252,31 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
     />
   );
 
+  // The sheet's filters (owner 2026-11-07): the date, seats, price, online and past ตี้; categories and the search stay outside
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const datePreset = datePresetOf(customStartDate, customEndDate);
+  const sheetCount = [Boolean(customStartDate), openOnly, priceFilter !== 'all', selectedProvince === ONLINE, statusFilter !== 'upcoming'].filter(Boolean).length;
+  const setDates = (start: string, end: string) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setCurrentPage(1);
+  };
+  const chooseDate = (preset: DatePreset) => {
+    if (preset === 'any') return setDates('', '');
+    if (preset === 'custom') {
+      setIsFilterOpen(false);
+      return setIsDatePickerOpen(true);
+    }
+    setDates(...datePresetRange(preset));
+  };
+  const resetSheet = () => {
+    setDates('', '');
+    setOpenOnly(false);
+    setPriceFilter('all');
+    if (selectedProvince === ONLINE) setSelectedProvince('all');
+    setStatusFilter('upcoming');
+  };
+
   const handleResetAll = () => {
     setSearchQuery('');
     setSelectedCategory('all');
@@ -362,74 +388,15 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
             </>
           }
         >
-          {/* Filters as pills: one row that scrolls on phones */}
+          {/* ตัวกรอง, the two filters people use most, then a chip for each filter set in the sheet; one row that scrolls on phones */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-            <button type="button" onClick={() => setIsDatePickerOpen(true)} className={filterPillClass('meetups', Boolean(customStartDate))}>
-              <Calendar className="w-4 h-4" aria-hidden="true" />
-              <span>{customStartDate ? (customStartDate === customEndDate ? customStartDate : `${customStartDate} - ${customEndDate}`) : 'วันไหนก็ได้'}</span>
-            </button>
-            {customStartDate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomStartDate('');
-                  setCustomEndDate('');
-                  setCurrentPage(1);
-                }}
-                aria-label="ล้างวันที่เลือก"
-                className="-ml-1 w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setOpenOnly(!openOnly);
-                setCurrentPage(1);
-              }}
-              aria-pressed={openOnly}
-              className={filterPillClass('meetups', openOnly)}
-            >
-              ยังมีที่ว่าง
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPriceFilter(priceFilter === 'free' ? 'all' : 'free');
-                setCurrentPage(1);
-              }}
-              aria-pressed={priceFilter === 'free'}
-              className={filterPillClass('meetups', priceFilter === 'free')}
-            >
-              เข้าร่วมฟรี
-            </button>
-            {/* The same choice as "ออนไลน์" in the province menu, one tap away */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProvince(selectedProvince === ONLINE ? 'all' : ONLINE);
-                setCurrentPage(1);
-              }}
-              aria-pressed={selectedProvince === ONLINE}
-              className={filterPillClass('meetups', selectedProvince === ONLINE)}
-            >
-              ออนไลน์
-            </button>
-            <FilterSelect
-              kind="meetups"
-              label="สถานะ"
-              value={statusFilter}
-              emptyValue="upcoming"
-              onChange={(v) => {
-                setStatusFilter(v as typeof statusFilter);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="upcoming">กำลังจะมาถึง</option>
-              <option value="ended">ที่ผ่านมาแล้ว</option>
-              <option value="all">ทุกสถานะ</option>
-            </FilterSelect>
+            <FilterButton kind="meetups" count={sheetCount} onClick={() => setIsFilterOpen(true)} />
+            <QuickChip kind="meetups" on={datePreset === 'weekend'} onToggle={() => chooseDate(datePreset === 'weekend' ? 'any' : 'weekend')}>สุดสัปดาห์นี้</QuickChip>
+            <QuickChip kind="meetups" on={openOnly} onToggle={() => { setOpenOnly(!openOnly); setCurrentPage(1); }}>ยังมีที่ว่าง</QuickChip>
+            {customStartDate && datePreset !== 'weekend' && <ActiveChip kind="meetups" label={dateRangeLabel(customStartDate, customEndDate)} onClear={() => setDates('', '')} />}
+            {priceFilter === 'free' && <ActiveChip kind="meetups" label="เข้าร่วมฟรี" onClear={() => { setPriceFilter('all'); setCurrentPage(1); }} />}
+            {selectedProvince === ONLINE && <ActiveChip kind="meetups" label="ออนไลน์" onClear={() => { setSelectedProvince('all'); setCurrentPage(1); }} />}
+            {statusFilter !== 'upcoming' && <ActiveChip kind="meetups" label={statusFilter === 'ended' ? 'ที่ผ่านมาแล้ว' : 'ทุกสถานะ'} onClear={() => { setStatusFilter('upcoming'); setCurrentPage(1); }} />}
           </div>
         </DiscoverHeader>
 
@@ -474,6 +441,22 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
           </p>
         )}
       </main>
+
+      {isFilterOpen && (
+        <FilterSheet onClose={() => setIsFilterOpen(false)} onReset={resetSheet} canReset={sheetCount > 0} resultLabel={`ดู ${filteredEvents.length.toLocaleString()} ตี้`}>
+          <ChoiceGroup kind="meetups" title="วันไหน" options={DATE_CHOICES} value={datePreset} onChange={chooseDate} />
+          <ChoiceGroup kind="meetups" title="ที่ว่าง" options={[['ทั้งหมด', 'all'], ['ยังมีที่ว่าง', 'open']]} value={openOnly ? 'open' : 'all'} onChange={(v) => { setOpenOnly(v === 'open'); setCurrentPage(1); }} />
+          <ChoiceGroup kind="meetups" title="ค่าเข้าร่วม" options={[['ทั้งหมด', 'all'], ['ฟรี', 'free']]} value={priceFilter} onChange={(v) => { setPriceFilter(v); setCurrentPage(1); }} />
+          <ChoiceGroup
+            kind="meetups"
+            title="แบบไหน"
+            options={[['เจอกันตัวจริง', 'place'], ['ออนไลน์', 'online']]}
+            value={selectedProvince === ONLINE ? 'online' : 'place'}
+            onChange={(v) => { setSelectedProvince(v === 'online' ? ONLINE : selectedProvince === ONLINE ? 'all' : selectedProvince); setCurrentPage(1); }}
+          />
+          <ChoiceGroup kind="meetups" title="สถานะ" options={[['กำลังจะมาถึง', 'upcoming'], ['ที่ผ่านมาแล้ว', 'ended'], ['ทุกสถานะ', 'all']]} value={statusFilter} onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }} />
+        </FilterSheet>
+      )}
 
       <CustomDatePickerModal
         isOpen={isDatePickerOpen}

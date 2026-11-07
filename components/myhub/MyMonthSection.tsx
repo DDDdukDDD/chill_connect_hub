@@ -148,8 +148,8 @@ export function MyMonthSection({ isLoggedIn, onToast, showEmptyInvite }: { isLog
           onPosted={() => {
             const target = composer.target;
             if (target) setSharedKeys((keys) => [...keys, `${target.type}:${target.id}`]);
+            // The progress card says โพสต์แล้ว
             setComposer(null);
-            onToast('แชร์โมเมนต์แล้ว');
           }}
         />
       )}

@@ -17,7 +17,7 @@ interface MomentPhotosProps {
   images: string[];
   /** One short clip: played here in place of the photos, and `images[0]` is its cover */
   video?: { url: string; startS?: number; durationS?: number; previewUrl?: string };
-  /** Width / height of the first photo. Not used for the frame any more (every post is square); kept so callers need not change. */
+  /** Width / height of the post. Photo posts are square, except those made tall (4:5) in the editor since 2026-11-07 */
   ratio?: number;
   alt: string;
   /** Opens the photo viewer at this photo */
@@ -38,7 +38,10 @@ const responsive = (src: string) =>
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;
 
-export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
+/** A post made in the 4:5 shape; any other ratio keeps the square frame, as before */
+const isTall = (ratio?: number) => typeof ratio === 'number' && ratio > 0.78 && ratio < 0.82;
+
+export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
   const [index, setIndex] = useState(0);
   const [hearts, setHearts] = useState(0);
   const track = useRef<HTMLDivElement>(null);
@@ -78,7 +81,7 @@ export function MomentPhotos({ images, video, alt, onOpen, onDoubleTap }: Moment
 
   return (
     <div className="space-y-2">
-      <div className="group/photos relative w-full aspect-square overflow-hidden rounded-2xl bg-slate-100 select-none">
+      <div className={`group/photos relative w-full ${isTall(ratio) ? 'aspect-[4/5]' : 'aspect-square'} overflow-hidden rounded-2xl bg-slate-100 select-none`}>
         <div
           ref={track}
           onScroll={(e) => {

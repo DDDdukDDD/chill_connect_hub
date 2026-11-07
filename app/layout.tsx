@@ -6,6 +6,7 @@ import { AppSetup } from "@/components/AppSetup";
 import { SkipToContent } from '@/components/SkipToContent';
 import { InviteRefCapture } from "@/components/InviteRefCapture";
 import { OnboardingResume } from "@/components/OnboardingResume";
+import { PostingProgress } from "@/components/moments/PostingProgress";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   weight: ["300", "400", "500", "600", "700"],
@@ -140,6 +141,7 @@ export default function RootLayout({
         <AppSetup />
         <InviteRefCapture />
         <OnboardingResume />
+        <PostingProgress />
         {children}
       </body>
     </html>
