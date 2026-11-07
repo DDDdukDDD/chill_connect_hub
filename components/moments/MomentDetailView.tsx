@@ -349,7 +349,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
         ) : (
           // On a computer the photo stays in view while a long comment thread scrolls beside it
           <div className="-mx-4 sm:mx-0 sm:rounded-3xl overflow-hidden lg:sticky lg:top-24">
-            <MomentPhotos images={moment.images} alt={title || `โมเมนต์จาก ${place || moment.userName}`} onOpen={(index) => setViewer(index)} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')} />
+            <MomentPhotos images={moment.images} ratio={moment.imageRatio} alt={title || `โมเมนต์จาก ${place || moment.userName}`} onOpen={(index) => setViewer(index)} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')} />
           </div>
         )}
 
