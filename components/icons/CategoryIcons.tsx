@@ -561,3 +561,13 @@ export const spotCategoryIcon = (id: string) => iconFor(SPOT[id]);
 
 /** The drawn icon for an อีเวนต์ category id ("all" for ทั้งหมด), or undefined when the pack has none */
 export const fairCategoryIcon = (id: string) => iconFor(FAIR[id]);
+
+/** The place types a member picks when suggesting a place (SPOT_CATEGORY_OPTIONS in lib/spotCategories.ts) */
+const PLACE_TYPE: Record<string, string> = {
+  temple: 'temple-mu', nature: 'forest-waterfall', oldtown: 'old-town', cafe: 'cafe-chill', beach: 'sea-island', market: 'walking-street',
+  mall: 'shopping-mall', restaurant: 'foodie-eats', attraction: 'theme-park', viewpoint: 'viewpoint-rooftop', park: 'city-park',
+  museum: 'museum', art: 'art-craft', bar: 'bar-nightlife', workspace: 'career-tech', coworking: 'career-tech',
+};
+
+/** The drawn icon for a place type in the suggest-a-place form, or undefined when the pack has none */
+export const placeTypeIcon = (id: string) => iconFor(PLACE_TYPE[id]);

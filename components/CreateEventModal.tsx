@@ -17,6 +17,9 @@ import { OrganizerGateDialog } from './auth/OrganizerGateDialog';
 import { useMasterData } from '@/lib/useMasterData';
 import { LocationPinPicker, Pin } from './LocationPinPicker';
 import { SUBMISSION_SENT_EVENT } from './MySubmissions';
+import { CreateStepGuide } from './CreateStepGuide';
+import { CoverPreview } from './CoverPreview';
+import { CategoryIconComponent, fairCategoryIcon, meetupCategoryIcon, placeTypeIcon } from './icons/CategoryIcons';
 import { RichTextEditor, renderDescriptionContent, stripHtmlToPlainText } from './RichTextEditor';
 
 /**
@@ -527,6 +530,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   const [form, setForm] = useState<Form>(() => initialForm(startType ?? 'community', seed));
   const [errors, setErrors] = useState<Errors>({});
   const [restored, setRestored] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   /** Set when ส่ง was pressed without the agreement ticked; the box turns red and scrolls into view */
@@ -815,90 +819,77 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   );
 
   const { communityCategories: questCategories, fairCategories, venues } = useMasterData();
-  const pillClass = (selected: boolean) =>
-    `inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold cursor-pointer transition-colors ${selected ? 'border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8]' : 'border-slate-300 text-slate-700 hover:border-slate-400'}`;
+  // Categories as icon tiles (the owner's drawn icons, as on the list pages' category tabs): easier to scan than a wall of pills
+  const categoryTiles = <T extends { id: string; name: string; desc?: string }>(items: T[], selectedId: string, iconOf: (id: string) => CategoryIconComponent | undefined, onPick: (item: T) => void) => (
+    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+      {items.map((item) => {
+        const selected = selectedId === item.id;
+        const Icon = iconOf(item.id);
+        return (
+          <button key={item.id} type="button" aria-pressed={selected} title={item.desc} onClick={() => onPick(item)}
+            className={`relative flex flex-col items-center justify-start gap-1.5 px-1.5 pt-3 pb-2.5 rounded-2xl border text-center cursor-pointer transition-colors ${selected ? 'border-[#2563EB] bg-[#EFF6FF] ring-1 ring-[#2563EB]' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}>
+            {Icon ? <Icon className="w-9 h-9" aria-hidden="true" /> : <span className="w-9 h-9" aria-hidden="true" />}
+            <span className={`text-xs leading-snug ${selected ? 'font-bold text-[#1D4ED8]' : 'font-semibold text-slate-700'}`}>{item.name}</span>
+            {selected && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center" aria-hidden="true">
+                <Check className="w-3 h-3" strokeWidth={3} />
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const questCategoryField = (
     <Field label="หมวด">
-      <div className="grid grid-cols-2 gap-2">
-        {questCategories.map((item) => {
-          const selected = (form.category as string) === item.id;
-          return (
-            <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('category', item.id as Category)}
-              className={`relative text-left p-3 rounded-2xl border cursor-pointer transition-colors ${selected ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-300 hover:border-slate-400'}`}>
-              <span className="block text-sm font-bold text-slate-900 pr-5">{item.name}</span>
-              <span className="block mt-0.5 text-xs font-medium text-slate-500">{item.desc}</span>
-              {selected && <Check className="absolute top-3 right-3 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
-            </button>
-          );
-        })}
-      </div>
+      {categoryTiles(questCategories, form.category as string, meetupCategoryIcon, (item) => set('category', item.id as Category))}
     </Field>
   );
+  const spotCategoryField = (
+    <Field label="ประเภทสถานที่" error={errors.spotCategory}>
+      {categoryTiles(SPOT_CATEGORY_OPTIONS.map((option) => ({ id: option.id as string, name: option.label })), form.spotCategory, placeTypeIcon, (item) => set('spotCategory', item.id))}
+    </Field>
+  );
+
   // A meetup picks one of the categories, most popular first; the mood behind it is set from it but not shown
   // (owner 2026-10-25: kept for grouping later, not a choice members make)
   const categoryField = (
     <Field label="หมวดตี้" error={errors.lifestyleCategory ?? (form.lifestyleCategory === NIGHTLIFE_CATEGORY ? nightlifeAgeMessage(member?.birthYear) ?? undefined : undefined)}>
-      <div className="flex flex-wrap gap-2">
-        {questCategories.map((item) => {
-          const selected = form.lifestyleCategory === item.id;
-          return (
-            <button key={item.id} type="button" aria-pressed={selected} title={item.desc}
-              onClick={() => {
-                set('lifestyleCategory', item.id);
-                set('category', item.coreMood);
-                // While the cover is still the first sample, show one that fits the mood (a run gets the running photo)
-                const fitting = PRESET_IMAGES.community[MOOD_PRESET[item.coreMood] ?? 0];
-                if (form.image === PRESET_IMAGES.community[0].url && fitting) set('image', fitting.url);
-              }}
-              className={pillClass(selected)}>
-              {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
-              {item.name}
-            </button>
-          );
-        })}
-      </div>
+      {categoryTiles(questCategories, form.lifestyleCategory, meetupCategoryIcon, (item) => {
+        set('lifestyleCategory', item.id);
+        set('category', item.coreMood);
+        // While the cover is still the first sample, show one that fits the mood (a run gets the running photo)
+        const fitting = PRESET_IMAGES.community[MOOD_PRESET[item.coreMood] ?? 0];
+        if (form.image === PRESET_IMAGES.community[0].url && fitting) set('image', fitting.url);
+      })}
     </Field>
   );
   const fairCategoryField = (
     <Field label="ประเภทงาน" error={errors.fairCategory}>
-      <div className="flex flex-wrap gap-2">
-        {fairCategories.map((item) => {
-          const selected = form.fairCategory === item.id;
-          return (
-            <button key={item.id} type="button" aria-pressed={selected} onClick={() => set('fairCategory', item.id)} className={pillClass(selected)}>
-              {selected && <Check className="w-3.5 h-3.5" aria-hidden="true" />}
-              {item.name}
-            </button>
-          );
-        })}
-      </div>
+      {categoryTiles(fairCategories, form.fairCategory, fairCategoryIcon, (item) => set('fairCategory', item.id))}
     </Field>
   );
 
   const imageField = type && (
-    <Field label="รูปปก" hint={uploadError ? undefined : 'เลือกรูปตัวอย่างหรืออัปโหลดรูปของคุณ (แนวนอนจะสวยที่สุด)'} error={uploadError ?? undefined}>
-      <div className="flex gap-3">
-        <div className="relative w-28 sm:w-36 aspect-[4/3] shrink-0 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={form.image} alt="รูปปกที่เลือก" className="w-full h-full object-cover" />
-          {isUploading && <div className="absolute inset-0 bg-white/70 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-[#2563EB]" aria-hidden="true" /></div>}
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="grid grid-cols-4 gap-1.5">
-            {PRESET_IMAGES[type].map((preset) => (
-              <button key={preset.url} type="button" aria-pressed={form.image === preset.url} aria-label={`ใช้รูป${preset.label}`} onClick={() => set('image', preset.url)}
-                className={`aspect-square rounded-xl overflow-hidden border-2 cursor-pointer ${form.image === preset.url ? 'border-[#2563EB]' : 'border-transparent hover:border-slate-300'}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preset.url} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-          <label className="inline-flex items-center gap-2 min-h-10 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
+    <Field label="รูปปก" error={uploadError ?? undefined}>
+      <div className="space-y-4">
+        {/* Your own picture first, the samples beside it on one row */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <label className="inline-flex items-center gap-2 h-12 px-4 mr-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
             <Upload className="w-4 h-4" aria-hidden="true" />
             {isUploading ? 'กำลังอัปโหลด…' : 'อัปโหลดรูป'}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" disabled={isUploading} onChange={handleUpload} />
           </label>
+          {PRESET_IMAGES[type].map((preset) => (
+            <button key={preset.url} type="button" aria-pressed={form.image === preset.url} aria-label={`ใช้รูป${preset.label}`} onClick={() => set('image', preset.url)}
+              className={`w-12 aspect-square rounded-xl overflow-hidden border-2 cursor-pointer ${form.image === preset.url ? 'border-[#2563EB]' : 'border-transparent hover:border-slate-300'}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preset.url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
         </div>
+        <CoverPreview type={type} image={form.image} title={form.title} busy={isUploading} />
       </div>
     </Field>
   );
@@ -1005,6 +996,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}
+          {imageField}
           {type === 'community' && categoryField}
           {type === 'challenge' && questCategoryField}
           {type === 'fair' && fairCategoryField}
@@ -1013,15 +1005,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
               <input id={id('organizer')} value={form.organizer} maxLength={80} onChange={(e) => set('organizer', e.target.value)} className={inputClass(Boolean(errors.organizer))} />
             </Field>
           )}
-          {type === 'spot' && (
-            <Field label="ประเภทสถานที่" htmlFor={id('spotCategory')} error={errors.spotCategory}>
-              <select id={id('spotCategory')} value={form.spotCategory} onChange={(e) => set('spotCategory', e.target.value)} className={inputClass(Boolean(errors.spotCategory))}>
-                <option value="">เลือกประเภท</option>
-                {SPOT_CATEGORY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </select>
-            </Field>
-          )}
-          {imageField}
+          {type === 'spot' && spotCategoryField}
         </>
       );
     }
@@ -1503,6 +1487,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             {publishesNow ? 'ตรวจอีกครั้ง เมื่อกดเผยแพร่ กิจกรรมจะขึ้นบนเว็บทันที' : 'ตรวจอีกครั้งก่อนส่ง ทีมงานจะตรวจแล้วจึงเผยแพร่ โดยปกติใช้เวลา 1-3 วัน'}
           </p>
         )}
+        {!isReview && <CreateStepGuide type={type} step={step} open={guideOpen} onToggle={setGuideOpen} />}
         {renderStep()}
         {serverError && <div role="alert" className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-sm font-bold text-rose-700">{serverError}</div>}
       </div>
