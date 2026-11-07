@@ -182,11 +182,16 @@ Returns `{ success, event, changed, notified }`. Other fields in `edit` are igno
 Sending `spotId` makes the event a Spot Buddy trip, and the server applies these rules (`lib/social/spotTrips.ts`). A refusal answers `{ success: false, message }` with `400`, `403` or `404`.
 
 - The place must exist, be published and have `meetupAllowed`.
-- The member must be allowed to host: no open report or risk flag, at most 2 trips still open, and they have been to something before (checked in by a host, or a fair in their plan or a fair meet-up group that is over). Members with an approved host application skip the last check.
+- The member must be allowed to host: no open report or risk flag, at most 2 trips still open, and they have been to something before (checked in by the host of someone else's ตี้, or a photo moment at a ตี้ or อีเวนต์ that staff passed; since 2026-11-07 a plan or meet-up group for an อีเวนต์ that is over no longer counts). Members with an approved host application skip the last check.
 - `date` is `YYYY-MM-DD`, today or later. `time` is `HH:MM - HH:MM`, inside 06:00 - 19:00, one day only. The saved event stores the date like every other ตี้ (`"12 ต.ค. 2569"`), not the `YYYY-MM-DD` that was sent.
 - Send `meetingSpot`: one of `SPOT_TRIP_MEETING_POINTS` (`lib/spotTripRules.ts`). Anything else falls back to the first.
 - The server sets these itself and ignores what was sent: `eventType: 'community'`, `location`, `province`, `meetingPoint`, `latitude`, `longitude`, `spotTitle`, `transportation`, `minParticipants: 3`, and `maxParticipants` held to 3 - 15.
 - A member's trip always starts as `pending` and waits for staff review, approved hosts included. Without `spotId`, the fields `spotId`, `spotTitle` and `minParticipants` are dropped.
+- A trip with fewer than 3 people (host included) 2 hours before it starts is called off by the hourly job (`lib/social/tripAutoCancel.ts`): the event gets `status: 'cancelled'`, `cancelledReason: 'not_enough_people'`, `registrationOpen: false`; `isEventEnded` counts it as over, and the host, everyone in it and everyone queued get a `trip_cancelled` notification (2026-11-07).
+
+### Timed jobs — `GET /api/cron/hourly`
+
+Needs `Authorization: Bearer <CRON_SECRET>` (401 otherwise, also when `CRON_SECRET` is not set). Called every hour by `.github/workflows/hourly-jobs.yml` and once a day by Vercel Cron (`vercel.json`). Returns `{ success, results }`, one entry per job; a failed job shows `{ error: true }` and does not stop the others. Jobs: `shortTrips`.
 
 `GET /api/events` also takes `spotId` as a filter.
 

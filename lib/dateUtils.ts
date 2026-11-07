@@ -225,7 +225,8 @@ export function isClosedToJoin(event: Parameters<typeof isEventEnded>[0], now: n
 
 export function isEventEnded(event: { status?: string; date?: string; title?: string; description?: string; eventType?: string; time?: string }): boolean {
   if (!event) return false;
-  if (event.status === 'ended') return true;
+  // A trip called off for too few people (lib/social/tripAutoCancel.ts) is over too
+  if (event.status === 'ended' || event.status === 'cancelled') return true;
   // A ตี้ ends at its end time, not at midnight
   const times = meetupTimes(event);
   if (times) return Date.now() > times.end;

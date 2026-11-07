@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-290 · Trips: real attendance only, and short trips are called off (2026-11-07)
+- **What changed:** to open a Spot Buddy trip a member must have been checked in by the host of someone else's ตี้, or had a photo moment at a ตี้ or อีเวนต์ passed by staff; an อีเวนต์ plan or meet-up group that is over no longer counts. A trip still short of 3 people 2 hours before the start becomes `status: 'cancelled'` and everyone in it is told (new notification `trip_cancelled`, migration 0031). `isEventEnded` treats `cancelled` as over; the ตี้ page says ทริปนี้ยกเลิกแล้ว and hides check-in and the after-ตี้ panel.
+- **New:** `GET /api/cron/hourly` (needs `CRON_SECRET`), called hourly by GitHub Actions and daily by Vercel Cron. Put later timed jobs there.
+- **What to do about it:** owner sets `CRON_SECRET` (a long random string) on Vercel Production and as a GitHub repository secret with the same value, and runs `npm run db:migrate` on live (0031) on merge.
+
 ### BE-289 · Rate limits shared by every server; TR-002 first cards (2026-11-07)
 - **What changed:** `isRateLimited` in `lib/rateLimit.ts` is now async and counts in `app.rate_limits` (migration 0030), so every server shares one count; the 60 call sites `await` it. Admin login failures and the upload limit use it too (new `isOverRateLimit`, `clearRateLimit`). JSON mode still counts in memory; a database error lets the request through.
 - **TR-002:** `PosterPhoto` also swaps in the stand-in when a server-rendered image failed before the page woke up.
