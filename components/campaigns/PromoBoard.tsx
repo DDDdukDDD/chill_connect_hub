@@ -48,7 +48,7 @@ function CampaignPanel({ campaign, onOpen }: { campaign: Campaign; onOpen: (id: 
 
 /** A reward as a flat card: price, name and a joke, with its photo as a round sticker in the corner. A member with enough XP is told so */
 function RewardCard({ item, tint, canRedeem, onOpen }: { item: RewardShopItem; tint: string; canRedeem: boolean; onOpen?: (item: RewardShopItem) => void }) {
-  const cardClass = `group relative block w-full text-left ${CARD_HEIGHT} rounded-3xl ${tint} px-3.5 py-2.5 overflow-hidden`;
+  const cardClass = `group relative w-full text-left ${CARD_HEIGHT} rounded-3xl ${tint} px-3.5 py-2.5 overflow-hidden`;
   const inside = (
     <>
       <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 tabular-nums">{item.costXp.toLocaleString()} XP</span>
@@ -66,9 +66,10 @@ function RewardCard({ item, tint, canRedeem, onOpen }: { item: RewardShopItem; t
   );
   // The popup opens on this page when the page has one (owner 2026-11-07); otherwise the reward's page
   return onOpen ? (
-    <button type="button" onClick={() => onOpen(item)} draggable={false} className={`${cardClass} cursor-pointer`}>{inside}</button>
+    // A button centres what is inside it, so the card lays out from the top like the link does
+    <button type="button" onClick={() => onOpen(item)} draggable={false} className={`${cardClass} flex flex-col items-start justify-start cursor-pointer`}>{inside}</button>
   ) : (
-    <Link href={`/rewards?reward=${encodeURIComponent(item.id)}`} draggable={false} className={cardClass}>{inside}</Link>
+    <Link href={`/rewards?reward=${encodeURIComponent(item.id)}`} draggable={false} className={`${cardClass} block`}>{inside}</Link>
   );
 }
 
