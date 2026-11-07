@@ -58,7 +58,7 @@ async function allSpots(): Promise<LifestyleSpotItem[]> {
 }
 
 export async function spotsSuggestedBy(memberId: string): Promise<LifestyleSpotItem[]> {
-  return (await allSpots()).filter((spot) => spot.suggestedByMemberId === memberId);
+  return (await db.findSpots({ page: 1, limit: 500, suggestedBy: memberId })).items;
 }
 
 export async function questsProposedBy(memberId: string): Promise<ChallengeQuest[]> {

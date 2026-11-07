@@ -45,6 +45,8 @@ const JSON_COLUMNS = new Set(['details', 'contact', 'steps', 'rule', 'brand_rewa
 const STALE_MS = 10 * 60 * 1000;
 
 const SPOT_LIST_PART = 500;
+/** Full place rows average 4.2 KB (2026-11-07), so 250 stay near 1 MB, under the shared cache's limit per entry */
+const FULL_SPOT_PART = 250;
 
 /**
  * Next's data cache is shared by every server and outlives a deployment, so a server that just started takes the list
@@ -174,12 +176,24 @@ export class PostgresAdapter implements IDataRepository {
     );
   }
 
-  /** Every field of every place: staff screens and scrapers, which also see drafts */
+  /**
+   * Every field of every place: staff screens, scrapers and a member's place suggestion, which also see drafts.
+   * About 9 MB, so it goes through the shared cache in parts of about 1 MB like the public list: before 2026-11-07
+   * every new server read it whole, the biggest share of the database's egress.
+   */
   private loadSpots(): Promise<LifestyleSpotItem[]> {
     return cacheManager.getOrSet(
       'pg:spots',
-      () => this.readIfChanged('pg:spots', 'places', async () =>
-        (await sql()`select * from app.places order by sort_key desc`).map((row) => rowToPlace(row) as LifestyleSpotItem)),
+      () => this.readIfChanged('pg:spots', 'places', async (version) => {
+        const spots: LifestyleSpotItem[] = [];
+        for (let offset = 0; ; offset += FULL_SPOT_PART) {
+          const part = await sharedAcrossServers(`spots-full-${offset}`, version, async () =>
+            (await sql()`select * from app.places order by sort_key desc, id limit ${FULL_SPOT_PART} offset ${offset}`)
+              .map((row) => rowToPlace(row) as LifestyleSpotItem));
+          spots.push(...part);
+          if (part.length < FULL_SPOT_PART) return spots;
+        }
+      }),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }
@@ -558,6 +572,18 @@ export class PostgresAdapter implements IDataRepository {
   /* ---------- places ---------- */
 
   public async findSpots(params?: SpotQueryParams): Promise<PaginatedResult<LifestyleSpotItem>> {
+    if (params?.suggestedBy) {
+      // One member's suggestions: read only their rows, not the whole 9 MB table (egress, 2026-11-07)
+      const memberId = params.suggestedBy;
+      return cacheManager.getOrSet(
+        `spots:${JSON.stringify(params)}`,
+        async () => {
+          const rows = await sql()`select * from app.places where details->>'suggestedByMemberId' = ${memberId} order by sort_key desc`;
+          return paginateArray(rows.map((row) => rowToPlace(row) as LifestyleSpotItem), params.page || 1, params.limit || 12);
+        },
+        { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
+      );
+    }
     return cacheManager.getOrSet(
       `spots:${JSON.stringify(params || {})}`,
       async () => paginateArray(filterSpots(await (params?.includeDrafts ? this.loadSpots() : this.loadSpotList()), params), params?.page || 1, params?.limit || 12),
