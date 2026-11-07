@@ -77,6 +77,8 @@ export interface ParticipantInfo {
   ticketCode?: string;
   /** Set by the host at the meeting point */
   checkedInAt?: string;
+  /** Set by the member: they did not go (only for events without a host check-in) */
+  missedAt?: string;
 }
 
 export interface AtomicJoinResult {

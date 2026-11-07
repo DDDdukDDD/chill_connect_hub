@@ -90,6 +90,18 @@ export async function forgetCancelled(member: Member, eventId: string): Promise<
   await memberRepository.update(member.id, { cancelledEvents: (member.cancelledEvents ?? []).filter((c) => c.eventId !== eventId) });
 }
 
+/**
+ * The member says they went (missed false) or did not go (missed true) to an ended event they joined.
+ * Only for events without a host check-in; where a member host runs it, their check-in decides.
+ */
+export async function markMissed(member: Member, eventId: string, missed: boolean): Promise<void> {
+  const event = await db.findEventById(eventId);
+  if (!event) throw new MemberAuthError('ไม่พบกิจกรรมนี้', 404);
+  if (hostOf(event)) throw new MemberAuthError('ตี้นี้คนจัดเป็นคนเช็กชื่อ จึงแก้สถานะเองไม่ได้', 409);
+  if (!isEventEnded(event)) throw new MemberAuthError('กิจกรรมยังไม่จบ บอกได้หลังจบนะ', 409);
+  if (!(await db.setMissed(eventId, member.id, missed))) throw new MemberAuthError('คุณไม่ได้อยู่ในรายชื่อของกิจกรรมนี้', 404);
+}
+
 export async function setSaved(member: Member, kind: 'spot' | 'event', id: string, saved: boolean): Promise<Member> {
   const cleanId = id.trim().slice(0, 120);
   if (!cleanId) throw new MemberAuthError('ไม่พบรายการ');
@@ -109,7 +121,7 @@ export async function activityOf(member: Member) {
     const event = byId.get(p.eventId);
     if (!event) continue;
     // hasHostCheckIn: the event is run by a member, so attendance is confirmed by their check-in
-    joined.push({ ...event, joinedAt: p.joinedAt, isHost: hostOf(event) === member.id, checkedInAt: p.checkedInAt, hasHostCheckIn: Boolean(hostOf(event)) });
+    joined.push({ ...event, joinedAt: p.joinedAt, isHost: hostOf(event) === member.id, checkedInAt: p.checkedInAt, missedAt: p.missedAt, hasHostCheckIn: Boolean(hostOf(event)) });
   }
   const joinedIds = new Set(joined.map((e) => e.id));
   // Events the member created that are still waiting for review are theirs too, even before anyone can join

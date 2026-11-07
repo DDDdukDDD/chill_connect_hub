@@ -197,7 +197,6 @@ function MyHubContent() {
   const [calendarCategoryFilter, setCalendarCategoryFilter] = useState<'all' | 'community' | 'fairs' | 'spots' | 'quests'>('all');
   // Past Events Tracking Lists: cancelled, missed, reviewed
   const [cancelledEventIds, setCancelledEventIds] = useState<string[]>([]);
-  const [missedEventIds, setMissedEventIds] = useState<string[]>([]);
   const [reviewedEventIds, setReviewedEventIds] = useState<string[]>([]);
 
   // Calendar Navigation State
@@ -233,9 +232,7 @@ function MyHubContent() {
 
     try {
       // Joined, hosted, cancelled and saved items come from the account (see the effect below).
-      // Still kept in this browser only: what the member marked as missed or already reviewed, and fair sub-groups.
-      const storedMissed: string[] = JSON.parse(localStorage.getItem('myhub_missed_event_ids') || '[]');
-      if (Array.isArray(storedMissed)) setMissedEventIds(storedMissed);
+      // "ไม่ได้ไป" marks follow the account since BE-295 (activity.joined[].missedAt); the effect below moves old browser marks over.
       const storedReviewed: string[] = JSON.parse(localStorage.getItem('myhub_reviewed_event_ids') || '[]');
       if (Array.isArray(storedReviewed)) setReviewedEventIds(storedReviewed);
       // Fair meet-up groups moved to the account; the old browser copy is dropped
@@ -251,6 +248,22 @@ function MyHubContent() {
 
   // The account is the source of truth for what the member joined, hosts, cancelled and saved
   const activity = useMyActivity();
+  const missedEventIds = useMemo(() => activity.joined.filter((e) => e.missedAt).map((e) => e.id), [activity.joined]);
+  // Marks made before BE-295 were kept in this browser: send them to the account once, then drop the copy
+  useEffect(() => {
+    if (!activity.isLoaded) return;
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem('myhub_missed_event_ids') || '[]');
+      localStorage.removeItem('myhub_missed_event_ids');
+      if (!Array.isArray(stored)) return;
+      for (const id of stored.slice(0, 50)) {
+        const ev = activity.joined.find((e) => e.id === id);
+        if (ev && !ev.missedAt && !ev.hasHostCheckIn && isEventEnded(ev)) void activityActions.setMissed(id, true);
+      }
+    } catch {
+      /* storage unavailable */
+    }
+  }, [activity.isLoaded, activity.joined]);
   const hubMember = useMemberSession().member;
   const hubName = tidyDisplayName(hubMember?.displayName ?? '');
   useEffect(() => {
@@ -646,31 +659,21 @@ function MyHubContent() {
       if (!left.ok) return showToast(left.message);
     }
     await activityActions.forgetCancelled(eventId);
-    setMissedEventIds((prev) => prev.filter((id) => id !== eventId));
     showToast(`ลบ "${title}" ออกจากประวัติเรียบร้อยแล้ว`);
   };
 
   // Mark as Missed (User did not attend)
-  const handleMarkMissed = (eventId: string, title: string) => {
-    setMissedEventIds((prev) => {
-      const updated = Array.from(new Set([...prev, eventId]));
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('myhub_missed_event_ids', JSON.stringify(updated));
-      }
-      return updated;
-    });
-    showToast(`บันทึกสถานะว่าไม่ได้ไปร่วม "${title}" แล้ว`);
+  const handleMarkMissed = async (eventId: string, title: string) => {
+    const result = await activityActions.setMissed(eventId, true);
+    showToast(result.ok ? `บันทึกสถานะว่าไม่ได้ไปร่วม "${title}" แล้ว` : result.message!);
   };
 
   // Mark as Attended (User did attend)
-  const handleMarkAttended = (eventId: string, title: string) => {
-    setMissedEventIds((prev) => {
-      const updated = prev.filter((id) => id !== eventId);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('myhub_missed_event_ids', JSON.stringify(updated));
-      }
-      return updated;
-    });
+  const handleMarkAttended = async (eventId: string, title: string) => {
+    if (missedEventIds.includes(eventId)) {
+      const result = await activityActions.setMissed(eventId, false);
+      if (!result.ok) return showToast(result.message!);
+    }
     setCancelledEventIds((prev) => {
       const updated = prev.filter((id) => id !== eventId);
       if (typeof window !== 'undefined') {
@@ -1684,6 +1687,8 @@ function MyHubContent() {
                   const isCancelled = status === 'cancelled';
                   const isMissed = status === 'missed';
                   const isAttended = status === 'attended';
+                  // Where a member host checks people in, their check-in decides; the member cannot change it
+                  const canSelfReport = !(ev as { hasHostCheckIn?: boolean }).hasHostCheckIn;
                   const isReviewed = reviewedEventIds.includes(ev.id);
                   const isHost = Boolean(ev.isHost || userCreatedEvents.some((u) => u.id === ev.id));
                   const isMenuOpen = activeMenuId === `cal-${ev.id}`;
@@ -1877,7 +1882,7 @@ function MyHubContent() {
 
                                   <div className="my-1 border-t border-slate-100" />
 
-                                  {isAttended ? (
+                                  {isAttended && canSelfReport ? (
                                     <>
                                       <button
                                         type="button"
@@ -1902,7 +1907,7 @@ function MyHubContent() {
                                         <span>ลบออกจากประวัติ</span>
                                       </button>
                                     </>
-                                  ) : isMissed ? (
+                                  ) : isMissed && canSelfReport ? (
                                     <>
                                       <button
                                         type="button"

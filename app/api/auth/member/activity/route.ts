@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MemberAuthError } from '@/lib/members/accounts';
-import { activityOf, forgetCancelled, joinEvent, leaveEvent, setSaved } from '@/lib/members/activity';
+import { activityOf, forgetCancelled, joinEvent, leaveEvent, markMissed, setSaved } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
 /**
  * { action: 'join' | 'leave' | 'forget_cancelled', eventId, date? (YYYY-MM-DD, one date of a recurring ตี้) }
+ * { action: 'missed', eventId, missed: boolean } (ended event without a host check-in)
  * { action: 'save' | 'unsave', kind: 'spot' | 'event', id }
  */
 export async function POST(request: Request) {
@@ -36,6 +37,10 @@ export async function POST(request: Request) {
     if (body.action === 'leave') {
       const result = await leaveEvent(member, eventId);
       return NextResponse.json({ success: true, ...result });
+    }
+    if (body.action === 'missed' && typeof body.missed === 'boolean') {
+      await markMissed(member, eventId, body.missed);
+      return NextResponse.json({ success: true });
     }
     if (body.action === 'forget_cancelled') {
       await forgetCancelled(member, eventId);

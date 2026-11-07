@@ -44,7 +44,9 @@ export interface IDataRepository {
   atomicJoinEvent(eventId: string, participant: ParticipantInfo): Promise<AtomicJoinResult>;
   atomicLeaveEvent(eventId: string, userId: string): Promise<{ success: boolean; message: string }>;
   /** Events a member joined, newest join first */
-  listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[]>;
+  listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string; missedAt?: string }[]>;
+  /** The member's own "ไม่ได้ไป" mark on an event they joined; false when they are not on its list */
+  setMissed(eventId: string, userId: string, missed: boolean): Promise<boolean>;
   /** People who joined an event (for its host and for staff) */
   listParticipants(eventId: string): Promise<ParticipantInfo[]>;
   /** People who joined each of these events, read in one go (keyed by event id) */

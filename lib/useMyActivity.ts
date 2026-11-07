@@ -12,7 +12,7 @@ import { useMemberSession } from './useMemberSession';
  * (`joined_event_ids`, `favorites`, `favorite_spots`), and hearts toggled there are sent to the account.
  * Pages should move to `useMyActivity()` over time and stop touching localStorage.
  */
-export type ActivityEvent = EventItem & { joinedAt?: string; cancelledAt?: string; isHost?: boolean; checkedInAt?: string; hasHostCheckIn?: boolean };
+export type ActivityEvent = EventItem & { joinedAt?: string; cancelledAt?: string; isHost?: boolean; checkedInAt?: string; missedAt?: string; hasHostCheckIn?: boolean };
 
 interface ActivityState {
   isLoaded: boolean;
@@ -145,6 +145,15 @@ export const activityActions = {
     }
     await activityActions.refresh();
     return { ok: true, message: 'ยกเลิกการเข้าร่วมแล้ว', event: res.json.event ?? undefined };
+  },
+
+  /** "ไม่ได้ไป" (missed) or "ไปแล้ว" on an ended event without a host check-in; kept on the account */
+  setMissed: async (eventId: string, missed: boolean): Promise<{ ok: boolean; message?: string }> => {
+    const res = await post({ action: 'missed', eventId, missed });
+    if (!res.ok) return { ok: false, message: res.json?.message || 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ' };
+    const missedAt = missed ? new Date().toISOString() : undefined;
+    setState({ joined: state.joined.map((e) => (e.id === eventId ? { ...e, missedAt } : e)) });
+    return { ok: true };
   },
 
   forgetCancelled: async (eventId: string) => {
