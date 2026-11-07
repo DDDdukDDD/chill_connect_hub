@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
+import { LikersDialog } from '@/components/moments/LikersDialog';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -55,6 +56,9 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const clipRatio = initialMoment.imageRatio ?? 9 / 16;
   /** Full screen only: the comments open over the clip and it keeps playing */
   const [commentsOpen, setCommentsOpen] = useState(false);
+  // The owner can see who sent a heart (owner 2026-11-07); for everyone else the number is just a number
+  const [likersOpen, setLikersOpen] = useState(false);
+  const canSeeLikers = Boolean(moment.isMine && moment.likesCount > 0);
   const besideClip = isFull && clipRatio <= 0.8 && !commentsOpen;
 
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
@@ -282,6 +286,11 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
                 <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+                {!canSeeLikers && moment.likesCount.toLocaleString()}
+              </button>
+              )}
+              {!moment.likesOff && canSeeLikers && (
+              <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railButton} -mt-2 min-h-8 underline underline-offset-2`}>
                 {moment.likesCount.toLocaleString()}
               </button>
               )}
@@ -435,8 +444,14 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} className={iconButton}>
                 <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
-                {moment.likesCount.toLocaleString()}
+                {!canSeeLikers && moment.likesCount.toLocaleString()}
                 <span className="sr-only">ถูกใจ</span>
+              </button>
+              )}
+              {!moment.likesOff && canSeeLikers && (
+              <button type="button" onClick={() => setLikersOpen(true)} className={`${iconButton} -ml-2 underline underline-offset-2`}>
+                {moment.likesCount.toLocaleString()}
+                <span className="sr-only">ดูคนที่ส่งหัวใจ</span>
               </button>
               )}
               {!moment.commentsOff && (
@@ -531,6 +546,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
       {viewer !== null && <PhotoViewer images={moment.images} start={viewer} onClose={() => setViewer(null)} />}
 
+      {likersOpen && <LikersDialog momentId={moment.id} onClose={() => setLikersOpen(false)} />}
       {confirmDelete && (
         <DialogShell onClose={() => setConfirmDelete(false)} title="ลบโมเมนต์นี้ไหม" subtitle="รูป ข้อความ และความคิดเห็นของโพสต์นี้จะหายไป และกู้คืนไม่ได้" size="sm">
           <div className="grid grid-cols-2 gap-3">
