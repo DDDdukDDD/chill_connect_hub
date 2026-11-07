@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { issueSignedToken } from '@vercel/blob';
 import { handleUploadPresigned, type HandleUploadPresignedBody } from '@vercel/blob/client';
 import { getMediaStorageDriver, mediaStorage } from '@/lib/media';
+import { newMediaKey } from '@/lib/media/adapters/r2StorageAdapter';
+import { R2_CACHE_CONTROL, r2Config, r2PresignedPut } from '@/lib/media/r2';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
@@ -10,14 +12,18 @@ import { isRateLimited } from '@/lib/rateLimit';
 
 /**
  * A moment's short clip (trial, owner 2026-11-02). A clip is too large for a server function on Vercel, so the phone
- * sends it straight to Vercel Blob with a short-lived signed URL from here, which also holds the type and size limits.
- * Signing works with the store's OIDC login, no BLOB_READ_WRITE_TOKEN needed. A local server keeps the file itself.
+ * sends it straight to storage with a short-lived signed link from here, which also holds the type and size limits:
+ * Cloudflare R2 since 2026-11-07 (size and type are signed into the link, so R2 refuses any other file), Vercel Blob
+ * where R2 is not set up (signing works with the store's OIDC login). A local server without either keeps the file.
  */
 // Each clip sends two files since 2026-11-07: the clip and its small preview
 const VIDEOS_AN_HOUR = 20;
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 
-const uploadMode = () => (getMediaStorageDriver() === 'vercel-blob' ? 'direct' : process.env.VERCEL ? 'off' : 'server');
+const uploadMode = () => {
+  const driver = getMediaStorageDriver();
+  return driver === 'cloudflare-r2' ? 'r2' : driver === 'vercel-blob' ? 'direct' : process.env.VERCEL ? 'off' : 'server';
+};
 
 // Which way the composer should send the clip
 export async function GET() {
@@ -41,6 +47,19 @@ export async function POST(request: Request) {
     }
     const mode = uploadMode();
     if (mode === 'off') return NextResponse.json({ success: false, message: 'ตอนนี้ยังอัปโหลดคลิปไม่ได้ ลองใช้รูปก่อนนะ' }, { status: 503 });
+    const r2 = mode === 'r2' ? r2Config() : null;
+    if (r2) {
+      const { contentType, size, preview } = (await request.json().catch(() => ({}))) as { contentType?: unknown; size?: unknown; preview?: unknown };
+      if (typeof contentType !== 'string' || !VIDEO_TYPES.includes(contentType as (typeof VIDEO_TYPES)[number])) {
+        return NextResponse.json({ success: false, message: 'รองรับคลิป MP4, MOV และ WEBM' }, { status: 400 });
+      }
+      if (typeof size !== 'number' || !Number.isInteger(size) || size <= 0 || size > MAX_VIDEO_BYTES) {
+        return NextResponse.json({ success: false, message: 'คลิปใหญ่เกิน 50MB' }, { status: 400 });
+      }
+      const key = newMediaKey('moments', preview === true ? 'clip-preview' : 'clip', contentType);
+      const uploadUrl = await r2PresignedPut(r2, key, contentType, size);
+      return NextResponse.json({ success: true, uploadUrl, url: `${r2.publicUrl}/${key}`, cacheControl: R2_CACHE_CONTROL });
+    }
     if (mode === 'direct') {
       const body = (await request.json()) as HandleUploadPresignedBody;
       // The post is saved by POST /api/moments, so no upload-finished callback is asked for or accepted

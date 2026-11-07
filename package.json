@@ -11,10 +11,12 @@
     "db:migrate": "node db/migrate.mjs",
     "db:runtime-login": "node db/setup-runtime-login.mjs",
     "db:verify": "node db/verify-security.mjs",
-    "db:import": "node db/import-from-json.mjs"
+    "db:import": "node db/import-from-json.mjs",
+    "db:shrink-clips": "node db/shrink-old-clips.mjs"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.1",
+    "aws4fetch": "^1.0.20",
     "cheerio": "^1.1.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",
@@ -39,6 +41,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "ffmpeg-static": "^5.2.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

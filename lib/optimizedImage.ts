@@ -4,10 +4,13 @@
  * Remote images are resized only from the hosts below (also `images.remotePatterns` in next.config.ts), so the
  * optimizer is never an open proxy; other links (Unsplash with its own sizes) stay as they are.
  * Members' uploads on Vercel Blob are listed by our own store's host, not `*.blob.vercel-storage.com`, which would
- * resize files from anyone's store on our quota. A new store needs its host here.
+ * resize files from anyone's store on our quota. A new store needs its host here; uploads go to Cloudflare R2 behind
+ * our own domains since 2026-11-07 (lib/media/ownMedia.ts).
  * `width` must be one of the optimizer sizes: 96, 128, 256, 384, 640, 750, 828, 1080.
  */
 export const OPTIMIZED_REMOTE_IMAGES = [
+  { hostname: 'media.chillwaa.com', pathname: '/**' },
+  { hostname: 'media-dev.chillwaa.com', pathname: '/**' },
   { hostname: 'wf6n42ar74k77ycg.public.blob.vercel-storage.com', pathname: '/**' },
   { hostname: 'storage.googleapis.com', pathname: '/s.race.thai.run/**' },
   { hostname: 'www.impact.co.th', pathname: '/**' },
