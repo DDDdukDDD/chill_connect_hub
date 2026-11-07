@@ -103,6 +103,11 @@ export interface MomentVideo {
   durationS: number;
   /** Where in the file it starts; the member picks this part of a longer clip */
   startS?: number;
+  /**
+   * A 3-second, 360 px silent loop made on the phone with the clip (2026-11-07). Feeds and grids autoplay this one and
+   * load `url` only when someone opens the clip or turns the sound on; older clips have none and wait for a tap.
+   */
+  previewUrl?: string;
 }
 
 export interface MomentEvidence {

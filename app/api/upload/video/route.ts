@@ -13,7 +13,8 @@ import { isRateLimited } from '@/lib/rateLimit';
  * sends it straight to Vercel Blob with a short-lived signed URL from here, which also holds the type and size limits.
  * Signing works with the store's OIDC login, no BLOB_READ_WRITE_TOKEN needed. A local server keeps the file itself.
  */
-const VIDEOS_AN_HOUR = 10;
+// Each clip sends two files since 2026-11-07: the clip and its small preview
+const VIDEOS_AN_HOUR = 20;
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 
 const uploadMode = () => (getMediaStorageDriver() === 'vercel-blob' ? 'direct' : process.env.VERCEL ? 'off' : 'server');

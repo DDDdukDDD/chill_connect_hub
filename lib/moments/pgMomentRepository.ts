@@ -41,7 +41,7 @@ function rowToMoment(r: PgRow): Moment {
     caption: r.caption,
     images: r.images,
     imageRatio: orUndefined(r.image_ratio),
-    video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s, ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}) } : undefined,
+    video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s, ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}), ...(r.video_preview_url ? { previewUrl: r.video_preview_url } : {}) } : undefined,
     ...(r.comments_off ? { commentsOff: true } : {}),
     ...(r.likes_off ? { likesOff: true } : {}),
     ...(r.shares_off ? { sharesOff: true } : {}),
@@ -117,6 +117,8 @@ const momentColumns = (m: Moment) => ({
   video_url: m.video?.url ?? null,
   video_duration_s: m.video?.durationS ?? null,
   video_start_s: m.video?.startS ?? 0,
+  // Written only when there is one, so posts keep saving on a database that has not run migration 0028 yet
+  ...(m.video?.previewUrl ? { video_preview_url: m.video.previewUrl } : {}),
   comments_off: Boolean(m.commentsOff),
   likes_off: Boolean(m.likesOff),
   shares_off: Boolean(m.sharesOff),
