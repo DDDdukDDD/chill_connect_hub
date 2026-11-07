@@ -191,7 +191,7 @@ Sending `spotId` makes the event a Spot Buddy trip, and the server applies these
 
 ### Timed jobs — `GET /api/cron/hourly`
 
-Needs `Authorization: Bearer <CRON_SECRET>` (401 otherwise, also when `CRON_SECRET` is not set). Called every hour by `.github/workflows/hourly-jobs.yml` and once a day by Vercel Cron (`vercel.json`). Returns `{ success, results }`, one entry per job; a failed job shows `{ error: true }` and does not stop the others. Jobs: `shortTrips`.
+Needs `Authorization: Bearer <CRON_SECRET>` (401 otherwise, also when `CRON_SECRET` is not set). Called every hour by `.github/workflows/hourly-jobs.yml` and once a day by Vercel Cron (`vercel.json`). Returns `{ success, results }`, one entry per job; a failed job shows `{ error: true }` and does not stop the others. Jobs: `shortTrips`, then `waitlists` (`{ events }`: every ตี้ with a waiting list is moved on: lapsed offers out, free seats offered and the person told).
 
 `GET /api/events` also takes `spotId` as a filter.
 
@@ -497,11 +497,12 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `POST /api/moments` also accepts `imageRatio` (number, width / height of the post, stored between 0.3 and 3); feed items return `imageRatio` when it was saved. Photo posts send `1` (square) or `0.8` (4:5, since 2026-11-07); feeds show a photo post tall only when its ratio is about 0.8, any other ratio stays square. Clip posts send the cover's ratio.
 
 ## Member activity: joining events, saved places (added 2026-10-11)
-- `GET /api/auth/member/activity` → `{ success, joined, hosted, cancelled, joinedIds, savedSpotIds, savedEventIds }`. `joined` / `hosted` / `cancelled` are full events (`joinedAt`, `cancelledAt`, `isHost` added). Signed out: empty lists with `requiresLogin`.
+- `GET /api/auth/member/activity` → `{ success, joined, hosted, cancelled, joinedIds, savedSpotIds, savedEventIds }`. `joined` / `hosted` / `cancelled` are full events (`joinedAt`, `cancelledAt`, `isHost` added; `joined` also has `checkedInAt`, `hasHostCheckIn` and `missedAt`). Signed out: empty lists with `requiresLogin`.
 - `POST /api/auth/member/activity`
   - `{ action: 'join', eventId }` → `{ success, status: 'joined' | 'already_joined' | 'event_full' | 'event_ended' | 'not_found' | 'not_allowed', message, event }`. HTTP 200 / 409 / 404 / 403. Community events need a verified account (email + pledge); fairs (`public_venue`) only need a signed-in member. Only `approved` events can be joined.
   - `{ action: 'leave', eventId }` gives the seat back and records the event under `cancelled`. The creator of an event cannot leave it (409).
   - `{ action: 'forget_cancelled', eventId }` removes it from the cancelled history.
+  - `{ action: 'missed', eventId, missed: boolean }` the member says they did not go (`true`) or did go (`false`). Only for an ended event they joined that has no member host (409 when a host checks people in or it has not ended, 404 when not on its list). Shows as `missedAt` on `joined`.
   - `{ action: 'save' | 'unsave', kind: 'spot' | 'event', id }` → `{ success, savedSpotIds, savedEventIds }`.
 - `POST /api/events { action: 'join', eventId }` (older route) now uses the session member and the same rules; `participant` in the body is ignored.
 - Creating an event adds its creator as the first participant. Deleting an account removes the member from every event and gives the seats back.

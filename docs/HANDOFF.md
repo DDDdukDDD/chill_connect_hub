@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-296 · The hourly job moves every waiting list (2026-11-07)
+- **What changed:** `GET /api/cron/hourly` now also runs `waitlists` (`moveAllQueues` in `lib/social/waitlist.ts`): lapsed 2-hour offers drop out and the next person is offered the seat and told, even when nobody opens the ตี้. Before, the line moved only when someone read or changed it.
+
+### BE-295 · "ไม่ได้ไป" is kept on the account (2026-11-07)
+- **What changed:** the My Hub mark "ไม่ได้ไป / ไปแล้ว" on an ended event without a member host was kept only in the browser. It is now `event_participants.missed_at` (migration **0032**), set with `POST /api/auth/member/activity { action: 'missed' }` and read as `joined[].missedAt`. Old browser marks are sent to the account once. Where a member host checks people in, the menu no longer offers the mark (their check-in decides).
+- **What to do about it:** run migration 0032 on live before merging (dev done).
+
 ### BE-294 · No Vercel previews for `tester` and `office-notebook` (2026-11-07)
 - **What changed:** `vercel.json` turns off Vercel builds for pushes to `tester` and `office-notebook` (`git.deploymentEnabled`). Old deployments filled the free Functions Storage (10 GB). The owner also set deployment retention: previews 1 day, production 1 week.
 - **What to do about it:** office-notebook work gets a preview only once it reaches `claude`. Push in batches: one push is one build.
