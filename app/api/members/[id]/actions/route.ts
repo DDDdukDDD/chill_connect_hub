@@ -19,7 +19,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const body = await request.json().catch(() => ({}));
   try {
     if (body.action === 'report') {
-      if (isRateLimited(`member-report:${member.id}`, 10, 24 * 60 * 60 * 1000)) {
+      if (await isRateLimited(`member-report:${member.id}`, 10, 24 * 60 * 60 * 1000)) {
         return NextResponse.json({ success: false, message: 'รายงานบ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
       }
       await reportMember(member, id, body.reason);
@@ -31,7 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ success: true, blocked: body.action === 'block' });
     }
     if (body.action === 'follow' || body.action === 'unfollow') {
-      if (isRateLimited(`member-follow:${member.id}`, 120, 60 * 60 * 1000)) {
+      if (await isRateLimited(`member-follow:${member.id}`, 120, 60 * 60 * 1000)) {
         return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
       }
       await setFollowing(member, id, body.action === 'follow');

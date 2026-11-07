@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     if (body.action === 'unmark') {
       await unmarkVisit(member.id, targetType, targetId);
     } else if (body.action === 'mark') {
-      if (isRateLimited(`visit-mark:${member.id}`, 30, 60 * 60 * 1000)) {
+      if (await isRateLimited(`visit-mark:${member.id}`, 30, 60 * 60 * 1000)) {
         return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
       }
       if (targetType === 'spot') {

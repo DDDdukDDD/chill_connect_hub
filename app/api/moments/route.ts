@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนโพสต์' }, { status: 401 });
-  if (isRateLimited(`moment-post:${member.id}`, 10, 60 * 60 * 1000)) {
+  if (await isRateLimited(`moment-post:${member.id}`, 10, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'โพสต์บ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   try {

@@ -36,7 +36,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         moment = await setSaved(member, id, body.action === 'save');
         break;
       case 'comment':
-        if (isRateLimited(`moment-comment:${member.id}`, 30, 10 * 60 * 1000)) {
+        if (await isRateLimited(`moment-comment:${member.id}`, 30, 10 * 60 * 1000)) {
           return NextResponse.json({ success: false, message: 'แสดงความคิดเห็นบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
         }
         await guardPosting(member, 'comment', typeof body.text === 'string' ? body.text : '');

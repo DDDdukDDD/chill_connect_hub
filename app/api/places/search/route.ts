@@ -107,7 +107,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   }
   // Asked while typing, after a pause: a few per place name
-  if (isRateLimited(`place-search:${member?.id ?? clientIp(request)}`, 120, 10 * 60 * 1000)) {
+  if (await isRateLimited(`place-search:${member?.id ?? clientIp(request)}`, 120, 10 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ค้นหาหลายครั้งเกินไป รอสักครู่แล้วลองใหม่' }, { status: 429 });
   }
   const params = new URL(request.url).searchParams;

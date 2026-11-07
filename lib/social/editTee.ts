@@ -91,7 +91,7 @@ export async function editTee(member: Member, eventId: string, edit: TeeEdit): P
   if (changedKeys.length === 0) return { event, changed: false, notified: 0 };
 
   // Each real change rings everyone in the ตี้, so it cannot be repeated without end; a form error costs nothing
-  if (isRateLimited(`edit-tee:${member.id}`, 10, 60 * 60 * 1000)) refuse('แก้บ่อยเกินไปแล้ว พักสักครู่แล้วลองใหม่นะ', 429);
+  if (await isRateLimited(`edit-tee:${member.id}`, 10, 60 * 60 * 1000)) refuse('แก้บ่อยเกินไปแล้ว พักสักครู่แล้วลองใหม่นะ', 429);
 
   const saved = (await db.updateEvent(eventId, next)) ?? event;
 

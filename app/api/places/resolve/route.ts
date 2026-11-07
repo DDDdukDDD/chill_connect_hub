@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   if (!member && !await getAdminActor(request)) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   }
-  if (isRateLimited(`map-resolve:${member?.id ?? clientIp(request)}`, 30, 10 * 60 * 1000)) {
+  if (await isRateLimited(`map-resolve:${member?.id ?? clientIp(request)}`, 30, 10 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ลองหลายครั้งเกินไป รอสักครู่แล้วลองใหม่' }, { status: 429 });
   }
   const body = await request.json().catch(() => null);

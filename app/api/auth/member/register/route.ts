@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!getSessionSecret()) return NextResponse.json({ success: false, message: 'ระบบสมาชิกยังไม่ได้ตั้งค่า (AUTH_SECRET)' }, { status: 503 });
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   // 10 sign-ups an hour per address in production; relaxed in development so the flow can be tested repeatedly
-  if (isRateLimited(`register:${clientIp(request)}`, process.env.NODE_ENV === 'production' ? 10 : 300, 60 * 60 * 1000)) {
+  if (await isRateLimited(`register:${clientIp(request)}`, process.env.NODE_ENV === 'production' ? 10 : 300, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'สมัครบ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   try {

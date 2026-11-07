@@ -24,7 +24,7 @@ export async function POST(request: Request, context: Context) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   // Codes are short; a limit stops guessing
-  if (isRateLimited(`check-in:${member.id}`, 120, 10 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
+  if (await isRateLimited(`check-in:${member.id}`, 120, 10 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
   const body = await request.json().catch(() => ({}));
   if (body.action !== 'check_in' && body.action !== 'undo') return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
   try {

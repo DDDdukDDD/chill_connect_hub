@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     await autoVerifyEmail(member);
     return NextResponse.json({ success: true, alreadyVerified: true });
   }
-  if (isRateLimited(`verify-email:${member.id}`, 5, 60 * 60 * 1000)) {
+  if (await isRateLimited(`verify-email:${member.id}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json({ success: false, message: 'ขอลิงก์บ่อยเกินไป กรุณาลองใหม่ภายหลัง' }, { status: 429 });
   }
   const body = (await request.json().catch(() => ({}))) as { returnTo?: unknown };

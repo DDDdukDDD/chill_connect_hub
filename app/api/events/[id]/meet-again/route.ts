@@ -28,7 +28,7 @@ export async function POST(request: Request, context: Context) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
-  if (isRateLimited(`meet-again:${member.id}`, 60, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
+  if (await isRateLimited(`meet-again:${member.id}`, 60, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
   try {
     const body = (await request.json().catch(() => ({}))) as { userId?: unknown; want?: unknown };
     return NextResponse.json({ success: true, ...(await setMeetAgain(member, (await context.params).id, body)) });

@@ -9,37 +9,14 @@ import {
   verifyAdminPassword,
 } from '@/lib/adminSession';
 import { recordAudit } from '@/lib/auditLog';
+import { clearRateLimit, clientIp, isOverRateLimit, isRateLimited } from '@/lib/rateLimit';
 import { ROLE_LABELS, ROLE_PERMISSIONS } from '@/lib/permissions';
 import { authenticateStaff, recordStaffLogin } from '@/lib/staffStore';
 
-// Process-local failed-login throttle (per client IP)
+// Failed logins per client IP, counted across every server (lib/rateLimit.ts)
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
-const globalForLogin = globalThis as unknown as { _cchAdminLoginFailures?: Map<string, { count: number; firstAt: number }> };
-const failedAttempts = (globalForLogin._cchAdminLoginFailures ??= new Map());
-
-function getClientKey(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
-}
-
-function isLockedOut(key: string, now: number): boolean {
-  const entry = failedAttempts.get(key);
-  if (!entry) return false;
-  if (now - entry.firstAt > LOCKOUT_WINDOW_MS) {
-    failedAttempts.delete(key);
-    return false;
-  }
-  return entry.count >= MAX_FAILED_ATTEMPTS;
-}
-
-function recordFailure(key: string, now: number) {
-  const entry = failedAttempts.get(key);
-  if (!entry || now - entry.firstAt > LOCKOUT_WINDOW_MS) {
-    failedAttempts.set(key, { count: 1, firstAt: now });
-  } else {
-    entry.count += 1;
-  }
-}
+const failureKey = (request: Request) => `admin-login-fail:${clientIp(request)}`;
 
 // Current admin session state for the admin console, including the verified actor and its permissions
 export async function GET(request: Request) {
@@ -68,8 +45,8 @@ export async function POST(request: Request) {
   }
 
   const now = Date.now();
-  const clientKey = getClientKey(request);
-  if (isLockedOut(clientKey, now)) {
+  const clientKey = failureKey(request);
+  if (await isOverRateLimit(clientKey, MAX_FAILED_ATTEMPTS, LOCKOUT_WINDOW_MS)) {
     return NextResponse.json(
       { success: false, message: 'พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณาลองใหม่ภายหลัง' },
       { status: 429 }
@@ -100,12 +77,12 @@ export async function POST(request: Request) {
       : null;
 
   if (!session) {
-    recordFailure(clientKey, now);
+    await isRateLimited(clientKey, MAX_FAILED_ATTEMPTS, LOCKOUT_WINDOW_MS);
     recordAudit(null, 'auth.login_failed', hasEmail ? 'เข้าสู่ระบบไม่สำเร็จ (บัญชีทีมงาน)' : 'เข้าสู่ระบบไม่สำเร็จ (รหัสเจ้าของระบบ)');
     return NextResponse.json({ success: false, message: hasEmail ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : 'รหัสผ่านไม่ถูกต้อง' }, { status: 401 });
   }
 
-  failedAttempts.delete(clientKey);
+  await clearRateLimit(clientKey);
   if (session.subject !== ENV_OWNER_SUBJECT) await recordStaffLogin(session.subject);
   recordAudit(session.actor, 'auth.login', 'เข้าสู่ระบบ');
   const response = NextResponse.json({ success: true, authenticated: true });

@@ -2,28 +2,19 @@ import { NextResponse } from 'next/server';
 import { mediaStorage } from '@/lib/media';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { clientIp, isRateLimited } from '@/lib/rateLimit';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
 // Only a signed-in member or staff may upload (2026-11-01: it was open to anyone while members had no server
-// identity; every caller is a signed-in screen now). Members are also limited per IP (per server instance) to curb
-// abuse of paid storage; admin sessions are not limited.
+// identity; every caller is a signed-in screen now). Members are also limited per IP (shared by every server,
+// lib/rateLimit.ts) to curb abuse of paid storage; admin sessions are not limited.
 const UPLOAD_LIMIT = 20;
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
-const globalForUploads = globalThis as unknown as { _cchUploadHits?: Map<string, number[]> };
-const uploadHits = (globalForUploads._cchUploadHits ??= new Map());
 
-async function isRateLimited(request: Request): Promise<boolean> {
+async function isUploadLimited(request: Request): Promise<boolean> {
   if (await hasAdminCredentials(request)) return false;
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
-  const now = Date.now();
-  const recent = (uploadHits.get(ip) ?? []).filter((time: number) => now - time < UPLOAD_WINDOW_MS);
-  if (recent.length >= UPLOAD_LIMIT) {
-    uploadHits.set(ip, recent);
-    return true;
-  }
-  uploadHits.set(ip, [...recent, now]);
-  return false;
+  return isRateLimited(`upload:${clientIp(request)}`, UPLOAD_LIMIT, UPLOAD_WINDOW_MS);
 }
 
 // Identify raster image formats from their magic bytes
@@ -40,7 +31,7 @@ export async function POST(request: Request) {
   if (!await hasAdminCredentials(request) && !(await getSessionMember(request))) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดรูป' }, { status: 401 });
   }
-  if (await isRateLimited(request)) {
+  if (await isUploadLimited(request)) {
     return NextResponse.json(
       { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },
       { status: 429 }

@@ -43,7 +43,7 @@ export async function POST(request: Request, context: Context) {
   const member = await getSessionMember(request);
   if (!member) return fail('กรุณาเข้าสู่ระบบ', 401);
   if (member.status !== 'active') return fail('บัญชีนี้ยังใช้งานส่วนนี้ไม่ได้', 403);
-  if (isRateLimited(`quest-stamp:${member.id}`, 60, 60 * 60 * 1000)) return fail('ทำรายการบ่อยเกินไป กรุณารอสักครู่', 429);
+  if (await isRateLimited(`quest-stamp:${member.id}`, 60, 60 * 60 * 1000)) return fail('ทำรายการบ่อยเกินไป กรุณารอสักครู่', 429);
   const questId = (await context.params).id;
   const { quest, state } = await planState(member, questId);
   if (!quest) return fail('ไม่พบชาเลนจ์นี้', 404);
