@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-289 · Rate limits shared by every server; TR-002 first cards (2026-11-07)
+- **What changed:** `isRateLimited` in `lib/rateLimit.ts` is now async and counts in `app.rate_limits` (migration 0030), so every server shares one count; the 60 call sites `await` it. Admin login failures and the upload limit use it too (new `isOverRateLimit`, `clearRateLimit`). JSON mode still counts in memory; a database error lets the request through.
+- **TR-002:** `PosterPhoto` also swaps in the stand-in when a server-rendered image failed before the page woke up.
+- **What to do about it:** run `npm run db:migrate` on the live database (0030) when this reaches `main`. Until then every limited route logs an error and falls back to per-server counting.
+
 ### BE-288 · /spots: several districts, top 12 first, Bangkok แขวง counted under their เขต (owner 2026-11-07)
 - **What changed:** `district` on `GET /api/spots/browse` takes a comma-separated list (`docs/API.md`); the sheet toggles districts, shows the 12 with most places then "ดูทั้งหมด", and puts one chip per district in the row. `data/bangkokDistricts.ts` maps about 150 Bangkok sub-districts to their district (dev data: 46 names became 24 districts); names starting with "จังหวัด" are dropped.
 - **Known:** other provinces still have some ตำบล in the district field (e.g. ช่อแล, Chiang Mai); 18 Bangkok places have no district. Fix those in the place data.
