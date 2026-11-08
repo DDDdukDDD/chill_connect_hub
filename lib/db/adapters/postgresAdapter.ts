@@ -26,6 +26,7 @@ import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
 import { eventToRow, placeToRow, placeImages, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
+import { referenceCodesChangedAt } from '../postgres/referenceCodes';
 
 /**
  * ตี้ / อีเวนต์, participants, places and challenges in Postgres (docs/DATABASE_DESIGN.md).
@@ -138,7 +139,7 @@ export class PostgresAdapter implements IDataRepository {
 
   /** Inside a transaction this must use its `tx`: a server has one connection, which that transaction is holding */
   private async referenceCodes(tx: Sql) {
-    if (!this.refs || Date.now() - this.refs.at > 5 * 60 * 1000) {
+    if (!this.refs || Date.now() - this.refs.at > 5 * 60 * 1000 || referenceCodesChangedAt() >= this.refs.at) {
       const [provinces, venues] = await Promise.all([tx`select code from app.provinces`, tx`select code from app.venues`]);
       this.refs = { provinceCodes: new Set(provinces.map((p) => p.code)), venueCodes: new Set(venues.map((v) => v.code)), at: Date.now() };
     }

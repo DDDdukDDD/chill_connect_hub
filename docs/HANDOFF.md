@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-302 · Master data in its own tables (owner 2026-11-08)
+- **What changed:** categories, provinces, zones, venues and the two rail card lists are read from and written to `app.provinces`, `app.zones`, `app.categories`, `app.venues`, `app.venue_groups`, `app.community_clubs` (`lib/masterDataTables.ts`), no longer one `app_settings` document. Each admin action writes only the rows it changes, so two staff saving at once keep both edits. Pages still read a copy in memory, checked every 30 s against a count + `updated_at` fingerprint. A venue staff add is now a real `app.venues` row, so events can point to it at once (the adapter re-reads codes after a province or venue edit). `data/master_data.json` is only the no-database mode file now: editing it no longer changes the database.
+- **What to do about it:** run migration **0034** on live when merging (`npm run db:migrate`). It adds the missing columns and copies what pages showed (the `master_data` document if staff saved one, else the bundled file as of today) into the tables; the document is kept as `master_data_before_0034`. Tested on dev, including the copy from a saved document.
+
 ### BE-301 · Tab counts follow the filters, calmer /rewards, place page order (owner 2026-11-08)
 - **What changed:** /events and /community tab counts use the same filters as the cards (`matchingFairs` / `matchingTees`), so a tab never promises more than it shows. /rewards: wallet row and chips are neutral; only campaign cards and XP tickets stay yellow. Place page: "ไปต่อไหนดี" is back in the right column on desktop and sits after the cafés on phone and iPad (`max-lg:order-1` / `max-lg:order-2`).
 

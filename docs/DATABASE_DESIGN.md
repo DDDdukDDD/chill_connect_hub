@@ -130,6 +130,7 @@ Notation: `PK` primary key, `FK` foreign key, `UQ` unique, `?` nullable. Every t
 - **provinces** `code PK` · `name_th` · `name_en` · `region` · **zones**
 - **categories** — one table for all pillars: `id PK` · `pillar` enum(community, fair, place, quest, moment, vibe, mood) · `slug` · `label_th` · `group_key?` · `sort` · `active`. `UQ (pillar, slug)`.
 - **venues**, **venue_groups**, **community_clubs** — small lookup tables as today.
+- Since 0034 (BE-302) the admin reads and writes these tables row by row (`lib/masterDataTables.ts`); the code seed in `lib/masterData.ts` adds built-in entries not stored yet. `data/master_data.json` is only the no-database mode file.
 
 ### 4.4 Places
 

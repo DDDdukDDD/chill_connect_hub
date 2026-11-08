@@ -86,7 +86,7 @@ const ref = (item) => ({ active: item.active !== false, sort_order: item.sortOrd
 
 const provinceRows = (master.provinces ?? []).map((p) => ({
   code: p.id, display_name: p.displayName ?? p.id, name_en: p.nameEn ?? '', region: p.region ?? '', tagline: p.tagline ?? '',
-  description: p.description ?? '', image_url: text(p.image), featured: !!p.featured, ...ref(p),
+  description: p.description ?? '', image_url: text(p.image), image_credit: text(p.imageCredit), featured: !!p.featured, ...ref(p),
 }));
 const zoneRows = (master.zones ?? []).map((z) => ({ code: z.id, name: z.name, province_code: provinceOf(z.province, `zone ${z.id}`), ...ref(z) }));
 
@@ -94,21 +94,22 @@ const CATEGORY_LISTS = { spotVibes: 'place', communityMoods: 'mood', communityCa
 const categoryRows = Object.entries(CATEGORY_LISTS).flatMap(([list, pillar]) =>
   (master[list] ?? []).map((c) => ({
     pillar, code: c.id, name: c.name, name_en: c.nameEn ?? '', description: c.description ?? '', keywords: strings(c.keywords),
-    icon_key: text(c.iconKey), color_key: text(c.colorKey), image_url: text(c.image), ...ref(c), parent: c.parentId ?? null,
+    icon_key: text(c.iconKey), color_key: text(c.colorKey), image_url: text(c.image), parent_code: text(c.parentId), ...ref(c),
   })),
 );
 
 const venueCodes = new Set((master.venues ?? []).map((v) => v.id));
 const venueRows = (master.venues ?? []).map((v) => ({
   code: v.id, name: v.name, venue_tag: text(v.venueTag), province_code: provinceOf(v.province, `venue ${v.id}`),
-  location: v.location ?? '', transit_hint: v.transitHint ?? '', extra: omit(v, ['id', 'name', 'venueTag', 'province', 'location', 'transitHint', 'active', 'sortOrder', 'builtIn']), ...ref(v),
+  location: v.location ?? '', transit_hint: v.transitHint ?? '', latitude: v.latitude ?? null, longitude: v.longitude ?? null,
+  website: text(v.website), image_url: text(v.image), image_credit: text(v.imageCredit), ...ref(v),
 }));
 const venueGroupRows = (master.venueGroups ?? []).map((g) => ({
-  code: g.id, name: g.name, name_en: g.nameEn ?? '', subtitle: g.subtitle ?? '', image_url: text(g.image), keywords: strings(g.keywords), ...ref(g),
+  code: g.id, name: g.name, name_en: g.nameEn ?? '', subtitle: g.subtitle ?? '', image_url: text(g.image), badge_label: text(g.badgeLabel), keywords: strings(g.keywords), ...ref(g),
 }));
 const clubRows = (master.communityClubs ?? []).map((c) => ({
   code: c.id, name: c.name, name_en: c.nameEn ?? '', subtitle: c.subtitle ?? '', image_url: text(c.image),
-  extra: omit(c, ['id', 'name', 'nameEn', 'subtitle', 'image', 'active', 'sortOrder', 'builtIn']), ...ref(c),
+  badge_label: text(c.badgeLabel), keywords: strings(c.keywords), ...ref(c),
 }));
 
 const settingRows = [
@@ -431,11 +432,7 @@ try {
 
     await insert(tx, 'provinces', provinceRows);
     await insert(tx, 'zones', zoneRows);
-    await insert(tx, 'categories', categoryRows.map((row) => omit(row, ['parent'])));
-    for (const c of categoryRows.filter((row) => row.parent)) {
-      await tx`update app.categories child set parent_id = parent.id from app.categories parent
-               where child.pillar = ${c.pillar} and child.code = ${c.code} and parent.pillar = ${c.pillar} and parent.code = ${c.parent}`;
-    }
+    await insert(tx, 'categories', categoryRows);
     await insert(tx, 'venue_groups', venueGroupRows);
     await insert(tx, 'venues', venueRows);
     await insert(tx, 'community_clubs', clubRows);
