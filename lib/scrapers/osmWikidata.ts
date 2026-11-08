@@ -11,11 +11,15 @@ import type { SiteAdapterContext, SiteSpotAdapter, SpotScrapeOptions } from './t
  * Licences: OSM data is ODbL and Wikipedia text is CC BY-SA, so every spot credits its sources.
  */
 
-const OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://lz4.overpass-api.de/api/interpreter'];
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter', // independent mirror when both German servers are busy
+];
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const SOURCE_NAME = 'OpenStreetMap · Wikipedia';
 const WIKIDATA_BATCH = 25;
-const OVERPASS_TIMEOUT_MS = 70_000; // province area queries take 10-60 s
+const OVERPASS_TIMEOUT_MS = 120_000; // Bangkok-size area queries take 10-110 s
 
 interface OsmElement {
   type: 'node' | 'way' | 'relation';
@@ -71,11 +75,19 @@ const DAY_NAMES: Record<string, string> = {
 function formatOpeningHours(value?: string): string {
   if (!value) return 'ไม่ระบุ (โปรดตรวจสอบก่อนเดินทาง)';
   if (value.trim() === '24/7') return 'เปิด 24 ชั่วโมง';
-  const thai = value
-    .replace(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Mo|Tu|We|Th|Fr|Sa|Su|PH)\b/g, (day) => DAY_NAMES[day])
-    .replace(/\boff\b/gi, 'ปิด')
-    .replace(/;\s*/g, ' · ');
-  return /\d/.test(thai) ? `${thai} น.` : thai;
+  // "น." goes after each time range ("อ. ปิด" must not read "ปิด น."), and the whole week reads "ทุกวัน"
+  return value
+    .split(/\s*;\s*/)
+    .filter(Boolean)
+    .map((part) =>
+      part
+        .replace(/^(Mo|Mon)-(Su|Sun)\s+/, 'ทุกวัน ')
+        .replace(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Mo|Tu|We|Th|Fr|Sa|Su|PH)\b/g, (day) => DAY_NAMES[day])
+        .replace(/\boff\b|\bclosed\b/gi, 'ปิด')
+        .replace(/(\d{1,2}:\d{2}-\d{1,2}:\d{2})(?![\d:])/g, '$1 น.')
+        .replace(/(\d{1,2}:\d{2}-\d{1,2}:\d{2} น\.),(\d)/g, '$1, $2')
+    )
+    .join(' · ');
 }
 
 const stripAdminPrefix = (name: string) => name.replace(/^(เขต|อำเภอ|แขวง|ตำบล|กิ่งอำเภอ)\s*/, '').trim();
@@ -107,7 +119,7 @@ const claimString = (entity: WikidataEntity, property: string) => {
 const commonsFileUrl = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replace(/ /g, '_'))}?width=1200`;
 
 async function queryOverpass(context: SiteAdapterContext, isoCode: string): Promise<OsmElement[]> {
-  const query = `[out:json][timeout:60];
+  const query = `[out:json][timeout:110];
 area["ISO3166-2"="${isoCode}"]->.p;
 (
   nwr(area.p)["wikidata"]["name"]["shop"="mall"];

@@ -84,7 +84,7 @@ export function placeJsonLd(spot: LifestyleSpotItem, path: string): JsonLd {
     '@context': 'https://schema.org',
     '@type': 'TouristAttraction',
     name: spot.title,
-    description: metaDescription(spot.description, 500),
+    description: metaDescription([spot.vibeIntro, spot.description].filter(Boolean).join(' '), 500),
     url: absoluteUrl(path),
     ...(images.length && { image: images }),
     address: { '@type': 'PostalAddress', addressLocality: spot.district || undefined, addressRegion: spot.province, addressCountry: 'TH' },

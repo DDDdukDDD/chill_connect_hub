@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { nearestStations, stationsText } from '@/lib/transit/nearestStations';
 import { getPublicSpot, isBundledSpot } from '@/lib/publicContent';
 import { MOCK_SPOTS, getSpotById } from '@/data/spotsData';
 import { nearbyPool } from '@/lib/spotBrowse';
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!spot) return { title: 'ที่เที่ยว' };
   return pageMetadata({
     title: `${spot.title} (${spot.province})`,
-    description: metaDescription(`${spot.categoryLabel} · ${[spot.district, spot.province].filter(Boolean).join(', ')} · ${metaDescription(spot.description, 300)}`),
+    description: metaDescription(`${spot.categoryLabel} · ${[spot.district, spot.province].filter(Boolean).join(', ')} · ${metaDescription([spot.vibeIntro, spot.description].filter(Boolean).join(' '), 300)}`),
     path: `/spots/${encodeURIComponent(spot.id)}`,
     image: spot.image,
     type: 'article',
@@ -41,7 +42,7 @@ export default async function SpotDetailPage({ params }: Props) {
           dangerouslySetInnerHTML={jsonLdHtml(breadcrumbJsonLd([{ name: 'ที่เที่ยว', path: '/spots' }, { name: spot.title, path }]))}
         />
       )}
-      <SpotDetailView initialSpot={shown} nearbyPool={pool} />
+      <SpotDetailView initialSpot={shown} nearbyPool={pool} stationsText={shown ? stationsText(nearestStations(shown.latitude, shown.longitude)) : ''} />
     </>
   );
 }
