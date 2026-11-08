@@ -116,7 +116,12 @@ export interface Member {
   email?: string;
   emailVerified: boolean;
   avatarUrl?: string;
-  /** scrypt$<salt>$<hash>; absent for social-only accounts */
+  /** True when the member can sign in with email and password. Reads never carry the hash itself. */
+  hasPassword?: boolean;
+  /**
+   * scrypt$<salt>$<hash>: write-only. Pass it to create/update to set a password; reads leave it out so the hash
+   * never travels with a member object. Check a password with memberRepository.passwordHashOf.
+   */
   passwordHash?: string;
   providers: LinkedProvider[];
   status: MemberStatus;
@@ -215,6 +220,8 @@ export interface MemberRepository {
   followerIds(id: string): Promise<string[]>;
   /** How many active members picked at least one of these community สาย in onboarding (a number only) */
   countCommunityInterest(codes: string[]): Promise<number>;
+  /** The stored password hash, read only to check a password (sign-in, password change) */
+  passwordHashOf(id: string): Promise<string | null>;
   create(member: Member): Promise<Member>;
   update(id: string, changes: Partial<Member>): Promise<Member>;
   remove(id: string): Promise<boolean>;
@@ -230,7 +237,7 @@ export function toPublicMember(member: Member): PublicMember {
     displayName: sampleName(tidyDisplayName(member.displayName).trim() || member.displayName, member),
     email: member.email,
     avatarUrl: member.avatarUrl,
-    loginMethods: [...(member.passwordHash ? ['email' as const] : []), ...member.providers.map((p) => p.provider)],
+    loginMethods: [...(member.hasPassword ? ['email' as const] : []), ...member.providers.map((p) => p.provider)],
     createdAt: member.createdAt,
     onboarded: Boolean(member.onboardedAt),
     province: member.preferences?.province || undefined,

@@ -47,6 +47,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Maximize2,
   Calendar,
   ShieldCheck,
@@ -71,7 +72,7 @@ const cleanText = (str?: string): string => {
 
 
 /** The page itself: `initialSpot` comes from the server page, so the content is in the HTML search engines read. */
-export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { initialSpot?: LifestyleSpotItem | null; nearbyPool?: LifestyleSpotItem[] }) {
+export default function SpotDetailPage({ initialSpot = null, nearbyPool, stationsText = '' }: { initialSpot?: LifestyleSpotItem | null; nearbyPool?: LifestyleSpotItem[]; /** Nearest BTS/MRT, worked out on the server */ stationsText?: string }) {
   const params = useParams();
   const router = useRouter();
   const rawId = params?.id as string;
@@ -462,7 +463,23 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
-              {renderDescriptionContent(spot.description)}
+              {spot.vibeIntro ? (
+                <>
+                  {/* The feel first; the history (usually Wikipedia) waits one tap down */}
+                  <p className="text-base leading-relaxed text-slate-700">{cleanText(spot.vibeIntro)}</p>
+                  {spot.description && (
+                    <details className="group">
+                      <summary className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        เรื่องเล่าของที่นี่
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" aria-hidden />
+                      </summary>
+                      <div className="mt-2">{renderDescriptionContent(spot.description)}</div>
+                    </details>
+                  )}
+                </>
+              ) : (
+                renderDescriptionContent(spot.description)
+              )}
             </section>
 
             <DetailTable
@@ -473,6 +490,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
                   label: 'จุดเด่น',
                   value: (spot.highlights ?? []).map((h) => cleanText(h)).filter((h) => h && h !== cleanText(spot.categoryLabel)).join(' · '),
                 },
+                { label: 'รถไฟฟ้าใกล้สุด', value: stationsText },
                 // The Tourism Directory lists ways to get there, not public transport, and no parking detail
                 { label: 'การเดินทาง', value: spot.transitInfo ? travelModes(cleanText(spot.transitInfo)) : publicTransitText ? cleanText(publicTransitText) : '' },
                 { label: 'สิ่งอำนวยความสะดวก', value: visitorFacilities((spot.facilities ?? []).map((fac) => cleanText(fac))).join(' · ') },

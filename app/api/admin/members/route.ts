@@ -32,7 +32,8 @@ const STATUSES = new Set<MemberStatus | 'all'>(['all', 'active', 'suspended', 'b
 
 // Admin view of a member: no password hash or session version
 function toAdminMember(member: Member) {
-  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, signupIpHash: _ip, ...rest } = member;
+  const { passwordHash: _hash, hasPassword, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, signupIpHash: _ip, ...rest } = member;
+  void _hash;
   void _version;
   void _reset;
   void _verify;
@@ -40,7 +41,7 @@ function toAdminMember(member: Member) {
   return {
     ...rest,
     displayName: tidyDisplayName(rest.displayName).trim() || rest.displayName,
-    hasPassword: Boolean(passwordHash),
+    hasPassword: Boolean(hasPassword),
     trust: trustOf(member),
     hasOpenRisk: hasOpenRisk(member),
   };
@@ -80,7 +81,7 @@ async function overview() {
       };
     })(),
     byMethod: {
-      email: count((m) => Boolean(m.passwordHash)),
+      email: count((m) => Boolean(m.hasPassword)),
       google: count((m) => m.providers.some((p) => p.provider === 'google')),
       facebook: count((m) => m.providers.some((p) => p.provider === 'facebook')),
       apple: count((m) => m.providers.some((p) => p.provider === 'apple')),

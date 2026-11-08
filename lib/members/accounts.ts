@@ -71,11 +71,12 @@ export async function loginWithEmail(emailInput: unknown, password: unknown): Pr
   const email = typeof emailInput === 'string' ? normalizeEmail(emailInput) : '';
   const secret = typeof password === 'string' ? password : '';
   const found = email ? await memberRepository.findByEmail(email) : null;
-  if (!found || !found.passwordHash) {
+  const hash = found ? await memberRepository.passwordHashOf(found.id) : null;
+  if (!found || !hash) {
     burnPasswordCheck(secret);
     throw new MemberAuthError('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 401);
   }
-  if (!verifyPasswordHash(secret, found.passwordHash)) throw new MemberAuthError('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 401);
+  if (!verifyPasswordHash(secret, hash)) throw new MemberAuthError('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 401);
   const member = await refreshMemberStatus(found);
   const blocked = statusError(member);
   if (blocked) throw blocked;
@@ -155,7 +156,8 @@ export async function updateProfile(member: Member, input: { displayName?: unkno
 }
 
 export async function changePassword(member: Member, current: unknown, next: unknown): Promise<Member> {
-  if (member.passwordHash && !verifyPasswordHash(typeof current === 'string' ? current : '', member.passwordHash)) {
+  const hash = member.hasPassword ? await memberRepository.passwordHashOf(member.id) : null;
+  if (hash && !verifyPasswordHash(typeof current === 'string' ? current : '', hash)) {
     throw new MemberAuthError('รหัสผ่านปัจจุบันไม่ถูกต้อง', 401);
   }
   if (typeof next !== 'string' || next.length < MIN_MEMBER_PASSWORD) throw new MemberAuthError(`รหัสผ่านใหม่ต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
@@ -220,7 +222,8 @@ export async function savePreferences(member: Member, input: unknown): Promise<M
  * download, which leaves out staff-only safety notes: risk flags, who reported them, and the sign-up fingerprint.
  */
 export function exportableAccount(member: Member, options: { forMember?: boolean } = {}) {
-  const { passwordHash, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, ...account } = member;
+  const { passwordHash: _hash, hasPassword, sessionVersion: _version, passwordReset: _reset, emailVerification: _verify, phoneVerification: _phoneCode, ...account } = member;
+  void _hash;
   void _version;
   void _reset;
   void _verify;
@@ -231,7 +234,7 @@ export function exportableAccount(member: Member, options: { forMember?: boolean
     void _reviewed;
     void _ip;
     void _reports;
-    return { ...own, hasPassword: Boolean(passwordHash) };
+    return { ...own, hasPassword: Boolean(hasPassword) };
   }
-  return { ...account, hasPassword: Boolean(passwordHash) };
+  return { ...account, hasPassword: Boolean(hasPassword) };
 }

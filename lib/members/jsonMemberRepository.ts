@@ -30,29 +30,38 @@ function persist(members: Member[]) {
   fs.writeFileSync(FILE, JSON.stringify(members, null, 2), 'utf-8');
 }
 
+/** What a read returns: the stored member without its password hash (see Member.passwordHash) */
+function out(member: Member): Member;
+function out(member: Member | undefined): Member | null;
+function out(member: Member | undefined): Member | null {
+  if (!member) return null;
+  const { passwordHash, ...rest } = member;
+  return { ...rest, hasPassword: Boolean(passwordHash) };
+}
+
 export const jsonMemberRepository: MemberRepository = {
   async findById(id) {
-    return load().find((m) => m.id === id) ?? null;
+    return out(load().find((m) => m.id === id));
   },
   async findFresh(id) {
-    return load().find((m) => m.id === id) ?? null;
+    return out(load().find((m) => m.id === id));
   },
   async findByIds(ids) {
     const wanted = new Set(ids);
-    return new Map(load().filter((m) => wanted.has(m.id)).map((m) => [m.id, m]));
+    return new Map(load().filter((m) => wanted.has(m.id)).map((m) => [m.id, out(m)]));
   },
   async findByEmail(email) {
     const normalized = email.trim().toLowerCase();
-    return load().find((m) => m.email === normalized) ?? null;
+    return out(load().find((m) => m.email === normalized));
   },
   async findByVerifiedPhone(phone) {
-    return load().find((m) => m.phone === phone && m.phoneVerifiedAt) ?? null;
+    return out(load().find((m) => m.phone === phone && m.phoneVerifiedAt));
   },
   async findByInviteCode(code) {
-    return load().find((m) => m.inviteCode === code) ?? null;
+    return out(load().find((m) => m.inviteCode === code));
   },
   async findInvitees(id) {
-    return load().filter((m) => m.invitedBy === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return load().filter((m) => m.invitedBy === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((m) => out(m));
   },
   async countFollowers(id) {
     return load().filter((m) => m.status === 'active' && m.followingIds?.includes(id)).length;
@@ -65,14 +74,17 @@ export const jsonMemberRepository: MemberRepository = {
     return load().filter((m) => m.status === 'active' && m.preferences?.interests?.communityCategories?.some((c) => wanted.has(c))).length;
   },
   async findByProvider(provider: OAuthProvider, subject: string) {
-    return load().find((m) => m.providers.some((p) => p.provider === provider && p.subject === subject)) ?? null;
+    return out(load().find((m) => m.providers.some((p) => p.provider === provider && p.subject === subject)));
+  },
+  async passwordHashOf(id) {
+    return load().find((m) => m.id === id)?.passwordHash ?? null;
   },
   async create(member) {
     return mutex.runExclusive(async () => {
       const members = load();
       if (member.email && members.some((m) => m.email === member.email)) throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว');
       persist([...members, member]);
-      return member;
+      return out(member);
     });
   },
   async update(id, changes) {
@@ -82,7 +94,7 @@ export const jsonMemberRepository: MemberRepository = {
       if (index === -1) throw new Error('ไม่พบสมาชิก');
       const updated = { ...members[index], ...changes, id };
       persist(members.map((m, i) => (i === index ? updated : m)));
-      return updated;
+      return out(updated);
     });
   },
   async remove(id) {
@@ -102,6 +114,6 @@ export const jsonMemberRepository: MemberRepository = {
     const filtered = members
       .filter((m) => (status === 'all' || m.status === status) && (!text || m.displayName.toLowerCase().includes(text) || m.email?.includes(text) || m.id === text))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return { items: filtered.slice((page - 1) * limit, page * limit), totalCount: filtered.length, counts };
+    return { items: filtered.slice((page - 1) * limit, page * limit).map((m) => out(m)), totalCount: filtered.length, counts };
   },
 };

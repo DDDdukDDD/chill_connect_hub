@@ -43,6 +43,9 @@ export interface LifestyleSpotItem {
   bestTime: string;
   vibeTags: string[];
   description: string;
+  /** Plain 2-3 sentences on what the place feels like and why go (owner 2026-11-08); the description (often history
+   *  from Wikipedia) then folds under it on the spot page */
+  vibeIntro?: string;
   highlights: string[];
   facilities: string[];
   googleMapsUrl: string;
