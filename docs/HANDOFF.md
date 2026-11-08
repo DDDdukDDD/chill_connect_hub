@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-307 · Daily clean-up of moment files no post uses (2026-11-08)
+- **What changed:** `GET /api/cron/hourly` runs `cleanMomentOrphans` (`lib/media/orphanCleanup.ts`), which works at most once in 20 hours (stamp `moment_orphans_cleaned_at` in `app_settings`). It deletes files in the `moments` folder older than 3 days that no moment (any status) points to as a photo, clip or clip preview, matched by path not host; at most 300 a run, and it deletes nothing if more than half the old files look unused. Avatars are left alone: their links are copied onto ตี้, comments and notifications. Dry run on dev found 7 of 9 old test files unused, checked by hand.
+
 ### BE-306 · Follower lists read only the people on them (2026-11-08)
 - **What changed:** `GET /api/members/follows` built both lists by reading every member; it now reads the followed ids plus the follower ids from the follows index (`memberRepository.followerIds`, new on both repositories). Same response.
 
