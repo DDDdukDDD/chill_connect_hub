@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-306 · Follower lists read only the people on them (2026-11-08)
+- **What changed:** `GET /api/members/follows` built both lists by reading every member; it now reads the followed ids plus the follower ids from the follows index (`memberRepository.followerIds`, new on both repositories). Same response.
+
+### BE-305 · Feed photo viewer and admin lists through the image optimizer (2026-11-08)
+- **What changed:** the full-screen viewer in `HomeMomentFeed` asks for 1080 px; admin lists (ตี้/อีเวนต์, members, moments, places, provinces, venues, media) ask for 64–384 px through `optimizedImage` / `avatarImage`. Watch the Vercel image optimization quota.
+
 ### BE-304 · Signed-in walk of BE-297..303 on dev, short map link in trip share (2026-11-08)
 - **What changed:** walked in headless Chrome with two throwaway members (all deleted after): photo edit after posting (add 2, move, remove, save; the removed file leaves storage), @mention in a comment links to the profile and the picker offers friends, "อ่านแล้ว" shows in a two-person ตี้ chat after the other side opens it, "ส่งให้คนใกล้ตัว" opens for a trip member, the photo editor fits iPad upright (tools under the photo) and sideways (beside it) and a phone, the challenge counted list starts folded and opens, /rewards has no sideways scroll. No script errors. The trip share message now links the map by coordinates (`?q=lat,lng`) instead of a long percent-encoded Thai name.
 - **What to do about it:** still not tried on a real iPad or iPhone.

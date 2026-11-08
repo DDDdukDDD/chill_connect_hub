@@ -57,6 +57,9 @@ export const jsonMemberRepository: MemberRepository = {
   async countFollowers(id) {
     return load().filter((m) => m.status === 'active' && m.followingIds?.includes(id)).length;
   },
+  async followerIds(id) {
+    return load().filter((m) => m.status === 'active' && m.followingIds?.includes(id)).map((m) => m.id);
+  },
   async countCommunityInterest(codes) {
     const wanted = new Set(codes);
     return load().filter((m) => m.status === 'active' && m.preferences?.interests?.communityCategories?.some((c) => wanted.has(c))).length;

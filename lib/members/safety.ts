@@ -314,10 +314,11 @@ export async function followerCount(memberId: string): Promise<number> {
  * side has blocked, so the lists can come out shorter than the counts for a while.
  */
 export async function followLists(member: Member) {
-  const { items } = await memberRepository.query({ status: 'active', page: 1, limit: 100_000 });
+  // Only the people on either list, not every member (it read them all until 2026-11-08)
   const following = new Set(member.followingIds ?? []);
-  const visible = items
-    .filter((m) => m.id !== member.id && !member.blockedIds?.includes(m.id) && !m.blockedIds?.includes(member.id))
+  const people = await memberRepository.findByIds([...new Set([...following, ...(await memberRepository.followerIds(member.id))])]);
+  const visible = [...people.values()]
+    .filter((m) => m.status === 'active' && m.id !== member.id && !member.blockedIds?.includes(m.id) && !m.blockedIds?.includes(member.id))
     .map((m) => ({
       id: m.id,
       name: tidyDisplayName(m.displayName).trim() || m.displayName,

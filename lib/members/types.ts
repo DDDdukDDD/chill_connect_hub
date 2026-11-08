@@ -211,6 +211,8 @@ export interface MemberRepository {
   findInvitees(id: string): Promise<Member[]>;
   /** How many active members follow this member; counted in the database, not by reading every member */
   countFollowers(id: string): Promise<number>;
+  /** Ids of the active members who follow this member, from the follows index (for the follower list) */
+  followerIds(id: string): Promise<string[]>;
   /** How many active members picked at least one of these community สาย in onboarding (a number only) */
   countCommunityInterest(codes: string[]): Promise<number>;
   create(member: Member): Promise<Member>;

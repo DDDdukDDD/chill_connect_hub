@@ -251,6 +251,13 @@ export const pgMemberRepository: MemberRepository = {
     const rows = await hydrate(sql(), sql()`m.invited_by = (select o.id from app.members o where o.legacy_id = ${id})`);
     return rows.map((row) => rowToMember(row) as Member).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
+  async followerIds(id) {
+    const rows = await sql()`
+      select fr.legacy_id from app.follows f
+      join app.members fr on fr.id = f.follower_id and fr.status = 'active'
+      join app.members me on me.id = f.followee_id and me.legacy_id = ${id}`;
+    return rows.map((r) => r.legacy_id as string);
+  },
   async countFollowers(id) {
     return cacheManager.getOrSet(`followers:${id}`, async () => {
       const [{ n }] = await sql()`
