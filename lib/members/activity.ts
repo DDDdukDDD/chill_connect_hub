@@ -171,7 +171,8 @@ export async function attendeesOf(eventId: string, viewer: Member | null) {
   const attendees = await Promise.all(
     people.map(async (person) => ({ ...person, attendance: hostOf(event) ? await attendanceOf(person.id) : undefined, arrived: viewerIsIn ? arrived.has(person.id) || person.isHost : undefined }))
   );
-  return { total: Math.max(event.participantsCount ?? 0, attendees.length), attendees };
+  // The host is in the list but not in the count (owner 2026-11-08)
+  return { total: Math.max(event.participantsCount ?? 0, attendees.filter((a) => !a.isHost).length), attendees };
 }
 
 /**

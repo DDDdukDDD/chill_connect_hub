@@ -16,7 +16,8 @@ const { vibes = {}, draft = {} } = JSON.parse(readFileSync(file, 'utf8'));
 const sql = adminConnection();
 try {
   const slugs = [...Object.keys(vibes), ...Object.keys(draft)];
-  const rows = await sql`select slug, publication_status, details->>'vibeIntro' as vibe from app.places where slug in ${sql(slugs)}`;
+  // The site reads publicationStatus from details (until review item 3 lands), so both must say draft
+  const rows = await sql`select slug, case when publication_status = 'draft' and details->>'publicationStatus' = 'draft' then 'draft' else 'published' end as publication_status, details->>'vibeIntro' as vibe from app.places where slug in ${sql(slugs)}`;
   const found = new Map(rows.map((r) => [r.slug, r]));
   const missing = slugs.filter((slug) => !found.has(slug));
   const toWrite = Object.entries(vibes).filter(([slug, text]) => found.has(slug) && found.get(slug).vibe !== text);
@@ -30,7 +31,9 @@ try {
       for (const [slug, text] of toWrite) {
         await tx`update app.places set details = details || jsonb_build_object('vibeIntro', ${text}::text) where slug = ${slug}`;
       }
-      if (toDraft.length) await tx`update app.places set publication_status = 'draft' where slug in ${tx(toDraft)}`;
+      if (toDraft.length) {
+        await tx`update app.places set publication_status = 'draft', details = details || '{"publicationStatus":"draft"}'::jsonb where slug in ${tx(toDraft)}`;
+      }
     });
     console.log('Done.');
   }

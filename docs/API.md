@@ -82,7 +82,7 @@ Body:
 - **Place from our catalog** (optional, meetups, added 2026-10-25): `placeId` (a published spot id, picked from the place suggestions in the create dialog). The server keeps it only when that spot exists and is published, and sets `placeTitle` from the spot; otherwise both are dropped. It is not a Spot Buddy trip (`spotId`): no trip rules and no extra review. The detail page links it as "ที่นัดเจอ".
 - **Who it suits** (optional booleans, meetups): `isSoloFriendly`, `isBeginnerFriendly`, `isPetFriendly`, and since 2026-10-25 `isIntrovertFriendly`, `canBringFriend`, `isEnglishFriendly`, `isKidFriendly`. `targetGender` (`all` | `female_only` | `male_only`) and `targetAge` (text, `ไม่จำกัดอายุ` when empty) are shown on the detail page's "เหมาะกับ" row.
 - **Runs** (`public_venue` from ThaiRun, added 2026-10-25): `raceDistances?: number[]` (km, shortest first) and `registrationOpen?: boolean`; `price` is the fee range over distances and ticket types. The อีเวนต์ page shows them as the rows ระยะ / ค่าสมัคร / การรับสมัคร.
-- Server-set fields: `approvalStatus`, `source`, `createdAt`; defaults: `participantsCount` (1), `maxParticipants` (10 community / 500 fair), `status` (`recruiting`), `createdAtTimestamp`.
+- Server-set fields: `approvalStatus`, `source`, `createdAt`; defaults: `participantsCount` (0: members who joined, the host is never counted, owner 2026-11-08), `maxParticipants` (10 community / 500 fair), `status` (`recruiting`), `createdAtTimestamp`.
 
 Response `200`:
 ```ts
@@ -166,7 +166,7 @@ Response `200`: `{ success: true, spot: LifestyleSpotItem }`. Cache: `s-maxage=6
 Response `200`: `{ success: true, meetupAllowed: boolean, trips: EventItem[], host?: { canHost: boolean, reason?: string } }`. Never shared-cached.
 
 - `meetupAllowed: false` → `trips` is empty and the page shows no Spot Buddy block.
-- `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount >= minParticipants` (`isTripConfirmed` in `lib/spotTripRules.ts`).
+- `trips`: approved, not ended community events with this `spotId`, soonest first, without events from people the viewer blocked. Each carries `spotId`, `spotTitle` and `minParticipants` (3); a trip is confirmed when `participantsCount + 1 >= minParticipants`: the minimum is people at the meet, host included (`isTripConfirmed` / `tripPeopleMissing` in `lib/spotTripRules.ts`).
 - `host`: only for a signed-in viewer. `canHost: false` comes with a Thai `reason` to show next to the disabled button.
 
 ### `POST /api/events` with `action: "edit_tee"` — the host moves their own ตี้
@@ -515,7 +515,7 @@ Stories were removed on 2026-11-02 (BE-213): `/api/stories` and `/api/admin/stor
 - `GET /api/events/{id}/participants` → `{ event, participants: [{ userId, userName, userAvatar, joinedAt, checkedInAt, isHost }] }` for the member who created the event only (403 otherwise). Ticket codes are never listed.
 - `GET /api/quests/{id}/members` → the same shape as attendees below, for a challenge: who joined it, in join order (added 2026-10-16). `total` is `participantsCount` (sample starting count) plus the listed joins. 404 for an unknown id.
 - `GET /api/events/faces?ids=a,b,c` → `{ stacks: { [eventId]: { faces: [{ id, name, avatar }], listed } } }` for anyone (added 2026-10-27, BE-170): the first 3 people of up to 60 ตี้ in one request, for list tiles (`components/MeetupTile.tsx` batches the tiles on screen). In join order; people the viewer blocked are left out; `listed` is how many people the ตี้ lists. Unknown ids come back with no faces. Use `/attendees` below for the full list.
-- `GET /api/events/{id}/attendees` → `{ total, attendees: [{ id, name, avatar, verified, isHost, isMe }] }` for anyone, signed in or not (added 2026-10-16; the owner decided the list is open and members cannot hide from it). Host first, then in join order; people the viewer blocked are left out. `verified` = email verified and pledge accepted. `total` is the event's `participantsCount`, which can be larger than the list for sample events. 404 for fairs (`public_venue`) and unknown ids.
+- `GET /api/events/{id}/attendees` → `{ total, attendees: [{ id, name, avatar, verified, isHost, isMe }] }` for anyone, signed in or not (added 2026-10-16; the owner decided the list is open and members cannot hide from it). Host first, then in join order; people the viewer blocked are left out. `verified` = email verified and pledge accepted. `total` is the event's `participantsCount` (members, not the host, who is in the list with `isHost`), which can be larger than the list for sample events. 404 for fairs (`public_venue`) and unknown ids.
 - `POST /api/events/{id}/participants` `{ action: 'check_in', code }` or `{ action: 'check_in' | 'undo', userId }` → `{ participant }`. Host only; a wrong code is 404.
 - `POST /api/events/{id}/review` `{ rating: 1-5, text? (≤300) }` → 201. One per participant per event. Events with a member host need the host's check-in; other events can be reviewed after they end. The host cannot review their own event. Text follows the same trust rules as a comment.
 - `GET /api/events/{id}/meet-again` → `{ people: [{ id, name, avatar, picked, matched, roomId? }] }` and `POST … { userId, want?: boolean }` → `{ picked, matched, roomId? }` (added 2026-10-23, BE-105). "อยากเจออีก" after a ตี้: only the host and the participants the host checked in can see and pick each other (403 otherwise; 400 for events without a member host). Picks are private: someone else's pick is never returned unless it is mutual. A mutual pick returns `roomId` = `pair~<id>~<id>` for `GET/POST /api/chat/{roomId}` (only the two can open it, and only while the pick stands and neither blocked the other) and sends the other person a `match` notification (`href` = the ตี้ page `#meet-again`).
@@ -593,7 +593,7 @@ Answer: `{ success, places: [{ name, detail, latitude, longitude }], used?: [{ n
 `POST { action: 'approve' }` answers `400` when a place in the request has no coordinates inside Thailand. Nothing in the request is approved; staff set the pin in the spot editor first.
 
 ### `POST /api/events` — participant count (BE-031)
-For a signed-in member the server ignores `participantsCount` in the body: the event starts at 0 and the creator is added as the first participant, so the answer's `event.participantsCount` is 1.
+For a signed-in member the server ignores `participantsCount` in the body: the event starts at 0 and the creator is added as a participant who is not counted and takes no seat, so the answer's `event.participantsCount` stays 0 (owner 2026-11-08).
 
 ## Reports for reviews and chat messages; blocking in event lists (added 2026-10-11, BE-032)
 

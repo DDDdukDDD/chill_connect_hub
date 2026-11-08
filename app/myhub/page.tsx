@@ -2619,7 +2619,7 @@ function MyHubContent() {
               meetupPoint: newTrip.meetingPoint,
               eventType: 'community',
               category: 'heal',
-              participantsCount: 1,
+              participantsCount: 0,
               maxParticipants: newTrip.maxParticipants,
             },
           };

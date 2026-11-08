@@ -25,7 +25,7 @@ import { unstable_cache } from 'next/cache';
 import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
 import { tableVersions } from '../postgres/tableVersions';
-import { eventToRow, placeToRow, placeImages, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
+import { eventToRow, placeToRow, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
 import { referenceCodesChangedAt } from '../postgres/referenceCodes';
 
@@ -170,7 +170,7 @@ export class PostgresAdapter implements IDataRepository {
         (await sql()`
           select slug, title, description, event_type, tag, zone, online_platform, meeting_point, price_text, target_gender, target_age,
                  energy_level, cancellation_policy, approval_status, source_name, source_url, external_url, cover_image_url, organizer_avatar,
-                 details, participants_count
+                 details, participants_count, max_participants, min_participants, registration_open
           from app.events order by sort_key desc, created_at desc`).map((row) => rowToEvent(row) as EventItem))),
       { staleMs: STALE_MS, ttlMs: 15 * 1000, tags: ['events'] },
     );
@@ -202,11 +202,12 @@ export class PostgresAdapter implements IDataRepository {
   private async spotListPart(offset: number): Promise<LifestyleSpotItem[]> {
     const rows = await sql()`
       select slug, title, category, district, left(description, 281) as description, open_hours, price, entry_fee, best_time, google_maps_url, vibe_tags,
+             publication_status, meetup_allowed,
              (details - '{galleryImages,contact,facilities,parkingInfo,reviews,tips,faq,website,phone}'::text[]) #- '{curation,reasons}'
                || case when coalesce(details->>'image', '') = '' and jsonb_typeof(details->'galleryImages') = 'array'
                     then jsonb_build_object('galleryImages', jsonb_path_query_array(details->'galleryImages', '$[0]'))
                     else '{}'::jsonb end as details
-      from app.places where coalesce(details->>'publicationStatus', '') <> 'draft'
+      from app.places where publication_status <> 'draft'
       order by sort_key desc, id limit ${SPOT_LIST_PART} offset ${offset}`;
     return rows.map((row) => rowToPlace(row) as LifestyleSpotItem);
   }
@@ -301,11 +302,8 @@ export class PostgresAdapter implements IDataRepository {
       if (!row) throw new Error(`สถานที่ "${s.title}" ไม่มีจังหวัดที่ระบบรู้จัก (${s.province})`);
       return row;
     });
+    // Photos stay in details.galleryImages: the separate place_images copy was never read (dropped in 0036)
     await upsert(tx, 'places', rows);
-    const ids = rows.map((r) => r.id);
-    await tx`delete from app.place_images where place_id in ${tx(ids)}`;
-    const images = spots.flatMap((s, i) => placeImages(s, rows[i].id));
-    for (let i = 0; i < images.length; i += 1000) await tx`insert into app.place_images ${tx(images.slice(i, i + 1000))}`;
   }
 
   /** New items come first: the first of a batch gets the highest key */
@@ -321,7 +319,7 @@ export class PostgresAdapter implements IDataRepository {
     return {
       ...data,
       id: newId,
-      participantsCount: data.participantsCount ?? 1,
+      participantsCount: data.participantsCount ?? 0, // joined members; the host is never counted (owner 2026-11-08)
       maxParticipants: data.maxParticipants ?? (data.eventType === 'community' ? 10 : 500),
       status: data.status || 'recruiting',
       createdAtTimestamp: data.createdAtTimestamp || Date.now(),
@@ -445,6 +443,16 @@ export class PostgresAdapter implements IDataRepository {
       if (mine?.status === 'joined') return { success: false, message: 'คุณได้เข้าร่วมตี้นี้แล้ว', status: 'already_joined', updatedEvent: event };
 
       const currentCount = event.participantsCount || 0;
+      // The host has a row (their schedule, check-in) but is never counted and takes no seat (owner 2026-11-08)
+      if (row.host_member_id === member.id) {
+        const taken = new Set<string>((await tx`select ticket_code from app.event_participants where event_id = ${row.id}`).map((r) => r.ticket_code));
+        await tx`
+          insert into app.event_participants (event_id, member_id, status, ticket_code, joined_at, note)
+          values (${row.id}, ${member.id}, 'joined', ${newTicketCode(taken)}, ${participant.joinedAt ?? new Date().toISOString()}, ${participant.note ?? null})
+          on conflict (event_id, member_id) do update
+            set status = 'joined', joined_at = excluded.joined_at, cancelled_at = null, checked_in_at = null, missed_at = null, note = excluded.note, ticket_code = excluded.ticket_code`;
+        return { success: true, message: 'เข้าร่วมตี้สำเร็จ!', status: 'joined', updatedEvent: event, participantsCount: currentCount, maxParticipants: event.maxParticipants || 10 };
+      }
       const maxAllowed = event.maxParticipants || 10;
       // A fair is a public venue: joining only puts it in the member's My Hub, so it has no seats to run out of
       const seated = event.eventType !== 'public_venue';
@@ -479,7 +487,7 @@ export class PostgresAdapter implements IDataRepository {
     await tx`
       update app.events set
         participants_count = greatest(0, participants_count - 1),
-        details = case when details->>'status' = 'full' and participants_count - 1 < coalesce((details->>'maxParticipants')::int, 10)
+        details = case when details->>'status' = 'full' and participants_count - 1 < coalesce(max_participants, (details->>'maxParticipants')::int, 10)
                        then details || '{"status":"recruiting"}'::jsonb else details end
       where id = ${eventDbId}`;
   }
@@ -487,13 +495,15 @@ export class PostgresAdapter implements IDataRepository {
   public async atomicLeaveEvent(eventId: string, userId: string): Promise<{ success: boolean; message: string }> {
     await this.ensureInitialized();
     const result = await sql().begin(async (tx) => {
-      const [event] = await tx`select id from app.events where slug = ${eventId} for update`;
+      const [event] = await tx`select id, host_member_id from app.events where slug = ${eventId} for update`;
       if (!event) return { success: false, message: 'ไม่พบตี้' };
       const removed = await tx`
         delete from app.event_participants p using app.members m
-        where p.event_id = ${event.id} and p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'`;
+        where p.event_id = ${event.id} and p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'
+        returning p.member_id`;
       if (!removed.count) return { success: false, message: 'คุณยังไม่ได้เข้าร่วมตี้นี้' };
-      await this.releaseSeat(tx, event.id);
+      // The host never held a seat
+      if (removed[0].member_id !== event.host_member_id) await this.releaseSeat(tx, event.id);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
     });
     if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`, `member:${userId}`]);
@@ -571,8 +581,8 @@ export class PostgresAdapter implements IDataRepository {
       const rows = await tx`
         delete from app.event_participants p using app.members m
         where p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'
-        returning p.event_id`;
-      for (const row of rows) await this.releaseSeat(tx, row.event_id);
+        returning p.event_id, p.member_id = (select e.host_member_id from app.events e where e.id = p.event_id) as is_host`;
+      for (const row of rows) if (!row.is_host) await this.releaseSeat(tx, row.event_id);
       return rows.length;
     });
     if (removed) cacheManager.invalidateTags(['events', `member:${userId}`]);

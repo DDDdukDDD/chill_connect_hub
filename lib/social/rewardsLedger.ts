@@ -57,8 +57,11 @@ export async function redeemReward(memberId: string, rewardId: string) {
   if (current.points.balance < reward.costXp) {
     throw new RewardError(`XP ไม่พอ ต้องการอีก ${(reward.costXp - current.points.balance).toLocaleString()} XP`);
   }
-  // The database refuses a second one, should two requests pass the check above together
-  if (!(await redemptionStore.add({ memberId, rewardId, cost: reward.costXp }))) throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
+  // The check above is for a quick answer; the store checks again under a per-member lock, so two redemptions sent
+  // together cannot spend the same XP twice (database review item 1)
+  const added = await redemptionStore.add({ memberId, rewardId, cost: reward.costXp }, current.points.earned);
+  if (added === 'duplicate') throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
+  if (added === 'short') throw new RewardError('XP ไม่พอสำหรับของรางวัลนี้แล้ว');
   return rewardsOf(memberId);
 }
 
