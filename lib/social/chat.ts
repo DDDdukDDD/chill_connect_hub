@@ -57,7 +57,12 @@ export async function chatMessages(member: Member, roomId: string, after?: strin
       isMine: m.authorId === member.id,
     };
   });
-  return { room, messages };
+  // Reading marks the room read up to the newest message shown; a refresh with nothing new writes nothing
+  if (latest.length) await chatStore.markRead(roomId, member.id, latest[latest.length - 1].createdAt);
+  // How far each other person has read, for "อ่านแล้ว" under one's own messages (people the member blocked left out)
+  const blocked = new Set(member.blockedIds ?? []);
+  const reads = (await chatStore.readTimes(roomId, member.id)).filter((r) => !blocked.has(r.memberId)).map((r) => r.at);
+  return { room, messages, reads };
 }
 
 export async function sendChatMessage(member: Member, roomId: string, input: unknown) {
@@ -68,6 +73,8 @@ export async function sendChatMessage(member: Member, roomId: string, input: unk
   const createdAt = new Date().toISOString();
   const message: ChatMessage = { id: uuidV7(createdAt), roomId, authorId: member.id, text, createdAt };
   await chatStore.append(message, KEEP_PER_ROOM);
+  // The sender has read everything up to their own message
+  await chatStore.markRead(roomId, member.id, createdAt);
   return message;
 }
 

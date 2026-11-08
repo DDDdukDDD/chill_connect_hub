@@ -30,6 +30,12 @@ interface GroupChatModalProps {
 }
 
 const POLL_MS = 4000;
+
+/** Like LINE: "อ่านแล้ว" in a two-person chat, "อ่านแล้ว 3" in a group; nothing until someone has read it */
+function ReadMark({ count, pair }: { count: number; pair: boolean }) {
+  if (count === 0) return null;
+  return <span className="text-slate-600">{pair ? 'อ่านแล้ว' : `อ่านแล้ว ${count}`}</span>;
+}
 const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
 /**
@@ -45,6 +51,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [reporting, setReporting] = useState<ChatMessage | null>(null);
+  // How far each other person has read (ISO times), for "อ่านแล้ว" under one's own messages
+  const [reads, setReads] = useState<string[]>([]);
   const listRef = useRef<HTMLDivElement | null>(null);
   const lastSeen = useRef('');
 
@@ -54,6 +62,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
     let opened = false;
     lastSeen.current = '';
     setMessages([]);
+    setReads([]);
     setState('loading');
     setNotice('');
     const load = async () => {
@@ -72,6 +81,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
       opened = true;
       setInfo(json.room);
       setState('ready');
+      if (Array.isArray(json.reads)) setReads(json.reads);
       const fresh: ChatMessage[] = json.messages ?? [];
       if (fresh.length) {
         lastSeen.current = fresh[fresh.length - 1].createdAt;
@@ -171,6 +181,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
                   ))}
                 <p className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${m.isMine ? 'bg-[#2563EB] text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'}`}>{m.text}</p>
                 <span className="mt-1 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                  {m.isMine && <ReadMark count={reads.filter((at) => at >= m.createdAt).length} pair={info?.members === 2} />}
                   {clock(m.createdAt)}
                   {m.isMine && (
                     <button type="button" onClick={() => void remove(m.id)} className="inline-flex items-center gap-1 hover:text-rose-600 cursor-pointer" aria-label="ลบข้อความนี้">
