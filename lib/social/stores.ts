@@ -339,8 +339,11 @@ interface RedemptionStore {
   countOf(rewardId: string): Promise<number>;
   /** Every entry of one reward, for the prize draw */
   ofReward(rewardId: string): Promise<Redemption[]>;
-  /** False when the member already has this reward */
-  add(redemption: Omit<Redemption, 'id' | 'createdAt'>): Promise<boolean>;
+  /**
+   * Records a redemption only if the member does not have this reward yet and `earnedXp` minus everything already spent
+   * covers the cost. Check and insert happen under one lock per member, so two redemptions at once cannot both pass.
+   */
+  add(redemption: Omit<Redemption, 'id' | 'createdAt'>, earnedXp: number): Promise<'added' | 'duplicate' | 'short'>;
   removeBy(memberId: string): Promise<void>;
 }
 
@@ -356,14 +359,21 @@ function jsonRedemptions(): RedemptionStore {
     async ofReward(rewardId) {
       return store.read().filter((r) => r.rewardId === rewardId);
     },
-    async add(redemption) {
-      let added = false;
+    async add(redemption, earnedXp) {
+      let result: 'added' | 'duplicate' | 'short' = 'added';
       await store.update((items) => {
-        if (items.some((r) => r.memberId === redemption.memberId && r.rewardId === redemption.rewardId)) return items;
-        added = true;
+        const mine = items.filter((r) => r.memberId === redemption.memberId);
+        if (mine.some((r) => r.rewardId === redemption.rewardId)) {
+          result = 'duplicate';
+          return items;
+        }
+        if (earnedXp - mine.reduce((sum, r) => sum + r.cost, 0) < redemption.cost) {
+          result = 'short';
+          return items;
+        }
         return [{ ...redemption, id: `red_${randomUUID()}`, createdAt: new Date().toISOString() }, ...items];
       });
-      return added;
+      return result;
     },
     async removeBy(memberId) {
       await store.update((items) => items.filter((r) => r.memberId !== memberId));
@@ -393,15 +403,25 @@ function pgRedemptions(): RedemptionStore {
         where w.slug = ${rewardId}`;
       return rows.map((r) => ({ id: r.id, memberId: r.member, rewardId, cost: r.cost_xp, createdAt: iso(r.created_at) }));
     },
-    async add(redemption) {
-      const db = sql();
-      const rows = await db`
-        insert into app.reward_redemptions (reward_id, member_id, cost_xp, voucher_code)
-        select w.id, ${memberRow(db, redemption.memberId)}, ${redemption.cost}, ${randomUUID()}
-        from app.rewards w where w.slug = ${redemption.rewardId}
-        on conflict (reward_id, member_id) do nothing
-        returning id`;
-      return rows.length > 0;
+    async add(redemption, earnedXp) {
+      return sql().begin(async (tx) => {
+        // One redemption per member at a time: a second request waits here and then sees the first one's spending
+        await tx`select pg_advisory_xact_lock(hashtext(${`redeem:${redemption.memberId}`}))`;
+        const [spent] = await tx`
+          select coalesce(sum(x.cost_xp), 0)::int as total,
+                 bool_or(w.slug = ${redemption.rewardId}) as has_it
+          from app.reward_redemptions x join app.rewards w on w.id = x.reward_id
+          where x.member_id = ${memberRow(tx, redemption.memberId)}`;
+        if (spent?.has_it) return 'duplicate' as const;
+        if (earnedXp - (spent?.total ?? 0) < redemption.cost) return 'short' as const;
+        const rows = await tx`
+          insert into app.reward_redemptions (reward_id, member_id, cost_xp, voucher_code)
+          select w.id, ${memberRow(tx, redemption.memberId)}, ${redemption.cost}, ${randomUUID()}
+          from app.rewards w where w.slug = ${redemption.rewardId}
+          on conflict (reward_id, member_id) do nothing
+          returning id`;
+        return rows.length > 0 ? ('added' as const) : ('duplicate' as const);
+      });
     },
     async removeBy(memberId) {
       const db = sql();
