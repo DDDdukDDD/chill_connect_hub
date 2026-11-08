@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-317 · Top 15 of every destination has vibe text; follow on the post page (owner 2026-11-08)
+- **What changed:** `db/content/featured-top15-vibes.json`: 194 vibe texts for the 15 best places (curation score) of each of the 13 destinations on /spots, and 3 places to draft (navy recruit centre, army camp, former Tiger Temple). Applied on dev only. The full-screen post page (`components/moments/MomentDetailView.tsx`) has the same "· ติดตาม" as the feed.
+- **What to do about it:** on live, `node db/apply-spot-vibes.mjs db/content/featured-top15-vibes.json --apply` once the owner OKs it. OSM found almost nothing new for Chiang Mai, Phuket and Chonburi (all already imported).
+
 ### BE-312..316 · Database review items 1, 3, 5, 6, 7 (owner 2026-11-08)
 - **What changed:** 0036 drops `place_images`, `rate_limit_hits`, `import_runs`, `api_usage`, the waitlist states and `offered_at` of `event_participants`, and adds a CHECK on `sponsored_slots.pillar` (BE-312). `participants_count` = joined members, never the host: the host keeps a joined row but takes no seat; 0037 recounts real ตี้ and อีเวนต์ (BE-313). Spot Buddy minimum is people at the meet, host included: use `tripPeopleMissing` / `isTripConfirmed` (BE-314; fixes host + 2 looking short). Redemptions check XP and insert under a per-member lock (BE-315). On read, the typed column wins over its details copy for places publicationStatus/meetupAllowed, events max/min/registrationOpen, challenges status/visibility/isOfficial/rewardPoints; the public places list filters on `publication_status` (BE-316).
 - **What to do about it:** run 0036 and 0037 on live **after** this code is deployed (the old code still writes `place_images` and counts the host). Item 9 is postponed (LAUNCH_CHECKLIST stage 7).
