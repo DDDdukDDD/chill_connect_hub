@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Image as ImageIcon, Scissors, Type, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, RefreshCw, Scissors, Type, Volume2, VolumeX } from 'lucide-react';
 import { clipClock } from '@/lib/media/clip';
 import { drawText, loadEditorFont, textBox, type PhotoText } from '@/lib/media/photoEdit';
 import { MAX_VIDEO_SECONDS } from '@/lib/moments/types';
@@ -35,10 +35,12 @@ interface ClipEditorProps {
   /** The cover is being drawn; it can take a moment on a large file */
   isBusy: boolean;
   onBack: () => void;
+  /** Drops this clip and goes back to choosing a photo or clip */
+  onReplace: () => void;
   onNext: () => void;
 }
 
-export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS, onCoverChange, texts, onTextsChange, muted, onMutedChange, canEdit, isBusy, onBack, onNext }: ClipEditorProps) {
+export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS, onCoverChange, texts, onTextsChange, muted, onMutedChange, canEdit, isBusy, onBack, onReplace, onNext }: ClipEditorProps) {
   const video = useRef<HTMLVideoElement>(null);
   const overlay = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ id: string; lastX: number; lastY: number } | null>(null);
@@ -222,8 +224,17 @@ export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS,
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col [@media(max-height:560px)]:flex-row sm:flex-row overflow-hidden">
-        <div className="[container-type:size] flex-1 min-h-[40vh] [@media(max-height:560px)]:min-h-0 min-w-0 bg-black flex items-center justify-center sm:p-4">
+      {/* The clip comes first: tools under it on an upright screen, beside it on a wide one */}
+      <div className="flex-1 min-h-0 flex flex-col landscape:flex-row overflow-hidden">
+        <div className="relative [container-type:size] flex-1 min-h-[40vh] landscape:min-h-0 min-w-0 bg-black flex items-center justify-center sm:p-4">
+          <button
+            type="button"
+            onClick={onReplace}
+            className="absolute top-3 left-3 z-10 h-9 px-3.5 rounded-full bg-black/60 hover:bg-black/75 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            เลือกคลิปใหม่
+          </button>
           {!canPreview && (
             <p className="px-6 text-center text-sm font-medium leading-relaxed text-white/85">เครื่องนี้แสดงตัวอย่างคลิปนี้ไม่ได้ แต่โพสต์ได้ตามปกติ<br />ถ้าคลิปไม่เล่นบนบางเครื่อง ลองตั้งกล้องเป็น H.264 (Most Compatible) นะ</p>
           )}
@@ -282,8 +293,8 @@ export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS,
           )}
         </div>
 
-        <div className="shrink-0 sm:w-[320px] flex flex-col border-t sm:border-t-0 sm:border-l border-slate-100 min-h-0">
-          <div className="sm:flex-1 min-h-0 overflow-y-auto px-4 py-3">{panel}</div>
+        <div className="shrink-0 landscape:w-[320px] flex flex-col border-t landscape:border-t-0 landscape:border-l border-slate-100 min-h-0">
+          <div className="landscape:flex-1 min-h-0 overflow-y-auto px-4 py-3">{panel}</div>
           <div className="shrink-0 grid border-t border-slate-100 pb-[env(safe-area-inset-bottom)]" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }} role="group" aria-label="เครื่องมือแต่งคลิป">
             {tools.map(({ id, label, Icon }) => (
               <button key={id} type="button" onClick={() => setTool(id)} aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-14 text-[11px] cursor-pointer ${tool === id ? 'font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:text-slate-900'}`}>

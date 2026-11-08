@@ -438,20 +438,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               onShowToast={showToast}
             />
 
-            <SmartSpotPlanCard
-              key={spot.id}
-              currentSpot={spot}
-              catalog={publishedSpots}
-              onStartTee={(plan) => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
-                  setIsRequireMembershipOpen(true);
-                  return;
-                }
-                setTeeItinerary(plan.itinerary);
-                setIsCreateEventModalOpen(true);
-              }}
-            />
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -493,6 +479,22 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
             {/* Cafés and restaurants close by */}
             <NearbyDiningSection spot={spot} pool={publishedSpots} />
+
+            {/* Been here: where to go next, right after the food close by (owner 2026-11-08) */}
+            <SmartSpotPlanCard
+              key={spot.id}
+              currentSpot={spot}
+              catalog={publishedSpots}
+              onStartTee={(plan) => {
+                if (!isLoggedIn) {
+                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
+                  setIsRequireMembershipOpen(true);
+                  return;
+                }
+                setTeeItinerary(plan.itinerary);
+                setIsCreateEventModalOpen(true);
+              }}
+            />
           </div>
         </div>
 

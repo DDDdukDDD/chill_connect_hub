@@ -155,13 +155,25 @@ export function applyTone(data: ImageData, tone: Tone) {
 /** Where the photo lands in a w × h frame; moving stops where an edge of the frame would show */
 function placement(photo: EditedPhoto, w: number, h: number) {
   const { naturalWidth: nw, naturalHeight: nh } = photo.image;
-  const scale = Math.max(w / Math.max(1, nw), h / Math.max(1, nh)) * photo.zoom;
+  const scale = Math.max(w / Math.max(1, nw), h / Math.max(1, nh)) * Math.max(photo.zoom, minZoom(photo, w / h));
   const [dw, dh] = [nw * scale, nh * scale];
   const limit = (span: number, frame: number, pan: number) => {
     const room = Math.max(0, (span - frame) / 2);
     return Math.max(-room, Math.min(room, pan * frame));
   };
   return { dw, dh, dx: (w - dw) / 2 + limit(dw, w, photo.panX), dy: (h - dh) / 2 + limit(dh, h, photo.panY) };
+}
+
+/**
+ * The smallest zoom: the whole photo fits in the frame, with white bars on the sides it does not fill (1 fills the frame).
+ * A photo already of the frame's shape cannot go below 1.
+ */
+export function minZoom(photo: EditedPhoto, ratio: number) {
+  const { naturalWidth: nw, naturalHeight: nh } = photo.image;
+  if (!nw || !nh) return 1;
+  const fit = Math.min(ratio / nw, 1 / nh);
+  const fill = Math.max(ratio / nw, 1 / nh);
+  return Math.min(1, Math.round((fit / fill) * 1000) / 1000);
 }
 
 /** Pan values that stop at the photo's edge in a frame of this shape, so a long drag past it needs no undoing */
@@ -190,7 +202,8 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 const fontFamily = () => getComputedStyle(document.body).fontFamily;
 
 /** The letters must have loaded before a canvas can draw them, or the first text shows in a fallback font */
-export const loadEditorFont = () => document.fonts?.load(`600 40px ${fontFamily()}`, 'กA').catch(() => undefined);
+export const loadEditorFont = () =>
+  Promise.all([600, 700].map((weight) => document.fonts?.load(`${weight} 40px ${fontFamily()}`, 'กA'))).catch(() => undefined);
 
 /** Breaks a line that is too wide between Thai words, which have no spaces to break at */
 function wrapLine(ctx: Ctx, line: string, maxWidth: number): string[] {
@@ -307,36 +320,44 @@ function drawPlaceSticker(ctx: Ctx, sticker: PhotoSticker, w: number, h: number)
 
 const styleOf = (id: string) => STICKER_STYLES.find((s) => s.id === id) ?? STICKER_STYLES[0];
 
-/** Size of a fun sticker: icons are round badges, words are pills */
+/** Size of a fun sticker: icons stand on their own (no badge behind them), words are pills */
 function layoutFun(ctx: Ctx, s: FunSticker, w: number) {
   if (s.kind === 'icon') {
-    const d = w * 0.15 * s.scale;
+    const d = w * 0.12 * s.scale;
     return { boxW: d, boxH: d, fontPx: 0 };
   }
   const fontPx = w * 0.052 * s.scale;
   ctx.font = `700 ${fontPx}px ${fontFamily()}`;
-  return { boxW: ctx.measureText(s.value).width + fontPx * 1.3, boxH: fontPx * 1.9, fontPx };
+  // Thai marks can reach past the advance width, and Safari's measure can run short: take the wider of the two, with room
+  const m = ctx.measureText(s.value);
+  const ink = (m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? 0);
+  return { boxW: Math.max(m.width, ink) * 1.06 + fontPx * 1.6, boxH: fontPx * 1.9, fontPx };
 }
 
 function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
   const { boxW, boxH, fontPx } = layoutFun(ctx, s, w);
   const style = styleOf(s.style);
   const [cx, cy] = [s.x * w, s.y * h];
-  ctx.save();
-  ctx.shadowColor = 'rgba(15,23,42,0.28)';
-  ctx.shadowBlur = w * 0.016;
-  ctx.fillStyle = style.fill;
-  roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, boxH / 2);
-  ctx.fill();
-  ctx.restore();
+  if (s.kind === 'word') {
+    ctx.save();
+    ctx.shadowColor = 'rgba(15,23,42,0.28)';
+    ctx.shadowBlur = w * 0.016;
+    ctx.fillStyle = style.fill;
+    roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, boxH / 2);
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
   if (s.kind === 'icon') {
+    // The icon alone, in the chosen colour; a soft shadow keeps it readable on a light or busy photo
     const icon = ICON_STICKERS[s.value];
-    const side = boxW * 0.56;
+    const side = boxW;
     ctx.translate(cx - side / 2, cy - side / 2);
     ctx.scale(side / 24, side / 24);
-    ctx.strokeStyle = style.ink;
-    ctx.lineWidth = 2.2;
+    ctx.shadowColor = 'rgba(15,23,42,0.4)';
+    ctx.shadowBlur = w * 0.012;
+    ctx.strokeStyle = style.fill;
+    ctx.lineWidth = 2.4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     icon?.paths.forEach((d) => ctx.stroke(new Path2D(d)));
@@ -379,7 +400,7 @@ export function hitOverlay(ctx: CanvasRenderingContext2D, photo: EditedPhoto, w:
 /** The finished photo in the post's shape, ready to upload, within encodeForUpload's size limit */
 export async function exportPhoto(photo: EditedPhoto, ratio: number): Promise<Blob> {
   const { naturalWidth: nw, naturalHeight: nh } = photo.image;
-  const w = Math.max(1, Math.min(OUTPUT_WIDTH, Math.round(Math.min(nw, nh * ratio) * photo.zoom)));
+  const w = Math.max(1, Math.min(OUTPUT_WIDTH, Math.round(Math.min(nw, nh * ratio) * Math.max(1, photo.zoom))));
   const h = Math.round(w / ratio);
   const canvas = document.createElement('canvas');
   canvas.width = w;
