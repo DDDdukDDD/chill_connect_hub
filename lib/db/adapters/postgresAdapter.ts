@@ -24,6 +24,7 @@ import type { AdminEventItem } from '../../eventsStore';
 import { unstable_cache } from 'next/cache';
 import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
+import { tableVersions } from '../postgres/tableVersions';
 import { eventToRow, placeToRow, placeImages, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
 import { referenceCodesChangedAt } from '../postgres/referenceCodes';
@@ -150,12 +151,10 @@ export class PostgresAdapter implements IDataRepository {
 
   /**
    * Downloads a table again only when something in it changed. Whole-table reads were most of the database's outgoing
-   * data (2026-11-03: over the free plan's quota), and the fingerprint is one short row. Every write to these tables
-   * moves updated_at (a trigger), and a sum also notices a write that started before the newest one.
+   * data (2026-11-03: over the free plan's quota). The check reads the table's version number (lib/db/postgres/tableVersions.ts).
    */
   private async readIfChanged<T>(key: string, table: 'events' | 'places' | 'quests', read: (version: string) => Promise<T[]>): Promise<T[]> {
-    const [{ rows, stamp }] = await sql().unsafe(`select count(*) as rows, sum(extract(epoch from updated_at)) as stamp from app.${table}`);
-    const version = `${rows}:${stamp}`;
+    const version = await tableVersions(sql(), [table]);
     const known = this.snapshots.get(key);
     if (known?.version === version) return known.items as T[];
     const items = await read(version);

@@ -1,4 +1,5 @@
 import type { Sql } from './db/postgres/client';
+import { tableVersions } from './db/postgres/tableVersions';
 import type {
   CategoryCollection, MasterCategory, MasterCollection, MasterData, MasterEntry, MasterFeaturedGroup, MasterProvince, MasterVenue, MasterZone,
 } from './masterData';
@@ -16,11 +17,9 @@ const PILLARS: Record<CategoryCollection, string> = {
 const COLLECTION_OF_PILLAR = Object.fromEntries(Object.entries(PILLARS).map(([collection, pillar]) => [pillar, collection])) as Record<string, CategoryCollection>;
 const TABLES = ['provinces', 'zones', 'categories', 'venues', 'venue_groups', 'community_clubs'] as const;
 
-/** Changes when any master row is added, edited or removed (every write moves updated_at, a trigger) */
-export async function masterTablesVersion(db: Sql): Promise<string> {
-  const parts = TABLES.map((table) => `(select count(*) || ':' || coalesce(sum(extract(epoch from updated_at)), 0) from app.${table})`);
-  const [row] = await db.unsafe(`select concat_ws('|', ${parts.join(', ')}) as version`);
-  return row.version as string;
+/** Changes when any master row is added, edited or removed (migration 0035: a version number per table) */
+export function masterTablesVersion(db: Sql): Promise<string> {
+  return tableVersions(db, TABLES);
 }
 
 const base = (row: Row) => ({
