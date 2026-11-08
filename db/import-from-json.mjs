@@ -13,7 +13,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { adminConnection } from './env.mjs';
 import {
-  dateOnly, eventToRow, memberToRows, placeImages, placeToRow, provinceCode, questToRow, strings, text, toDate, uuidV7, omit, eventTimes,
+  dateOnly, eventToRow, memberToRows, placeToRow, provinceCode, questToRow, strings, text, toDate, uuidV7, omit, eventTimes,
 } from '../lib/db/postgres/rows.mjs';
 
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -55,7 +55,6 @@ const notifications = readJson('notifications.json');
 const campaigns = readJson('campaigns.json');
 const chat = readJson('chat_messages.json');
 const auditLog = readJson('audit_log.json');
-const placesUsage = readJson('google_places_usage.json', null);
 
 // Stores that are empty today. Stop rather than drop data if one fills up before this script learns its shape.
 for (const name of ['waitlist', 'quest_finishes', 'quest_vouchers', 'redemptions', 'reviews', 'event_questions', 'fair_groups', 'meet_again', 'content_reports']) {
@@ -130,14 +129,12 @@ const sourceRows = (hub.sources ?? []).map((s) => ({
 
 const placeIds = new Map();
 const placeRows = [];
-const placeImageRows = [];
 const spots = discovery.spots ?? [];
 for (const [index, s] of spots.entries()) {
   const row = placeToRow(s, { provinceCodes, sortKey: spots.length - index });
   if (!row) { warn(`place ${s.id}: skipped, unknown province "${s.province}"`); continue; }
   placeIds.set(s.id, row.id);
   placeRows.push(row);
-  placeImageRows.push(...placeImages(s, row.id));
 }
 
 const eventIds = new Map();
@@ -391,16 +388,14 @@ const auditRows = [...auditLog]
     target_type: a.targetType ?? 'unknown', target_id: text(a.targetId), summary: a.summary ?? '', meta: { legacyId: a.id },
   }));
 
-const usageRows = placesUsage?.month ? [{ service: 'google_places', month: `${placesUsage.month}-01`, calls: placesUsage.calls ?? 0 }] : [];
-
 // ---------- write ----------
 
 const IMPORTED_TABLES = [
   'audit_log', 'chat_messages', 'chat_room_members', 'chat_rooms', 'notifications', 'visits', 'moment_comments', 'moment_saves', 'moment_likes',
   'moment_images', 'moments', 'campaign_quests', 'campaigns', 'rewards', 'quest_participants', 'quests', 'saved_items', 'blocks', 'follows',
-  'content_reports', 'event_participants', 'events', 'event_series', 'place_images', 'places', 'host_applications', 'member_risk_flags',
+  'content_reports', 'event_participants', 'events', 'event_series', 'places', 'host_applications', 'member_risk_flags',
   'member_consents', 'member_interests', 'member_profiles', 'member_tokens', 'member_auth_providers', 'member_credentials', 'members',
-  'staff_accounts', 'sources', 'api_usage', 'app_settings', 'community_clubs', 'venue_groups', 'venues', 'categories', 'zones', 'provinces',
+  'staff_accounts', 'sources', 'app_settings', 'community_clubs', 'venue_groups', 'venues', 'categories', 'zones', 'provinces',
 ];
 
 const JSON_COLUMNS = new Set(['extra', 'value', 'recurrence', 'contact', 'details', 'steps', 'rule', 'brand_reward', 'draw_entry', 'meta']);
@@ -438,7 +433,6 @@ try {
     await insert(tx, 'community_clubs', clubRows);
     await insert(tx, 'app_settings', settingRows);
     await insert(tx, 'sources', sourceRows);
-    await insert(tx, 'api_usage', usageRows);
 
     await insert(tx, 'staff_accounts', staffRows);
     // invited_by points at other members: insert without it, then link
@@ -456,7 +450,6 @@ try {
     await insert(tx, 'blocks', blockRows);
 
     await insert(tx, 'places', placeRows, 200);
-    await insert(tx, 'place_images', placeImageRows, 1000);
     await insert(tx, 'event_series', seriesRows);
     await insert(tx, 'events', eventRows);
     await insert(tx, 'quests', questRows);

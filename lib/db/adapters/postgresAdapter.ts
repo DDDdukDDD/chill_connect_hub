@@ -25,7 +25,7 @@ import { unstable_cache } from 'next/cache';
 import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
 import { tableVersions } from '../postgres/tableVersions';
-import { eventToRow, placeToRow, placeImages, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
+import { eventToRow, placeToRow, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
 import { referenceCodesChangedAt } from '../postgres/referenceCodes';
 
@@ -301,11 +301,8 @@ export class PostgresAdapter implements IDataRepository {
       if (!row) throw new Error(`สถานที่ "${s.title}" ไม่มีจังหวัดที่ระบบรู้จัก (${s.province})`);
       return row;
     });
+    // Photos stay in details.galleryImages: the separate place_images copy was never read (dropped in 0036)
     await upsert(tx, 'places', rows);
-    const ids = rows.map((r) => r.id);
-    await tx`delete from app.place_images where place_id in ${tx(ids)}`;
-    const images = spots.flatMap((s, i) => placeImages(s, rows[i].id));
-    for (let i = 0; i < images.length; i += 1000) await tx`insert into app.place_images ${tx(images.slice(i, i + 1000))}`;
   }
 
   /** New items come first: the first of a batch gets the highest key */
