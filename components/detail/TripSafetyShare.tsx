@@ -17,7 +17,8 @@ export function tripDetailsText(event: EventItem, people: Attendee[], url: strin
     `บอกไว้ก่อนนะ ฉันจะไปทริป "${event.title}"`,
     `ที่ไหน: ${place}`,
     event.location && event.location !== place ? `ที่อยู่: ${event.location}` : '',
-    `แผนที่: https://maps.google.com/?q=${encodeURIComponent(event.location || place)}`,
+    // Coordinates give a short, exact link; a Thai place name turns into a long run of %E0%B8…
+    `แผนที่: https://maps.google.com/?q=${typeof event.latitude === 'number' && typeof event.longitude === 'number' ? `${event.latitude},${event.longitude}` : encodeURIComponent(event.location || place)}`,
     `เมื่อไหร่: ${event.date} · ${event.time}`,
     withWhom ? `ไปกับ: ${withWhom}` : '',
     `ดูทริป: ${url}`,

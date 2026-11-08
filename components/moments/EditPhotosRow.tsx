@@ -94,7 +94,7 @@ export function EditPhotosRow({ photos, ratio, onChange, onError }: {
           </button>
         )}
       </div>
-      <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={add} />
+      <input ref={fileRef} type="file" accept="image/*" multiple aria-label="เลือกรูปที่จะเพิ่ม" className="hidden" onChange={add} />
     </div>
   );
 }
