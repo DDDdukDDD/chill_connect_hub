@@ -20,6 +20,20 @@ Item template:
 
 ---
 
+### BE-300 · Tester round: posting on iPad, challenge folds, rewards strip (owner 2026-11-08)
+- **What changed:** photo and clip editors put the picture first: tools under it on any upright screen (iPad held upright too), beside it on a wide one (`portrait:` / `landscape:`); the clip dialog is no longer 512 px wide. × removes even the only photo (back to choosing); the clip has "เลือกคลิปใหม่". Zoom goes below 1 to show the whole photo with white bars (`minZoom` in `lib/media/photoEdit.ts`). Sticker panel has no place section (the place is on the next step); icon stickers have no badge, the colour is the icon's; word pills measure wider for Thai. Challenge page: กติกาและเงื่อนไข open at first; the counted list folds to one line like นับในชาเลนจ์ on a ตี้ page, closed at first (opens from "ดูที่ที่นับ"). ตี้ page: empty "ถามคนจัด" is one line with a button; the host sees nothing until asked. Place page: "ไปต่อไหนดี" moved under ร้านกาแฟและร้านอร่อยใกล้ๆ. /rewards: one column, slim XP strip, "ได้ XP จาก" at the bottom.
+- **What to do about it:** not walked on a real iPad yet.
+
+### BE-299 · Chat read state (owner 2026-11-07)
+- **What changed:** reading a chat marks it read in `chat_room_members.last_read_at` (table from 0008, first use; no migration). `GET /api/chat/{roomId}` adds `reads`; `GroupChatModal` shows "อ่านแล้ว" (two people) or "อ่านแล้ว N" (group) under one's own messages, like LINE. A poll with nothing new writes nothing. `chatStore` has `markRead` and `readTimes` (JSON mode: `chat_reads`). Details in docs/API.md.
+
+### BE-298 · @mentions in captions and comments (owner 2026-11-07)
+- **What changed:** "@" in the caption, the moment page comment box and the home feed comment box opens a list of people (`components/moments/MentionPicker.tsx`, rules in `lib/moments/mentions.ts`). Caption mentions become tags. Comment mentions are stored in `moment_comments.mentions` (migration **0033**) and send `tagged` with `commentId` ("พูดถึงคุณในความคิดเห็น"). `CaptionText` takes `mentions` and links `@name` to the profile. Confirmed names are taken out of the new-account contact check, which would otherwise block "@Duke" as a LINE id.
+- **What to do about it:** run migration 0033 on live before merging (dev done).
+
+### BE-297 · Trip: send the plan to someone close (owner 2026-11-07)
+- **What changed:** on a Spot Buddy trip (`spotId`) the member or host has joined, the share buttons (hero and phone bar) open `components/detail/TripSafetyShare.tsx` instead of the plain share: a ready, editable text with where (place, address, map link), when, with whom (from the attendee list) and the trip link, sent through LINE, the phone's share sheet or a copy. Other ตี้ keep the plain share. Also TR-002 set to "Ready to re-test" (fixed in BE-289, the status was not updated).
+
 ### BE-296 · The hourly job moves every waiting list (2026-11-07)
 - **What changed:** `GET /api/cron/hourly` now also runs `waitlists` (`moveAllQueues` in `lib/social/waitlist.ts`): lapsed 2-hour offers drop out and the next person is offered the seat and told, even when nobody opens the ตี้. Before, the line moved only when someone read or changed it.
 
