@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-301 · Tab counts follow the filters, calmer /rewards, place page order (owner 2026-11-08)
+- **What changed:** /events and /community tab counts use the same filters as the cards (`matchingFairs` / `matchingTees`), so a tab never promises more than it shows. /rewards: wallet row and chips are neutral; only campaign cards and XP tickets stay yellow. Place page: "ไปต่อไหนดี" is back in the right column on desktop and sits after the cafés on phone and iPad (`max-lg:order-1` / `max-lg:order-2`).
+
 ### BE-300 · Tester round: posting on iPad, challenge folds, rewards strip (owner 2026-11-08)
 - **What changed:** photo and clip editors put the picture first: tools under it on any upright screen (iPad held upright too), beside it on a wide one (`portrait:` / `landscape:`); the clip dialog is no longer 512 px wide. × removes even the only photo (back to choosing); the clip has "เลือกคลิปใหม่". Zoom goes below 1 to show the whole photo with white bars (`minZoom` in `lib/media/photoEdit.ts`). Sticker panel has no place section (the place is on the next step); icon stickers have no badge, the colour is the icon's; word pills measure wider for Thai. Challenge page: กติกาและเงื่อนไข open at first; the counted list folds to one line like นับในชาเลนจ์ on a ตี้ page, closed at first (opens from "ดูที่ที่นับ"). ตี้ page: empty "ถามคนจัด" is one line with a button; the host sees nothing until asked. Place page: "ไปต่อไหนดี" moved under ร้านกาแฟและร้านอร่อยใกล้ๆ. /rewards: one column, slim XP strip, "ได้ XP จาก" at the bottom.
 - **What to do about it:** not walked on a real iPad yet.

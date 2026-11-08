@@ -131,8 +131,9 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
     });
   };
 
-  const filteredEvents = useMemo(() => {
-    const list = eventsList.filter((ev) => {
+  // Every filter except the category tab: the tab counts and the cards both start here, so the numbers match the cards
+  const matchingTees = useMemo(() => {
+    return eventsList.filter((ev) => {
       if ((ev.eventType || 'community') !== 'community') return false;
 
       // Status Filter (Upcoming / Ended / All)
@@ -140,15 +141,6 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
       if (statusFilter === 'upcoming' && isClosedToJoin(ev)) return false;
       if (statusFilter === 'ended' && !ended) return false;
       if (openOnly && ev.participantsCount >= ev.maxParticipants) return false;
-
-      if (selectedCategory !== 'all') {
-        const cat = selectedCategory;
-        if (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn') {
-          if (ev.category !== cat) return false;
-        } else {
-          if (getCommunityEventCategory(ev) !== cat) return false;
-        }
-      }
 
       if (!eventInProvince(ev, selectedProvince)) return false;
 
@@ -170,6 +162,14 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
       if (!matchesQuery(meetupSearchText(ev), searchQuery)) return false;
       return true;
     });
+  }, [eventsList, statusFilter, openOnly, selectedProvince, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+
+  const filteredEvents = useMemo(() => {
+    const cat = selectedCategory;
+    const list =
+      cat === 'all'
+        ? matchingTees
+        : matchingTees.filter((ev) => (cat === 'heal' || cat === 'move' || cat === 'chill' || cat === 'learn' ? ev.category === cat : getCommunityEventCategory(ev) === cat));
 
     // By date: soonest first, and for ended ตี้ the latest first
     const byDate = statusFilter === 'ended' ? -1 : 1;
@@ -180,39 +180,16 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
       if (fullA !== fullB) return fullA ? 1 : -1;
       return byDate * (parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
     });
-  }, [
-    eventsList,
-    statusFilter,
-    openOnly,
-    selectedCategory,
-    selectedProvince,
-    priceFilter,
-    sortBy,
-    favorites,
-    searchQuery,
-    customStartDate,
-    customEndDate,
-  ]);
+  }, [matchingTees, selectedCategory, statusFilter]);
 
-  // How many ตี้ each category tab holds, under the status and seat filters
+  // How many ตี้ each category tab would show with the other filters as they are (owner 2026-11-08)
   const categoryEventCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const communityEvents = eventsList.filter((event) => {
-      if ((event.eventType || 'community') !== 'community') return false;
-      if (statusFilter === 'upcoming' && isClosedToJoin(event)) return false;
-      if (statusFilter === 'ended' && !isEventEnded(event)) return false;
-      if (openOnly && event.participantsCount >= event.maxParticipants) return false;
-
-      return true;
-    });
-
-    counts['all'] = communityEvents.length;
+    const counts: Record<string, number> = { all: matchingTees.length };
     COMMUNITY_LIFESTYLE_CATEGORIES.forEach((cat) => {
-      counts[cat.id] = communityEvents.filter((ev) => getCommunityEventCategory(ev) === cat.id).length;
+      counts[cat.id] = matchingTees.filter((ev) => getCommunityEventCategory(ev) === cat.id).length;
     });
-
     return counts;
-  }, [eventsList, statusFilter, openOnly]);
+  }, [matchingTees]);
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen

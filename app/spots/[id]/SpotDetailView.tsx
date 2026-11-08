@@ -412,7 +412,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
             {/* Moments from members here, and the challenge this counts toward (said once, here). On phones and
                 tablets the aside opens up into the grid and this goes after the details, just above the related tiles */}
-            <div className="max-lg:order-1 empty:hidden">
+            <div className="max-lg:order-2 empty:hidden">
               <VisitPanel
                 targetType="spot"
                 targetId={spot.id}
@@ -438,6 +438,25 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
               onShowToast={showToast}
             />
 
+
+            {/* Been here, where next: beside the details on a computer; on phones and iPads right after the food
+                close by, which ends the main column (owner 2026-11-08) */}
+            <div className="max-lg:order-1">
+              <SmartSpotPlanCard
+                key={spot.id}
+                currentSpot={spot}
+                catalog={publishedSpots}
+                onStartTee={(plan) => {
+                  if (!isLoggedIn) {
+                    setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
+                    setIsRequireMembershipOpen(true);
+                    return;
+                  }
+                  setTeeItinerary(plan.itinerary);
+                  setIsCreateEventModalOpen(true);
+                }}
+              />
+            </div>
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -479,22 +498,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool }: { ini
 
             {/* Cafés and restaurants close by */}
             <NearbyDiningSection spot={spot} pool={publishedSpots} />
-
-            {/* Been here: where to go next, right after the food close by (owner 2026-11-08) */}
-            <SmartSpotPlanCard
-              key={spot.id}
-              currentSpot={spot}
-              catalog={publishedSpots}
-              onStartTee={(plan) => {
-                if (!isLoggedIn) {
-                  setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
-                  setIsRequireMembershipOpen(true);
-                  return;
-                }
-                setTeeItinerary(plan.itinerary);
-                setIsCreateEventModalOpen(true);
-              }}
-            />
           </div>
         </div>
 

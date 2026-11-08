@@ -38,7 +38,8 @@ const EARN: { icon: LucideIcon; text: string; xp: string }[] = [
 const TICKET_TILTS = ['-rotate-6', 'rotate-3', '-rotate-3', 'rotate-6'];
 /**
  * แลกของรางวัล in one calm column (owner 2026-11-08: more minimal, no big yellow block first on a phone): the title, one
- * slim sunny wallet strip (my XP, the next reward, my coupons), the rewards, then how to earn more. It should still feel
+ * plain wallet row (my XP, the next reward, my coupons), the campaigns, the rewards, then how to earn more. Only content
+ * is coloured (campaign cards, XP tickets); the interface stays neutral so the page is not yellow all over. It should still feel
  * like getting a gift (owner 2026-10-25): yellow XP tickets, coloured category tiles, and confetti when a reward is redeemed.
  * Flat colours only (DESIGN_SYSTEM → Gradients); the one blue action stays blue; no purple.
  * Points and redemptions come from the account (GET/POST /api/rewards); the catalog is still sample data.
@@ -139,17 +140,16 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
           </>
         )}
 
-        {/* The wallet: one slim, sunny strip with my XP, how close the next reward is, and my coupons (owner 2026-11-08:
-            no big yellow block filling a phone screen first) */}
-        <section aria-label="XP ของคุณ" className="relative mt-5 rounded-2xl bg-[#FFF6DC] px-4 py-3.5 sm:px-5 sm:py-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <WalletConfetti />
+        {/* The wallet: one plain row with my XP, how close the next reward is, and my coupons. Interface, so neutral: the
+            campaign cards and the XP tickets carry the colour (DESIGN_SYSTEM "content carries the color", owner 2026-11-08) */}
+        <section aria-label="XP ของคุณ" className="mt-5 py-4 border-y border-slate-200 flex flex-wrap items-center gap-x-6 gap-y-3">
           {isLoggedIn ? (
             <>
-              <p className="relative flex items-baseline gap-2">
+              <p className="flex items-baseline gap-2">
                 <span className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-slate-900">{userXp.toLocaleString()}</span>
                 <span className="text-sm font-bold text-slate-700">XP</span>
               </p>
-              <div className="relative min-w-0 flex-1 basis-48">
+              <div className="min-w-0 flex-1 basis-48">
                 {affordableCount > 0 ? (
                   <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
                     <Sparkles className="w-4 h-4 text-[#F26430]" aria-hidden="true" />
@@ -160,7 +160,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                     <p className="text-sm font-semibold text-slate-800 truncate">
                       อีก <span className="font-bold tabular-nums">{(nextGoal.costXp - userXp).toLocaleString()}</span> XP แลก {nextGoal.title} ได้
                     </p>
-                    <span className="mt-1.5 block h-1.5 max-w-xs rounded-full bg-[#F5E6B8] overflow-hidden" aria-hidden="true">
+                    <span className="mt-1.5 block h-1.5 max-w-xs rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
                       <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.max(4, Math.min(100, Math.round((userXp / nextGoal.costXp) * 100)))}%` }} />
                     </span>
                   </>
@@ -171,7 +171,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
               <button
                 type="button"
                 onClick={() => setViewTab(viewTab === 'my_vouchers' ? 'catalog' : 'my_vouchers')}
-                className="relative inline-flex items-center justify-center gap-2 min-h-10 px-4 rounded-full bg-white hover:bg-white/80 text-slate-900 text-sm font-bold shadow-xs cursor-pointer"
+                className={QUIET_BUTTON}
               >
                 <Ticket className="w-4 h-4" aria-hidden="true" />
                 {viewTab === 'my_vouchers' ? 'ดูของรางวัลทั้งหมด' : <>คูปองของฉัน <span className="tabular-nums">({redeemedRewardIds.length})</span></>}
@@ -179,8 +179,8 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
             </>
           ) : (
             <>
-              <p className="relative min-w-0 flex-1 basis-56 text-sm font-semibold text-slate-800"><PhraseText text="ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริง จากร้านพาร์ทเนอร์" /></p>
-              <button type="button" onClick={() => setIsAuthModalOpen(true)} className={`${dialogButton.primary} relative`}>
+              <p className="min-w-0 flex-1 basis-56 text-sm font-semibold text-slate-800"><PhraseText text="ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริง จากร้านพาร์ทเนอร์" /></p>
+              <button type="button" onClick={() => setIsAuthModalOpen(true)} className={dialogButton.primary}>
                 เข้าสู่ระบบเพื่อดู XP
               </button>
             </>
@@ -203,7 +203,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                       type="button"
                       onClick={() => setSelectedCategory(cat.id)}
                       aria-pressed={selected}
-                      className={`${CHIP} ${selected ? 'bg-amber-50 border border-amber-400 text-amber-900' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                      className={`${CHIP} ${selected ? 'bg-blue-50 border border-[#2563EB] text-[#1D4ED8]' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
                     >
                       {cat.label}
                     </button>
@@ -212,14 +212,14 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
               </div>
               {isLoggedIn && (
                 <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none shrink-0">
-                  <input type="checkbox" checked={onlyAffordable} onChange={(e) => setOnlyAffordable(e.target.checked)} className="w-4 h-4 accent-[#F26430] cursor-pointer" />
+                  <input type="checkbox" checked={onlyAffordable} onChange={(e) => setOnlyAffordable(e.target.checked)} className="w-4 h-4 accent-[#2563EB] cursor-pointer" />
                   แลกได้ตอนนี้
                 </label>
               )}
             </div>
 
             {filteredRewards.length === 0 ? (
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-amber-50 p-5">
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-5">
                 <p className="text-sm font-medium text-slate-700">{onlyAffordable ? 'XP ยังไม่พอแลกชิ้นไหนในหมวดนี้ ไปตี้หรือทำชาเลนจ์เพิ่มอีกนิดนะ' : 'หมวดนี้ยังไม่มีของรางวัล'}</p>
                 <button
                   type="button"
@@ -278,7 +278,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                           {/* How close I am: a warm bar while XP is short */}
                           {isLoggedIn && !redeemed && !ready ? (
                             <span className="mt-2 flex items-center gap-2">
-                              <span className="h-1.5 flex-1 rounded-full bg-amber-100 overflow-hidden" aria-hidden="true">
+                              <span className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
                                 <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.min(100, Math.round((userXp / item.costXp) * 100))}%` }} />
                               </span>
                               <span className="text-[11px] text-slate-500 tabular-nums whitespace-nowrap">ขาด {(item.costXp - userXp).toLocaleString()}</span>
@@ -306,7 +306,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
               <ul className="mt-4 grid gap-3 sm:grid-cols-3">
                 {EARN.map((row) => (
                   <li key={row.text} className="flex items-center gap-3 text-sm">
-                    <span className="w-9 h-9 rounded-full bg-[#FFF6DC] flex items-center justify-center shrink-0">
+                    <span className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                       <row.icon className="w-4 h-4 text-slate-800" aria-hidden="true" />
                     </span>
                     <span className="flex-1 font-medium text-slate-700">{row.text}</span>
@@ -319,7 +319,7 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
         ) : (
           <>
             {myRedeemedItems.length === 0 ? (
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-amber-50 p-5">
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-5">
                 <p className="text-sm font-medium text-slate-700">ยังไม่มีคูปอง ตอนนี้มี {userXp.toLocaleString()} XP ลองดูว่าแลกอะไรได้บ้าง</p>
                 <button type="button" onClick={() => setViewTab('catalog')} className={QUIET_BUTTON}>
                   ดูของรางวัล
@@ -393,19 +393,5 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
       />
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
     </div>
-  );
-}
-
-/** A few still confetti bits in the wallet's top corner: the card should look like good news */
-function WalletConfetti() {
-  return (
-    <svg className="pointer-events-none absolute right-3 top-1 w-16 h-11 sm:w-20 sm:h-14" viewBox="0 0 112 80" aria-hidden="true">
-      <rect x="70" y="6" width="9" height="9" rx="2" fill="#F26430" transform="rotate(18 74 10)" />
-      <circle cx="98" cy="22" r="4.5" fill="#2563EB" />
-      <rect x="86" y="44" width="12" height="5" rx="2.5" fill="#10B981" transform="rotate(-30 92 46)" />
-      <circle cx="56" cy="30" r="3.5" fill="#F472B6" />
-      <rect x="40" y="8" width="10" height="4.5" rx="2.25" fill="#FFFFFF" transform="rotate(35 45 10)" />
-      <circle cx="104" cy="62" r="3" fill="#FFFFFF" />
-    </svg>
   );
 }

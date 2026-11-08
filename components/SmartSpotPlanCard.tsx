@@ -64,9 +64,9 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpo
   const area = cleanText(currentSpot.district || currentSpot.province);
 
   return (
-    <section aria-labelledby="smart-plan-title" className="space-y-4">
+    <section aria-labelledby="smart-plan-title" className="pt-6 border-t border-slate-200 space-y-4">
       <div className="space-y-1">
-        <h2 id="smart-plan-title" className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+        <h2 id="smart-plan-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
           ไปที่นี่แล้ว ไปต่อไหนดี
         </h2>
         <p className="text-sm text-slate-600">

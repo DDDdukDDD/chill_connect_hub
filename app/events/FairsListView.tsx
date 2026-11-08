@@ -148,19 +148,15 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
     });
   };
 
-  const filteredEvents = useMemo(() => {
-    const list = eventsList.filter((ev) => {
+  // Every filter except the category tab: the tab counts and the cards both start here, so the numbers match the cards
+  const matchingFairs = useMemo(() => {
+    return eventsList.filter((ev) => {
       if (ev.eventType !== 'public_venue') return false;
 
       // Status Filter (Upcoming / Ended / All)
       const ended = isEventEnded(ev);
       if (statusFilter === 'upcoming' && ended) return false;
       if (statusFilter === 'ended' && !ended) return false;
-
-      // Category Rail Filter (1 Card = 1 Category)
-      if (selectedCategory && selectedCategory !== 'all') {
-        if (getFairEventCategory(ev) !== selectedCategory) return false;
-      }
 
       if (!eventInProvince(ev, selectedProvince)) return false;
 
@@ -217,75 +213,27 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
       if (!matchesQuery(fairSearchText(ev), searchQuery)) return false;
       return true;
     });
+  }, [eventsList, statusFilter, selectedProvince, selectedVenue, priceFilter, sortBy, favorites, searchQuery, customStartDate, customEndDate]);
+
+  const filteredEvents = useMemo(() => {
+    // Category Rail Filter (1 Card = 1 Category)
+    const list = selectedCategory && selectedCategory !== 'all' ? matchingFairs.filter((ev) => getFairEventCategory(ev) === selectedCategory) : matchingFairs;
 
     // By date: what is on now and soonest first; for ended อีเวนต์ the latest first
     if (statusFilter === 'ended') return [...list].sort((a, b) => parseEventEndDateToTimestamp(b.endDate || b.date) - parseEventEndDateToTimestamp(a.endDate || a.date));
     return [...list].sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
-  }, [
-    eventsList,
-    statusFilter,
-    selectedCategory,
-    selectedProvince,
-    selectedVenue,
-    priceFilter,
-    sortBy,
-    favorites,
-    searchQuery,
-    customStartDate,
-    customEndDate,
-  ]);
+  }, [matchingFairs, selectedCategory, statusFilter]);
 
-  // Dynamic fair counts (supports selectedVenue filter context)
+  // Tab counts: the cards each tab would show with the other filters as they are (TR, owner 2026-11-08)
   const fairCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const baseFairs = eventsList.filter((ev) => {
-      if (ev.eventType !== 'public_venue') return false;
-      if (statusFilter === 'upcoming' && isEventEnded(ev)) return false;
-      if (statusFilter === 'ended' && !isEventEnded(ev)) return false;
-      if (selectedVenue !== 'all') {
-        const vLower = selectedVenue.toLowerCase();
-        const loc = (ev.location || '').toLowerCase();
-        const vTag = (ev.venueTag || '').toLowerCase();
-        const title = (ev.title || '').toLowerCase();
-        const text = `${vTag} ${loc} ${title}`;
-
-        if (vLower === 'qsncc' && !text.includes('สิริกิติ์') && !text.includes('qsncc')) return false;
-        else if (vLower === 'bitec' && !text.includes('ไบเทค') && !text.includes('bitec')) return false;
-        else if (vLower === 'impact' && !text.includes('อิมแพ็ค') && !text.includes('impact') && !text.includes('เมืองทอง')) return false;
-        else if (
-          vLower === 'paragon' &&
-          !text.includes('paragon') &&
-          !text.includes('พารากอน') &&
-          !text.includes('iconsiam') &&
-          !text.includes('ไอคอนสยาม') &&
-          !text.includes('สยาม')
-        )
-          return false;
-        else if (vLower === 'bacc' && !text.includes('bacc') && !text.includes('หอศิลป') && !text.includes('เจริญกรุง') && !text.includes('ปทุมวัน'))
-          return false;
-        else if (vLower === 'park' && !text.includes('สวน') && !text.includes('park') && !text.includes('สนามหลวง')) return false;
-        else if (
-          vLower === 'regional' &&
-          !text.includes('kice') &&
-          !text.includes('ขอนแก่น') &&
-          !text.includes('cmecc') &&
-          !text.includes('เชียงใหม่') &&
-          !text.includes('สงขลา') &&
-          !text.includes('ภูเก็ต')
-        )
-          return false;
-        else if (!['qsncc', 'bitec', 'impact', 'paragon', 'bacc', 'park', 'regional'].includes(vLower) && !loc.includes(vLower) && !vTag.includes(vLower))
-          return false;
-      }
-      return true;
-    });
-
-    counts['all'] = baseFairs.length;
-    for (const cat of NATIONWIDE_FAIR_CATEGORIES) {
-      counts[cat.id] = baseFairs.filter((ev) => getFairEventCategory(ev) === cat.id).length;
+    const counts: Record<string, number> = { all: matchingFairs.length };
+    for (const cat of NATIONWIDE_FAIR_CATEGORIES) counts[cat.id] = 0;
+    for (const ev of matchingFairs) {
+      const id = getFairEventCategory(ev);
+      counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
-  }, [eventsList, statusFilter, selectedVenue]);
+  }, [matchingFairs]);
 
   const paginatedEvents = useMemo(() => {
     // "Show more" grows the list: currentPage = how many batches are on screen
