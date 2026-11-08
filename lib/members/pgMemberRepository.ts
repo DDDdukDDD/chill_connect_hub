@@ -16,7 +16,7 @@ type Row = Record<string, unknown>;
 /** One row per member with everything rowToMember needs (lib/db/postgres/rows.mjs) */
 type Fragment = PendingQuery<PgRow[]>;
 const hydrate = (tx: Sql, where: Fragment) => tx`
-  select m.*, c.password_hash, inviter.legacy_id as invited_by_legacy,
+  select m.*, (c.member_id is not null) as has_password, inviter.legacy_id as invited_by_legacy,
     pr.bio, pr.occupation, pr.workplace, pr.education, pr.hometown, pr.living_area, pr.relationship_status, pr.connect_goal,
     pr.birth_year, pr.gender, pr.province_code, pr.intent, pr.goals, pr.hidden_fields, pr.preferences_at,
     (select coalesce(json_agg(json_build_object('provider', a.provider, 'subject', a.subject, 'linked_at', a.linked_at) order by a.linked_at), '[]')
@@ -279,6 +279,10 @@ export const pgMemberRepository: MemberRepository = {
   },
   async findByProvider(provider: OAuthProvider, subject: string) {
     return findOne(sql(), sql()`m.id = (select member_id from app.member_auth_providers where provider = ${provider} and subject = ${subject})`);
+  },
+  async passwordHashOf(id) {
+    const [row] = await sql()`select c.password_hash from app.member_credentials c join app.members m on m.id = c.member_id where m.legacy_id = ${id}`;
+    return (row?.password_hash as string | undefined) ?? null;
   },
   async create(member) {
     const created = await sql().begin(async (tx) => {
