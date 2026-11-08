@@ -459,12 +459,24 @@ export class JsonFileAdapter implements IDataRepository {
     });
   }
 
-  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[]> {
+  public async setMissed(eventId: string, userId: string, missed: boolean): Promise<boolean> {
     await this.ensureInitialized();
-    const found: { eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[] = [];
+    return this.mutex.runExclusive(async () => {
+      const found = (this.participants[eventId] ?? []).find((p) => p.userId === userId);
+      if (!found) return false;
+      if (missed) found.missedAt = found.missedAt ?? new Date().toISOString();
+      else delete found.missedAt;
+      await this.persistEvents();
+      return true;
+    });
+  }
+
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string; missedAt?: string }[]> {
+    await this.ensureInitialized();
+    const found: { eventId: string; joinedAt?: string; note?: string; checkedInAt?: string; missedAt?: string }[] = [];
     for (const [eventId, list] of Object.entries(this.participants)) {
       const mine = list.find((p) => p.userId === userId);
-      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note, ...(mine.checkedInAt ? { checkedInAt: mine.checkedInAt } : {}) });
+      if (mine) found.push({ eventId, joinedAt: mine.joinedAt, note: mine.note, ...(mine.checkedInAt ? { checkedInAt: mine.checkedInAt } : {}), ...(mine.missedAt ? { missedAt: mine.missedAt } : {}) });
     }
     return found.sort((a, b) => (b.joinedAt ?? '').localeCompare(a.joinedAt ?? ''));
   }

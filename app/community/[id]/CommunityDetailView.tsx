@@ -23,6 +23,7 @@ import { SeriesDates } from '@/components/detail/SeriesDates';
 import { DayOfPanel, isToday } from '@/components/detail/DayOfPanel';
 import { HostCheckIn } from '@/components/detail/HostCheckIn';
 import { WaitlistAction } from '@/components/detail/WaitlistAction';
+import { TripSafetyShare } from '@/components/detail/TripSafetyShare';
 import { EventQuestions, type QuestionItem } from '@/components/detail/EventQuestions';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
@@ -128,6 +129,7 @@ export default function CommunityDetailPage({
   }, [myActivity.isLoaded, myActivity.joinedIds]);
 
   const [isCopied, setIsCopied] = useState(false);
+  const [isTripShareOpen, setIsTripShareOpen] = useState(false);
 
   // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -482,6 +484,10 @@ export default function CommunityDetailPage({
   const isCancelled = eventData.status === 'cancelled';
   // Joining closes when the ตี้ starts (owner 2026-10-29); people already in keep their ticket and chat
   const isStarted = !isSeriesEvent && !isEnded && hasMeetupStarted(eventData);
+  // Someone in a Spot Buddy trip sends the plan to someone close, not a plain invite (safety, LAUNCH_CHECKLIST step 3)
+  const isTripMember = Boolean(eventData.spotId) && isJoined && !isEnded && !isCancelled;
+  const onShare = isTripMember ? () => setIsTripShareOpen(true) : handleShare;
+  const shareLabel = isTripMember ? 'ส่งให้คนใกล้ตัว' : isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์';
   const fillRatio = eventData.participantsCount / eventData.maxParticipants;
   const isAlmostFull = fillRatio >= 0.8;
   const seatsLeft = Math.max(eventData.maxParticipants - eventData.participantsCount, 0);
@@ -620,9 +626,9 @@ export default function CommunityDetailPage({
                 </button>
               )}
               {/* Icon only on phones, so it stays on the row with the main button */}
-              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
-                {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
+              <button type="button" onClick={onShare} aria-label={shareLabel} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
+                {isCopied && !isTripMember ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
+                <span className="max-sm:sr-only">{shareLabel}</span>
               </button>
               {/* A ตี้ you joined or run is already on your schedule, so saving it says nothing more */}
               {!isJoined && !isHost && (
@@ -1190,6 +1196,16 @@ export default function CommunityDetailPage({
             targetId={eventData.id}
             targetTitle={eventData.title}
           />
+          {isTripShareOpen && (
+            <TripSafetyShare
+              event={eventData}
+              onClose={() => setIsTripShareOpen(false)}
+              onDone={(message) => {
+                setIsTripShareOpen(false);
+                showToast(message);
+              }}
+            />
+          )}
         </>
       )}
 
@@ -1230,8 +1246,8 @@ export default function CommunityDetailPage({
           </button>
           <button
             type="button"
-            onClick={handleShare}
-            aria-label="แชร์ตี้"
+            onClick={onShare}
+            aria-label={isTripMember ? 'ส่งรายละเอียดให้คนใกล้ตัว' : 'แชร์ตี้'}
             className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
           >
             {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}

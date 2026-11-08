@@ -22,6 +22,7 @@ import { defaultSpotCategoryLabel } from '@/lib/spotCategories';
 import { SpotEditorDrawer } from './SpotEditorDrawer';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 type ImageStatus = 'ok' | 'broken' | 'missing' | 'unchecked';
 type AdminSpot = LifestyleSpotItem & { imageStatus: ImageStatus };
@@ -360,7 +361,7 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
                     {imageStatus !== 'missing' && imageStatus !== 'broken' ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={spot.image}
+                        src={optimizedImage(spot.image, 256)}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={() => setFailedThumbs((prev) => new Set(prev).add(spot.id))}

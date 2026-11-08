@@ -26,9 +26,14 @@ interface ChatStore {
   find(messageId: string): Promise<ChatMessage | null>;
   remove(messageId: string): Promise<boolean>;
   removeByAuthor(authorId: string): Promise<void>;
+  /** The member has read the room up to this time (never moves back) */
+  markRead(roomId: string, memberId: string, at: string): Promise<void>;
+  /** How far the others have read: one time per member */
+  readTimes(roomId: string, exceptMemberId: string): Promise<{ memberId: string; at: string }[]>;
 }
 
 const jsonStore = createJsonStore<ChatMessage>('chat_messages');
+const jsonReads = createJsonStore<{ roomId: string; memberId: string; at: string }>('chat_reads');
 
 const jsonChatStore: ChatStore = {
   async listRoom(roomId, { after, withoutAuthors = [], limit }) {
@@ -53,6 +58,14 @@ const jsonChatStore: ChatStore = {
   },
   async removeByAuthor(authorId) {
     await jsonStore.update((items) => items.filter((m) => m.authorId !== authorId));
+  },
+  async markRead(roomId, memberId, at) {
+    const had = jsonReads.read().find((r) => r.roomId === roomId && r.memberId === memberId);
+    if (had && had.at >= at) return;
+    await jsonReads.update((items) => [...items.filter((r) => !(r.roomId === roomId && r.memberId === memberId)), { roomId, memberId, at }]);
+  },
+  async readTimes(roomId, exceptMemberId) {
+    return jsonReads.read().filter((r) => r.roomId === roomId && r.memberId !== exceptMemberId).map(({ memberId, at }) => ({ memberId, at }));
   },
 };
 
@@ -117,6 +130,22 @@ const pgChatStore: ChatStore = {
   },
   async removeByAuthor(authorId) {
     await sql()`delete from app.chat_messages m using app.members a where a.id = m.author_id and a.legacy_id = ${authorId}`;
+  },
+  // chat_room_members.last_read_at (0008); a room exists once it has its first message
+  async markRead(roomId, memberId, at) {
+    const time = toDate(at) as Date;
+    await sql()`
+      insert into app.chat_room_members (room_id, member_id, last_read_at)
+      select r.id, a.id, ${time} from app.chat_rooms r, app.members a where r.legacy_id = ${roomId} and a.legacy_id = ${memberId}
+      on conflict (room_id, member_id) do update set last_read_at = excluded.last_read_at
+        where app.chat_room_members.last_read_at is null or app.chat_room_members.last_read_at < excluded.last_read_at`;
+  },
+  async readTimes(roomId, exceptMemberId) {
+    const rows = await sql()`
+      select a.legacy_id, m.last_read_at from app.chat_room_members m
+      join app.chat_rooms r on r.id = m.room_id join app.members a on a.id = m.member_id
+      where r.legacy_id = ${roomId} and m.last_read_at is not null and a.legacy_id <> ${exceptMemberId}`;
+    return rows.map((r) => ({ memberId: r.legacy_id as string, at: (r.last_read_at as Date).toISOString() }));
   },
 };
 

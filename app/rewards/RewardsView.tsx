@@ -37,9 +37,10 @@ const EARN: { icon: LucideIcon; text: string; xp: string }[] = [
 /** The XP tickets lean a little, each its own way, like the challenge stickers */
 const TICKET_TILTS = ['-rotate-6', 'rotate-3', '-rotate-3', 'rotate-6'];
 /**
- * แลกของรางวัล, laid out like the profile: a wallet card on the left (sticky from lg) with my XP, how close the
- * next reward is, how to earn more and my coupons; the rewards on the right. It should feel like getting a gift
- * (owner 2026-10-25): a sunny ticket-shaped wallet, coloured category tiles, and confetti when a reward is redeemed.
+ * แลกของรางวัล in one calm column (owner 2026-11-08: more minimal, no big yellow block first on a phone): the title, one
+ * plain wallet row (my XP, the next reward, my coupons), the campaigns, the rewards, then how to earn more. Only content
+ * is coloured (campaign cards, XP tickets); the interface stays neutral so the page is not yellow all over. It should still feel
+ * like getting a gift (owner 2026-10-25): yellow XP tickets, coloured category tiles, and confetti when a reward is redeemed.
  * Flat colours only (DESIGN_SYSTEM → Gradients); the one blue action stays blue; no purple.
  * Points and redemptions come from the account (GET/POST /api/rewards); the catalog is still sample data.
  */
@@ -122,244 +123,238 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
       {myCampaigns.dialog}
 
       <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 xl:pb-16">
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 lg:items-start">
-          {/* Wallet, shaped like a ticket: what I have and the next reward on top, how to get more below the tear line */}
-          <aside className="lg:sticky lg:top-24">
-            <section className="relative rounded-3xl bg-[#FFF4D6] text-slate-900">
-              <WalletConfetti />
-              <div className="relative p-6 sm:p-7">
-                <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-800">
-                  <Gift className="w-4 h-4" aria-hidden="true" />
-                  XP ของคุณ
-                </p>
-                {isLoggedIn ? (
+        {viewTab === 'catalog' ? (
+          <>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">แลกของรางวัล</h1>
+            <p className="mt-2 text-sm sm:text-base font-medium text-slate-600">ส่วนลดและของจากร้านพาร์ทเนอร์ แลกด้วย XP ที่ได้จากการออกไปใช้ชีวิต</p>
+          </>
+        ) : (
+          <>
+            {/* My coupons: the codes to show at the shop */}
+            <button type="button" onClick={() => setViewTab('catalog')} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              ของรางวัลทั้งหมด
+            </button>
+            <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">คูปองของฉัน</h1>
+            <p className="mt-2 text-sm sm:text-base font-medium text-slate-600">โชว์รหัสให้พนักงานดูก่อนจ่ายเงิน</p>
+          </>
+        )}
+
+        {/* The wallet: one plain row with my XP, how close the next reward is, and my coupons. Interface, so neutral: the
+            campaign cards and the XP tickets carry the colour (DESIGN_SYSTEM "content carries the color", owner 2026-11-08) */}
+        <section aria-label="XP ของคุณ" className="mt-5 py-4 border-y border-slate-200 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {isLoggedIn ? (
+            <>
+              <p className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-slate-900">{userXp.toLocaleString()}</span>
+                <span className="text-sm font-bold text-slate-700">XP</span>
+              </p>
+              <div className="min-w-0 flex-1 basis-48">
+                {affordableCount > 0 ? (
+                  <p className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900">
+                    <Sparkles className="w-4 h-4 text-[#F26430]" aria-hidden="true" />
+                    ตอนนี้แลกได้ <span className="tabular-nums">{affordableCount}</span> ชิ้น
+                  </p>
+                ) : nextGoal ? (
                   <>
-                    <p className="mt-1 text-6xl font-bold tracking-tight tabular-nums">{userXp.toLocaleString()}</p>
-                    {affordableCount > 0 ? (
-                      <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-slate-900">
-                        <Sparkles className="w-4 h-4 text-[#F26430]" aria-hidden="true" />
-                        ตอนนี้แลกได้ <span className="tabular-nums">{affordableCount}</span> ชิ้น
-                      </p>
-                    ) : nextGoal ? (
-                      <div className="mt-3">
-                        <p className="text-sm font-semibold text-slate-800">
-                          อีก <span className="font-bold tabular-nums">{(nextGoal.costXp - userXp).toLocaleString()}</span> XP แลก {nextGoal.title} ได้
-                        </p>
-                        <span className="mt-2 block h-2 rounded-full bg-[#F5E6B8] overflow-hidden" aria-hidden="true">
-                          <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.max(4, Math.min(100, Math.round((userXp / nextGoal.costXp) * 100)))}%` }} />
-                        </span>
-                      </div>
-                    ) : null}
+                    <p className="text-sm font-semibold text-slate-800 truncate">
+                      อีก <span className="font-bold tabular-nums">{(nextGoal.costXp - userXp).toLocaleString()}</span> XP แลก {nextGoal.title} ได้
+                    </p>
+                    <span className="mt-1.5 block h-1.5 max-w-xs rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
+                      <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.max(4, Math.min(100, Math.round((userXp / nextGoal.costXp) * 100)))}%` }} />
+                    </span>
                   </>
                 ) : (
-                  <>
-                    <p className="mt-1 text-sm font-medium text-slate-800"><PhraseText text="ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริง จากร้านพาร์ทเนอร์" /></p>
-                    <button type="button" onClick={() => setIsAuthModalOpen(true)} className={`${dialogButton.primary} mt-4 w-full`}>
-                      เข้าสู่ระบบเพื่อดู XP
-                    </button>
-                  </>
+                  <p className="text-sm font-semibold text-slate-800">ไปตี้ แชร์โมเมนต์ หรือทำชาเลนจ์ เพื่อเก็บ XP เพิ่ม</p>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => setViewTab(viewTab === 'my_vouchers' ? 'catalog' : 'my_vouchers')}
+                className={QUIET_BUTTON}
+              >
+                <Ticket className="w-4 h-4" aria-hidden="true" />
+                {viewTab === 'my_vouchers' ? 'ดูของรางวัลทั้งหมด' : <>คูปองของฉัน <span className="tabular-nums">({redeemedRewardIds.length})</span></>}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="min-w-0 flex-1 basis-56 text-sm font-semibold text-slate-800"><PhraseText text="ออกไปเจอเพื่อนใหม่ ได้ XP มาแลกของจริง จากร้านพาร์ทเนอร์" /></p>
+              <button type="button" onClick={() => setIsAuthModalOpen(true)} className={dialogButton.primary}>
+                เข้าสู่ระบบเพื่อดู XP
+              </button>
+            </>
+          )}
+        </section>
 
-              {/* The tear line, with a notch cut on each side. On a phone the coupons view keeps only the top half, so the codes come first */}
-              <div className={`relative h-0 ${viewTab === 'my_vouchers' ? 'hidden lg:block' : ''}`} aria-hidden="true">
-                <span className="absolute -left-3 -top-3 w-6 h-6 rounded-full bg-white" />
-                <span className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-white" />
-                <span className="absolute left-5 right-5 top-0 border-t-2 border-dashed border-slate-900/15" />
+        {viewTab === 'catalog' ? (
+          <>
+            {/* Draw prizes are not in the shop: the campaigns are the way to them (owner 2026-11-04). Joined ones live in My Hub */}
+            <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} withRewards={false} className="mt-6" />
+
+            {/* Filters: categories, and only what I can afford now */}
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
+                {REWARD_CATEGORIES.map((cat) => {
+                  const selected = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      aria-pressed={selected}
+                      className={`${CHIP} ${selected ? 'bg-blue-50 border border-[#2563EB] text-[#1D4ED8]' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
               </div>
+              {isLoggedIn && (
+                <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none shrink-0">
+                  <input type="checkbox" checked={onlyAffordable} onChange={(e) => setOnlyAffordable(e.target.checked)} className="w-4 h-4 accent-[#2563EB] cursor-pointer" />
+                  แลกได้ตอนนี้
+                </label>
+              )}
+            </div>
 
-              <div className={`relative p-6 sm:p-7 ${viewTab === 'my_vouchers' ? 'hidden lg:block' : ''}`}>
-                <p className="text-base font-bold text-slate-900">ได้ XP จาก</p>
-                <ul className="mt-3 space-y-3">
-                  {EARN.map((row) => (
-                    <li key={row.text} className="flex items-center gap-3 text-sm">
-                      <span className="w-8 h-8 rounded-full bg-white/70 flex items-center justify-center shrink-0">
-                        <row.icon className="w-4 h-4 text-slate-800" aria-hidden="true" />
-                      </span>
-                      <span className="flex-1 font-medium text-slate-800">{row.text}</span>
-                      <span className="font-bold text-slate-900 tabular-nums">{row.xp}</span>
-                    </li>
-                  ))}
+            {filteredRewards.length === 0 ? (
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-5">
+                <p className="text-sm font-medium text-slate-700">{onlyAffordable ? 'XP ยังไม่พอแลกชิ้นไหนในหมวดนี้ ไปตี้หรือทำชาเลนจ์เพิ่มอีกนิดนะ' : 'หมวดนี้ยังไม่มีของรางวัล'}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setOnlyAffordable(false);
+                  }}
+                  className={QUIET_BUTTON}
+                >
+                  ดูทั้งหมด
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* The site's tile: a square photo, the XP on a yellow ticket, the name and the partner below (owner 2026-10-31) */}
+                <ul className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-8">
+                  {filteredRewards.map((item, i) => {
+                    const redeemed = redeemedRewardIds.includes(item.id);
+                    const ready = isLoggedIn && !redeemed && userXp >= item.costXp;
+                    const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => openItem(item)}
+                          className="group w-full text-left cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-3xl"
+                        >
+                          <span className="relative block transition-transform duration-300 group-hover:-translate-y-1">
+                            {item.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
+                              <img
+                                src={optimizedImage(item.image, 384)}
+                                alt=""
+                                loading="lazy"
+                                className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${redeemed ? 'opacity-70' : ''} ${ready ? 'ring-2 ring-[#FFC83D] ring-offset-2' : ''}`}
+                              />
+                            ) : (
+                              <span className={`w-full aspect-square rounded-3xl shadow-md flex items-center justify-center ${look.tile}`}>
+                                <look.icon className="w-10 h-10" aria-hidden="true" />
+                              </span>
+                            )}
+                            {/* XP on a yellow ticket, tilted like the challenge stickers */}
+                            <span className={`absolute -top-2.5 -left-1.5 ${TICKET_TILTS[i % TICKET_TILTS.length]} inline-flex items-center gap-1 rounded-full bg-[#FFD84D] text-slate-900 px-2.5 py-1 text-xs font-bold shadow-md tabular-nums`}>
+                              <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
+                              {item.costXp.toLocaleString()} XP
+                            </span>
+                            {(redeemed || ready) && (
+                              <span className={`absolute right-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${redeemed ? 'bg-white text-emerald-700' : 'bg-[#FFD84D] text-slate-900'}`}>
+                                {redeemed ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />}
+                                {redeemed ? 'แลกแล้ว' : 'แลกได้เลย'}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-3 block text-sm sm:text-[15px] font-bold text-slate-900 leading-snug line-clamp-2">{item.title}</span>
+                          <span title={item.partner} className="mt-1 block text-xs text-slate-500 truncate">{item.partner}</span>
+                          {/* How close I am: a warm bar while XP is short */}
+                          {isLoggedIn && !redeemed && !ready ? (
+                            <span className="mt-2 flex items-center gap-2">
+                              <span className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
+                                <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.min(100, Math.round((userXp / item.costXp) * 100))}%` }} />
+                              </span>
+                              <span className="text-[11px] text-slate-500 tabular-nums whitespace-nowrap">ขาด {(item.costXp - userXp).toLocaleString()}</span>
+                            </span>
+                          ) : (
+                            <span className="mt-0.5 block text-xs text-slate-500 tabular-nums truncate">{item.drawEntry ? item.discountValue : `เหลือ ${item.stockCount} สิทธิ์`}</span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
-                <Link href="/challenges" className="mt-4 inline-flex items-center gap-0.5 text-sm font-medium text-slate-900 underline-offset-4 hover:underline">
+              </>
+            )}
+
+            {/* How to get more XP, said once and quietly, after the rewards */}
+            <section className="mt-14 pt-8 border-t border-slate-200">
+              <div className="flex items-end justify-between gap-3">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">ได้ XP จาก</h2>
+                <Link href="/challenges" className="inline-flex items-center gap-0.5 min-h-10 text-sm font-bold text-[#2563EB] hover:underline shrink-0">
                   ดูชาเลนจ์ที่เปิดอยู่
                   <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
-
-                {isLoggedIn && (
-                  <button
-                    type="button"
-                    onClick={() => setViewTab(viewTab === 'my_vouchers' ? 'catalog' : 'my_vouchers')}
-                    className="mt-5 w-full inline-flex items-center justify-center gap-2 min-h-11 rounded-full bg-white hover:bg-white/80 text-slate-900 text-sm font-bold shadow-sm cursor-pointer"
-                  >
-                    <Ticket className="w-4 h-4" aria-hidden="true" />
-                    {viewTab === 'my_vouchers' ? 'ดูของรางวัลทั้งหมด' : <>คูปองของฉัน <span className="tabular-nums">({redeemedRewardIds.length})</span></>}
-                  </button>
-                )}
               </div>
+              <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+                {EARN.map((row) => (
+                  <li key={row.text} className="flex items-center gap-3 text-sm">
+                    <span className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                      <row.icon className="w-4 h-4 text-slate-800" aria-hidden="true" />
+                    </span>
+                    <span className="flex-1 font-medium text-slate-700">{row.text}</span>
+                    <span className="font-bold text-slate-900 tabular-nums">{row.xp}</span>
+                  </li>
+                ))}
+              </ul>
             </section>
-          </aside>
-
-          <div className="min-w-0">
-            {viewTab === 'catalog' ? (
-              <>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">แลกของรางวัล</h1>
-                <p className="mt-2 text-sm sm:text-base font-medium text-slate-600">ส่วนลดและของจากร้านพาร์ทเนอร์ แลกด้วย XP ที่ได้จากการออกไปใช้ชีวิต</p>
-
-                {/* Draw prizes are not in the shop: the campaigns are the way to them (owner 2026-11-04). Joined ones live in My Hub */}
-                <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} withRewards={false} className="mt-5" />
-
-                {/* Filters: categories, and only what I can afford now */}
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
-                    {REWARD_CATEGORIES.map((cat) => {
-                      const selected = selectedCategory === cat.id;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setSelectedCategory(cat.id)}
-                          aria-pressed={selected}
-                          className={`${CHIP} ${selected ? 'bg-amber-50 border border-amber-400 text-amber-900' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
-                        >
-                          {cat.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {isLoggedIn && (
-                    <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none shrink-0">
-                      <input type="checkbox" checked={onlyAffordable} onChange={(e) => setOnlyAffordable(e.target.checked)} className="w-4 h-4 accent-[#F26430] cursor-pointer" />
-                      แลกได้ตอนนี้
-                    </label>
-                  )}
-                </div>
-
-                {filteredRewards.length === 0 ? (
-                  <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-amber-50 p-5">
-                    <p className="text-sm font-medium text-slate-700">{onlyAffordable ? 'XP ยังไม่พอแลกชิ้นไหนในหมวดนี้ ไปตี้หรือทำชาเลนจ์เพิ่มอีกนิดนะ' : 'หมวดนี้ยังไม่มีของรางวัล'}</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory('all');
-                        setOnlyAffordable(false);
-                      }}
-                      className={QUIET_BUTTON}
-                    >
-                      ดูทั้งหมด
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {/* The site's tile: a square photo, the XP on a yellow ticket, the name and the partner below (owner 2026-10-31) */}
-                    <ul className="mt-8 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-8">
-                      {filteredRewards.map((item, i) => {
-                        const redeemed = redeemedRewardIds.includes(item.id);
-                        const ready = isLoggedIn && !redeemed && userXp >= item.costXp;
-                        const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
-                        return (
-                          <li key={item.id}>
-                            <button
-                              type="button"
-                              onClick={() => openItem(item)}
-                              className="group w-full text-left cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-3xl"
-                            >
-                              <span className="relative block transition-transform duration-300 group-hover:-translate-y-1">
-                                {item.image ? (
-                                  // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
-                                  <img
-                                    src={optimizedImage(item.image, 384)}
-                                    alt=""
-                                    loading="lazy"
-                                    className={`w-full aspect-square object-cover rounded-3xl bg-slate-100 shadow-md ${redeemed ? 'opacity-70' : ''} ${ready ? 'ring-2 ring-[#FFC83D] ring-offset-2' : ''}`}
-                                  />
-                                ) : (
-                                  <span className={`w-full aspect-square rounded-3xl shadow-md flex items-center justify-center ${look.tile}`}>
-                                    <look.icon className="w-10 h-10" aria-hidden="true" />
-                                  </span>
-                                )}
-                                {/* XP on a yellow ticket, tilted like the challenge stickers */}
-                                <span className={`absolute -top-2.5 -left-1.5 ${TICKET_TILTS[i % TICKET_TILTS.length]} inline-flex items-center gap-1 rounded-full bg-[#FFD84D] text-slate-900 px-2.5 py-1 text-xs font-bold shadow-md tabular-nums`}>
-                                  <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
-                                  {item.costXp.toLocaleString()} XP
-                                </span>
-                                {(redeemed || ready) && (
-                                  <span className={`absolute right-2.5 bottom-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap shadow-sm ${redeemed ? 'bg-white text-emerald-700' : 'bg-[#FFD84D] text-slate-900'}`}>
-                                    {redeemed ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />}
-                                    {redeemed ? 'แลกแล้ว' : 'แลกได้เลย'}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="mt-3 block text-sm sm:text-[15px] font-bold text-slate-900 leading-snug line-clamp-2">{item.title}</span>
-                              <span title={item.partner} className="mt-1 block text-xs text-slate-500 truncate">{item.partner}</span>
-                              {/* How close I am: a warm bar while XP is short */}
-                              {isLoggedIn && !redeemed && !ready ? (
-                                <span className="mt-2 flex items-center gap-2">
-                                  <span className="h-1.5 flex-1 rounded-full bg-amber-100 overflow-hidden" aria-hidden="true">
-                                    <span className="block h-full rounded-full bg-[#F26430]" style={{ width: `${Math.min(100, Math.round((userXp / item.costXp) * 100))}%` }} />
-                                  </span>
-                                  <span className="text-[11px] text-slate-500 tabular-nums whitespace-nowrap">ขาด {(item.costXp - userXp).toLocaleString()}</span>
-                                </span>
-                              ) : (
-                                <span className="mt-0.5 block text-xs text-slate-500 tabular-nums truncate">{item.drawEntry ? item.discountValue : `เหลือ ${item.stockCount} สิทธิ์`}</span>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                {/* My coupons: the codes to show at the shop */}
-                <button type="button" onClick={() => setViewTab('catalog')} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
-                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                  ของรางวัลทั้งหมด
+          </>
+        ) : (
+          <>
+            {myRedeemedItems.length === 0 ? (
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50 p-5">
+                <p className="text-sm font-medium text-slate-700">ยังไม่มีคูปอง ตอนนี้มี {userXp.toLocaleString()} XP ลองดูว่าแลกอะไรได้บ้าง</p>
+                <button type="button" onClick={() => setViewTab('catalog')} className={QUIET_BUTTON}>
+                  ดูของรางวัล
                 </button>
-                <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">คูปองของฉัน</h1>
-                <p className="mt-2 text-sm sm:text-base font-medium text-slate-600">โชว์รหัสให้พนักงานดูก่อนจ่ายเงิน</p>
-
-                {myRedeemedItems.length === 0 ? (
-                  <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-amber-50 p-5">
-                    <p className="text-sm font-medium text-slate-700">ยังไม่มีคูปอง ตอนนี้มี {userXp.toLocaleString()} XP ลองดูว่าแลกอะไรได้บ้าง</p>
-                    <button type="button" onClick={() => setViewTab('catalog')} className={QUIET_BUTTON}>
-                      ดูของรางวัล
-                    </button>
-                  </div>
-                ) : (
-                  <ul className="mt-6 grid gap-3">
-                    {myRedeemedItems.map((item) => {
-                      const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
-                      return (
-                        <li key={item.id} className="rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                          <button type="button" onClick={() => openItem(item)} className="min-w-0 flex-1 flex items-center gap-3 text-left cursor-pointer group">
-                            <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${look.tile}`}>
-                              <look.icon className="w-5 h-5" aria-hidden="true" />
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-xs font-semibold text-slate-500 truncate">{item.partner}</span>
-                              <span className="block text-base font-bold text-slate-900 group-hover:underline">{item.title}</span>
-                              <span className="block text-xs font-medium text-slate-500 tabular-nums">{untilOf(item)}</span>
-                            </span>
-                          </button>
-                          <span className="flex items-center justify-between sm:justify-end gap-2 shrink-0 rounded-xl border-2 border-dashed border-[#FFC83D] bg-amber-50 pl-3 pr-1 py-1">
-                            <span className="font-mono text-base font-bold text-slate-900 tracking-wider">{codeOf(item)}</span>
-                            <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
-                              {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                              {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
-                            </button>
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </>
+              </div>
+            ) : (
+              <ul className="mt-6 grid gap-3">
+                {myRedeemedItems.map((item) => {
+                  const look = CATEGORY_LOOK[item.category] ?? { icon: Gift, tile: 'bg-slate-100 text-slate-700' };
+                  return (
+                    <li key={item.id} className="rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <button type="button" onClick={() => openItem(item)} className="min-w-0 flex-1 flex items-center gap-3 text-left cursor-pointer group">
+                        <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${look.tile}`}>
+                          <look.icon className="w-5 h-5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold text-slate-500 truncate">{item.partner}</span>
+                          <span className="block text-base font-bold text-slate-900 group-hover:underline">{item.title}</span>
+                          <span className="block text-xs font-medium text-slate-500 tabular-nums">{untilOf(item)}</span>
+                        </span>
+                      </button>
+                      <span className="flex items-center justify-between sm:justify-end gap-2 shrink-0 rounded-xl border-2 border-dashed border-[#FFC83D] bg-amber-50 pl-3 pr-1 py-1">
+                        <span className="font-mono text-base font-bold text-slate-900 tracking-wider">{codeOf(item)}</span>
+                        <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
+                          {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                          {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
       {/* One popup per reward, shared with the promo row on other pages (components/rewards/RewardDialog.tsx) */}
@@ -398,19 +393,5 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
       />
       <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
     </div>
-  );
-}
-
-/** A few still confetti bits in the wallet's top corner: the card should look like good news */
-function WalletConfetti() {
-  return (
-    <svg className="pointer-events-none absolute right-4 top-4 w-20 h-14 sm:w-28 sm:h-20" viewBox="0 0 112 80" aria-hidden="true">
-      <rect x="70" y="6" width="9" height="9" rx="2" fill="#F26430" transform="rotate(18 74 10)" />
-      <circle cx="98" cy="22" r="4.5" fill="#2563EB" />
-      <rect x="86" y="44" width="12" height="5" rx="2.5" fill="#10B981" transform="rotate(-30 92 46)" />
-      <circle cx="56" cy="30" r="3.5" fill="#F472B6" />
-      <rect x="40" y="8" width="10" height="4.5" rx="2.25" fill="#FFFFFF" transform="rotate(35 45 10)" />
-      <circle cx="104" cy="62" r="3" fill="#FFFFFF" />
-    </svg>
   );
 }

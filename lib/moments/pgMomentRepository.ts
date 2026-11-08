@@ -20,7 +20,7 @@ const hydrate = (tx: Sql, where: Fragment) => tx`
     array(select x.legacy_id from app.moment_saves s join app.members x on x.id = s.member_id where s.moment_id = m.id order by s.created_at) as saved_by,
     array(select x.legacy_id from app.moment_tags g join app.members x on x.id = g.member_id where g.moment_id = m.id order by g.created_at) as tagged_ids,
     (select coalesce(json_agg(json_build_object('id', coalesce(c.slug, c.id::text), 'author_id', x.legacy_id, 'author_name', coalesce(x.display_name, c.author_name),
-        'author_avatar', coalesce(x.avatar_url, c.author_avatar), 'body', c.body, 'hidden', c.hidden, 'created_at', c.created_at, 'parent_id', coalesce(p.slug, p.id::text),
+        'author_avatar', coalesce(x.avatar_url, c.author_avatar), 'body', c.body, 'hidden', c.hidden, 'created_at', c.created_at, 'parent_id', coalesce(p.slug, p.id::text), 'mentions', c.mentions,
         'liked_by', array(select y.legacy_id from app.moment_comment_likes k join app.members y on y.id = k.member_id where k.comment_id = c.id order by k.created_at)) order by c.created_at, c.id), '[]')
        from app.moment_comments c left join app.members x on x.id = c.author_id left join app.moment_comments p on p.id = c.parent_id where c.moment_id = m.id) as comments,
     (select coalesce(json_agg(json_build_object('member_id', x.legacy_id, 'reason', r.reason, 'created_at', r.created_at) order by r.created_at), '[]')
@@ -64,6 +64,7 @@ function rowToMoment(r: PgRow): Moment {
       ...(c.hidden ? { hidden: true } : {}),
       ...(c.parent_id ? { parentId: c.parent_id as string } : {}),
       likedBy: (c.liked_by as string[] | null) ?? [],
+      ...(Array.isArray(c.mentions) && c.mentions.length ? { mentions: c.mentions as { id: string; name: string }[] } : {}),
     })),
     reports: (r.reports as Row[]).map((x) => ({ memberId: x.member_id as string, reason: x.reason as string, createdAt: iso(x.created_at) as string })),
     status: r.status,
@@ -145,6 +146,7 @@ async function insertComments(tx: Sql, momentId: string, comments: MomentComment
     return {
       id: uuidV7(c.createdAt), slug: c.id, moment_id: momentId, author_id: authorId, author_name: authorId ? null : c.authorName, author_avatar: authorId ? null : c.authorAvatar ?? null,
       body: c.text, hidden: Boolean(c.hidden), created_at: toDate(c.createdAt) as Date, parent_id: c.parentId ? parents.get(c.parentId) ?? null : null,
+      mentions: c.mentions?.length ? tx.json(c.mentions) : null,
     };
   });
   await tx`insert into app.moment_comments ${tx(rows)}`;
@@ -259,7 +261,7 @@ const hydrateFeed = (tx: Sql, ids: string[], query: MomentFeedQuery) => {
       array(select x.legacy_id from app.moment_tags g join app.members x on x.id = g.member_id where g.moment_id = m.id order by g.created_at) as tagged_ids,
       (select coalesce(json_agg(newest), '[]') from (
         select coalesce(c.slug, c.id::text) as id, x.legacy_id as author_id, coalesce(x.display_name, c.author_name) as author_name, coalesce(x.avatar_url, c.author_avatar) as author_avatar,
-          c.body, c.hidden, c.created_at, null::text as parent_id,
+          c.body, c.hidden, c.created_at, null::text as parent_id, c.mentions,
           array(select y.legacy_id from app.moment_comment_likes k join app.members y on y.id = k.member_id where k.comment_id = c.id) as liked_by
         from app.moment_comments c ${commentJoins}
         where c.moment_id = m.id and c.parent_id is null and ${shownComment} order by c.created_at desc, c.id desc limit 1) newest) as comments,

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, MapPin, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowLeft, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X } from 'lucide-react';
 import {
-  FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
+  FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
   type EditedPhoto, type FunSticker, type PhotoText, type PostShape,
 } from '@/lib/media/photoEdit';
@@ -11,7 +11,7 @@ import { Segmented, TextTools, newText } from './EditorControls';
 
 /**
  * Second step of posting photos, the way Instagram does it: the post's shape (1:1 or 4:5), crop, filter, light and
- * colour, text, and stickers (the place, line icons, short words). The frame shows exactly what will upload
+ * colour, text, and stickers (line icons, short words; the place is chosen on the next step). The frame shows exactly what will upload
  * (lib/media/photoEdit.ts). Each photo keeps its own edits; a filter or light setting can be copied to every photo.
  * The photos' order is the post's order: press and hold a thumbnail (or drag it with a mouse) to move it.
  */
@@ -39,10 +39,6 @@ interface PhotoEditorProps {
   /** The post's shape, the same for every photo */
   shape: PostShape;
   onShapeChange: (shape: PostShape) => void;
-  /** The place chosen so far, for its sticker */
-  placeTitle: string | null;
-  /** The place search, shown here while no place is chosen */
-  placeField: React.ReactNode;
   onBack: () => void;
   onNext: () => void;
 }
@@ -86,7 +82,7 @@ function ApplyAll({ onClick, done }: { onClick: () => void; done: boolean }) {
   );
 }
 
-export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, onShapeChange, placeTitle, placeField, onBack, onNext }: PhotoEditorProps) {
+export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, onShapeChange, onBack, onNext }: PhotoEditorProps) {
   const [shownId, setShownId] = useState(photos[0]?.id ?? '');
   const [tool, setTool] = useState<Tool>('crop');
   const [selectedText, setSelectedText] = useState<string | null>(null);
@@ -108,6 +104,8 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
   const update = (change: Partial<EditedPhoto>) => onChange(photos.map((p, i) => (i === shownIndex ? { ...p, ...change } : p)));
   const textOn = photo?.texts.find((t) => t.id === selectedText) ?? null;
   const funOn = photo?.stickers.find((s) => s.id === selectedFun) ?? null;
+  /** Below 1 the whole photo shows, with white around it */
+  const fitZoom = photo ? minZoom(photo, shape) : 1;
 
   useEffect(() => {
     loadEditorFont()?.then(() => setFontReady((n) => n + 1));
@@ -136,11 +134,11 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
     if (!el || tool !== 'crop') return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      onChange(photos.map((p, i) => (i === shownIndex ? { ...p, zoom: Math.max(1, Math.min(MAX_ZOOM, p.zoom + (e.deltaY < 0 ? 0.08 : -0.08))) } : p)));
+      onChange(photos.map((p, i) => (i === shownIndex ? { ...p, zoom: Math.max(minZoom(p, shape), Math.min(MAX_ZOOM, p.zoom + (e.deltaY < 0 ? 0.08 : -0.08))) } : p)));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [tool, photos, shownIndex, onChange]);
+  }, [tool, photos, shownIndex, onChange, shape]);
 
   // While a thumbnail is being dragged, the finger moves it instead of scrolling the row
   useEffect(() => {
@@ -204,7 +202,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       const [a, b] = [...pointers.current.values()];
       if (!a || !b) return;
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
-      update({ zoom: Math.max(1, Math.min(MAX_ZOOM, photo.zoom * (distance / (move.distance || distance)))) });
+      update({ zoom: Math.max(minZoom(photo, shape), Math.min(MAX_ZOOM, photo.zoom * (distance / (move.distance || distance)))) });
       move.distance = distance;
       return;
     }
@@ -246,7 +244,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
     const id = `s${Math.max(0, ...photo.stickers.map((s) => Number(s.id.slice(1)))) + 1}`;
     // Each new one lands on its own spot, so they do not hide each other
     const [x, y] = STICKER_SPOTS[photo.stickers.length % STICKER_SPOTS.length];
-    const sticker: FunSticker = { id, kind, value, style: kind === 'icon' ? 'white' : 'rose', x, y, scale: 1 };
+    const sticker: FunSticker = { id, kind, value, style: 'rose', x, y, scale: 1 };
     update({ stickers: [...photo.stickers, sticker] });
     setSelectedFun(id);
   };
@@ -329,8 +327,8 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       {tool === 'crop' && (
         <div className="space-y-2">
           <Segmented label="รูปทรงโพสต์" options={POST_SHAPES.map((s) => [s.label, s.ratio] as [string, PostShape])} value={shape} onChange={onShapeChange} />
-          <Slider label="ซูม" value={photo.zoom} min={1} max={MAX_ZOOM} step={0.01} shown={`${photo.zoom.toFixed(1)}x`} onChange={(zoom) => update({ zoom, ...clampPan({ ...photo, zoom }, shape, photo.panX, photo.panY) })} />
-          <p className="text-xs text-slate-500">ลากบนรูปเพื่อเลื่อน ทุกรูปในโพสต์ใช้รูปทรงเดียวกัน</p>
+          <Slider label="ซูม" value={Math.max(photo.zoom, fitZoom)} min={fitZoom} max={MAX_ZOOM} step={0.01} shown={fitZoom < 1 && photo.zoom <= fitZoom + 0.005 ? 'เห็นทั้งรูป' : `${photo.zoom.toFixed(1)}x`} onChange={(zoom) => update({ zoom, ...clampPan({ ...photo, zoom }, shape, photo.panX, photo.panY) })} />
+          <p className="text-xs text-slate-500">{fitZoom < 1 ? 'เลื่อนซ้ายสุดเพื่อเห็นทั้งรูป ลากบนรูปเพื่อเลื่อน' : 'ลากบนรูปเพื่อเลื่อน'} ทุกรูปในโพสต์ใช้รูปทรงเดียวกัน</p>
         </div>
       )}
       {tool === 'filter' && (
@@ -362,7 +360,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       {tool === 'sticker' &&
         (funOn ? (
           <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5" role="group" aria-label="สีสติกเกอร์">
+            <div className="flex items-center gap-1.5" role="group" aria-label={funOn.kind === 'icon' ? 'สีไอคอน' : 'สีสติกเกอร์'}>
               {STICKER_STYLES.map((style) => (
                 <button key={style.id} type="button" onClick={() => editFun({ style: style.id })} aria-label={`สี${style.label}`} aria-pressed={funOn.style === style.id} style={{ background: style.fill }} className={`w-7 h-7 rounded-full border cursor-pointer ${funOn.style === style.id ? 'ring-2 ring-offset-1 ring-[#2563EB] border-transparent' : 'border-slate-300'}`} />
               ))}
@@ -383,25 +381,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <p className="text-xs font-bold text-slate-700">สถานที่</p>
-              {placeTitle ? (
-                photo.sticker?.title === placeTitle ? (
-                  <button type="button" onClick={() => update({ sticker: undefined })} className="h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer">
-                    เอาสติกเกอร์สถานที่ออก
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => update({ sticker: { title: placeTitle, x: 0.5, y: 0.88 } })} className="h-9 max-w-full px-3.5 rounded-full bg-white border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-800 cursor-pointer inline-flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 shrink-0 text-[#F43F5E]" aria-hidden="true" />
-                    <span className="truncate">{placeTitle}</span>
-                  </button>
-                )
-              ) : (
-                placeField
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs font-bold text-slate-700">สติกเกอร์</p>
-              <div className="grid grid-cols-5 sm:grid-cols-4 gap-1.5" role="group" aria-label="สติกเกอร์ไอคอน">
+              <div className="grid grid-cols-5 sm:portrait:grid-cols-9 gap-1.5" role="group" aria-label="สติกเกอร์ไอคอน">
                 {Object.entries(ICON_STICKERS).map(([key, { label }]) => {
                   const Icon = ICON_BUTTONS[key];
                   return (
@@ -437,10 +417,11 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
         </button>
       </div>
 
-      {/* Side by side on a short, wide screen so the photo keeps its size */}
-      <div className="flex-1 min-h-0 flex flex-col [@media(max-height:560px)]:flex-row sm:flex-row overflow-hidden">
-        {/* This box leaves the tools room under it on a phone; the frame is the largest one of the post's shape that fits */}
-        <div className="[container-type:size] shrink-0 h-[min(100vw,calc(100dvh-20rem))] [@media(max-height:560px)]:h-full [@media(max-height:560px)]:flex-1 [@media(max-height:560px)]:min-w-0 sm:h-auto sm:flex-1 sm:min-w-0 flex items-center justify-center bg-slate-100 sm:p-4">
+      {/* The photo comes first: tools sit under it on an upright screen (phone, iPad held upright), beside it on a wide one */}
+      <div className="flex-1 min-h-0 flex flex-col landscape:flex-row overflow-hidden">
+        {/* On a phone this box leaves the tools room under it; on a bigger upright screen it takes all the height the tools
+            leave. The frame is the largest one of the post's shape that fits */}
+        <div className="[container-type:size] shrink-0 h-[min(100vw,calc(100dvh-20rem))] sm:portrait:h-auto sm:portrait:flex-1 sm:portrait:min-h-0 landscape:h-full landscape:flex-1 landscape:min-w-0 flex items-center justify-center bg-slate-100 sm:p-4">
           <canvas
             ref={canvas}
             width={PREVIEW_WIDTH}
@@ -456,10 +437,10 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
           />
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0 sm:flex-none sm:w-[320px] flex flex-col border-t sm:border-t-0 sm:border-l border-slate-100">
+        <div className="flex-1 min-h-0 min-w-0 sm:portrait:flex-none sm:portrait:h-[17rem] landscape:flex-none landscape:w-[320px] flex flex-col border-t landscape:border-t-0 landscape:border-l border-slate-100">
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
             {/* The photos in this post, in the post's order */}
-            <div className={tool === 'text' || tool === 'sticker' ? 'hidden sm:block' : 'block'}>
+            <div className={tool === 'text' || tool === 'sticker' ? 'hidden landscape:sm:block' : 'block'}>
               <div ref={strip} className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" aria-label="รูปในโพสต์นี้">
                 {photos.map((p, i) => (
                   <div
@@ -488,9 +469,9 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
                     {i === 0 && photos.length > 1 && (
                       <span className="pointer-events-none absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-1.5 text-[10px] font-semibold leading-4 text-white">ปก</span>
                     )}
-                    {photos.length > 1 && i === shownIndex && !draggingId && (
-                      <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => removePhoto(i)} aria-label={`เอารูปที่ ${i + 1} ออก`} className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center cursor-pointer">
-                        <X className="w-3 h-3" />
+                    {i === shownIndex && !draggingId && (
+                      <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => removePhoto(i)} aria-label={photos.length > 1 ? `เอารูปที่ ${i + 1} ออก` : 'เอารูปนี้ออก แล้วเลือกใหม่'} className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-slate-900 ring-2 ring-white text-white flex items-center justify-center cursor-pointer">
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -511,7 +492,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
                   </label>
                 )}
               </div>
-              {photos.length > 1 && <p className="mt-1 text-xs text-slate-500">แตะค้างที่รูปแล้วลากเพื่อสลับลำดับ รูปแรกเป็นปก</p>}
+              <p className="mt-1 text-xs text-slate-500">{photos.length > 1 ? 'แตะค้างที่รูปแล้วลากเพื่อสลับลำดับ รูปแรกเป็นปก แตะ × เพื่อเอาออก' : 'แตะ × เพื่อเอารูปนี้ออกแล้วเลือกใหม่ หรือ + เพื่อเพิ่มรูป'}</p>
             </div>
             {panel}
           </div>

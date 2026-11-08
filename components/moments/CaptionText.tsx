@@ -1,9 +1,26 @@
 import React from 'react';
 import Link from 'next/link';
 import { HASHTAG, hashtagHref } from '@/lib/moments/hashtags';
+import { splitMentions, type Mention } from '@/lib/moments/mentions';
 
-/** A caption with its hashtags as real links, so people and search engines can follow them */
-export function CaptionText({ text, linkClassName = 'font-medium text-[#2563EB] hover:underline' }: { text: string; linkClassName?: string }) {
+/** A caption or comment with its hashtags and @mentions as real links, so people and search engines can follow them */
+export function CaptionText({ text, mentions = [], linkClassName = 'font-medium text-[#2563EB] hover:underline' }: { text: string; mentions?: Mention[]; linkClassName?: string }) {
+  return (
+    <>
+      {splitMentions(text, mentions).map((part, i) =>
+        typeof part === 'string' ? (
+          <Hashtags key={i} text={part} linkClassName={linkClassName} />
+        ) : (
+          <Link key={i} href={`/profile?id=${encodeURIComponent(part.id)}`} className={linkClassName}>
+            @{part.name}
+          </Link>
+        )
+      )}
+    </>
+  );
+}
+
+function Hashtags({ text, linkClassName }: { text: string; linkClassName: string }) {
   const parts: React.ReactNode[] = [];
   let at = 0;
   for (const match of text.matchAll(HASHTAG)) {

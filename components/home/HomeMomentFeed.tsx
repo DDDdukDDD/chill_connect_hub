@@ -11,11 +11,15 @@ import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { saveFeedReturn, takeShowcase } from '@/components/moments/momentsReturn';
 import { CaptionText } from '@/components/moments/CaptionText';
+import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { MomentComposer, CountedQuestNotice, PostOptionFields, type CountedQuest, type MomentComposerInitial, type PostOptions } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
+import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
+import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -63,7 +67,7 @@ const Avatar = MomentAvatar;
 
 interface PostHandlers {
   onToggle: (id: string, action: Action) => void;
-  onComment: (id: string, text: string, parentId?: string) => Promise<boolean>;
+  onComment: (id: string, text: string, parentId?: string, mentions?: string[]) => Promise<boolean>;
   onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
   onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
   onPhotos: (images: string[], index: number) => void;
@@ -85,6 +89,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
   const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentBox = useRef<HTMLInputElement>(null);
+  const mention = useMentionPicker({ value: draft, setValue: setDraft, fieldRef: commentBox, extra: threadPeople(moment) });
   const answer = (comment: ThreadComment) => {
     setReplyTo(comment);
     setShowComments(true);
@@ -102,8 +107,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     e.preventDefault();
     if (!draft.trim() || isSending) return;
     setIsSending(true);
-    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id)) {
+    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id, mention.mentions.map((m) => m.id))) {
       setDraft('');
+      mention.reset();
       setReplyTo(null);
     }
     setIsSending(false);
@@ -187,7 +193,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {moment.caption && (
         <div>
           <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} />
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
           </p>
           {foldsCaption && (
             <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
@@ -268,7 +274,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             id={`comment-${moment.id}`}
             value={draft}
             maxLength={300}
-            onChange={(e) => setDraft(e.target.value)}
+            {...mention.fieldProps}
             placeholder="เขียนความคิดเห็น…"
             className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
@@ -282,6 +288,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           </button>
         </form>
       )}
+      {showComments && !moment.commentsOff && mention.list}
     </article>
   );
 }
@@ -317,7 +324,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
-      <img src={images[index]} alt={`รูปที่ ${index + 1}`} className="max-w-full max-h-[90dvh] object-contain" onClick={(e) => e.stopPropagation()} />
+      <img src={optimizedImage(images[index], 1080)} alt={`รูปที่ ${index + 1}`} className="max-w-full max-h-[90dvh] object-contain" onClick={(e) => e.stopPropagation()} />
       <button type="button" onClick={onClose} aria-label="ปิด" className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer">
         <X className="w-5 h-5" />
       </button>
@@ -415,7 +422,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [viewer, setViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
   const [reporting, setReporting] = useState<{ moment: FeedItem; reason: string } | null>(null);
-  const [editing, setEditing] = useState<({ id: string; caption: string } & PostOptions) | null>(null);
+  const [editing, setEditing] = useState<({ id: string; caption: string; photos: EditablePhoto[] | null; ratio: number } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -555,8 +562,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         }
       });
     },
-    onComment: async (id, text, parentId) => {
-      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId });
+    onComment: async (id, text, parentId, mentions) => {
+      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId, mentions });
       if (!result.ok || !result.moment) {
         showToast(result.message);
         return false;
@@ -574,7 +581,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       return true;
     },
     onMenu: (moment, choice) => {
-      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
+      // A clip post keeps its cover; only photo posts show the photo row
+      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, photos: moment.video ? null : moment.images.map((url) => ({ url })), ratio: postRatio(moment.imageRatio), commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
       if (choice === 'copy' || choice === 'share') {
@@ -631,7 +639,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const saveEdit = async () => {
     if (!editing) return;
     setIsBusy(true);
-    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim(), commentsOff: editing.commentsOff, likesOff: editing.likesOff, sharesOff: editing.sharesOff });
+    let images: string[] | undefined;
+    try {
+      // Photos added in this edit upload only now, in their place in the row
+      images = editing.photos ? await Promise.all(editing.photos.map((photo) => (photo.added ? uploadPicture(photo.added) : photo.url))) : undefined;
+    } catch (error) {
+      setIsBusy(false);
+      return showToast(error instanceof Error ? error.message : 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
+    }
+    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim(), images, commentsOff: editing.commentsOff, likesOff: editing.likesOff, sharesOff: editing.sharesOff });
     setIsBusy(false);
     if (!result.ok || !result.moment) return showToast(result.message);
     replace(result.moment);
@@ -860,6 +876,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
       {editing && (
         <DialogShell onClose={() => setEditing(null)} title="แก้ไขโพสต์" size="sm">
+          {editing.photos && (
+            <EditPhotosRow photos={editing.photos} ratio={editing.ratio} onChange={(photos) => setEditing({ ...editing, photos })} onError={showToast} />
+          )}
           <label htmlFor="home-edit-caption" className="sr-only">ข้อความของโมเมนต์</label>
           <textarea
             id="home-edit-caption"

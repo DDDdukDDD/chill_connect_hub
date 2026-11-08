@@ -20,6 +20,58 @@ Item template:
 
 ---
 
+### BE-308 · Load test on dev; signed-out moment feed kept 15 s (2026-11-08)
+- **What changed:** `scripts/load-test.mjs` drives a local `next start` on the dev database (refuses anything but localhost). Before: 49 req/s, p95 1.7 s at 50 users, no errors, `/moments` and `/api/moments` slowest (every request read the database, ~200 ms). `listMoments` now keeps the signed-out page 15 s and `countMomentsByType` 30 s (`cacheManager`, tag `moments-guest`); members still read fresh. After: 56 req/s, p95 1.4 s, no errors; the limit is the laptop CPU. Places stay filtered in memory: browse 8 ms, Thai search 23 ms, so moving them to SQL waits (see LAUNCH_CHECKLIST).
+- **What to do about it:** a post hidden by staff can stay in the guest feed up to 15 s on a server that already had it.
+
+### BE-307 · Daily clean-up of moment files no post uses (2026-11-08)
+- **What changed:** `GET /api/cron/hourly` runs `cleanMomentOrphans` (`lib/media/orphanCleanup.ts`), which works at most once in 20 hours (stamp `moment_orphans_cleaned_at` in `app_settings`). It deletes files in the `moments` folder older than 3 days that no moment (any status) points to as a photo, clip or clip preview, matched by path not host; at most 300 a run, and it deletes nothing if more than half the old files look unused. Avatars are left alone: their links are copied onto ตี้, comments and notifications. Dry run on dev found 7 of 9 old test files unused, checked by hand.
+
+### BE-306 · Follower lists read only the people on them (2026-11-08)
+- **What changed:** `GET /api/members/follows` built both lists by reading every member; it now reads the followed ids plus the follower ids from the follows index (`memberRepository.followerIds`, new on both repositories). Same response.
+
+### BE-305 · Feed photo viewer and admin lists through the image optimizer (2026-11-08)
+- **What changed:** the full-screen viewer in `HomeMomentFeed` asks for 1080 px; admin lists (ตี้/อีเวนต์, members, moments, places, provinces, venues, media) ask for 64–384 px through `optimizedImage` / `avatarImage`. Watch the Vercel image optimization quota.
+
+### BE-304 · Signed-in walk of BE-297..303 on dev, short map link in trip share (2026-11-08)
+- **What changed:** walked in headless Chrome with two throwaway members (all deleted after): photo edit after posting (add 2, move, remove, save; the removed file leaves storage), @mention in a comment links to the profile and the picker offers friends, "อ่านแล้ว" shows in a two-person ตี้ chat after the other side opens it, "ส่งให้คนใกล้ตัว" opens for a trip member, the photo editor fits iPad upright (tools under the photo) and sideways (beside it) and a phone, the challenge counted list starts folded and opens, /rewards has no sideways scroll. No script errors. The trip share message now links the map by coordinates (`?q=lat,lng`) instead of a long percent-encoded Thai name.
+- **What to do about it:** still not tried on a real iPad or iPhone.
+
+### BE-303 · Edit photos after posting (owner 2026-11-08)
+- **What changed:** "แก้ไขโพสต์" on a photo moment shows the photos in a row: × takes one out (one must stay), ‹ moves one earlier, "เพิ่มรูป" adds more up to 10. New photos are cut to the post's shape (square or 4:5) on the phone and upload only on บันทึก, so a cancelled edit leaves nothing in storage. `PATCH /api/moments/[id]` takes `images`; photos taken out are deleted from storage unless another own post shows them. Clip posts edit text only. `uploadPicture` is exported from `components/moments/publishMoment.ts`.
+
+### BE-302 · Master data in its own tables (owner 2026-11-08)
+- **What changed:** categories, provinces, zones, venues and the two rail card lists are read from and written to `app.provinces`, `app.zones`, `app.categories`, `app.venues`, `app.venue_groups`, `app.community_clubs` (`lib/masterDataTables.ts`), no longer one `app_settings` document. Each admin action writes only the rows it changes, so two staff saving at once keep both edits. Pages still read a copy in memory, checked every 30 s against a count + `updated_at` fingerprint. A venue staff add is now a real `app.venues` row, so events can point to it at once (the adapter re-reads codes after a province or venue edit). `data/master_data.json` is only the no-database mode file now: editing it no longer changes the database.
+- **What to do about it:** run migration **0034** on live when merging (`npm run db:migrate`). It adds the missing columns and copies what pages showed (the `master_data` document if staff saved one, else the bundled file as of today) into the tables; the document is kept as `master_data_before_0034`. Tested on dev, including the copy from a saved document.
+
+### BE-301 · Tab counts follow the filters, calmer /rewards, place page order (owner 2026-11-08)
+- **What changed:** /events and /community tab counts use the same filters as the cards (`matchingFairs` / `matchingTees`), so a tab never promises more than it shows. /rewards: wallet row and chips are neutral; only campaign cards and XP tickets stay yellow. Place page: "ไปต่อไหนดี" is back in the right column on desktop and sits after the cafés on phone and iPad (`max-lg:order-1` / `max-lg:order-2`).
+
+### BE-300 · Tester round: posting on iPad, challenge folds, rewards strip (owner 2026-11-08)
+- **What changed:** photo and clip editors put the picture first: tools under it on any upright screen (iPad held upright too), beside it on a wide one (`portrait:` / `landscape:`); the clip dialog is no longer 512 px wide. × removes even the only photo (back to choosing); the clip has "เลือกคลิปใหม่". Zoom goes below 1 to show the whole photo with white bars (`minZoom` in `lib/media/photoEdit.ts`). Sticker panel has no place section (the place is on the next step); icon stickers have no badge, the colour is the icon's; word pills measure wider for Thai. Challenge page: กติกาและเงื่อนไข open at first; the counted list folds to one line like นับในชาเลนจ์ on a ตี้ page, closed at first (opens from "ดูที่ที่นับ"). ตี้ page: empty "ถามคนจัด" is one line with a button; the host sees nothing until asked. Place page: "ไปต่อไหนดี" moved under ร้านกาแฟและร้านอร่อยใกล้ๆ. /rewards: one column, slim XP strip, "ได้ XP จาก" at the bottom.
+- **What to do about it:** not walked on a real iPad yet.
+
+### BE-299 · Chat read state (owner 2026-11-07)
+- **What changed:** reading a chat marks it read in `chat_room_members.last_read_at` (table from 0008, first use; no migration). `GET /api/chat/{roomId}` adds `reads`; `GroupChatModal` shows "อ่านแล้ว" (two people) or "อ่านแล้ว N" (group) under one's own messages, like LINE. A poll with nothing new writes nothing. `chatStore` has `markRead` and `readTimes` (JSON mode: `chat_reads`). Details in docs/API.md.
+
+### BE-298 · @mentions in captions and comments (owner 2026-11-07)
+- **What changed:** "@" in the caption, the moment page comment box and the home feed comment box opens a list of people (`components/moments/MentionPicker.tsx`, rules in `lib/moments/mentions.ts`). Caption mentions become tags. Comment mentions are stored in `moment_comments.mentions` (migration **0033**) and send `tagged` with `commentId` ("พูดถึงคุณในความคิดเห็น"). `CaptionText` takes `mentions` and links `@name` to the profile. Confirmed names are taken out of the new-account contact check, which would otherwise block "@Duke" as a LINE id.
+- **What to do about it:** run migration 0033 on live before merging (dev done).
+
+### BE-297 · Trip: send the plan to someone close (owner 2026-11-07)
+- **What changed:** on a Spot Buddy trip (`spotId`) the member or host has joined, the share buttons (hero and phone bar) open `components/detail/TripSafetyShare.tsx` instead of the plain share: a ready, editable text with where (place, address, map link), when, with whom (from the attendee list) and the trip link, sent through LINE, the phone's share sheet or a copy. Other ตี้ keep the plain share. Also TR-002 set to "Ready to re-test" (fixed in BE-289, the status was not updated).
+
+### BE-296 · The hourly job moves every waiting list (2026-11-07)
+- **What changed:** `GET /api/cron/hourly` now also runs `waitlists` (`moveAllQueues` in `lib/social/waitlist.ts`): lapsed 2-hour offers drop out and the next person is offered the seat and told, even when nobody opens the ตี้. Before, the line moved only when someone read or changed it.
+
+### BE-295 · "ไม่ได้ไป" is kept on the account (2026-11-07)
+- **What changed:** the My Hub mark "ไม่ได้ไป / ไปแล้ว" on an ended event without a member host was kept only in the browser. It is now `event_participants.missed_at` (migration **0032**), set with `POST /api/auth/member/activity { action: 'missed' }` and read as `joined[].missedAt`. Old browser marks are sent to the account once. Where a member host checks people in, the menu no longer offers the mark (their check-in decides).
+- **What to do about it:** run migration 0032 on live before merging (dev done).
+
+### BE-294 · No Vercel previews for `tester` and `office-notebook` (2026-11-07)
+- **What changed:** `vercel.json` turns off Vercel builds for pushes to `tester` and `office-notebook` (`git.deploymentEnabled`). Old deployments filled the free Functions Storage (10 GB). The owner also set deployment retention: previews 1 day, production 1 week.
+- **What to do about it:** office-notebook work gets a preview only once it reaches `claude`. Push in batches: one push is one build.
+
 ### BE-293 · See who liked your moment (owner 2026-11-07)
 - **What changed:** on your own moment the heart count is a link that opens คนที่ส่งหัวใจให้, newest first, each with a follow button (`GET /api/moments/[id]/likes`, owner only; others still see just the number). The person row with photo, name and follow button is shared with the follower lists (`components/members/PeopleList.tsx`).
 

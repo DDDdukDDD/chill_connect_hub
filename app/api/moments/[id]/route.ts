@@ -31,7 +31,14 @@ export async function PATCH(request: Request, context: Context) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   const { id } = await context.params;
   try {
+    const before = await momentRepository.findById(id);
     const moment = await editMoment(member, id, await request.json());
+    // Photos taken out of the post leave storage too, unless another of the member's posts still shows them
+    const removed = (before?.images ?? []).filter((url) => !moment.images.includes(url));
+    if (removed.length) {
+      const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
+      await deleteMemberUploads(removed, remaining.flatMap(momentFiles)).catch(() => 0);
+    }
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])) });
   } catch (error) {
     return errorResponse(error, 'แก้ไขไม่สำเร็จ');

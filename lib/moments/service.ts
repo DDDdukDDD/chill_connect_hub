@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { cacheManager } from '../cache';
 import { tidyDisplayName, withoutSampleHandle } from '../displayName';
 import { ownUploadFolder } from '../media/ownMedia';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import { realPlace } from './feedRules';
+import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -91,6 +93,9 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
         createdAt: comment.createdAt,
         isMine: Boolean(viewer && comment.authorId === viewer.id),
         parentId: comment.parentId,
+        authorId: comment.authorId,
+        // A mention of someone the viewer blocked shows as plain text
+        mentions: (comment.mentions ?? []).filter((m) => !blocked.has(m.id)),
         likesCount: comment.likedBy?.length ?? 0,
         isLiked: Boolean(viewer && comment.likedBy?.includes(viewer.id)),
         // The commenter and the author of the post may remove it
@@ -173,7 +178,13 @@ const pagination = (page: number, limit: number, found: { totalCount?: number; h
  * comment and the counts; the moment's own page and GET /api/moments/[id] have the rest.
  * Posts by members the viewer has blocked are left out; "saved", "mine" and "following" need a viewer.
  */
+/** Signed out, everyone sees the same page: it is kept 15 s, so a crowd of visitors is one database read, not one each */
 export async function listMoments(viewer: Member | null, options: MomentListOptions) {
+  if (!viewer) return cacheManager.getOrSet(`moments:guest:${JSON.stringify(options)}`, () => readMoments(null, options), { ttlMs: 15_000, tags: ['moments-guest'] });
+  return readMoments(viewer, options);
+}
+
+async function readMoments(viewer: Member | null, options: MomentListOptions) {
   const tab = options.tab ?? 'all';
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
@@ -214,7 +225,7 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
 }
 
 /** How many public moments each /moments tab holds, counted by the database */
-export const countMomentsByType = () => momentRepository.typeCounts();
+export const countMomentsByType = () => cacheManager.getOrSet('moments:type-counts', () => momentRepository.typeCounts(), { ttlMs: 30_000, tags: ['moments-guest'] });
 
 /** A published moment for its public page, or null (hidden, removed, banned author, unknown id) */
 export async function findPublicMoment(id: string): Promise<FeedItem | null> {
@@ -243,6 +254,34 @@ export async function taggableFriends(member: Member): Promise<Member[]> {
 
 const MAX_MOMENT_TAGS = 10;
 
+const asMention = (person: Member): Mention => ({ id: person.id, name: tidyDisplayName(person.displayName).trim() || person.displayName });
+const pickedIds = (input: unknown): Set<string> =>
+  new Set(Array.isArray(input) ? input.flatMap((m) => (typeof m === 'string' ? [m] : m && typeof m === 'object' && typeof (m as Mention).id === 'string' ? [(m as Mention).id] : [])) : []);
+
+/**
+ * The people a comment may name with "@": friends, the post's author and people already in the thread, never someone
+ * either side blocked. Names come from the server, and only those still written in the text count.
+ */
+export async function commentMentions(member: Member, id: string, body: unknown, input: unknown): Promise<Mention[]> {
+  const picked = pickedIds(input);
+  const said = typeof body === 'string' ? body : '';
+  if (!picked.size || !said.includes('@')) return [];
+  const moment = await requireVisible(id);
+  const people = [...(await loadPeople([moment])).values(), ...(await taggableFriends(member))];
+  const allowed = people.filter((p) => p.id !== member.id && picked.has(p.id) && p.status === 'active' && !p.blockedIds?.includes(member.id) && !member.blockedIds?.includes(p.id));
+  return keepMentioned(said, allowed.map(asMention)).slice(0, MAX_COMMENT_MENTIONS);
+}
+
+/** Text without its confirmed "@name" parts, for the contact-detail check: "@Duke" is a person here, not a LINE id */
+export const withoutMentions = (said: string, mentions: Mention[]): string => mentions.reduce((rest, m) => rest.split(mentionToken(m.name)).join(' '), said);
+
+/** Caption mentions are tags (friends only); the names the server knows, for the contact-detail check */
+export async function captionMentions(member: Member, caption: unknown, input: unknown): Promise<Mention[]> {
+  const picked = pickedIds(input);
+  if (!picked.size || typeof caption !== 'string' || !caption.includes('@')) return [];
+  return keepMentioned(caption, (await taggableFriends(member)).filter((f) => picked.has(f.id)).map(asMention));
+}
+
 /** The request's list cut down to real friends; anyone else is dropped, so a tag cannot reach a stranger */
 async function cleanTags(member: Member, input: unknown): Promise<string[]> {
   if (!Array.isArray(input) || input.length === 0) return [];
@@ -268,7 +307,8 @@ export async function createMoment(member: Member, input: Record<string, unknown
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
   const location = text(input.location, 120) || text(input.targetTitle, 120);
   const targetId = text(input.targetId, 120) || undefined;
-  const taggedIds = await cleanTags(member, input.taggedIds);
+  // People named with "@" in the caption are tagged too (friends only, like any tag)
+  const taggedIds = await cleanTags(member, [...(Array.isArray(input.taggedIds) ? input.taggedIds : []), ...pickedIds(input.mentions)]);
   // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
   const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
 
@@ -318,7 +358,25 @@ export async function editMoment(member: Member, id: string, input: Record<strin
   const location = input.location !== undefined ? text(input.location, 120) || moment.location : moment.location;
   // Only what the request names changes; the author can open or close these after posting
   const options = (['commentsOff', 'likesOff', 'sharesOff'] as const).reduce<Partial<Moment>>((set, key) => (typeof input[key] === 'boolean' ? { ...set, [key]: input[key] } : set), {});
-  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, ...options, updatedAt: new Date().toISOString() }));
+  const images = input.images !== undefined ? editedImages(moment, input.images) : moment.images;
+  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, images, ...options, updatedAt: new Date().toISOString() }));
+}
+
+/**
+ * Photos after an edit (owner 2026-11-08): remove, reorder, or add up to the limit, like posting. A clip post keeps
+ * its cover, and a new photo must come through the upload route like any posted photo.
+ */
+function editedImages(moment: Moment, input: unknown): string[] {
+  if (!Array.isArray(input) || !input.every((url): url is string => typeof url === 'string')) throw new MomentError('รายการรูปไม่ถูกต้อง');
+  const images = [...new Set(input)];
+  if (moment.video) {
+    if (images.join() !== moment.images.join()) throw new MomentError('โพสต์คลิปแก้ได้เฉพาะข้อความ');
+    return moment.images;
+  }
+  if (images.length === 0) throw new MomentError('ต้องมีรูปอย่างน้อย 1 รูป');
+  if (images.length > MAX_MOMENT_IMAGES) throw new MomentError(`แนบรูปได้ไม่เกิน ${MAX_MOMENT_IMAGES} รูป`);
+  if (!images.every((url) => moment.images.includes(url) || isAllowedMomentImage(url))) throw new MomentError('รูปต้องอัปโหลดผ่านระบบ (/api/upload) ก่อน');
+  return images;
 }
 
 /** Removes the member's own moment and answers its photo links, so the caller can delete the files too */
@@ -343,7 +401,7 @@ export async function setSaved(member: Member, id: string, saved: boolean): Prom
   return momentRepository.mutate(id, (m) => ({ ...m, savedBy: toggle(m.savedBy, member.id, saved) }));
 }
 
-export async function addComment(member: Member, id: string, input: unknown, replyTo?: unknown): Promise<Moment> {
+export async function addComment(member: Member, id: string, input: unknown, replyTo?: unknown, mentions: Mention[] = []): Promise<Moment> {
   const moment = await requireVisible(id);
   const answered = typeof replyTo === 'string' && replyTo ? moment.comments.find((c) => c.id === replyTo && !c.hidden) : undefined;
   if (replyTo && !answered) throw new MomentError('ไม่พบความคิดเห็นนี้ อาจถูกลบไปแล้ว', 404);
@@ -360,6 +418,7 @@ export async function addComment(member: Member, id: string, input: unknown, rep
     createdAt: new Date().toISOString(),
     // One level: a reply to a reply sits under the same comment
     ...(answered ? { parentId: answered.parentId ?? answered.id } : {}),
+    ...(mentions.length ? { mentions: keepMentioned(body, mentions) } : {}),
   };
   return momentRepository.mutate(id, (m) => ({ ...m, comments: [...m.comments, comment] }));
 }

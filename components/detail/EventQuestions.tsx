@@ -21,7 +21,8 @@ interface QuestionsState {
 /**
  * "ถามผู้จัดก่อนไป" (owner 2026-10-23): public questions on a ตี้ with the host's answers. The first list comes from the
  * server (in the HTML for visitors and search engines); members can ask, the host answers here. The host can hide a
- * question on their ตี้, and anyone signed in can report one to staff.
+ * question on their ตี้, and anyone signed in can report one to staff. With no questions yet it is one quiet line with an
+ * ask button (owner 2026-11-08: an empty box with a big field was noise); the host sees nothing until someone asks.
  */
 export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }: { eventId: string; initial: QuestionsState | null; isLoggedIn: boolean; onRequireLogin: () => void }) {
   const [state, setState] = useState<QuestionsState>(initial ?? { canAnswer: false, questions: [] });
@@ -30,6 +31,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [reporting, setReporting] = useState<QuestionItem | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
 
   // Signed in: read again so "canAnswer" and "isMine" reflect the member
   useEffect(() => {
@@ -59,10 +61,30 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
 
   const host = state.hostName ? state.hostName.replace(/\s*\(.*\)\s*$/, '') : 'คนจัด';
 
+  const isEmpty = state.questions.length === 0;
+  if (isEmpty && state.canAnswer) return null;
+
+  if (isEmpty && !askOpen) {
+    return (
+      <section id="questions" className="scroll-mt-24 flex items-center justify-between gap-3 py-3 border-y border-slate-100">
+        <div className="min-w-0">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900">มีอะไรอยากถาม {host} ก่อนไปไหม</h2>
+          <p className="text-xs text-slate-500">คำถามและคำตอบทุกคนเห็น</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => (isLoggedIn ? setAskOpen(true) : onRequireLogin())}
+          className="shrink-0 h-10 px-4 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-sm font-semibold text-slate-900 cursor-pointer"
+        >
+          ถามคนจัด
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section id="questions" className="scroll-mt-24 space-y-3">
       <h2 className="text-lg sm:text-xl font-bold text-slate-900">ถาม {host} ก่อนไป</h2>
-      {state.questions.length === 0 && <p className="text-sm text-slate-500">ยังไม่มีคำถาม มีอะไรอยากรู้ก่อนไป ถามได้เลย</p>}
       <ul className="divide-y divide-slate-100">
         {state.questions.map((q) => (
           <li key={q.id} className="py-3 text-sm text-slate-700">
@@ -113,7 +135,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
           }}
         >
           <label htmlFor={`ask-${eventId}`} className="sr-only">ถามคำถาม</label>
-          <input id={`ask-${eventId}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={200} placeholder="ถามอะไรก็ได้เกี่ยวกับตี้นี้" className="flex-1 h-11 px-4 border border-slate-300 rounded-full text-sm focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20" />
+          <input id={`ask-${eventId}`} autoFocus={isEmpty} value={text} onChange={(e) => setText(e.target.value)} maxLength={200} placeholder="ถามอะไรก็ได้เกี่ยวกับตี้นี้" className="flex-1 h-11 px-4 border border-slate-300 rounded-full text-sm focus:outline-hidden focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20" />
           <button type="submit" disabled={busy || (isLoggedIn && text.trim().length < 3)} className="h-11 px-5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-sm font-semibold text-slate-900 cursor-pointer disabled:opacity-50">ถาม</button>
         </form>
       )}

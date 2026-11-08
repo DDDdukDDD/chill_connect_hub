@@ -57,6 +57,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const [detail, setDetail] = useState<QuestDetail | null>(initialDetail);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'missing'>(initialDetail ? 'ready' : 'loading');
   const [notedProgress, setNotedProgress] = useState(0);
+  // The list of what counts folds to one line, like นับในชาเลนจ์ on a ตี้ page (owner 2026-11-08: closed at first)
+  const [targetsOpen, setTargetsOpen] = useState(false);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -267,6 +269,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
 
   // The places sit beside the hero on a desktop and after the rules on phones: go to whichever is showing
   const scrollToPlaces = () => {
+    setTargetsOpen(true);
     const target = [document.getElementById('places-wide'), document.getElementById('places')].find((el) => el && el.offsetParent !== null);
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -365,7 +368,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         ) : plan ? (
           <a href="#plan" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>แผนของฉัน</a>
         ) : tracked ? (
-          <a href="#places" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{isHostQuest ? 'ตั้งตี้ของฉัน' : placesButton}</a>
+          <a href="#places" onClick={(e) => { e.preventDefault(); if (isHostQuest) document.getElementById('places')?.scrollIntoView({ behavior: 'smooth' }); else scrollToPlaces(); }} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{isHostQuest ? 'ตั้งตี้ของฉัน' : placesButton}</a>
         ) : (
           <button type="button" onClick={handleNote} disabled={selfDone} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>
             <Check className="w-4 h-4" aria-hidden="true" />
@@ -397,14 +400,44 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       {quest.rule?.withFriends && isLoggedIn && <InviteFriendsCard questHref={`/challenges/${questId}`} />}
       {/* The member's checklist: counted, waiting for review, not counted (owner 2026-10-23) */}
       {joined && <ChallengeChecklist questId={questId} />}
-      <div className="flex items-end justify-between gap-3">
-        <h2 className={SECTION_TITLE}>{kindWords.heading}</h2>
-        {detail.browseHref && detail.targetsTotal > detail.targets.length && (
+      {/* One line with their photos and how many; opens to the tiles (still in the HTML while closed, for search) */}
+      <h2>
+      <button
+        type="button"
+        onClick={() => setTargetsOpen((open) => !open)}
+        aria-expanded={targetsOpen}
+        aria-controls={`${anchorId}-tiles`}
+        className="w-full flex items-center gap-4 rounded-2xl bg-[#F5F3FF] hover:bg-[#EDE9FE] p-3 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+      >
+        <span className="relative flex -space-x-3 shrink-0" aria-hidden="true">
+          {detail.targets.slice(0, 3).map((target) => (
+            <span key={`${target.targetType}:${target.id}`} className="w-10 h-10 rounded-xl overflow-hidden border-2 border-[#F5F3FF] bg-violet-100">
+              {/* eslint-disable-next-line @next/next/no-img-element -- covers come from uploads or partners */}
+              {target.image && <img src={optimizedImage(target.image, 96)} alt="" loading="lazy" className="w-full h-full object-cover" />}
+            </span>
+          ))}
+          {detail.targets.length === 0 && <span className="w-10 h-10 rounded-xl border-2 border-[#F5F3FF] bg-violet-100" />}
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-[#7C3AED] border-2 border-[#F5F3FF] text-[11px] font-bold text-white flex items-center justify-center tabular-nums">
+            {detail.targetsTotal || detail.targets.length}
+          </span>
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm sm:text-base font-bold text-slate-900">{kindWords.heading}</span>
+          <span className="block text-xs font-semibold text-[#5B21B6] tabular-nums truncate">
+            {detail.targets.length === 0 ? `${kindWords.none}ในช่วงนี้` : `${(detail.targetsTotal || detail.targets.length).toLocaleString()} ${kindWords.unit} · กดดูว่าไปที่ไหนได้บ้าง`}
+          </span>
+        </span>
+        <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform duration-200 ${targetsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      </h2>
+      <div id={`${anchorId}-tiles`} hidden={!targetsOpen} className="space-y-4">
+      {detail.browseHref && detail.targetsTotal > detail.targets.length && (
+        <div className="flex justify-end">
           <Link href={detail.browseHref} className="inline-flex items-center min-h-11 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
             ดูทั้งหมด <span className="tabular-nums">{detail.targetsTotal.toLocaleString()}</span> {kindWords.unit}
           </Link>
-        )}
-      </div>
+        </div>
+      )}
       {isDoing && <p className="text-sm font-medium text-slate-600 leading-relaxed">{EVIDENCE_HINTS[detail.minEvidence ?? 'marked']}</p>}
       {detail.targets.length === 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-dashed border-slate-200">
@@ -436,6 +469,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           </li>
         ))}
       </ul>
+      </div>
     </section>
   );
 
@@ -684,8 +718,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             </section>
           )}
 
-          {/* The fine print folds away: the steps and the reward box already say the main points (still in the HTML) */}
-          <details className="group order-5">
+          {/* The fine print is open at first (owner 2026-11-08) and can fold away */}
+          <details open className="group order-5">
             <summary className="flex items-center justify-between gap-3 min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
               <h2 className={SECTION_TITLE}>กติกาและเงื่อนไข</h2>
               <ChevronDown className="w-5 h-5 text-slate-500 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />

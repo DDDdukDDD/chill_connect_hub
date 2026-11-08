@@ -31,6 +31,8 @@ export interface MomentComment {
   parentId?: string;
   /** Members who liked this comment */
   likedBy?: string[];
+  /** People named with "@" in the text (lib/moments/mentions.ts), as their names were when posted */
+  mentions?: { id: string; name: string }[];
 }
 
 export interface MomentReport {

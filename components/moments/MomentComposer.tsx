@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
+import { useMentionPicker } from '@/components/moments/MentionPicker';
 import { PlacePicker } from '@/components/moments/PlacePicker';
 import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
@@ -134,6 +135,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [customLocation, setCustomLocation] = useState(initial?.location ?? '');
   const [linkedTarget, setLinkedTarget] = useState<MomentLinkTarget | null>(initial?.target ?? null);
   const [tagged, setTagged] = useState<TagFriend[]>([]);
+  // "@ชื่อ" in the caption tags that friend too (the server keeps friends only)
+  const mention = useMentionPicker({ value: caption, setValue: setCaption, fieldRef: captionInput });
   const [pickerOpen, setPickerOpen] = useState<'place' | 'friends' | null>(null);
   const [targetQuests, setTargetQuests] = useState<Record<string, { questId: string; title: string }[]>>({});
   const [savedSpotTargets, setSavedSpotTargets] = useState<MomentLinkTarget[]>([]);
@@ -320,7 +323,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       caption: caption.trim(),
       location,
       target: linkedTarget,
-      taggedIds: tagged.map((friend) => friend.id),
+      taggedIds: [...new Set([...tagged.map((friend) => friend.id), ...mention.mentions.map((m) => m.id)])],
       options,
     };
     // The photo links must outlive the form: the background job still reads them, and they go with the page
@@ -389,7 +392,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       </button>
     </div>
   );
-  const placeTitle = linkedTarget?.title ?? (customLocation.trim() || null);
   const isWide = step === 'photos' || step === 'clip';
 
   return (
@@ -408,7 +410,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         aria-modal="true"
         aria-labelledby="create-moment-title"
         className={`focus:outline-hidden bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
-          isWide ? `h-dvh sm:h-[min(92dvh,720px)] ${step === 'photos' ? 'sm:max-w-4xl' : 'sm:max-w-lg'}` : step === 'details' ? 'h-dvh sm:h-auto sm:max-h-[92dvh] sm:max-w-lg' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
+          isWide ? 'h-dvh sm:portrait:h-[min(94dvh,1080px)] sm:portrait:max-w-2xl sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : step === 'details' ? 'h-dvh sm:h-auto sm:max-h-[92dvh] sm:max-w-lg' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -475,8 +477,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             maxPhotos={MAX_MOMENT_IMAGES}
             shape={shape}
             onShapeChange={setShape}
-            placeTitle={placeTitle}
-            placeField={<div className="border-y border-slate-100">{placeRow}</div>}
             onBack={leave}
             onNext={() => setStep('details')}
           />
@@ -497,6 +497,10 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             canEdit={canShrinkClips()}
             isBusy={isPreparing}
             onBack={leave}
+            onReplace={() => {
+              setClip(null);
+              setStep('pick');
+            }}
             onNext={() => void finishClip()}
           />
         )}
@@ -537,10 +541,11 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                     rows={4}
                     value={caption}
                     maxLength={500}
-                    onChange={(e) => setCaption(e.target.value)}
-                    placeholder="เล่าสั้นๆ ว่าวันนี้เป็นยังไง (ไม่ใส่ก็ได้)"
+                    {...mention.fieldProps}
+                    placeholder="เล่าสั้นๆ ว่าวันนี้เป็นยังไง (ไม่ใส่ก็ได้) พิมพ์ @ เพื่อแท็กเพื่อน"
                     className="w-full bg-white border border-slate-300 rounded-2xl p-3 text-base sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none leading-relaxed placeholder:text-slate-500"
                   />
+                  {mention.list}
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <button
                       type="button"

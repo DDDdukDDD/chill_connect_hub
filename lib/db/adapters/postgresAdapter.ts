@@ -26,6 +26,7 @@ import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
 import { eventToRow, placeToRow, placeImages, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
+import { referenceCodesChangedAt } from '../postgres/referenceCodes';
 
 /**
  * ตี้ / อีเวนต์, participants, places and challenges in Postgres (docs/DATABASE_DESIGN.md).
@@ -138,7 +139,7 @@ export class PostgresAdapter implements IDataRepository {
 
   /** Inside a transaction this must use its `tx`: a server has one connection, which that transaction is holding */
   private async referenceCodes(tx: Sql) {
-    if (!this.refs || Date.now() - this.refs.at > 5 * 60 * 1000) {
+    if (!this.refs || Date.now() - this.refs.at > 5 * 60 * 1000 || referenceCodesChangedAt() >= this.refs.at) {
       const [provinces, venues] = await Promise.all([tx`select code from app.provinces`, tx`select code from app.venues`]);
       this.refs = { provinceCodes: new Set(provinces.map((p) => p.code)), venueCodes: new Set(venues.map((v) => v.code)), at: Date.now() };
     }
@@ -460,7 +461,7 @@ export class PostgresAdapter implements IDataRepository {
         insert into app.event_participants (event_id, member_id, status, ticket_code, joined_at, note)
         values (${row.id}, ${member.id}, 'joined', ${newTicketCode(taken)}, ${participant.joinedAt ?? new Date().toISOString()}, ${participant.note ?? null})
         on conflict (event_id, member_id) do update
-          set status = 'joined', joined_at = excluded.joined_at, cancelled_at = null, checked_in_at = null, note = excluded.note, ticket_code = excluded.ticket_code`;
+          set status = 'joined', joined_at = excluded.joined_at, cancelled_at = null, checked_in_at = null, missed_at = null, note = excluded.note, ticket_code = excluded.ticket_code`;
       return {
         success: true,
         message: 'เข้าร่วมตี้สำเร็จ!',
@@ -521,9 +522,18 @@ export class PostgresAdapter implements IDataRepository {
     return row ? toParticipant(row) : null;
   }
 
-  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string }[]> {
+  public async setMissed(eventId: string, userId: string, missed: boolean): Promise<boolean> {
+    const updated = await sql()`
+      update app.event_participants p
+      set missed_at = ${missed ? sql()`coalesce(p.missed_at, now())` : null}
+      from app.events e, app.members m
+      where e.id = p.event_id and m.id = p.member_id and e.slug = ${eventId} and m.legacy_id = ${userId} and p.status = 'joined'`;
+    return updated.count > 0;
+  }
+
+  public async listParticipations(userId: string): Promise<{ eventId: string; joinedAt?: string; note?: string; checkedInAt?: string; missedAt?: string }[]> {
     const rows = await sql()`
-      select e.slug, p.joined_at, p.note, p.checked_in_at
+      select e.slug, p.joined_at, p.note, p.checked_in_at, p.missed_at
       from app.event_participants p join app.events e on e.id = p.event_id join app.members m on m.id = p.member_id
       where m.legacy_id = ${userId} and p.status = 'joined'
       order by p.joined_at desc`;
@@ -532,6 +542,7 @@ export class PostgresAdapter implements IDataRepository {
       joinedAt: (r.joined_at as Date).toISOString(),
       ...(r.note ? { note: r.note } : {}),
       ...(r.checked_in_at ? { checkedInAt: (r.checked_in_at as Date).toISOString() } : {}),
+      ...(r.missed_at ? { missedAt: (r.missed_at as Date).toISOString() } : {}),
     }));
   }
 

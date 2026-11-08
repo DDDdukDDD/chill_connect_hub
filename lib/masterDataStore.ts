@@ -9,6 +9,8 @@ import {
   MasterZone, REGIONS, slugifyId, VENUE_TAGS,
 } from './masterData';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import { deleteMasterRow, insertMasterEntry, masterTablesVersion, readMasterTables, writeMasterEntries } from './masterDataTables';
+import { markReferenceCodesChanged } from './db/postgres/referenceCodes';
 
 const FIRST_QUEST_CATEGORY_IDS = new Set(['heal', 'move', 'learn', 'chill', 'general', 'exp_only', 'badge_only', 'exp_badge']);
 
@@ -57,10 +59,9 @@ function readFile(file: string): Partial<MasterData> | null {
   }
 }
 
-// With the database on, what staff changed is one row of app.app_settings; the bundled file is the starting point.
-// Pages read a copy kept in memory. It asks whether the row changed at most this often, and reads it only if it did
+// With the database on, master data is its own tables (0034); the code seed adds built-in entries not stored yet.
+// Pages read a copy kept in memory. It asks whether the tables changed at most this often, and reads them only if they did
 const CHECK_EVERY_MS = 30_000;
-const SETTINGS_KEY = 'master_data';
 const fromDb = globalThis as unknown as { _cchMasterDb?: MasterData; _cchMasterDbVersion?: string; _cchMasterDbCheckedAt?: number; _cchMasterDbChecking?: Promise<void> };
 
 /** Brings the copy in memory up to the stored row. `now`: an edit is about to start from it, so it may not be old */
@@ -71,11 +72,10 @@ export function refreshMasterData(now = false): Promise<void> {
   fromDb._cchMasterDbCheckedAt = Date.now();
   fromDb._cchMasterDbChecking = (async () => {
     const db = sql();
-    const [row] = await db`select updated_at::text as version from app.app_settings where key = ${SETTINGS_KEY}`;
-    if (!row || row.version === fromDb._cchMasterDbVersion) return;
-    const [stored] = await db`select value, updated_at::text as version from app.app_settings where key = ${SETTINGS_KEY}`;
-    fromDb._cchMasterDb = withSeedDefaults(stored.value as Partial<MasterData>);
-    fromDb._cchMasterDbVersion = stored.version as string;
+    const version = await masterTablesVersion(db);
+    if (version === fromDb._cchMasterDbVersion) return;
+    fromDb._cchMasterDb = withSeedDefaults(await readMasterTables(db));
+    fromDb._cchMasterDbVersion = version;
   })()
     .catch((error) => console.error('MASTER DATA READ FAILED:', error))
     .finally(() => {
@@ -84,16 +84,16 @@ export function refreshMasterData(now = false): Promise<void> {
   return fromDb._cchMasterDbChecking;
 }
 
-/** Stores the copy in memory; the admin route awaits this before it says "saved" */
-export async function storeMasterData(): Promise<void> {
-  if (!USE_POSTGRES || !fromDb._cchMasterDb) return;
-  const value = fromDb._cchMasterDb as unknown as Parameters<ReturnType<typeof sql>['json']>[0];
-  const db = sql();
-  const [row] = await db`
-    insert into app.app_settings (key, value, updated_at) values (${SETTINGS_KEY}, ${db.json(value)}, now())
-    on conflict (key) do update set value = excluded.value, updated_at = now()
-    returning updated_at::text as version`;
-  fromDb._cchMasterDbVersion = row.version as string;
+/**
+ * Database mode: writes only the rows this edit changed, then reads the tables again, so the copy in memory holds
+ * other staff's edits too. No-database mode: writes the whole file.
+ */
+async function store(data: MasterData, collection: MasterCollection, write: (db: ReturnType<typeof sql>) => Promise<unknown>) {
+  if (!USE_POSTGRES) return save(data);
+  await write(sql());
+  if (collection === 'provinces' || collection === 'venues') markReferenceCodesChanged();
+  fromDb._cchMasterDbVersion = undefined;
+  await refreshMasterData(true);
 }
 
 export function getMasterData(): MasterData {
@@ -114,12 +114,10 @@ export function getMasterData(): MasterData {
   return data;
 }
 
+/** No-database mode only: the whole document is one file */
 function save(data: MasterData) {
   data.updatedAt = new Date().toISOString();
-  if (USE_POSTGRES) {
-    fromDb._cchMasterDb = data;
-    return;
-  }
+  if (USE_POSTGRES) return;
   globalForMaster._cchMasterData = data;
   try {
     fs.mkdirSync(path.dirname(WRITE_FILE), { recursive: true });
@@ -266,7 +264,7 @@ function clean(collection: MasterCollection, input: Record<string, unknown>) {
 
 const listOf = (data: MasterData, collection: MasterCollection) => data[collection] as MasterEntry[];
 
-export function saveMasterEntry(collection: MasterCollection, input: Record<string, unknown>): { entry: MasterEntry; created: boolean } {
+export async function saveMasterEntry(collection: MasterCollection, input: Record<string, unknown>): Promise<{ entry: MasterEntry; created: boolean }> {
   const data = structuredClone(getMasterData());
   const list = listOf(data, collection);
   const id = str(input.id, 80);
@@ -277,27 +275,34 @@ export function saveMasterEntry(collection: MasterCollection, input: Record<stri
   if (existing) {
     const updated = { ...existing, ...fields, updatedAt: now } as MasterEntry;
     list.splice(list.indexOf(existing), 1, updated);
-    save(data);
+    await store(data, collection, (db) => writeMasterEntries(db, collection, [updated]));
     return { entry: updated, created: false };
   }
   if (FIXED_COLLECTIONS.includes(collection)) throw new Error('รายการชุดนี้เพิ่มไม่ได้ แก้ไขได้อย่างเดียว');
   const baseId = slugifyId(str(input.nameEn, 80) || str(input.name, 80));
-  let newId = baseId;
-  for (let n = 2; list.some((entry) => entry.id === newId); n += 1) newId = `${baseId}_${n}`;
+  const usedIds = new Set(list.map((e) => e.id));
   const entry = {
-    ...fields,
-    id: newId,
-    active: true,
-    builtIn: false,
-    sortOrder: Math.max(-1, ...list.map((e) => e.sortOrder)) + 1,
-    updatedAt: now,
+    ...fields, id: baseId, active: true, builtIn: false, sortOrder: Math.max(-1, ...list.map((e) => e.sortOrder)) + 1, updatedAt: now,
   } as MasterEntry;
-  list.push(entry);
-  save(data);
-  return { entry, created: true };
+  if (!USE_POSTGRES) {
+    for (let n = 2; usedIds.has(entry.id); n += 1) entry.id = `${baseId}_${n}`;
+    list.push(entry);
+    save(data);
+    return { entry, created: true };
+  }
+  // Another staff member may add the same name at the same moment: the database decides who gets the id
+  for (let n = 1; n <= 20; n += 1) {
+    const candidate = n === 1 ? baseId : `${baseId}_${n}`;
+    if (usedIds.has(candidate)) continue;
+    entry.id = candidate;
+    let added = false;
+    await store(data, collection, async (db) => (added = await insertMasterEntry(db, collection, entry)));
+    if (added) return { entry, created: true };
+  }
+  throw new Error('เพิ่มรายการไม่สำเร็จ ลองใหม่อีกครั้ง');
 }
 
-export function setMasterEntryActive(collection: MasterCollection, id: string, active: boolean): MasterEntry {
+export async function setMasterEntryActive(collection: MasterCollection, id: string, active: boolean): Promise<MasterEntry> {
   const data = structuredClone(getMasterData());
   const list = listOf(data, collection);
   const entry = list.find((e) => e.id === id);
@@ -305,29 +310,29 @@ export function setMasterEntryActive(collection: MasterCollection, id: string, a
   if (!active && collection === 'spotVibes' && list.filter((e) => e.active).length <= 1) throw new Error('ต้องมี vibe ที่ใช้งานอย่างน้อย 1 รายการ');
   entry.active = active;
   entry.updatedAt = new Date().toISOString();
-  save(data);
+  await store(data, collection, (db) => writeMasterEntries(db, collection, [entry]));
   return entry;
 }
 
-export function deleteMasterEntry(collection: MasterCollection, id: string): MasterEntry {
+export async function deleteMasterEntry(collection: MasterCollection, id: string): Promise<MasterEntry> {
   const data = structuredClone(getMasterData());
   const list = listOf(data, collection);
   const entry = list.find((e) => e.id === id);
   if (!entry) throw new Error('ไม่พบรายการ');
   if (entry.builtIn || FIXED_COLLECTIONS.includes(collection)) throw new Error('รายการที่มากับระบบลบไม่ได้ ใช้ปิดใช้งานแทน');
   list.splice(list.indexOf(entry), 1);
-  save(data);
+  await store(data, collection, (db) => deleteMasterRow(db, collection, id));
   return entry;
 }
 
-export function reorderMasterEntries(collection: MasterCollection, ids: string[]) {
+/** Writes only the entries whose position moved */
+export async function reorderMasterEntries(collection: MasterCollection, ids: string[]) {
   const data = structuredClone(getMasterData());
   const list = listOf(data, collection);
   const position = new Map(ids.map((id, index) => [id, index]));
-  for (const entry of list) {
-    if (position.has(entry.id)) entry.sortOrder = position.get(entry.id)!;
-  }
-  save(data);
+  const moved = list.filter((entry) => position.has(entry.id) && entry.sortOrder !== position.get(entry.id));
+  for (const entry of moved) entry.sortOrder = position.get(entry.id)!;
+  await store(data, collection, (db) => (db as ReturnType<typeof sql>).begin((tx) => writeMasterEntries(tx, collection, moved)));
 }
 
 export function isMasterCollection(value: unknown): value is MasterCollection {

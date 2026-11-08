@@ -3,7 +3,7 @@ import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { COLLECTION_LABELS } from '@/lib/masterData';
 import {
-  deleteMasterEntry, getMasterData, isMasterCollection, refreshMasterData, reorderMasterEntries, saveMasterEntry, setMasterEntryActive, storeMasterData,
+  deleteMasterEntry, getMasterData, isMasterCollection, refreshMasterData, reorderMasterEntries, saveMasterEntry, setMasterEntryActive,
 } from '@/lib/masterDataStore';
 
 // Every master data collection, including inactive entries
@@ -36,30 +36,26 @@ export async function POST(request: Request) {
   try {
     if (action === 'save') {
       if (!body.item || typeof body.item !== 'object') return NextResponse.json({ success: false, error: 'ไม่มีข้อมูลรายการ' }, { status: 400 });
-      const { entry, created } = saveMasterEntry(collection, body.item as Record<string, unknown>);
-      await storeMasterData();
+      const { entry, created } = await saveMasterEntry(collection, body.item as Record<string, unknown>);
       const name = 'displayName' in entry ? entry.displayName : entry.name;
       recordAudit(actor, created ? 'master.create' : 'master.update', `${created ? 'เพิ่ม' : 'แก้ไข'}${label}: ${name}`, { type: collection, id: entry.id });
       return NextResponse.json({ success: true, entry });
     }
     if (action === 'set_active') {
       if (typeof body.id !== 'string' || typeof body.active !== 'boolean') return NextResponse.json({ success: false, error: 'ต้องระบุ id และ active' }, { status: 400 });
-      const entry = setMasterEntryActive(collection, body.id, body.active);
-      await storeMasterData();
+      const entry = await setMasterEntryActive(collection, body.id, body.active);
       recordAudit(actor, 'master.set_active', `${body.active ? 'เปิด' : 'ปิด'}ใช้งาน${label}: ${body.id}`, { type: collection, id: body.id });
       return NextResponse.json({ success: true, entry });
     }
     if (action === 'delete') {
       if (typeof body.id !== 'string') return NextResponse.json({ success: false, error: 'ต้องระบุ id' }, { status: 400 });
-      deleteMasterEntry(collection, body.id);
-      await storeMasterData();
+      await deleteMasterEntry(collection, body.id);
       recordAudit(actor, 'master.delete', `ลบ${label}: ${body.id}`, { type: collection, id: body.id });
       return NextResponse.json({ success: true });
     }
     if (action === 'reorder') {
       if (!Array.isArray(body.ids) || !body.ids.every((id) => typeof id === 'string')) return NextResponse.json({ success: false, error: 'ต้องระบุ ids' }, { status: 400 });
-      reorderMasterEntries(collection, body.ids as string[]);
-      await storeMasterData();
+      await reorderMasterEntries(collection, body.ids as string[]);
       recordAudit(actor, 'master.reorder', `จัดลำดับ${label}ใหม่`, { type: collection });
       return NextResponse.json({ success: true });
     }

@@ -6,6 +6,7 @@ import { avatarImage } from '@/lib/optimizedImage';
 import { nameInitial } from '@/lib/displayName';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import type { FeedItem } from '@/lib/moments/service';
+import { CaptionText } from '@/components/moments/CaptionText';
 
 export type ThreadComment = FeedItem['comments'][number];
 
@@ -120,7 +121,7 @@ function CommentRow({ comment, isLoggedIn, onNeedLogin, onAct, onReply, onReport
       <MomentAvatar name={comment.userName} src={comment.userAvatar} className={comment.parentId ? 'w-6 h-6 text-[11px]' : 'w-7 h-7 text-[11px]'} />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] sm:text-sm text-slate-800 break-words">
-          <span className="font-semibold text-slate-900">{comment.userName}</span> {comment.text}
+          <span className="font-semibold text-slate-900">{comment.userName}</span> <CaptionText text={comment.text} mentions={comment.mentions} />
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
           <span>{comment.timeAgo}</span>

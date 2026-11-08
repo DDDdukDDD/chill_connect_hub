@@ -8,7 +8,8 @@ import { notifySeat } from './notifications';
 /**
  * Waiting list of a full ตี้ (owner 2026-10-23, from Eventbrite). When a seat frees up, the first person in line is
  * offered it and the seat is held for them for OFFER_HOURS (others cannot take it). If they do not join in time the
- * offer passes to the next person. Without a scheduler the queue is moved on whenever someone reads or changes it.
+ * offer passes to the next person. The queue moves whenever someone reads or changes it, and every hour from
+ * app/api/cron/hourly (moveAllQueues), so a lapsed offer reaches the next person even when nobody opens the page.
  */
 export interface WaitlistEntry {
   eventId: string;
@@ -48,6 +49,13 @@ export async function moveQueue(eventId: string): Promise<void> {
   if (expired.length === 0 && offerTo.length === 0) return;
   await waitlistStore.move(eventId, expired.map((e) => e.memberId), offerTo.map((e) => e.memberId));
   for (const entry of offerTo) await notifySeat(entry.memberId, eventId);
+}
+
+/** Hourly job: moves every line on (lapsed offers out, free seats offered and the people told) */
+export async function moveAllQueues(): Promise<{ events: number }> {
+  const ids = await waitlistStore.eventIds();
+  for (const id of ids) await moveQueue(id);
+  return { events: ids.length };
 }
 
 export async function joinWaitlist(member: Member, eventId: string) {

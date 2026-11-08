@@ -6,7 +6,7 @@ import { chatMessages, deleteChatMessage, sendChatMessage } from '@/lib/social/c
 
 type Context = { params: Promise<{ roomId: string }> };
 
-// Messages of a room the member belongs to. ?after=<ISO time> returns only newer ones (for polling).
+// Messages of a room the member belongs to, with how far the others have read. ?after=<ISO time> returns only newer ones (for polling).
 export async function GET(request: Request, context: Context) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
