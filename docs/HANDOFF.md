@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-310 · "Did this table change?" reads one row (owner 2026-11-08)
+- **What changed:** migration 0035 adds `app.table_versions`; a statement trigger on events, places, quests and the six master tables moves its number inside the writing transaction. `readIfChanged` (postgresAdapter) and `masterTablesVersion` use `tableVersions()` in `lib/db/postgres/tableVersions.ts` instead of counting and summing every row (places: 153 ms a check, 1,402 checks on live). Until 0035 runs on a database it falls back to the old scan, so deploying first is safe. Applied on dev and checked as `app_runtime` (a write moves the number, a rollback does not); `db:verify` passes.
+- **What to do about it:** run 0035 on live at merge. A new cached table needs a `<table>_version` trigger and a row (see 0035).
+
+### BE-309 · Member reads no longer carry the password hash (owner 2026-11-08)
+- **What changed:** the member read (`hydrate` in `lib/members/pgMemberRepository.ts`) returns `hasPassword` instead of joining in `password_hash`; the JSON mode strips it too. `Member.passwordHash` is now write-only (create/update still set it). Sign-in and password change read the hash with the new `memberRepository.passwordHashOf(id)`. Responses are unchanged (they already sent only `hasPassword` / `loginMethods`). Checked on dev: sign-up, wrong and right password, password change, old password refused.
+- **What to do about it:** use `member.hasPassword`, never `member.passwordHash`, to ask whether a member has a password.
+
 ### BE-308 · Load test on dev; signed-out moment feed kept 15 s (2026-11-08)
 - **What changed:** `scripts/load-test.mjs` drives a local `next start` on the dev database (refuses anything but localhost). Before: 49 req/s, p95 1.7 s at 50 users, no errors, `/moments` and `/api/moments` slowest (every request read the database, ~200 ms). `listMoments` now keeps the signed-out page 15 s and `countMomentsByType` 30 s (`cacheManager`, tag `moments-guest`); members still read fresh. After: 56 req/s, p95 1.4 s, no errors; the limit is the laptop CPU. Places stay filtered in memory: browse 8 ms, Thai search 23 ms, so moving them to SQL waits (see LAUNCH_CHECKLIST).
 - **What to do about it:** a post hidden by staff can stay in the guest feed up to 15 s on a server that already had it.

@@ -93,7 +93,7 @@ Notation: `PK` primary key, `FK` foreign key, `UQ` unique, `?` nullable. Every t
 **members** — one row per account. Only what is needed everywhere.
 `id PK` · `display_name` (1–40) · `email citext? UQ` · `email_verified_at?` · `avatar_url?` · `status` enum(active, suspended, banned) · `suspended_until?` · `status_reason?` · `session_version int` · `invite_code UQ` · `invited_by FK members?` · `signup_ip_hash?` · `onboarded_at?` · `last_login_at?` · `last_login_method?` · `is_sample bool`
 
-**member_credentials** — kept apart so a careless `select *` on members never returns a hash.
+**member_credentials** — kept apart so a careless `select *` on members never returns a hash. Member reads carry only `hasPassword`; the hash is read by `memberRepository.passwordHashOf` at sign-in and password change (BE-309).
 `member_id PK FK` · `password_hash` · `password_changed_at`
 
 **member_auth_providers** — Google / Facebook / Apple.
@@ -218,6 +218,7 @@ Redeem = one transaction: lock member_stats row → check balance → `stock_cou
 - **rate_limit_hits** — `PK (key, window_start)` · `count`. Fixes the in-memory limiter that does not work across Vercel servers.
 - **api_usage** — Google Places monthly calls.
 - **app_settings** — `key PK` · `value jsonb` (e.g. auto-publish).
+- **table_versions** — `name PK` · `version` · `changed_at`. A statement trigger moves the number on every write to the cached tables (events, places, quests, master tables); caches read one row to know whether to read a table again (0035, BE-310, `lib/db/postgres/tableVersions.ts`).
 
 Dropped: `tickets`, `hostWallet`, old `reviews` in `chill_database.json` (legacy mock, unused). `waitlist.json` and `members.cancelledEvents` fold into `event_participants`.
 
