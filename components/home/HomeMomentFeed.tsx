@@ -75,6 +75,8 @@ interface PostHandlers {
   onLeaveToClip: (id: string) => void;
   /** A feed post comes with only its newest comment: the rest load when they are opened */
   onLoadComments: (id: string) => Promise<void>;
+  /** Follow the author straight from the post, like IG; every post by them updates */
+  onFollow: (authorId: string) => Promise<boolean>;
 }
 
 function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; handlers: PostHandlers; myAvatar?: string; myName: string }) {
@@ -84,6 +86,17 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [isSending, setIsSending] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWholeCaption, setShowWholeCaption] = useState(false);
+  // "ติดตาม" sits by the name only for people not followed yet; the post tapped keeps a quiet "กำลังติดตาม" as the answer
+  const [justFollowed, setJustFollowed] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const showFollow = Boolean(moment.authorId) && !moment.isMine && !moment.isSample && (!moment.isFollowingAuthor || justFollowed);
+  const follow = async () => {
+    if (!moment.authorId || isFollowing) return;
+    setIsFollowing(true);
+    const ok = await handlers.onFollow(moment.authorId);
+    setIsFollowing(false);
+    if (ok) setJustFollowed(true);
+  };
   const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
   const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
@@ -139,7 +152,23 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <Avatar name={moment.userName} src={moment.userAvatar} className="w-10 h-10 text-sm" />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900 truncate">{moment.userName}</p>
+          <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
+            <span className="font-semibold text-slate-900 truncate">{moment.userName}</span>
+            {showFollow &&
+              (justFollowed ? (
+                <span className="shrink-0 text-slate-500">· กำลังติดตาม</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={follow}
+                  disabled={isFollowing}
+                  aria-label={`ติดตาม ${moment.userName}`}
+                  className="shrink-0 font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline disabled:opacity-60 cursor-pointer"
+                >
+                  · ติดตาม
+                </button>
+              ))}
+          </p>
           <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
             {moment.timeAgo}
@@ -610,6 +639,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       const result = await call(`/api/moments/${encodeURIComponent(id)}`, 'GET');
       if (result.ok && result.moment) replace(result.moment);
       else showToast(result.message);
+    },
+    onFollow: async (authorId) => {
+      const result = await call(`/api/members/${encodeURIComponent(authorId)}/actions`, 'POST', { action: 'follow' });
+      if (!result.ok) {
+        showToast(result.message);
+        return false;
+      }
+      setMoments((list) => list.map((m) => (m.authorId === authorId ? { ...m, isFollowingAuthor: true } : m)));
+      return true;
     },
   };
 
