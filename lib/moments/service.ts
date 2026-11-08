@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { cacheManager } from '../cache';
 import { tidyDisplayName, withoutSampleHandle } from '../displayName';
 import { ownUploadFolder } from '../media/ownMedia';
 import { memberRepository } from '../members';
@@ -177,7 +178,13 @@ const pagination = (page: number, limit: number, found: { totalCount?: number; h
  * comment and the counts; the moment's own page and GET /api/moments/[id] have the rest.
  * Posts by members the viewer has blocked are left out; "saved", "mine" and "following" need a viewer.
  */
+/** Signed out, everyone sees the same page: it is kept 15 s, so a crowd of visitors is one database read, not one each */
 export async function listMoments(viewer: Member | null, options: MomentListOptions) {
+  if (!viewer) return cacheManager.getOrSet(`moments:guest:${JSON.stringify(options)}`, () => readMoments(null, options), { ttlMs: 15_000, tags: ['moments-guest'] });
+  return readMoments(viewer, options);
+}
+
+async function readMoments(viewer: Member | null, options: MomentListOptions) {
   const tab = options.tab ?? 'all';
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
@@ -218,7 +225,7 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
 }
 
 /** How many public moments each /moments tab holds, counted by the database */
-export const countMomentsByType = () => momentRepository.typeCounts();
+export const countMomentsByType = () => cacheManager.getOrSet('moments:type-counts', () => momentRepository.typeCounts(), { ttlMs: 30_000, tags: ['moments-guest'] });
 
 /** A published moment for its public page, or null (hidden, removed, banned author, unknown id) */
 export async function findPublicMoment(id: string): Promise<FeedItem | null> {

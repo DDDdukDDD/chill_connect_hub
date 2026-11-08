@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-308 · Load test on dev; signed-out moment feed kept 15 s (2026-11-08)
+- **What changed:** `scripts/load-test.mjs` drives a local `next start` on the dev database (refuses anything but localhost). Before: 49 req/s, p95 1.7 s at 50 users, no errors, `/moments` and `/api/moments` slowest (every request read the database, ~200 ms). `listMoments` now keeps the signed-out page 15 s and `countMomentsByType` 30 s (`cacheManager`, tag `moments-guest`); members still read fresh. After: 56 req/s, p95 1.4 s, no errors; the limit is the laptop CPU. Places stay filtered in memory: browse 8 ms, Thai search 23 ms, so moving them to SQL waits (see LAUNCH_CHECKLIST).
+- **What to do about it:** a post hidden by staff can stay in the guest feed up to 15 s on a server that already had it.
+
 ### BE-307 · Daily clean-up of moment files no post uses (2026-11-08)
 - **What changed:** `GET /api/cron/hourly` runs `cleanMomentOrphans` (`lib/media/orphanCleanup.ts`), which works at most once in 20 hours (stamp `moment_orphans_cleaned_at` in `app_settings`). It deletes files in the `moments` folder older than 3 days that no moment (any status) points to as a photo, clip or clip preview, matched by path not host; at most 300 a run, and it deletes nothing if more than half the old files look unused. Avatars are left alone: their links are copied onto ตี้, comments and notifications. Dry run on dev found 7 of 9 old test files unused, checked by hand.
 
