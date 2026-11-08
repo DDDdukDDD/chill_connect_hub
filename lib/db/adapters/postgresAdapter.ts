@@ -170,7 +170,7 @@ export class PostgresAdapter implements IDataRepository {
         (await sql()`
           select slug, title, description, event_type, tag, zone, online_platform, meeting_point, price_text, target_gender, target_age,
                  energy_level, cancellation_policy, approval_status, source_name, source_url, external_url, cover_image_url, organizer_avatar,
-                 details, participants_count
+                 details, participants_count, max_participants, min_participants, registration_open
           from app.events order by sort_key desc, created_at desc`).map((row) => rowToEvent(row) as EventItem))),
       { staleMs: STALE_MS, ttlMs: 15 * 1000, tags: ['events'] },
     );
@@ -202,11 +202,12 @@ export class PostgresAdapter implements IDataRepository {
   private async spotListPart(offset: number): Promise<LifestyleSpotItem[]> {
     const rows = await sql()`
       select slug, title, category, district, left(description, 281) as description, open_hours, price, entry_fee, best_time, google_maps_url, vibe_tags,
+             publication_status, meetup_allowed,
              (details - '{galleryImages,contact,facilities,parkingInfo,reviews,tips,faq,website,phone}'::text[]) #- '{curation,reasons}'
                || case when coalesce(details->>'image', '') = '' and jsonb_typeof(details->'galleryImages') = 'array'
                     then jsonb_build_object('galleryImages', jsonb_path_query_array(details->'galleryImages', '$[0]'))
                     else '{}'::jsonb end as details
-      from app.places where coalesce(details->>'publicationStatus', '') <> 'draft'
+      from app.places where publication_status <> 'draft'
       order by sort_key desc, id limit ${SPOT_LIST_PART} offset ${offset}`;
     return rows.map((row) => rowToPlace(row) as LifestyleSpotItem);
   }
@@ -486,7 +487,7 @@ export class PostgresAdapter implements IDataRepository {
     await tx`
       update app.events set
         participants_count = greatest(0, participants_count - 1),
-        details = case when details->>'status' = 'full' and participants_count - 1 < coalesce((details->>'maxParticipants')::int, 10)
+        details = case when details->>'status' = 'full' and participants_count - 1 < coalesce(max_participants, (details->>'maxParticipants')::int, 10)
                        then details || '{"status":"recruiting"}'::jsonb else details end
       where id = ${eventDbId}`;
   }
