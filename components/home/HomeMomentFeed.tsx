@@ -11,6 +11,7 @@ import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { saveFeedReturn, takeShowcase } from '@/components/moments/momentsReturn';
 import { CaptionText } from '@/components/moments/CaptionText';
+import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { MomentComposer, CountedQuestNotice, PostOptionFields, type CountedQuest, type MomentComposerInitial, type PostOptions } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
@@ -63,7 +64,7 @@ const Avatar = MomentAvatar;
 
 interface PostHandlers {
   onToggle: (id: string, action: Action) => void;
-  onComment: (id: string, text: string, parentId?: string) => Promise<boolean>;
+  onComment: (id: string, text: string, parentId?: string, mentions?: string[]) => Promise<boolean>;
   onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
   onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
   onPhotos: (images: string[], index: number) => void;
@@ -85,6 +86,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
   const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentBox = useRef<HTMLInputElement>(null);
+  const mention = useMentionPicker({ value: draft, setValue: setDraft, fieldRef: commentBox, extra: threadPeople(moment) });
   const answer = (comment: ThreadComment) => {
     setReplyTo(comment);
     setShowComments(true);
@@ -102,8 +104,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     e.preventDefault();
     if (!draft.trim() || isSending) return;
     setIsSending(true);
-    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id)) {
+    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id, mention.mentions.map((m) => m.id))) {
       setDraft('');
+      mention.reset();
       setReplyTo(null);
     }
     setIsSending(false);
@@ -187,7 +190,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {moment.caption && (
         <div>
           <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} />
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
           </p>
           {foldsCaption && (
             <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
@@ -268,7 +271,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             id={`comment-${moment.id}`}
             value={draft}
             maxLength={300}
-            onChange={(e) => setDraft(e.target.value)}
+            {...mention.fieldProps}
             placeholder="เขียนความคิดเห็น…"
             className="flex-1 min-w-0 h-11 sm:h-9 rounded-full bg-slate-50 border border-slate-200 px-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
@@ -282,6 +285,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           </button>
         </form>
       )}
+      {showComments && !moment.commentsOff && mention.list}
     </article>
   );
 }
@@ -555,8 +559,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         }
       });
     },
-    onComment: async (id, text, parentId) => {
-      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId });
+    onComment: async (id, text, parentId, mentions) => {
+      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId, mentions });
       if (!result.ok || !result.moment) {
         showToast(result.message);
         return false;

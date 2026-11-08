@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addComment, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
@@ -39,15 +39,21 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         if (await isRateLimited(`moment-comment:${member.id}`, 30, 10 * 60 * 1000)) {
           return NextResponse.json({ success: false, message: 'แสดงความคิดเห็นบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
         }
-        await guardPosting(member, 'comment', typeof body.text === 'string' ? body.text : '');
-        moment = await addComment(member, id, body.text, body.parentId);
         {
+          // "@name" of a real person is not a contact id, so the check reads the text without those parts
+          const mentions = await commentMentions(member, id, body.text, body.mentions);
+          await guardPosting(member, 'comment', withoutMentions(typeof body.text === 'string' ? body.text : '', mentions));
+          moment = await addComment(member, id, body.text, body.parentId, mentions);
           const said = typeof body.text === 'string' ? body.text.trim() : undefined;
           const newId = moment.comments[moment.comments.length - 1]?.id;
           const answeredAuthor = moment.comments.find((c) => c.id === body.parentId)?.authorId;
           await notify(answeredAuthor, member, 'reply', moment.id, said, newId);
           // The author of the post hears once, also when the reply is to them
           if (moment.authorId !== answeredAuthor) await notify(moment.authorId, member, 'comment', moment.id, said, newId);
+          // Named people hear through "tagged" with the comment; who already heard above does not hear twice
+          const { authorId, id: momentId } = moment;
+          const named = (moment.comments.find((c) => c.id === newId)?.mentions ?? []).filter((m) => m.id !== answeredAuthor && m.id !== authorId);
+          await Promise.all(named.map((m) => notify(m.id, member, 'tagged', momentId, said, newId)));
         }
         break;
       case 'like_comment':
@@ -64,7 +70,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           const removed = await deleteComment(member, id, String(body.commentId ?? ''));
           moment = removed.moment;
           const momentId = moment.id;
-          await Promise.all(removed.removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like'], momentId, commentId })));
+          await Promise.all(removed.removedIds.map((commentId) => removeNotifications({ types: ['comment', 'reply', 'comment_like', 'tagged'], momentId, commentId })));
         }
         break;
       case 'untag':

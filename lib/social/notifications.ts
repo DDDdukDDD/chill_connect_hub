@@ -117,6 +117,8 @@ const systemHref = (n: StoredNotification) => (n.type === 'evidence' ? undefined
 const personHref = (n: StoredNotification) => (n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : (n.type === 'joined' || n.type === 'tee_changed') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : undefined);
 
 const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
+// A mention in a comment travels as 'tagged' with the comment, but reads as what it is
+const messageOf = (n: { type: NotificationType; commentId?: string }) => (n.type === 'tagged' && n.commentId ? 'พูดถึงคุณในความคิดเห็น' : MESSAGES[n.type]);
 
 /** The same words and destination as the bell (components/NotificationBell.tsx) */
 function pushMessage(n: StoredNotification, actor?: Member): PushMessage {
@@ -124,7 +126,7 @@ function pushMessage(n: StoredNotification, actor?: Member): PushMessage {
   const momentHref = n.momentId ? `/moments/${encodeURIComponent(n.momentId)}${n.type === 'comment' || n.type === 'reply' || n.type === 'comment_like' ? '#comments' : ''}` : undefined;
   return {
     title: isSystem || !actor ? 'Chillwaa' : tidyDisplayName(actor.displayName).trim() || actor.displayName,
-    body: n.preview ? `${MESSAGES[n.type]}\n“${n.preview}”` : MESSAGES[n.type],
+    body: n.preview ? `${messageOf(n)}\n“${n.preview}”` : messageOf(n),
     url: (isSystem ? systemHref(n) : personHref(n)) ?? momentHref ?? `/profile?id=${encodeURIComponent(n.actorId)}`,
     // Many hearts on one moment stay one notification; a like taken back and given again does not ring twice
     tag: n.type === 'like' ? `like:${n.momentId}` : n.commentId ? `comment:${n.commentId}` : [n.type, n.actorId, n.momentId ?? n.eventId ?? n.questId ?? n.path].filter(Boolean).join(':'),
@@ -174,7 +176,7 @@ export async function notificationsFor(member: Member) {
           actorAvatar: '',
           momentId: n.type === 'evidence' ? n.momentId : undefined,
           href: systemHref(n),
-          message: MESSAGES[n.type],
+          message: messageOf(n),
           preview: n.preview,
           timeAgo: thaiTimeAgo(n.createdAt),
           createdAt: n.createdAt,
@@ -191,7 +193,7 @@ export async function notificationsFor(member: Member) {
         actorAvatar: actor.avatarUrl ?? '',
         momentId: n.momentId,
         href: personHref(n),
-        message: MESSAGES[n.type],
+        message: messageOf(n),
         preview: n.preview,
         timeAgo: thaiTimeAgo(n.createdAt),
         createdAt: n.createdAt,

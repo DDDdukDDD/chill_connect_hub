@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
+import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { LikersDialog } from '@/components/moments/LikersDialog';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -50,6 +51,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   /** Own comment waiting for "ลบเลย": deleting cannot be undone, so it takes a second tap */
   const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentInput = useRef<HTMLInputElement>(null);
+  const mention = useMentionPicker({ value: comment, setValue: setComment, fieldRef: commentInput, extra: threadPeople(moment) });
   const [isFull, setIsFull] = useState(openFullScreen && Boolean(initialMoment.video));
   const openedFull = useRef(isFull);
   // The cover has the clip's shape: full screen on a computer, a tall clip leaves room, so its words and buttons sit right beside it
@@ -153,11 +155,12 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
     const text = comment.trim();
     if (!text) return;
     setIsBusy(true);
-    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text, parentId: replyTo?.id });
+    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text, parentId: replyTo?.id, mentions: mention.mentions.map((m) => m.id) });
     setIsBusy(false);
     if (!result.ok || !result.moment) return showToast(result.message);
     setMoment(result.moment);
     setComment('');
+    mention.reset();
     setReplyTo(null);
   };
 
@@ -271,9 +274,9 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 </div>
               </div>
               <div className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
-                <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
+                <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}
-                {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} linkClassName="underline" /></p>}
+                {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} mentions={moment.tagged} linkClassName="underline" /></p>}
                 {(rest || title.length > 80) && (
                   <button type="button" onClick={() => setShowFullCaption((open) => !open)} className="mt-1 text-xs font-bold text-white/80 hover:text-white cursor-pointer">
                     {showFullCaption ? 'ย่อ' : 'ดูเพิ่มเติม'}
@@ -411,8 +414,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </div>
 
               <div className="space-y-2">
-                <h1 className={!title ? 'sr-only' : title.length > LONG_HEADLINE ? 'text-[15px] font-medium text-slate-800 leading-relaxed break-words' : 'text-xl sm:text-2xl font-bold text-slate-900 leading-snug tracking-tight break-words'}>{title ? <CaptionText text={title} /> : `โมเมนต์จาก ${moment.userName}`}</h1>
-                {rest && <p className="text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words"><CaptionText text={rest} /></p>}
+                <h1 className={!title ? 'sr-only' : title.length > LONG_HEADLINE ? 'text-[15px] font-medium text-slate-800 leading-relaxed break-words' : 'text-xl sm:text-2xl font-bold text-slate-900 leading-snug tracking-tight break-words'}>{title ? <CaptionText text={title} mentions={moment.tagged} /> : `โมเมนต์จาก ${moment.userName}`}</h1>
+                {rest && <p className="text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words"><CaptionText text={rest} mentions={moment.tagged} /></p>}
               </div>
             </>
           )}
@@ -494,7 +497,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   ref={commentInput}
                   id="moment-comment"
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  {...mention.fieldProps}
                   maxLength={300}
                   placeholder="เขียนความคิดเห็น…"
                   className="flex-1 min-w-0 h-11 px-4 rounded-full bg-slate-100 text-sm font-medium text-slate-900 placeholder:text-slate-500 outline-hidden focus:ring-2 focus:ring-[#2563EB]"
@@ -508,7 +511,9 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                   <Send className="w-4 h-4" aria-hidden="true" />
                 </button>
               </form>
-            ) : (
+            ) : null}
+            {isLoggedIn && mention.list}
+            {isLoggedIn ? null : (
               <button type="button" onClick={() => requireLogin('เพื่อร่วมคอมเมนต์')} className="block h-11 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 cursor-pointer">
                 เข้าสู่ระบบเพื่อคอมเมนต์
               </button>

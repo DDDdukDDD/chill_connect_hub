@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
-import { createMoment, listMoments, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
+import { captionMentions, createMoment, withoutMentions, listMoments, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
@@ -43,7 +43,8 @@ export async function POST(request: Request) {
   try {
     const input = await request.json();
     // Trust rules: verified members only; new accounts have a daily limit and cannot post contact details
-    await guardPosting(member, 'moment', typeof input?.caption === 'string' ? input.caption : '');
+    const caption = typeof input?.caption === 'string' ? input.caption : '';
+    await guardPosting(member, 'moment', withoutMentions(caption, await captionMentions(member, caption, [...(Array.isArray(input?.taggedIds) ? input.taggedIds : []), ...(Array.isArray(input?.mentions) ? input.mentions : [])])));
     const moment = await createMoment(member, input);
     await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
     const people = await loadPeople([moment]);

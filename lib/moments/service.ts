@@ -5,6 +5,7 @@ import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import { realPlace } from './feedRules';
+import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -91,6 +92,9 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
         createdAt: comment.createdAt,
         isMine: Boolean(viewer && comment.authorId === viewer.id),
         parentId: comment.parentId,
+        authorId: comment.authorId,
+        // A mention of someone the viewer blocked shows as plain text
+        mentions: (comment.mentions ?? []).filter((m) => !blocked.has(m.id)),
         likesCount: comment.likedBy?.length ?? 0,
         isLiked: Boolean(viewer && comment.likedBy?.includes(viewer.id)),
         // The commenter and the author of the post may remove it
@@ -243,6 +247,34 @@ export async function taggableFriends(member: Member): Promise<Member[]> {
 
 const MAX_MOMENT_TAGS = 10;
 
+const asMention = (person: Member): Mention => ({ id: person.id, name: tidyDisplayName(person.displayName).trim() || person.displayName });
+const pickedIds = (input: unknown): Set<string> =>
+  new Set(Array.isArray(input) ? input.flatMap((m) => (typeof m === 'string' ? [m] : m && typeof m === 'object' && typeof (m as Mention).id === 'string' ? [(m as Mention).id] : [])) : []);
+
+/**
+ * The people a comment may name with "@": friends, the post's author and people already in the thread, never someone
+ * either side blocked. Names come from the server, and only those still written in the text count.
+ */
+export async function commentMentions(member: Member, id: string, body: unknown, input: unknown): Promise<Mention[]> {
+  const picked = pickedIds(input);
+  const said = typeof body === 'string' ? body : '';
+  if (!picked.size || !said.includes('@')) return [];
+  const moment = await requireVisible(id);
+  const people = [...(await loadPeople([moment])).values(), ...(await taggableFriends(member))];
+  const allowed = people.filter((p) => p.id !== member.id && picked.has(p.id) && p.status === 'active' && !p.blockedIds?.includes(member.id) && !member.blockedIds?.includes(p.id));
+  return keepMentioned(said, allowed.map(asMention)).slice(0, MAX_COMMENT_MENTIONS);
+}
+
+/** Text without its confirmed "@name" parts, for the contact-detail check: "@Duke" is a person here, not a LINE id */
+export const withoutMentions = (said: string, mentions: Mention[]): string => mentions.reduce((rest, m) => rest.split(mentionToken(m.name)).join(' '), said);
+
+/** Caption mentions are tags (friends only); the names the server knows, for the contact-detail check */
+export async function captionMentions(member: Member, caption: unknown, input: unknown): Promise<Mention[]> {
+  const picked = pickedIds(input);
+  if (!picked.size || typeof caption !== 'string' || !caption.includes('@')) return [];
+  return keepMentioned(caption, (await taggableFriends(member)).filter((f) => picked.has(f.id)).map(asMention));
+}
+
 /** The request's list cut down to real friends; anyone else is dropped, so a tag cannot reach a stranger */
 async function cleanTags(member: Member, input: unknown): Promise<string[]> {
   if (!Array.isArray(input) || input.length === 0) return [];
@@ -268,7 +300,8 @@ export async function createMoment(member: Member, input: Record<string, unknown
   const category = CATEGORIES.has(input.category as MomentCategory) ? (input.category as MomentCategory) : undefined;
   const location = text(input.location, 120) || text(input.targetTitle, 120);
   const targetId = text(input.targetId, 120) || undefined;
-  const taggedIds = await cleanTags(member, input.taggedIds);
+  // People named with "@" in the caption are tagged too (friends only, like any tag)
+  const taggedIds = await cleanTags(member, [...(Array.isArray(input.taggedIds) ? input.taggedIds : []), ...pickedIds(input.mentions)]);
   // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
   const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
 
@@ -343,7 +376,7 @@ export async function setSaved(member: Member, id: string, saved: boolean): Prom
   return momentRepository.mutate(id, (m) => ({ ...m, savedBy: toggle(m.savedBy, member.id, saved) }));
 }
 
-export async function addComment(member: Member, id: string, input: unknown, replyTo?: unknown): Promise<Moment> {
+export async function addComment(member: Member, id: string, input: unknown, replyTo?: unknown, mentions: Mention[] = []): Promise<Moment> {
   const moment = await requireVisible(id);
   const answered = typeof replyTo === 'string' && replyTo ? moment.comments.find((c) => c.id === replyTo && !c.hidden) : undefined;
   if (replyTo && !answered) throw new MomentError('ไม่พบความคิดเห็นนี้ อาจถูกลบไปแล้ว', 404);
@@ -360,6 +393,7 @@ export async function addComment(member: Member, id: string, input: unknown, rep
     createdAt: new Date().toISOString(),
     // One level: a reply to a reply sits under the same comment
     ...(answered ? { parentId: answered.parentId ?? answered.id } : {}),
+    ...(mentions.length ? { mentions: keepMentioned(body, mentions) } : {}),
   };
   return momentRepository.mutate(id, (m) => ({ ...m, comments: [...m.comments, comment] }));
 }
