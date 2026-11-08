@@ -318,7 +318,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       hostBadge: userProfile.badgeLabel || 'สมาชิก',
       date: date,
       time: `${startTime} - ${endTime} น.`,
-      participantsCount: 1,
+      participantsCount: 0,
       maxParticipants: maxParticipants || 6,
       description: description.trim(),
       tag: mode === 'fair' ? 'นัดเดินดูงาน' : 'ตี้ชวนเที่ยว',

@@ -69,6 +69,7 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { avatarImage } from '@/lib/optimizedImage';
+import { isTripConfirmed } from '@/lib/spotTripRules';
 
 // The ticket and the chat open on a tap, so their code loads then, not with the page
 const ETicketModal = dynamic(() => import('@/components/ETicketModal').then((m) => m.ETicketModal), { ssr: false });
@@ -756,7 +757,7 @@ export default function CommunityDetailPage({
                 {
                   label: 'จำนวนคน',
                   value: eventData.minParticipants
-                    ? eventData.participantsCount >= eventData.minParticipants
+                    ? isTripConfirmed(eventData)
                       ? `ครบขั้นต่ำ ${eventData.minParticipants} คนแล้ว ตี้นี้ไปแน่นอน`
                       : `ออกเดินทางเมื่อครบ ${eventData.minParticipants} คน ถ้ายังไม่ครบ อย่าเพิ่งไปเจอกันสองต่อสอง`
                     : '',

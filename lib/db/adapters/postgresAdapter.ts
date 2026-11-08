@@ -318,7 +318,7 @@ export class PostgresAdapter implements IDataRepository {
     return {
       ...data,
       id: newId,
-      participantsCount: data.participantsCount ?? 1,
+      participantsCount: data.participantsCount ?? 0, // joined members; the host is never counted (owner 2026-11-08)
       maxParticipants: data.maxParticipants ?? (data.eventType === 'community' ? 10 : 500),
       status: data.status || 'recruiting',
       createdAtTimestamp: data.createdAtTimestamp || Date.now(),
@@ -442,6 +442,16 @@ export class PostgresAdapter implements IDataRepository {
       if (mine?.status === 'joined') return { success: false, message: 'คุณได้เข้าร่วมตี้นี้แล้ว', status: 'already_joined', updatedEvent: event };
 
       const currentCount = event.participantsCount || 0;
+      // The host has a row (their schedule, check-in) but is never counted and takes no seat (owner 2026-11-08)
+      if (row.host_member_id === member.id) {
+        const taken = new Set<string>((await tx`select ticket_code from app.event_participants where event_id = ${row.id}`).map((r) => r.ticket_code));
+        await tx`
+          insert into app.event_participants (event_id, member_id, status, ticket_code, joined_at, note)
+          values (${row.id}, ${member.id}, 'joined', ${newTicketCode(taken)}, ${participant.joinedAt ?? new Date().toISOString()}, ${participant.note ?? null})
+          on conflict (event_id, member_id) do update
+            set status = 'joined', joined_at = excluded.joined_at, cancelled_at = null, checked_in_at = null, missed_at = null, note = excluded.note, ticket_code = excluded.ticket_code`;
+        return { success: true, message: 'เข้าร่วมตี้สำเร็จ!', status: 'joined', updatedEvent: event, participantsCount: currentCount, maxParticipants: event.maxParticipants || 10 };
+      }
       const maxAllowed = event.maxParticipants || 10;
       // A fair is a public venue: joining only puts it in the member's My Hub, so it has no seats to run out of
       const seated = event.eventType !== 'public_venue';
@@ -484,13 +494,15 @@ export class PostgresAdapter implements IDataRepository {
   public async atomicLeaveEvent(eventId: string, userId: string): Promise<{ success: boolean; message: string }> {
     await this.ensureInitialized();
     const result = await sql().begin(async (tx) => {
-      const [event] = await tx`select id from app.events where slug = ${eventId} for update`;
+      const [event] = await tx`select id, host_member_id from app.events where slug = ${eventId} for update`;
       if (!event) return { success: false, message: 'ไม่พบตี้' };
       const removed = await tx`
         delete from app.event_participants p using app.members m
-        where p.event_id = ${event.id} and p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'`;
+        where p.event_id = ${event.id} and p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'
+        returning p.member_id`;
       if (!removed.count) return { success: false, message: 'คุณยังไม่ได้เข้าร่วมตี้นี้' };
-      await this.releaseSeat(tx, event.id);
+      // The host never held a seat
+      if (removed[0].member_id !== event.host_member_id) await this.releaseSeat(tx, event.id);
       return { success: true, message: 'ยกเลิกการเข้าร่วมเรียบร้อย' };
     });
     if (result.success) cacheManager.invalidateTags(['events', `event:${eventId}`, `member:${userId}`]);
@@ -568,8 +580,8 @@ export class PostgresAdapter implements IDataRepository {
       const rows = await tx`
         delete from app.event_participants p using app.members m
         where p.member_id = m.id and m.legacy_id = ${userId} and p.status = 'joined'
-        returning p.event_id`;
-      for (const row of rows) await this.releaseSeat(tx, row.event_id);
+        returning p.event_id, p.member_id = (select e.host_member_id from app.events e where e.id = p.event_id) as is_host`;
+      for (const row of rows) if (!row.is_host) await this.releaseSeat(tx, row.event_id);
       return rows.length;
     });
     if (removed) cacheManager.invalidateTags(['events', `member:${userId}`]);

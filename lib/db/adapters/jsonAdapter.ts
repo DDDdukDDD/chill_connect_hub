@@ -197,7 +197,7 @@ export class JsonFileAdapter implements IDataRepository {
     return {
       ...data,
       id: newId,
-      participantsCount: data.participantsCount ?? 1,
+      participantsCount: data.participantsCount ?? 0,
       maxParticipants: data.maxParticipants ?? (data.eventType === 'community' ? 10 : 500),
       status: data.status || 'recruiting',
       createdAtTimestamp: data.createdAtTimestamp || Date.now(),
@@ -363,10 +363,12 @@ export class JsonFileAdapter implements IDataRepository {
 
       const currentCount = event.participantsCount || 0;
       const maxAllowed = event.maxParticipants || 10;
+      // The host is listed but never counted and takes no seat (owner 2026-11-08)
+      const isHost = (event as { createdByMemberId?: string }).createdByMemberId === participant.userId;
 
       // ATOMIC CHECK: Do not allow joining if event is full.
       // A fair is a public venue: joining only puts it in the member's My Hub, so it has no seats to run out of
-      if (event.eventType !== 'public_venue' && currentCount >= maxAllowed) {
+      if (!isHost && event.eventType !== 'public_venue' && currentCount >= maxAllowed) {
         event.status = 'full';
         return {
           success: false,
@@ -378,7 +380,7 @@ export class JsonFileAdapter implements IDataRepository {
       }
 
       // Safe to increment
-      const newCount = currentCount + 1;
+      const newCount = currentCount + (isHost ? 0 : 1);
       event.participantsCount = newCount;
       if (event.eventType !== 'public_venue' && newCount >= maxAllowed) {
         event.status = 'full';

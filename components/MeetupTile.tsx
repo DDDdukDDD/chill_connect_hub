@@ -10,6 +10,7 @@ import { isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { formatEventBadgePrice, hasKnownPrice, isPriceFree } from '@/lib/priceUtils';
 import { placeName } from '@/lib/placeName';
 import { optimizedImage } from '@/lib/optimizedImage';
+import { tripPeopleMissing } from '@/lib/spotTripRules';
 import { PosterPhoto } from './PosterPhoto';
 
 
@@ -57,7 +58,7 @@ function seatsLine(event: EventItem) {
   const joined = event.participantsCount;
   const left = event.maxParticipants - joined;
   if (event.status === 'full' || left <= 0) return 'เต็มแล้ว';
-  if (event.minParticipants && joined < event.minParticipants) return `ขาดอีก ${event.minParticipants - joined} คน`;
+  if (event.minParticipants && tripPeopleMissing(event) > 0) return `ขาดอีก ${tripPeopleMissing(event)} คน`;
   if (left === 1) return 'ที่สุดท้าย!';
   if (left <= 2) return `เหลือ ${left} ที่`;
   return `ว่าง ${left} ที่`;
