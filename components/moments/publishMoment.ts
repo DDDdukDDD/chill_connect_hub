@@ -68,7 +68,7 @@ async function uploadClip(file: File, onShare?: (share: number) => void): Promis
   return stored?.success ? stored.url : null;
 }
 
-async function uploadPicture(picture: Blob): Promise<string> {
+export async function uploadPicture(picture: Blob): Promise<string> {
   const form = new FormData();
   form.append('file', picture, picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
   form.append('folder', 'moments');

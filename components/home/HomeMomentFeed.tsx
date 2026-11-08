@@ -16,6 +16,8 @@ import { MomentComposer, CountedQuestNotice, PostOptionFields, type CountedQuest
 import { liveHref } from '@/components/home/LiveActivity';
 import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
+import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
+import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
 
 const PAGE_SIZE = 8;
@@ -419,7 +421,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [viewer, setViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<FeedItem | null>(null);
   const [reporting, setReporting] = useState<{ moment: FeedItem; reason: string } | null>(null);
-  const [editing, setEditing] = useState<({ id: string; caption: string } & PostOptions) | null>(null);
+  const [editing, setEditing] = useState<({ id: string; caption: string; photos: EditablePhoto[] | null; ratio: number } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -578,7 +580,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       return true;
     },
     onMenu: (moment, choice) => {
-      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
+      // A clip post keeps its cover; only photo posts show the photo row
+      if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, photos: moment.video ? null : moment.images.map((url) => ({ url })), ratio: postRatio(moment.imageRatio), commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
       if (choice === 'copy' || choice === 'share') {
@@ -635,7 +638,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const saveEdit = async () => {
     if (!editing) return;
     setIsBusy(true);
-    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim(), commentsOff: editing.commentsOff, likesOff: editing.likesOff, sharesOff: editing.sharesOff });
+    let images: string[] | undefined;
+    try {
+      // Photos added in this edit upload only now, in their place in the row
+      images = editing.photos ? await Promise.all(editing.photos.map((photo) => (photo.added ? uploadPicture(photo.added) : photo.url))) : undefined;
+    } catch (error) {
+      setIsBusy(false);
+      return showToast(error instanceof Error ? error.message : 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
+    }
+    const result = await call(`/api/moments/${encodeURIComponent(editing.id)}`, 'PATCH', { caption: editing.caption.trim(), images, commentsOff: editing.commentsOff, likesOff: editing.likesOff, sharesOff: editing.sharesOff });
     setIsBusy(false);
     if (!result.ok || !result.moment) return showToast(result.message);
     replace(result.moment);
@@ -864,6 +875,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
       {editing && (
         <DialogShell onClose={() => setEditing(null)} title="แก้ไขโพสต์" size="sm">
+          {editing.photos && (
+            <EditPhotosRow photos={editing.photos} ratio={editing.ratio} onChange={(photos) => setEditing({ ...editing, photos })} onError={showToast} />
+          )}
           <label htmlFor="home-edit-caption" className="sr-only">ข้อความของโมเมนต์</label>
           <textarea
             id="home-edit-caption"

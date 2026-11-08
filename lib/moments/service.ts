@@ -351,7 +351,25 @@ export async function editMoment(member: Member, id: string, input: Record<strin
   const location = input.location !== undefined ? text(input.location, 120) || moment.location : moment.location;
   // Only what the request names changes; the author can open or close these after posting
   const options = (['commentsOff', 'likesOff', 'sharesOff'] as const).reduce<Partial<Moment>>((set, key) => (typeof input[key] === 'boolean' ? { ...set, [key]: input[key] } : set), {});
-  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, ...options, updatedAt: new Date().toISOString() }));
+  const images = input.images !== undefined ? editedImages(moment, input.images) : moment.images;
+  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, images, ...options, updatedAt: new Date().toISOString() }));
+}
+
+/**
+ * Photos after an edit (owner 2026-11-08): remove, reorder, or add up to the limit, like posting. A clip post keeps
+ * its cover, and a new photo must come through the upload route like any posted photo.
+ */
+function editedImages(moment: Moment, input: unknown): string[] {
+  if (!Array.isArray(input) || !input.every((url): url is string => typeof url === 'string')) throw new MomentError('รายการรูปไม่ถูกต้อง');
+  const images = [...new Set(input)];
+  if (moment.video) {
+    if (images.join() !== moment.images.join()) throw new MomentError('โพสต์คลิปแก้ได้เฉพาะข้อความ');
+    return moment.images;
+  }
+  if (images.length === 0) throw new MomentError('ต้องมีรูปอย่างน้อย 1 รูป');
+  if (images.length > MAX_MOMENT_IMAGES) throw new MomentError(`แนบรูปได้ไม่เกิน ${MAX_MOMENT_IMAGES} รูป`);
+  if (!images.every((url) => moment.images.includes(url) || isAllowedMomentImage(url))) throw new MomentError('รูปต้องอัปโหลดผ่านระบบ (/api/upload) ก่อน');
+  return images;
 }
 
 /** Removes the member's own moment and answers its photo links, so the caller can delete the files too */
