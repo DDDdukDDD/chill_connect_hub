@@ -18,6 +18,7 @@ import {
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { StoredMediaFile, MediaStorageStats } from '@/lib/media/types';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 interface MediaFileWithOrphan extends StoredMediaFile {
   isOrphan?: boolean;
@@ -314,7 +315,7 @@ export function MediaManagerView() {
                 {/* Image Preview */}
                 <div className="relative aspect-square bg-slate-100 overflow-hidden">
                   <img
-                    src={file.url}
+                    src={optimizedImage(file.url, 384)}
                     alt={file.filename}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     loading="lazy"

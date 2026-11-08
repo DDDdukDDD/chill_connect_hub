@@ -9,6 +9,7 @@ import { coordinatesMapUrl } from '@/lib/spotCategories';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterAdmin';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 const VENUE_TAG_LABELS: Record<MasterVenue['venueTag'], string> = {
   qsncc: 'QSNCC',
@@ -130,7 +131,7 @@ export function VenuesManagerView() {
             subtitle: [VENUE_TAG_LABELS[venue.venueTag], venue.province, venue.transitHint].filter(Boolean).join(' · '),
             leading: venue.image
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={venue.image} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
+              ? <img src={optimizedImage(venue.image, 128)} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
               : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><Building2 size={16} /></span>,
           }))}
         />

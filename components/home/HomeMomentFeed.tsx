@@ -19,6 +19,7 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -323,7 +324,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
-      <img src={images[index]} alt={`รูปที่ ${index + 1}`} className="max-w-full max-h-[90dvh] object-contain" onClick={(e) => e.stopPropagation()} />
+      <img src={optimizedImage(images[index], 1080)} alt={`รูปที่ ${index + 1}`} className="max-w-full max-h-[90dvh] object-contain" onClick={(e) => e.stopPropagation()} />
       <button type="button" onClick={onClose} aria-label="ปิด" className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer">
         <X className="w-5 h-5" />
       </button>

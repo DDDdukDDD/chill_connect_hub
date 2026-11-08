@@ -11,6 +11,7 @@ import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer'
 import { AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { avatarImage } from '@/lib/optimizedImage';
 
 interface AdminMember {
   id: string;
@@ -506,7 +507,7 @@ export function MembersManagerView({ initialQuery = '', initialQueue }: { initia
                         <div className="flex items-center gap-2.5">
                           {member.avatarUrl
                             // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={member.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                            ? <img src={avatarImage(member.avatarUrl, 64)} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
                             : <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">{nameInitial(member.displayName)}</span>}
                           <div className="min-w-0">
                             <p className="truncate font-bold text-slate-800">

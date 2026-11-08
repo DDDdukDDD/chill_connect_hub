@@ -8,6 +8,7 @@ import { AdminEmptyState, AdminPageHeader, AdminStatus, AdminStatusChip, adminBu
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 type Filter = 'all' | 'reported' | 'evidence' | 'hidden' | 'published' | 'samples';
 
@@ -124,7 +125,7 @@ function MomentDrawer({ moment, canModerate, onClose, onDone }: { moment: AdminM
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
             {moment.images.map((src, index) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={src + index} src={src} alt="" className="aspect-square w-full rounded-lg object-cover" />
+              <img key={src + index} src={optimizedImage(src, 384)} alt="" className="aspect-square w-full rounded-lg object-cover" />
             ))}
           </div>
           <p className="whitespace-pre-wrap text-sm text-slate-800">{moment.caption}</p>
@@ -344,7 +345,7 @@ export function MomentsManagerView({ initialFilter }: { initialFilter?: string }
                   <div className="relative aspect-square bg-slate-100">
                     {moment.images[0] && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={moment.images[0]} alt="" className={`h-full w-full object-cover ${moment.status === 'hidden' ? 'opacity-40 grayscale' : ''}`} />
+                      <img src={optimizedImage(moment.images[0], 384)} alt="" className={`h-full w-full object-cover ${moment.status === 'hidden' ? 'opacity-40 grayscale' : ''}`} />
                     )}
                     <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                       <AdminStatusChip status={statusOf(moment)} />

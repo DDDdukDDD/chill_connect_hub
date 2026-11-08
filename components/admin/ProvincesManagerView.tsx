@@ -7,6 +7,7 @@ import { MasterProvince, MasterZone, Region, REGIONS } from '@/lib/masterData';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ImageField, MasterList, MasterNotices, useMasterAdmin } from './masterAdmin';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 type ProvinceForm = { id: string; displayName: string; nameEn: string; region: Region; tagline: string; description: string; image: string; imageCredit: string; featured: boolean };
 
@@ -210,7 +211,7 @@ export function ProvincesManagerView() {
               subtitle: [province.region, province.nameEn, province.tagline].filter(Boolean).join(' · '),
               leading: province.image
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={province.image} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
+                ? <img src={optimizedImage(province.image, 128)} alt="" className="h-10 w-14 shrink-0 rounded-lg object-cover" />
                 : <span className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-semibold text-slate-500">ไม่มีรูป</span>,
               extra: (
                 <>

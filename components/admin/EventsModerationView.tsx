@@ -31,6 +31,7 @@ import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
 import { AdminEventItem } from '@/lib/eventsStore';
 import { stripHtmlToPlainText } from '@/components/RichTextEditor';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 interface EventsModerationViewProps {
   type: 'community' | 'fairs' | 'all';
@@ -365,7 +366,7 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100">
                       {ev.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={ev.image} alt="" className="w-full h-full object-cover" />
+                        <img src={optimizedImage(ev.image, 384)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-300">
                           {isCommunity ? <Users size={20} /> : <Building2 size={20} />}
