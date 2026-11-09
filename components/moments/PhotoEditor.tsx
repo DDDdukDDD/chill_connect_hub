@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Blend, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, SlidersHorizontal, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Blend, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
@@ -87,8 +87,6 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [selectedFun, setSelectedFun] = useState<string | null>(null);
   const [copied, setCopied] = useState<'filter' | 'light' | null>(null);
-  // Brightness is what most people touch; contrast and colour wait behind "ปรับเพิ่ม"
-  const [moreLight, setMoreLight] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const base = useRef<HTMLCanvasElement | null>(null);
   const baseKey = useRef('');
@@ -383,21 +381,10 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       {tool === 'light' && (
         <div className="space-y-0.5">
           <Slider label="สว่าง" value={photo.light} min={-100} max={100} step={1} onChange={(light) => { update({ light }); setCopied(null); }} />
-          {moreLight && (
-            <>
-              <Slider label="คอนทราสต์" value={photo.contrast} min={-100} max={100} step={1} onChange={(contrast) => { update({ contrast }); setCopied(null); }} />
-              <Slider label="ความสด" value={photo.color} min={-100} max={100} step={1} onChange={(color) => { update({ color }); setCopied(null); }} />
-            </>
-          )}
-          <div className="flex items-center gap-1 pt-1">
-            {!moreLight && (
-              <button type="button" onClick={() => setMoreLight(true)} className="h-8 px-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1">
-                <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-                ปรับเพิ่ม
-              </button>
-            )}
-            {photos.length > 1 && <ApplyAll onClick={() => copyToAll('light')} done={copied === 'light'} />}
-          </div>
+          {/* All three show: there are only three, so nothing hides behind a button (owner 2026-11-09) */}
+          <Slider label="คอนทราสต์" value={photo.contrast} min={-100} max={100} step={1} onChange={(contrast) => { update({ contrast }); setCopied(null); }} />
+          <Slider label="ความสด" value={photo.color} min={-100} max={100} step={1} onChange={(color) => { update({ color }); setCopied(null); }} />
+          {photos.length > 1 && <div className="pt-1"><ApplyAll onClick={() => copyToAll('light')} done={copied === 'light'} /></div>}
         </div>
       )}
       {tool === 'text' && (
