@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, SlidersHorizontal, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Blend, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, SlidersHorizontal, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
@@ -19,7 +19,7 @@ import { Segmented, TextTools, newText } from './EditorControls';
 type Tool = 'crop' | 'filter' | 'light' | 'text' | 'sticker';
 const TOOLS: { id: Tool; label: string; Icon: typeof Crop }[] = [
   { id: 'crop', label: 'ครอป', Icon: Crop },
-  { id: 'filter', label: 'ฟิลเตอร์', Icon: Sparkles },
+  { id: 'filter', label: 'ฟิลเตอร์', Icon: Blend },
   { id: 'light', label: 'แสง', Icon: SunMedium },
   { id: 'text', label: 'ข้อความ', Icon: Type },
   { id: 'sticker', label: 'สติกเกอร์', Icon: Sticker },
@@ -366,7 +366,8 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       )}
       {tool === 'filter' && (
         <div className="space-y-1">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 py-1">
+          {/* A row that slides on a phone; on a wide screen the side panel shows them all, four to a row */}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 py-1 landscape:sm:grid landscape:sm:grid-cols-4 landscape:sm:gap-x-2 landscape:sm:gap-y-3 landscape:sm:overflow-visible landscape:sm:justify-items-center">
             {FILTERS.map((f) => (
               <button key={f.id} type="button" onClick={() => { update({ filter: f.id }); setCopied(null); }} aria-pressed={photo.filter === f.id} className="group shrink-0 flex flex-col items-center gap-1 cursor-pointer">
                 <span className={`rounded-full p-0.5 ring-2 transition-transform group-active:scale-95 ${photo.filter === f.id ? 'ring-[#2563EB]' : 'ring-transparent'}`}>
