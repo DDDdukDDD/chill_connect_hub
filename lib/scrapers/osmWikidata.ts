@@ -258,9 +258,11 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
       // Interest signal for the automatic curation (views are counts, free to store)
       const wikiMonthlyViews = summary?.title ? await fetchMonthlyViews(context, summaryLang, summary.title) : 0;
 
+      const titleEn = (tags['name:en'] || entity.labels?.en?.value || '').trim();
       items.push({
         id: `osm-${element.type[0]}${element.id}`,
         title,
+        ...(titleEn && titleEn !== title && { titleEn }),
         category: kind.category,
         categoryLabel: label,
         province: options.province,
