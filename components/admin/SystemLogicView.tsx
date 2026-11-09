@@ -3,7 +3,7 @@
 import React from 'react';
 import { BookOpen } from 'lucide-react';
 import { AdminPageHeader, AdminBadge } from './AdminUI';
-import { FOR_YOU_WEIGHTS as W } from '@/lib/moments/forYou';
+import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 
 /**
@@ -123,6 +123,44 @@ const TOPICS: Topic[] = [
           ตัวเลขทั้งหมดในหน้านี้มาจาก <code className="text-xs bg-slate-100 rounded px-1 py-0.5">FOR_YOU_WEIGHTS</code> ใน lib/moments/forYou.ts แก้ที่นั่นที่เดียว หน้านี้จะเปลี่ยนตาม
         </p>
       </>
+    ),
+  },
+  {
+    id: 'popular',
+    title: 'แท็บ "ยอดฮิต"',
+    summary: 'โพสต์ที่คนกำลังสนใจตอนนี้ ไม่ใช่โพสต์ที่ไลก์เยอะที่สุดตลอดกาล',
+    updated: '9 พ.ย. 2569 · BE-328',
+    files: ['lib/moments/forYou.ts', 'lib/moments/pgMomentRepository.ts'],
+    body: (
+      <>
+        <List
+          items={[
+            `คะแนนดิบ = บันทึก ×${P.save} + คอมเมนต์ ×${P.comment} + ไลก์ ×${P.like}`,
+            `หารด้วย (อายุโพสต์เป็นชั่วโมง + ${P.offsetH}) ยกกำลัง ${P.gravity} โพสต์ใหม่ที่คนชอบจึงแซงโพสต์ดังที่เก่าได้ภายในไม่กี่ชั่วโมง`,
+            'คะแนนเท่ากัน (เช่น ยังไม่มีใครกดเลย) เรียงจากใหม่ไปเก่า',
+          ]}
+        />
+        <p className="text-sm text-slate-700 mt-3">
+          ตัวเลขมาจาก <code className="text-xs bg-slate-100 rounded px-1 py-0.5">POPULAR_WEIGHTS</code> ใน lib/moments/forYou.ts
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'liked-by',
+    title: 'ใครเห็นว่าใครกดถูกใจ',
+    summary: 'บรรทัด "ถูกใจโดย … และอีก N คน" ใต้โพสต์ในฟีด และรายชื่อคนกดถูกใจ',
+    updated: '10 พ.ย. 2569 · BE-328',
+    files: ['lib/moments/pgMomentRepository.ts', 'lib/moments/service.ts', 'app/api/moments/[id]/likes/route.ts'],
+    body: (
+      <List
+        items={[
+          'ใต้โพสต์ขึ้นชื่อได้คนเดียว คือคนล่าสุดที่กดถูกใจ และต้องเป็นคนที่ผู้อ่านติดตามอยู่แล้ว คนแปลกหน้าไม่ขึ้นชื่อ',
+          'ไม่ขึ้นชื่อคนที่ถูกแบน หรือคนที่ผู้อ่านบล็อก',
+          'ถ้าเจ้าของโพสต์ปิดยอดถูกใจ จะไม่มีบรรทัดนี้เลย',
+          'รายชื่อคนกดถูกใจทั้งหมด เปิดดูได้เฉพาะเจ้าของโพสต์ (7 พ.ย. 2569)',
+        ]}
+      />
     ),
   },
 ];

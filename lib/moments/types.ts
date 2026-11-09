@@ -57,6 +57,8 @@ export interface MomentFeedFacts {
   liked: boolean;
   saved: boolean;
   reported: boolean;
+  /** The newest liker the viewer follows (social proof: "ถูกใจโดย … และอีก N คน"), never someone blocked or banned */
+  friendLike?: { id: string; name: string };
 }
 
 export interface Moment {
@@ -185,6 +187,13 @@ export interface ForYouPoolQuery {
 /** A pool post, with the database's own text of its time for a newest-first cursor after the pool */
 export type ForYouPoolPost = ForYouCandidate & { cursorAt: string };
 
+/** One target that still invites the reader (see MomentRepository.targetFacts) */
+export type TargetFactRow =
+  | { type: 'community'; ref: string; startsAt: string; seatsLeft: number | null }
+  | { type: 'fair'; ref: string; startsAt: string; endsAt: string }
+  | { type: 'challenge'; ref: string; xp: number }
+  | { type: 'spot'; ref: string; openHours: string };
+
 export type MomentTypeCounts = { all: number; spot: number; community: number; fair: number; challenge: number };
 
 export interface MomentRepository {
@@ -196,6 +205,11 @@ export interface MomentRepository {
   feedByIds(ids: string[], query: Pick<MomentFeedQuery, 'viewerId' | 'blockedIds'>): Promise<Moment[]>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;
+  /**
+   * The open ตี้ and อีเวนต์ (by slug), open challenges and places among these targets, for the line under a feed
+   * post. Places come with their opening hours; the service works out "open now".
+   */
+  targetFacts(targets: { type: MomentTargetType; ref: string }[]): Promise<TargetFactRow[]>;
   typeCounts(): Promise<MomentTypeCounts>;
   findById(id: string): Promise<Moment | null>;
   create(moment: Moment): Promise<Moment>;

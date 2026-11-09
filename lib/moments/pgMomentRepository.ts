@@ -2,6 +2,7 @@ import type { PendingQuery, Row as PgRow } from 'postgres';
 import { sql, type Sql } from '../db/postgres/client';
 import { iso, toDate, uuidV7 } from '../db/postgres/rows.mjs';
 import { NOT_A_PLACE } from './feedRules';
+import { POPULAR_WEIGHTS } from './forYou';
 import type { Moment, MomentComment, MomentFeedQuery, MomentQuery, MomentReport, MomentRepository, MomentStatus } from './types';
 
 /**
@@ -267,7 +268,10 @@ const hydrateFeed = (tx: Sql, ids: string[], query: MomentFeedQuery) => {
         where c.moment_id = m.id and c.parent_id is null and ${shownComment} order by c.created_at desc, c.id desc limit 1) newest) as comments,
       '[]'::json as reports,
       (select count(*) from app.moment_comments c ${commentJoins} where c.moment_id = m.id and ${shownComment}) as shown_comments,
-      ${mine('moment_likes')} as viewer_liked, ${mine('moment_saves')} as viewer_saved, ${mine('moment_reports')} as viewer_reported
+      ${mine('moment_likes')} as viewer_liked, ${mine('moment_saves')} as viewer_saved, ${mine('moment_reports')} as viewer_reported,
+      ${me ? tx`(select json_build_object('id', x.legacy_id, 'name', coalesce(x.display_name, '')) from app.moment_likes l join app.members x on x.id = l.member_id
+          join app.follows f on f.followee_id = l.member_id and f.follower_id = (select id from app.members where legacy_id = ${me})
+          where l.moment_id = m.id and x.status <> 'banned' ${noBlock('x')} order by l.created_at desc limit 1)` : tx`null`} as friend_like
     from app.moments m
     left join app.members a on a.id = m.author_id
     where m.id in ${tx(ids)}`;
@@ -283,7 +287,7 @@ async function feedMoments(db: Sql, ids: string[], query: Pick<MomentFeedQuery, 
     if (!row) return [];
     return [{
       ...rowToMoment(row),
-      feedFacts: { likes: row.like_count, comments: Number(row.shown_comments), liked: row.viewer_liked, saved: row.viewer_saved, reported: row.viewer_reported },
+      feedFacts: { likes: row.like_count, comments: Number(row.shown_comments), liked: row.viewer_liked, saved: row.viewer_saved, reported: row.viewer_reported, ...(row.friend_like ? { friendLike: row.friend_like } : {}) },
     }];
   });
 }
@@ -310,7 +314,10 @@ export const pgMomentRepository: MomentRepository = {
     const usesCursor = query.sort === 'newest' && Boolean(query.cursor);
     const cursor = usesCursor ? CURSOR.exec(query.cursor as string) : null;
     if (usesCursor && !cursor) return { items: [], hasNext: false };
-    const order = query.sort === 'popular' ? db`m.like_count + m.sample_likes + m.comment_count desc, m.created_at desc, m.id desc` : db`m.created_at desc, m.id desc`;
+    const P = POPULAR_WEIGHTS;
+    const hot = db`((m.like_count + m.sample_likes) * ${P.like} + m.comment_count * ${P.comment} + m.save_count * ${P.save})::float8
+      / power(extract(epoch from (now() - m.created_at)) / 3600 + ${P.offsetH}, ${P.gravity})`;
+    const order = query.sort === 'popular' ? db`${hot} desc, m.created_at desc, m.id desc` : db`m.created_at desc, m.id desc`;
     // One more than the page: whether it exists says if there is a next page
     const found = await db`
       select m.id, m.created_at::text as at ${usesCursor ? db`` : db`, count(*) over () as total`}
@@ -367,6 +374,34 @@ export const pgMomentRepository: MomentRepository = {
       seen: r.seen,
       cursorAt: `${r.at}|${r.id}`,
     }));
+  },
+  async targetFacts(targets) {
+    const db = sql();
+    const refs = (types: string[]) => [...new Set(targets.filter((t) => types.includes(t.type)).map((t) => t.ref))];
+    const events = refs(['community', 'fair']);
+    const quests = refs(['challenge']);
+    const places = refs(['spot']);
+    const [eventRows, questRows, placeRows] = await Promise.all([
+      events.length
+        ? db`select slug, event_type, starts_at, ends_at, max_participants, participants_count from app.events
+            where slug in ${db(events)} and approval_status = 'approved' and (
+              (event_type = 'community' and registration_open and starts_at > now()
+                and coalesce(details->>'status', 'recruiting') not in ('full', 'cancelled', 'ended')
+                and (max_participants is null or participants_count < max_participants))
+              or (event_type = 'public_venue' and ends_at > now()))`
+        : [],
+      quests.length ? db`select slug, reward_points from app.quests where slug in ${db(quests)} and status = 'active' and (ends_at is null or ends_at > now())` : [],
+      places.length ? db`select slug, open_hours from app.places where slug in ${db(places)} and publication_status = 'published' and coalesce(open_hours, '') <> ''` : [],
+    ]);
+    return [
+      ...eventRows.map((r) =>
+        r.event_type === 'community'
+          ? { type: 'community' as const, ref: r.slug, startsAt: iso(r.starts_at) as string, seatsLeft: r.max_participants === null ? null : r.max_participants - r.participants_count }
+          : { type: 'fair' as const, ref: r.slug, startsAt: iso(r.starts_at) as string, endsAt: iso(r.ends_at) as string }
+      ),
+      ...questRows.map((r) => ({ type: 'challenge' as const, ref: r.slug, xp: Number(r.reward_points) })),
+      ...placeRows.map((r) => ({ type: 'spot' as const, ref: r.slug, openHours: r.open_hours as string })),
+    ];
   },
   async readerAffinity(viewerId) {
     const db = sql();

@@ -5,6 +5,7 @@ import { MOCK_POSTS } from '@/data/mockData';
 import { IS_SERVERLESS } from '../db/databaseFile';
 import { AsyncMutex } from '../db/mutex';
 import { isPlaceMoment } from './feedRules';
+import { POPULAR_WEIGHTS } from './forYou';
 import { hasHashtag } from './hashtags';
 import type { Moment, MomentFeedQuery, MomentQuery, MomentRepository, MomentStatus } from './types';
 
@@ -191,7 +192,10 @@ export const jsonMomentRepository: MomentRepository = {
       return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q);
     });
     const newest = (a: Moment, b: Moment) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id);
-    const sorted = matches.sort((a, b) => (query.sort === 'popular' ? likeCount(b) + b.comments.length - (likeCount(a) + a.comments.length) || newest(a, b) : newest(a, b)));
+    const P = POPULAR_WEIGHTS;
+    const now = Date.now();
+    const hot = (m: Moment) => (likeCount(m) * P.like + m.comments.length * P.comment + m.savedBy.length * P.save) / Math.pow((now - Date.parse(m.createdAt)) / 3_600_000 + P.offsetH, P.gravity);
+    const sorted = matches.sort((a, b) => (query.sort === 'popular' ? hot(b) - hot(a) || newest(a, b) : newest(a, b)));
     const usesCursor = query.sort === 'newest' && Boolean(query.cursor);
     const from = usesCursor ? sorted.findIndex((m) => `${m.createdAt}|${m.id}` === query.cursor) + 1 : (query.page - 1) * query.limit;
     if (usesCursor && from === 0) return { items: [], hasNext: false };
@@ -223,6 +227,10 @@ export const jsonMomentRepository: MomentRepository = {
         seen: (seen.get(m.id) ?? Infinity) <= asOf,
         cursorAt: `${m.createdAt}|${m.id}`,
       }));
+  },
+  // Without the database the ตี้, challenges and places behind posts are not looked up
+  async targetFacts() {
+    return [];
   },
   async readerAffinity(viewerId) {
     const counts = new Map<string, number>();

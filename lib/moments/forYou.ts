@@ -82,6 +82,13 @@ export const FOR_YOU_WEIGHTS = {
 
 const W = FOR_YOU_WEIGHTS;
 
+/**
+ * The ยอดฮิต tab: hot right now, not most liked of all time (2026-11-09). A post's points (saves, comments, likes as
+ * above) are divided by (age in hours + offsetH) to the power `gravity`, so a new post that people take to rises past an
+ * old hit within hours. Same order in Postgres and in the JSON store.
+ */
+export const POPULAR_WEIGHTS = { save: W.save, comment: W.comment, like: W.like, offsetH: 2, gravity: 1.5 } as const;
+
 /** The score parts, kept apart so a test or an admin check can see why a post ranks where it does */
 export function scoreParts(post: ForYouCandidate, reader: ForYouReader, now: number) {
   const ageH = Math.max(0, (now - Date.parse(post.createdAt)) / HOUR);

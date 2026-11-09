@@ -89,8 +89,9 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
     <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
       {/* Two columns on laptops (owner 2026-10-29): "ของฉัน" pinned on the left under the logo as in My Hub (owner 2026-10-31), the feed centred in the rest. Where to go next (ตี้,
           ชาเลนจ์, อีเวนต์, ที่เที่ยว) comes as cards between the posts on every screen, as on phones, instead of a third column */}
-      {/* Wide screens (2xl) add a right column (owner 2026-11-01): the 600px feed left ~290px empty on each side */}
-      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_340px] lg:gap-14">
+      {/* Wide screens add a right column (owner 2026-11-01): the 600px feed left ~290px empty on each side. From xl (1280) since
+          2026-11-09, with narrower side columns there so the feed keeps ~575px; 2xl gets the full widths */}
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_300px] 2xl:grid-cols-[300px_minmax(0,1fr)_340px] lg:gap-14 xl:gap-10 2xl:gap-14">
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
               one slim line when there is something to do next. Laptops have both beside the feed */}
@@ -119,7 +120,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           <NextUp {...props} />
           {/* Campaigns sit beside the feed, not above it (owner 2026-10-30): you and your plans come first */}
           {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
-            <div className="empty:hidden 2xl:hidden">
+            <div className="empty:hidden xl:hidden">
               <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
@@ -127,7 +128,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
 
         {/* Wide screens: what to go to next as folded lines (owner 2026-11-01, as on the ตี้ pages), so the feed there is only
             moments; campaigns are one more line under them */}
-        <aside className="hidden 2xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-3 pb-4">
+        <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-3 pb-4">
           <SideFolds {...props} />
           {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
             <div className="empty:hidden">
@@ -367,7 +368,7 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     const again = from >= TAKE[kind];
     // Wide screens show these in the right column's folds instead, so nothing appears twice
     cards[at] = (
-      <section className="py-5 border-b border-slate-200 2xl:hidden">
+      <section className="py-5 border-b border-slate-200 xl:hidden">
         {kind === 'meetup' ? (
           <InvitePost event={props.meetups[from]} reason={props.reasons[props.meetups[from].id]} />
         ) : kind === 'challenge' ? (
@@ -441,7 +442,8 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
 /** Without plans: three open meetups from the สาย the member liked, as a sideways row inside the feed */
 function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
   const liked = COMMUNITY_LIFESTYLE_CATEGORIES.filter((cat) => likedCategories.includes(cat.id));
-  const picks = meetups.slice(0, 3);
+  // Three ตี้ with three different photos: two with the same picture side by side look fake (tester 2026-11-09)
+  const picks = [...meetups.filter((m, i) => !m.image || meetups.findIndex((o) => o.image === m.image) === i), ...meetups].filter((m, i, all) => all.indexOf(m) === i).slice(0, 3);
   if (picks.length === 0) return null;
   return (
     <div>

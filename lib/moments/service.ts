@@ -7,6 +7,8 @@ import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import { realPlace } from './feedRules';
 import { FOR_YOU_WEIGHTS, GUEST_READER, rankForYou, type ForYouReader } from './forYou';
+import { liveKey, type TargetLive } from './targetLive';
+import { isSpotOpenNow } from '../openHours';
 import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
@@ -141,10 +143,34 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     isSample: moment.isSample,
     // Only the author learns that staff did not count the photo as a visit
     evidenceRejected: viewer && moment.authorId === viewer.id && moment.evidenceRejected ? { note: moment.evidenceRejected.note } : undefined,
+    /** Someone the viewer follows who liked it (feeds only); never shown when the author hid the likes */
+    likedByFriend: moment.likesOff || !moment.feedFacts?.friendLike ? undefined : { id: moment.feedFacts.friendLike.id, name: tidyDisplayName(moment.feedFacts.friendLike.name).trim() || moment.feedFacts.friendLike.name },
+    /** What the ตี้, อีเวนต์, challenge or place offers now (feeds only, filled by withLive) */
+    live: undefined as TargetLive | undefined,
   };
 }
 
 export type FeedItem = ReturnType<typeof toFeedItem>;
+
+const LIVE_TYPES = new Set<MomentTargetType>(['community', 'fair', 'challenge', 'spot']);
+
+/** Adds `live` to feed posts: one read for the whole page, and only targets that still invite the reader get one */
+async function withLive(items: FeedItem[]): Promise<FeedItem[]> {
+  const targets = items.flatMap((m) => (m.targetId && LIVE_TYPES.has(m.targetType) ? [{ type: m.targetType, ref: m.targetId }] : []));
+  if (targets.length === 0) return items;
+  const rows = await momentRepository.targetFacts(targets).catch((error) => {
+    console.warn('Moment targets:', (error as Error).message);
+    return [];
+  });
+  const live = new Map<string, TargetLive>();
+  for (const row of rows) {
+    if (row.type === 'community') live.set(liveKey(row.type, row.ref), { kind: 'meetup', startsAt: row.startsAt, seatsLeft: row.seatsLeft });
+    else if (row.type === 'fair') live.set(liveKey(row.type, row.ref), { kind: 'fair', startsAt: row.startsAt, endsAt: row.endsAt });
+    else if (row.type === 'challenge') live.set(liveKey(row.type, row.ref), { kind: 'challenge', xp: row.xp });
+    else if (isSpotOpenNow(row.openHours)) live.set(liveKey(row.type, row.ref), { kind: 'spot', openNow: true });
+  }
+  return items.map((m) => (m.targetId && live.has(liveKey(m.targetType, m.targetId)) ? { ...m, live: live.get(liveKey(m.targetType, m.targetId)) } : m));
+}
 
 export interface MomentListOptions {
   /** foryou | mix | all | popular | following | saved | mine (foryou and mix only without a filter; mix = foryou as a guest sees it) */
@@ -239,7 +265,7 @@ async function readForYou(viewer: Member | null, personal: boolean, page: number
   const nextCursor = offset + limit < ids.length ? `fy|${asOf}|${offset + limit}` : after;
   const people = await loadPeople(items);
   return {
-    moments: items.map((moment) => toFeedItem(moment, viewer, people)),
+    moments: await withLive(items.map((moment) => toFeedItem(moment, viewer, people))),
     requiresLogin: false,
     pagination: pagination(Math.floor(offset / limit) + 1, limit, { hasNext: Boolean(nextCursor), nextCursor }),
   };
@@ -283,7 +309,7 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
   });
   const people = await loadPeople(found.items);
   return {
-    moments: found.items.map((moment) => toFeedItem(moment, viewer, people)),
+    moments: await withLive(found.items.map((moment) => toFeedItem(moment, viewer, people))),
     requiresLogin: false,
     pagination: pagination(page, limit, found),
   };
