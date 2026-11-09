@@ -1,9 +1,9 @@
 // Adds details.titleEn (English name, global plan 2026-11-09) to places imported from OpenStreetMap, from the OSM element name:en or the Wikidata label.
-// Dev: POSTGRES_URL_NON_POOLING=<dev url> node db/backfill-place-title-en.mjs   Live: also CONFIRM_LIVE=mvbjawwhpsrqrqffexyf (owner runs it). Safe to rerun: skips places that have one.
-import postgres from 'postgres';
-const url = process.env.POSTGRES_URL_NON_POOLING || '';
-const live = process.env.CONFIRM_LIVE === 'mvbjawwhpsrqrqffexyf' && url.includes('mvbjawwhpsrqrqffexyf');
-if (!url.includes('womkobbjdlzefyrxspxh') && !live) throw new Error('refusing: not the dev database');
+// Reads the database from the environment, else .env.local (the live one). Live needs --live: `node db/backfill-place-title-en.mjs --live` (owner runs it). Dev: POSTGRES_URL_NON_POOLING=<dev url> node db/backfill-place-title-en.mjs. Safe to rerun: skips places that have one.
+import { postgres, readEnv } from './env.mjs';
+const url = readEnv().POSTGRES_URL_NON_POOLING || '';
+const live = process.argv.includes('--live') && url.includes('mvbjawwhpsrqrqffexyf');
+if (!url.includes('womkobbjdlzefyrxspxh') && !live) throw new Error('refusing: this is the live database; add --live to run on it');
 const sql = postgres(url, { max: 1 });
 const rows = await sql`select slug, title, details->>'titleEn' as en from app.places where slug like 'osm-%' order by slug`;
 const types = { n: 'node', w: 'way', r: 'relation' };

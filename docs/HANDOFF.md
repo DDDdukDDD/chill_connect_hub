@@ -36,7 +36,7 @@ Item template:
 
 ### BE-319 · Global groundwork: country on provinces, English place names, map point required (owner 2026-11-09)
 - **What changed:** migration 0038 adds `app.provinces.country_code` (ISO alpha-2, default `TH`). `LifestyleSpotItem.titleEn` (stored in `details`, not shown yet) is filled by the OSM and tourism-directory importers; `runSpotScraper` drops places without coordinates. `db/backfill-place-title-en.mjs` filled 130 of 132 OSM places on dev.
-- **What to do about it:** on live, the owner runs `! npm run db:migrate` (0038) and the backfill with `CONFIRM_LIVE`. New code: no new Thailand-only assumptions where avoidable (plan in LAUNCH_CHECKLIST "เตรียมพร้อม Global").
+- **What to do about it:** on live, the owner runs `! npm run db:migrate` (0038) and `node db/backfill-place-title-en.mjs --live`. New code: no new Thailand-only assumptions where avoidable (plan in LAUNCH_CHECKLIST "เตรียมพร้อม Global").
 
 ### BE-318 · Positioning on the landing hero and site descriptions (owner 2026-11-09)
 - **What changed:** hero h1 "โซเชียลแพลตฟอร์ม / สำหรับคนชอบออกไปใช้ชีวิต" + line "ที่ทำให้ทุกการใช้ชีวิตมีความหมาย" (`app/HomeView.tsx`); wordmark subtitle "โซเชียลคนชอบออกไปใช้ชีวิต"; the same sentence in layout metadata, JSON-LD, manifest and llms.txt. Positioning and differentiator in `docs/PRODUCT_DIRECTION.md`. /about, onboarding and the sign-up popup still say คอมมูนิตี้.
