@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
 import { useMentionPicker } from '@/components/moments/MentionPicker';
 import { PlacePicker } from '@/components/moments/PlacePicker';
@@ -518,37 +518,40 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             {/* A wide screen keeps the editor's frame (owner 2026-11-09: the dialog shrank and the photo was cut): the post
                 as it will look on the left, the words and choices on the right, like Instagram on a computer */}
             <div className="flex-1 min-h-0 flex flex-col sm:landscape:flex-row">
-              <div className="hidden sm:landscape:flex flex-1 min-w-0 min-h-0 relative items-center justify-center bg-[#F6F7FB] p-4 [container-type:size]">
-                {clip?.cover ? (
-                  <div className="relative h-full max-w-full">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-                    <img src={clip.cover} alt="ปกคลิป" className="h-full w-auto max-w-full object-contain rounded-2xl shadow-sm" />
-                    <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white"><Play className="h-5 w-5 fill-current" /></span>
-                    </span>
-                  </div>
-                ) : (
-                  photos[previewAt] && (
-                    <div style={{ aspectRatio: `${shape}`, width: `min(100cqw, ${100 * shape}cqh)` }}>
-                      <EditedThumb key={photos[previewAt].id} photo={photos[previewAt]} shape={shape} width={900} className="w-full h-full rounded-2xl shadow-sm bg-white" />
+              {/* The same stage as the photo editor (owner 2026-11-09): same frame size and the same strip, so moving on
+                  changes only the right column */}
+              <div className="hidden sm:landscape:flex flex-1 min-w-0 min-h-0 flex-col bg-[#F6F7FB]">
+                <div className="[container-type:size] flex-1 min-h-0 flex items-center justify-center p-4">
+                  {clip?.cover ? (
+                    <div className="relative h-full max-w-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                      <img src={clip.cover} alt="ปกคลิป" className="h-full w-auto max-w-full object-contain rounded-2xl shadow-sm" />
+                      <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white"><Play className="h-5 w-5 fill-current" /></span>
+                      </span>
                     </div>
-                  )
-                )}
-                {!clip && photos.length > 1 && (
-                  <>
-                    <button type="button" onClick={() => setPreviewAt((i) => (i - 1 + photos.length) % photos.length)} aria-label="รูปก่อนหน้า" className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow text-slate-700 flex items-center justify-center cursor-pointer hover:bg-white">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button type="button" onClick={() => setPreviewAt((i) => (i + 1) % photos.length)} aria-label="รูปถัดไป" className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow text-slate-700 flex items-center justify-center cursor-pointer hover:bg-white">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    <span className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5" aria-hidden="true">
-                      {photos.map((p, i) => <span key={p.id} className={`h-1.5 rounded-full transition-all ${i === previewAt ? 'w-4 bg-[#2563EB]' : 'w-1.5 bg-slate-300'}`} />)}
-                    </span>
-                  </>
+                  ) : (
+                    photos[previewAt] && (
+                      <div style={{ aspectRatio: `${shape}`, width: `min(100cqw, ${100 * shape}cqh)` }}>
+                        <EditedThumb key={photos[previewAt].id} photo={photos[previewAt]} shape={shape} width={900} className="block w-full h-full rounded-2xl shadow-sm bg-white" />
+                      </div>
+                    )
+                  )}
+                </div>
+                {!clip && (
+                  <div className="shrink-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-2.5 [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto" aria-label="รูปในโพสต์นี้">
+                    {photos.map((p, i) => (
+                      <button key={p.id} type="button" onClick={() => setPreviewAt(i)} aria-label={`ดูรูปที่ ${i + 1}`} aria-current={i === previewAt} className={`relative shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 cursor-pointer ${i === previewAt ? 'border-[#2563EB]' : 'border-transparent'}`}>
+                        <EditedThumb photo={p} shape={shape} width={96} />
+                        {i === 0 && photos.length > 1 && <span className="pointer-events-none absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-1.5 text-[10px] font-semibold leading-4 text-white">ปก</span>}
+                      </button>
+                    ))}
+                    {/* Holds the place of the editor's + tile, so the strip does not move between the steps */}
+                    {photos.length < MAX_MOMENT_IMAGES && <span className="shrink-0 w-12 h-12" aria-hidden="true" />}
+                  </div>
                 )}
               </div>
-            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5 sm:landscape:flex-none sm:landscape:w-[380px] sm:landscape:border-l border-slate-100">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5 sm:landscape:flex-none sm:landscape:w-[320px] sm:landscape:border-l border-slate-100">
               <div className="flex items-start gap-3">
                 {/* On a phone the post shows small beside the words, in its real shape rather than cut square */}
                 <div className="relative shrink-0 w-20 rounded-xl overflow-hidden bg-slate-100 sm:landscape:hidden" style={{ aspectRatio: clip?.cover ? '4 / 5' : `${shape}` }}>
