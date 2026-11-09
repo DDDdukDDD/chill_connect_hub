@@ -16,7 +16,7 @@ import type { CountedQuest, MomentLinkTarget, PostOptions } from './MomentCompos
 export interface MomentDraft {
   photos: EditedPhoto[];
   shape: PostShape;
-  clip: { file: File; fullSeconds: number; startS: number; texts: PhotoText[]; muted: boolean; cover: string } | null;
+  clip: { file: File; fullSeconds: number; startS: number; endS: number; texts: PhotoText[]; muted: boolean; cover: string } | null;
   caption: string;
   location: string;
   target: MomentLinkTarget | null;
@@ -118,7 +118,7 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
   if (clip && !done.video) {
     // Only the chosen part, made small on this phone; the original goes when this device cannot do that
     report(0.05, 'กำลังเตรียมคลิป…');
-    const small = await compressClip(clip.file, clip.startS, clip.fullSeconds, (share) => report(0.05 + share * 0.45, 'กำลังเตรียมคลิป…'), { texts: clip.texts, muted: clip.muted });
+    const small = await compressClip(clip.file, clip.startS, clip.endS, (share) => report(0.05 + share * 0.45, 'กำลังเตรียมคลิป…'), { texts: clip.texts, muted: clip.muted });
     if (!small) {
       // Text and "no sound" exist only in the shrunk clip, and the whole file must fit the upload limit
       if (clip.muted || clip.texts.some((t) => t.text.trim())) throw new PostingError('เครื่องนี้ใส่ข้อความหรือปิดเสียงคลิปไม่สำเร็จ ลองเอาออกแล้วโพสต์อีกครั้งนะ');
@@ -131,7 +131,7 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
     const previewUrl = small?.preview ? await uploadClip(small.preview).catch(() => null) : null;
     done.video = small
       ? { url: clipUrl, durationS: small.durationS, startS: 0, ...(previewUrl ? { previewUrl } : {}) }
-      : { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.fullSeconds - clip.startS), startS: clip.startS };
+      : { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.endS - clip.startS), startS: clip.startS };
   }
   if (!clip) {
     report(0.03, 'กำลังเตรียมรูป…');

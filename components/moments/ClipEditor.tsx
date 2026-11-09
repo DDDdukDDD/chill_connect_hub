@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Image as ImageIcon, RefreshCw, Scissors, Type, Volume2, VolumeX } from 'lucide-react';
 import { clipClock } from '@/lib/media/clip';
 import { drawText, loadEditorFont, textBox, type PhotoText } from '@/lib/media/photoEdit';
-import { MAX_VIDEO_SECONDS } from '@/lib/moments/types';
+import { MAX_VIDEO_SECONDS, MIN_CLIP_SECONDS } from '@/lib/moments/types';
 import { Segmented, TextTools, newText } from './EditorControls';
 
 /**
@@ -20,8 +20,10 @@ const OVERLAY_WIDTH = 720;
 interface ClipEditorProps {
   file: File;
   fullSeconds: number;
+  /** The chosen part: at most MAX_VIDEO_SECONDS, at least MIN_CLIP_SECONDS */
   startS: number;
-  onStartChange: (startS: number) => void;
+  endS: number;
+  onRangeChange: (startS: number, endS: number) => void;
   /** The cover's moment, inside the chosen part */
   coverAtS: number;
   onCoverChange: (seconds: number) => void;
@@ -40,7 +42,7 @@ interface ClipEditorProps {
   onNext: () => void;
 }
 
-export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS, onCoverChange, texts, onTextsChange, muted, onMutedChange, canEdit, isBusy, onBack, onReplace, onNext }: ClipEditorProps) {
+export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, coverAtS, onCoverChange, texts, onTextsChange, muted, onMutedChange, canEdit, isBusy, onBack, onReplace, onNext }: ClipEditorProps) {
   const video = useRef<HTMLVideoElement>(null);
   const overlay = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ id: string; lastX: number; lastY: number } | null>(null);
@@ -52,8 +54,23 @@ export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS,
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [fontReady, setFontReady] = useState(0);
-  const isLong = fullSeconds > MAX_VIDEO_SECONDS;
-  const endS = Math.min(fullSeconds, startS + MAX_VIDEO_SECONDS);
+  // Any clip a little longer than the shortest part can be trimmed, not only one over the limit
+  const canTrim = fullSeconds > MIN_CLIP_SECONDS + 0.5;
+  // Moving one end pushes the other when the part would pass the limit or get too short, so the part also slides
+  const moveStart = (value: number) => {
+    const start = Math.max(0, Math.min(value, fullSeconds - MIN_CLIP_SECONDS));
+    onRangeChange(start, Math.min(fullSeconds, Math.max(start + MIN_CLIP_SECONDS, Math.min(endS, start + MAX_VIDEO_SECONDS))));
+  };
+  const moveEnd = (value: number) => {
+    const end = Math.min(fullSeconds, Math.max(value, MIN_CLIP_SECONDS));
+    onRangeChange(Math.max(0, Math.min(end - MIN_CLIP_SECONDS, Math.max(startS, end - MAX_VIDEO_SECONDS))), end);
+  };
+  const pct = (s: number) => `${(s / Math.max(fullSeconds, 0.001)) * 100}%`;
+  // Two range inputs on one track: only their thumbs take the pointer, so either end can be grabbed
+  const thumb =
+    'pointer-events-none absolute inset-0 w-full h-8 appearance-none bg-transparent cursor-pointer ' +
+    '[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-md [&::-webkit-slider-thumb]:bg-[#2563EB] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow ' +
+    '[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-8 [&::-moz-range-thumb]:rounded-md [&::-moz-range-thumb]:bg-[#2563EB] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white';
   const textOn = texts.find((t) => t.id === selectedText) ?? null;
   const overlayHeight = Math.round(OVERLAY_WIDTH / ratio);
   const tools: { id: Tool; label: string; Icon: typeof Scissors }[] = [
@@ -150,25 +167,21 @@ export function ClipEditor({ file, fullSeconds, startS, onStartChange, coverAtS,
   const panel = (
     <>
       {tool === 'trim' &&
-        (isLong ? (
+        (canTrim ? (
           <div className="space-y-1">
-            <label htmlFor="clip-start" className="flex items-center justify-between text-sm font-bold text-slate-900">
+            <p className="flex items-center justify-between text-sm font-bold text-slate-900">
               ช่วงที่จะโพสต์
               <span className="text-xs font-semibold text-slate-600 tabular-nums">
-                {clipClock(startS)} – {clipClock(endS)} จาก {clipClock(fullSeconds)}
+                {clipClock(startS)} – {clipClock(endS)} · {Math.round((endS - startS) * 10) / 10} วิ
               </span>
-            </label>
-            <input
-              id="clip-start"
-              type="range"
-              min={0}
-              max={Math.max(0, fullSeconds - MAX_VIDEO_SECONDS)}
-              step={0.5}
-              value={startS}
-              onChange={(e) => onStartChange(Number(e.target.value))}
-              className="w-full h-8 accent-[#2563EB] cursor-pointer"
-            />
-            <p className="text-xs text-slate-500">เลื่อนเพื่อเลือก {MAX_VIDEO_SECONDS} วินาทีที่อยากให้เพื่อนๆ ดู</p>
+            </p>
+            <div className="relative h-8">
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-slate-200" aria-hidden="true" />
+              <div className="absolute top-1/2 -translate-y-1/2 h-2 rounded-full bg-[#93C5FD]" style={{ left: pct(startS), width: `calc(${pct(endS)} - ${pct(startS)})` }} aria-hidden="true" />
+              <input type="range" aria-label="จุดเริ่มคลิป" min={0} max={fullSeconds} step={0.1} value={startS} onChange={(e) => moveStart(Number(e.target.value))} className={thumb} />
+              <input type="range" aria-label="จุดจบคลิป" min={0} max={fullSeconds} step={0.1} value={endS} onChange={(e) => moveEnd(Number(e.target.value))} className={thumb} />
+            </div>
+            <p className="text-xs text-slate-500">ลากปุ่มสองข้างเพื่อเลือกช่วงที่อยากให้เพื่อนๆ ดู ยาวได้ถึง {MAX_VIDEO_SECONDS} วินาที</p>
           </div>
         ) : (
           <p className="text-sm font-medium text-slate-600">คลิปยาว {Math.round(fullSeconds)} วินาที โพสต์ได้ทั้งคลิป</p>

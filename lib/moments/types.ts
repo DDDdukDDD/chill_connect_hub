@@ -9,8 +9,14 @@ export type MomentCategory = 'heal' | 'move' | 'chill' | 'learn';
 export const MAX_MOMENT_IMAGES = 10;
 export const MAX_CAPTION_LENGTH = 500;
 export const MAX_COMMENT_LENGTH = 300;
-/** Clip limits (trial, owner 2026-11-02). The composer reads the length; the small grace is for how phones round it. */
-export const MAX_VIDEO_SECONDS = 15;
+/**
+ * Clip limits. The composer reads the length; the small grace is for how phones round it. 15 s from 2026-11-02, 30 s from
+ * 2026-11-09 (owner: long enough to tell a moment while people stay focused; short clips of 15–30 s are watched to the
+ * end most). A longer file starts with DEFAULT_CLIP_SECONDS chosen, and both ends can be moved.
+ */
+export const MAX_VIDEO_SECONDS = 30;
+export const DEFAULT_CLIP_SECONDS = 15;
+export const MIN_CLIP_SECONDS = 1;
 export const VIDEO_SECONDS_GRACE = 0.5;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'] as const;

@@ -18,7 +18,7 @@ import { canShrinkClips } from '@/lib/media/clipCompress';
 import { drawBase, drawOverlays, newPhoto, type EditedPhoto, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { startPosting } from '@/lib/moments/postingJobs';
 import { publishMoment, type UploadsSoFar } from '@/components/moments/publishMoment';
-import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
+import { DEFAULT_CLIP_SECONDS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMyRewards } from '@/lib/useMyRewards';
@@ -114,7 +114,7 @@ function EditedThumb({ photo, shape }: { photo: EditedPhoto; shape: PostShape })
 }
 
 /** A clip on its way to a post: the chosen part, the cover's moment, text on it, and whether it keeps its sound */
-type ClipDraft = { file: File; fullSeconds: number; startS: number; coverAtS: number; texts: PhotoText[]; muted: boolean; cover?: string };
+type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number; coverAtS: number; texts: PhotoText[]; muted: boolean; cover?: string };
 
 export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
   const session = useMemberSession();
@@ -275,7 +275,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     setIsPreparing(true);
     try {
       const fullSeconds = await readClipDuration(file);
-      setClip({ file, fullSeconds, startS: 0, coverAtS: 0, texts: [], muted: false });
+      // A clip within the limit starts whole; a longer one starts with the first DEFAULT_CLIP_SECONDS (owner 2026-11-09)
+      setClip({ file, fullSeconds, startS: 0, endS: fullSeconds <= MAX_VIDEO_SECONDS ? fullSeconds : DEFAULT_CLIP_SECONDS, coverAtS: 0, texts: [], muted: false });
       setStep('clip');
     } catch {
       onToast('อุปกรณ์นี้เปิดคลิปนี้ไม่ได้ ลองเลือกจากมือถือ หรือแปลงเป็น MP4 นะ');
@@ -319,7 +320,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     const draft = {
       photos,
       shape,
-      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, texts: clip.texts, muted: clip.muted, cover: clip.cover } : null,
+      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, endS: clip.endS, texts: clip.texts, muted: clip.muted, cover: clip.cover } : null,
       caption: caption.trim(),
       location,
       target: linkedTarget,
@@ -447,7 +448,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                   <label className="rounded-2xl bg-slate-100 hover:bg-slate-200 transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-slate-500">
                     <Video className="w-7 h-7 text-slate-700" aria-hidden="true" />
                     <span className="text-base font-bold text-slate-900">โพสต์คลิป</span>
-                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วง {MAX_VIDEO_SECONDS} วินาที เลือกปก ใส่ข้อความได้</span>
+                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วงได้ถึง {MAX_VIDEO_SECONDS} วินาที เลือกปก ใส่ข้อความได้</span>
                     {/* video/*, not a list of types: phones then open the gallery as well as the camera */}
                     <input
                       type="file"
@@ -487,7 +488,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             file={clip.file}
             fullSeconds={clip.fullSeconds}
             startS={clip.startS}
-            onStartChange={(startS) => setClip({ ...clip, startS })}
+            endS={clip.endS}
+            onRangeChange={(startS, endS) => setClip({ ...clip, startS, endS })}
             coverAtS={clip.coverAtS}
             onCoverChange={setCoverAt}
             texts={clip.texts}

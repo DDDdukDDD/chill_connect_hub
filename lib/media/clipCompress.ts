@@ -3,7 +3,7 @@ import { drawText, type PhotoText } from './photoEdit';
 
 /**
  * Shrinks a member's clip on their own phone before it uploads (owner 2026-11-07, after Blob transfer reached 75% of
- * the free 10 GB): only the chosen 15-second part, at most 720 px on the short side, H.264 in MP4. A phone clip of
+ * the free 10 GB): only the chosen part (up to 30 s since 2026-11-09), at most 720 px on the short side, H.264 in MP4. A phone clip of
  * 20–40 MB becomes a few MB, and every view downloads that instead of the original. MP4/H.264 also plays on every
  * device, which iPhone `.mov` (often HEVC) does not.
  *
@@ -36,7 +36,7 @@ function fitShortSide(width: number, height: number, shortSide: number) {
   return { width: even(width), height: even(height) };
 }
 
-export async function compressClip(file: File, startS: number, fullSeconds: number, onProgress?: (share: number) => void, edits: ClipEdits = {}): Promise<CompressedClip | null> {
+export async function compressClip(file: File, startS: number, endS: number, onProgress?: (share: number) => void, edits: ClipEdits = {}): Promise<CompressedClip | null> {
   if (!canShrinkClips()) return null;
   const texts = edits.texts?.filter((t) => t.text.trim()) ?? [];
   const edited = texts.length > 0 || Boolean(edits.muted);
@@ -47,7 +47,7 @@ export async function compressClip(file: File, startS: number, fullSeconds: numb
     const input = new mb.Input({ source: new mb.BlobSource(file), formats: mb.ALL_FORMATS });
     const target = new mb.BufferTarget();
     const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }), target });
-    const end = Math.min(fullSeconds, startS + MAX_VIDEO_SECONDS);
+    const end = Math.min(endS, startS + MAX_VIDEO_SECONDS);
     const conversion = await mb.Conversion.init({
       input,
       output,
