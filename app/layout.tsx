@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     default: "Chillwaa | Social platform สำหรับคนชอบออกไปใช้ชีวิต",
     template: "%s | Chillwaa",
   },
-  description: "Chillwaa - Social platform คนรุ่นใหม่ และคอมมูนิตี้ ที่ทำให้ทุกการใช้ชีวิตมีความหมาย รวมอีเวนต์ เวิร์กช็อป วิ่ง บอร์ดเกม และเพื่อนใหม่",
+  description: "Chillwaa - โซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย รวมอีเวนต์ เวิร์กช็อป วิ่ง บอร์ดเกม และเพื่อนใหม่",
   keywords: [
     "กิจกรรมยามว่าง",
     "หากิจกรรมทำวันหยุด",
@@ -58,13 +58,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Chillwaa",
     title: "Chillwaa | Social platform สำหรับคนชอบออกไปใช้ชีวิต",
-    description: "Social platform คนรุ่นใหม่ และคอมมูนิตี้ ที่ทำให้ทุกการใช้ชีวิตมีความหมาย",
+    description: "โซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย",
     // The picture comes from app/opengraph-image.tsx
   },
   twitter: {
     card: "summary_large_image",
     title: "Chillwaa | Social platform สำหรับคนชอบออกไปใช้ชีวิต",
-    description: "Social platform คนรุ่นใหม่ และคอมมูนิตี้ ที่ทำให้ทุกการใช้ชีวิตมีความหมาย",
+    description: "โซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย",
     images: ["/opengraph-image"],
   },
   robots: {
@@ -104,7 +104,7 @@ export default function RootLayout({
     logo: `${SITE_URL}/brand-logo.png`,
     // What AI search quotes about us: kept to what the site really does (the FAQPage that sat on every page was removed
     // 2026-11-01: its questions were not on the pages and one answer made up a statistic)
-    description: "คอมมูนิตี้คนชอบออกไปใช้ชีวิตทั่วไทย: เข้าตี้หรือเปิดตี้ไปด้วยกัน หาที่เที่ยวและอีเวนต์ ทำชาเลนจ์ได้ XP และของรางวัล แล้วแชร์โมเมนต์ให้เพื่อนๆ ดู",
+    description: "โซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย: เข้าตี้หรือเปิดตี้ไปด้วยกัน หาที่เที่ยวและอีเวนต์ ทำชาเลนจ์ได้ XP และของรางวัล แล้วแชร์โมเมนต์ให้เพื่อนๆ ดู",
     sameAs: [
       "https://www.instagram.com/chillwaa_official",
       "https://www.tiktok.com/@chillwaa.official",

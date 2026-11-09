@@ -10,6 +10,15 @@ Agreed with the project owner on 2026-10-16. Read this before deciding what a pa
 | Core | Places, meetups and fairs as three equal pillars | **Meetups + challenges + moments** |
 | Places and fairs | Pillars | **Support**: the places a challenge sends people to, and where meetups gather |
 
+## Commitment and differentiator (owner, 2026-11-09)
+
+**"เราเป็นโซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย"**
+
+- **Differentiator and strength:** "ทำให้ทุกการใช้ชีวิตมีความหมาย" (making every part of life meaningful). The owner sees this as what will make Chillwaa succeed as a **global platform**.
+- **Meaning is the goal; fun is a driver** (owner, 2026-11-09). Fun is one of the things that gets people to go out and come back, but it is not the promise. Meaningful = going out adds up to something: a memory, a friendship, progress, a reward.
+- **Test for every feature and screen:** does it make going out more meaningful? Fun counts when it pushes people toward that, not on its own.
+- Global ambition: keep the core idea free of Thailand-only assumptions where it costs nothing (structure, data, wording that can be translated later), while launch stays Thai-first.
+
 ## Positioning (owner, 2026-10-22)
 
 **"โซเชียลแพลตฟอร์มของคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการออกไปมีความหมาย"** (a social platform for people who love going out, where every outing counts).
