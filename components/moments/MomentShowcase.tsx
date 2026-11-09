@@ -236,6 +236,9 @@ const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number, cursor?:
     params.set('location', place.location);
   } else if (chip !== 'all') {
     params.set('targetType', chip);
+  } else {
+    // ทั้งหมด: popular mixed with new, the same for everyone (FEED_PLAN step 1; the server page uses it too)
+    params.set('tab', 'mix');
   }
   return `/api/moments?${params}`;
 };

@@ -16,6 +16,7 @@ import {
   Zap,
   Bot,
   Gauge,
+  BookOpen,
   Grid3x3,
   Home,
   Image as ImageIcon,
@@ -54,7 +55,8 @@ export type AdminModuleId =
   | 'staff'
   | 'audit'
   | 'media'
-  | 'cache';
+  | 'cache'
+  | 'logic';
 
 /** Filters handed from one module to another (dashboard row, global search, coverage cell), kept in the URL */
 export const ADMIN_FILTER_PARAMS = ['province', 'vibe', 'q', 'pillar', 'image', 'queue', 'filter'] as const;
@@ -126,6 +128,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     modules: [
       { id: 'media', label: 'คลังรูปภาพ', icon: ImageIcon },
       { id: 'cache', label: 'แคชและประสิทธิภาพ', icon: Gauge },
+      { id: 'logic', label: 'วิธีคิดของระบบ', icon: BookOpen },
     ],
   },
 ];
@@ -156,6 +159,7 @@ export const MODULE_PERMISSIONS: Record<AdminModuleId, AdminPermission> = {
   audit: 'audit.view',
   media: 'content.view',
   cache: 'content.view',
+  logic: 'content.view',
 };
 
 /**
@@ -185,6 +189,7 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   audit: [],
   media: [{ permission: 'system.manage', what: 'อัปโหลดและลบรูป' }],
   cache: [{ permission: 'system.manage', what: 'ล้าง cache' }],
+  logic: [],
 };
 
 interface AdminSidebarProps {

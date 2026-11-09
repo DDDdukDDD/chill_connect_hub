@@ -5,7 +5,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -19,6 +19,8 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
+import { targetLiveText } from '@/components/moments/targetLiveText';
 import { optimizedImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
@@ -30,17 +32,18 @@ export const REPORT_REASONS = ['ชวนลงทุน ขายของ ห�
 // Where the moment came from, in its pillar's colors, and what the reader can do there
 const TARGETS = MOMENT_TARGETS;
 
-/** The three tabs, plus two personal views opened from the shortcuts or the ⋯ next to the tabs */
-export type FeedView = 'all' | 'following' | 'popular' | 'saved' | 'mine';
+/** The three tabs, plus personal views opened from the shortcuts or the ⋯ next to the tabs (FEED_PLAN step 1: สำหรับคุณ comes first) */
+export type FeedView = 'foryou' | 'all' | 'following' | 'popular' | 'saved' | 'mine';
 const TABS: [FeedView, string][] = [
-  ['all', 'ล่าสุด'],
+  ['foryou', 'สำหรับคุณ'],
   ['following', 'ติดตาม'],
   ['popular', 'ยอดฮิต'],
 ];
-const PERSONAL: Partial<Record<FeedView, string>> = { saved: 'โมเมนต์ที่บันทึก', mine: 'โมเมนต์ของฉัน' };
+const PERSONAL: Partial<Record<FeedView, string>> = { all: 'โมเมนต์ล่าสุด', saved: 'โมเมนต์ที่บันทึก', mine: 'โมเมนต์ของฉัน' };
 const EMPTY: Record<FeedView, string> = {
+  foryou: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   all: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
-  following: 'ยังไม่ได้ติดตามใครเลย กดชื่อเพื่อนในโมเมนต์ แล้วกดติดตามที่โปรไฟล์',
+  following: 'ยังไม่ได้ติดตามใครเลย ติดตามเพื่อนที่ชอบออกไปไหนมาไหน แล้วโมเมนต์ของเขาจะมาอยู่ตรงนี้',
   popular: 'ยังไม่มีโมเมนต์ยอดฮิต',
   saved: 'ยังไม่ได้บันทึกโมเมนต์ไหน กดรูปที่คั่นหนังสือใต้โพสต์ที่ชอบ แล้วจะมาอยู่ตรงนี้',
   mine: 'ยังไม่มีโมเมนต์ของคุณ แชร์โมเมนต์แรกได้จากช่องด้านบน',
@@ -99,6 +102,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   };
   const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
+  const live = targetLiveText(moment.live);
+  // Gone once the reader takes back their own like and the friend was the only one counted
+  const friendLike = !moment.likesOff && moment.likesCount > 0 ? moment.likedByFriend : undefined;
   const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
   const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentBox = useRef<HTMLInputElement>(null);
@@ -141,8 +147,12 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         ['report', moment.hasReported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้', Flag],
       ] as const);
 
+  // Seen posts sink in สำหรับคุณ; own posts need no note
+  const articleRef = useRef<HTMLElement>(null);
+  useEffect(() => (articleRef.current && !moment.isMine ? watchSeen(articleRef.current) : undefined), [moment.isMine]);
+
   return (
-    <article id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
+    <article ref={articleRef} data-seen-id={moment.id} id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
       <div className="flex items-center gap-2.5 min-w-0">
         {moment.authorId ? (
           <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} aria-label={`โปรไฟล์ของ ${moment.userName}`} className="shrink-0">
@@ -241,7 +251,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         >
           <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
           <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
-          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+          {/* What it still offers (FEED_PLAN: the feed takes people out): the day and seats left, XP, open now */}
+          {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
+          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
         </Link>
       )}
 
@@ -255,7 +267,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
           <Heart className={`w-[18px] h-[18px] ${moment.isLiked ? 'fill-current' : ''}`} />
-          <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>
+          {moment.likesCount > 0 && !friendLike && <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>}
         </button>
         )}
         {!moment.commentsOff && (
@@ -267,7 +279,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
           <MessageCircle className="w-[18px] h-[18px]" />
-          <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>
+          {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
         {mayShare && (
@@ -285,6 +297,17 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <Bookmark className={`w-[18px] h-[18px] ${moment.isSaved ? 'fill-current' : ''}`} />
         </button>
       </div>
+
+      {/* A friend in the likes says more than a number (social proof, 2026-11-09): only someone the reader follows */}
+      {friendLike && (
+        <p className="-mt-1 text-[13px] text-slate-600">
+          ถูกใจโดย{" "}
+          <Link href={`/profile?id=${encodeURIComponent(friendLike.id)}`} className="font-semibold text-slate-900 hover:underline underline-offset-4">
+            {friendLike.name}
+          </Link>
+          {moment.likesCount > 1 && <> และอีก <span className="tabular-nums">{(moment.likesCount - 1).toLocaleString()}</span> คน</>}
+        </p>
+      )}
 
       {shownComments.length > 0 && (
         <CommentThread momentId={moment.id} comments={shownComments} isLoggedIn onNeedLogin={() => undefined} onAct={(body) => handlers.onCommentAct(moment.id, body)} onReply={answer} />
@@ -418,6 +441,65 @@ export interface ShareRequest {
 }
 
 /** The share form's opening state for a place or event ("community", "spot", "fair") */
+type SuggestedMember = { id: string; displayName: string; avatarUrl?: string; momentCount: number };
+
+/**
+ * An empty ติดตาม tab offers people worth following (GET /api/members/suggested: trusted members who post), so the
+ * tab is a start, not a dead end. Following one or more brings their posts in with one tap.
+ */
+function SuggestedToFollow({ onFollow, onSeePosts }: { onFollow: (id: string) => Promise<boolean>; onSeePosts: () => void }) {
+  const [people, setPeople] = useState<SuggestedMember[] | null>(null);
+  const [followed, setFollowed] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/members/suggested', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => setPeople(Array.isArray(json?.members) ? json.members : []))
+      .catch(() => setPeople([]));
+  }, []);
+  if (!people?.length) return null;
+  const follow = async (id: string) => {
+    setBusy(id);
+    if (await onFollow(id)) setFollowed((list) => [...list, id]);
+    setBusy(null);
+  };
+  return (
+    <section aria-labelledby="suggested-heading" className="border-t border-slate-200 pt-5">
+      <h3 id="suggested-heading" className="text-base font-bold text-slate-900">คนที่น่าติดตาม</h3>
+      <ul className="mt-2 divide-y divide-slate-100">
+        {people.map((person) => (
+          <li key={person.id} className="flex items-center gap-3 py-3">
+            <Link href={`/profile?id=${encodeURIComponent(person.id)}`} className="flex items-center gap-3 min-w-0 flex-1 group">
+              <Avatar name={person.displayName} src={person.avatarUrl} className="w-11 h-11 text-sm" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-slate-900 group-hover:underline underline-offset-4">{person.displayName}</span>
+                <span className="block text-xs text-slate-500">{person.momentCount.toLocaleString()} โมเมนต์</span>
+              </span>
+            </Link>
+            {followed.includes(person.id) ? (
+              <span className="shrink-0 text-sm font-semibold text-slate-500">กำลังติดตาม</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void follow(person.id)}
+                disabled={busy === person.id}
+                className="shrink-0 h-9 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold whitespace-nowrap disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {busy === person.id ? 'กำลังติดตาม…' : 'ติดตาม'}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {followed.length > 0 && (
+        <button type="button" onClick={onSeePosts} className="mt-3 w-full h-11 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold whitespace-nowrap cursor-pointer">
+          ดูโมเมนต์ของคนที่ติดตาม
+        </button>
+      )}
+    </section>
+  );
+}
+
 function shareInitial(type: string, id: string, title: string, location: string): MomentComposerInitial {
   const targetType = type === 'spot' || type === 'fair' ? type : 'community';
   return {
@@ -433,8 +515,8 @@ function shareInitial(type: string, id: string, title: string, location: string)
  * photo showcase for browsing (no posting there).
  */
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
-  // Cards between the posts belong to ล่าสุด only (owner 2026-11-02): a chosen view shows just what was asked for
-  const inserts = sort === 'all' ? feedInserts : {};
+  // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
+  const inserts = sort === 'foryou' ? feedInserts : {};
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
   const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
@@ -455,6 +537,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [editing, setEditing] = useState<({ id: string; caption: string; photos: EditablePhoto[] | null; ratio: number } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
+  // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
+  useEffect(() => flushSeen, []);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Old share links (/moments?createForEvent=…) forward here as /?share=<type>:<id>&title=&location=; the form opens tied to that event
@@ -723,9 +807,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         {PERSONAL[sort] ? (
           <button
             type="button"
-            onClick={() => setSort('all')}
+            onClick={() => setSort('foryou')}
             className="shrink-0 h-8 pl-3 pr-2 rounded-full bg-[#FFF1F2] text-[#BE123C] text-[13px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
-            aria-label={`${PERSONAL[sort]} กลับไปดูทั้งหมด`}
+            aria-label={`${PERSONAL[sort]} กลับไปที่สำหรับคุณ`}
           >
             {PERSONAL[sort]}
             <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -750,7 +834,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             <button
               type="button"
               onClick={() => setIsViewMenuOpen((open) => !open)}
-              aria-label="โมเมนต์ที่บันทึก และโมเมนต์ของฉัน"
+              aria-label="โมเมนต์ล่าสุด ที่บันทึก และของฉัน"
               aria-expanded={isViewMenuOpen}
               className="w-8 h-8 rounded-full text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
             >
@@ -760,7 +844,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               <>
                 <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-20 cursor-default" onClick={() => setIsViewMenuOpen(false)} />
                 <ul className="absolute right-0 top-9 z-30 w-48 rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl">
-                  {(['saved', 'mine'] as const).map((value) => (
+                  {(['all', 'saved', 'mine'] as const).map((value) => (
                     <li key={value}>
                       <button
                         type="button"
@@ -770,7 +854,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
                         }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                       >
-                        {value === 'saved' ? <Bookmark className="w-4 h-4" aria-hidden="true" /> : <Camera className="w-4 h-4" aria-hidden="true" />}
+                        {value === 'all' ? <Clock className="w-4 h-4" aria-hidden="true" /> : value === 'saved' ? <Bookmark className="w-4 h-4" aria-hidden="true" /> : <Camera className="w-4 h-4" aria-hidden="true" />}
                         {PERSONAL[value]}
                       </button>
                     </li>
@@ -788,7 +872,11 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         <div className="flex items-center gap-1 rounded-full border border-slate-200 p-1.5">
           <button type="button" onClick={() => setIsComposerOpen(true)} className="flex-1 min-w-0 flex items-center gap-3 rounded-full py-0.5 pl-0.5 pr-2 text-left hover:bg-slate-50 transition-colors cursor-pointer">
             <Avatar name={name} src={avatar} className="w-9 h-9 text-sm" />
-            <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">วันนี้ไปไหนมา แชร์ให้เพื่อนๆ ดูหน่อย</span>
+            <span className="flex-1 min-w-0 truncate text-sm font-medium text-slate-500">
+              {/* Short on phones so it never cuts off mid-word */}
+              <span className="sm:hidden">วันนี้ไปไหนมา?</span>
+              <span className="hidden sm:inline">วันนี้ไปไหนมา แชร์ให้เพื่อนๆ ดูหน่อย</span>
+            </span>
           </button>
           <label className="shrink-0 h-9 px-2.5 rounded-full hover:bg-slate-100 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-700 cursor-pointer focus-within:ring-2 focus-within:ring-[#F43F5E]">
             <ImageIcon className="w-[18px] h-[18px] text-[#F43F5E]" aria-hidden="true" />
@@ -834,6 +922,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       ) : moments.length === 0 ? (
         <>
           <p className="py-10 text-center text-sm font-medium text-slate-500">{EMPTY[sort]}</p>
+          {sort === 'following' && <SuggestedToFollow onFollow={handlers.onFollow} onSeePosts={() => reload('following')} />}
           {/* What would follow the first posts still shows on an empty feed */}
           {tailOf(0)}
         </>

@@ -20,6 +20,20 @@ Item template:
 
 ---
 
+### BE-328 · Feed UI round from the walk + Gemini's review (owner 2026-11-09)
+- **What changed:** the slim line under a post now says what is still on: "เสาร์นี้ · เหลือ 3 ที่ · ขอไปด้วย", "+500 XP", "เปิดอยู่" (feed items carry `live`, `lib/moments/targetLive.ts`; an ended ตี้ or อีเวนต์ keeps the old line, owner 2026-10-26). Upright photos and clips fill a 4:5 frame, wide clips 16:9 (`MomentPhotos`); before, clips were always square. Like and comment counts hide at 0. ยอดฮิต is hot-now (time-weighted, `POPULAR_WEIGHTS`, also on the admin page วิธีคิดของระบบ). Member home shows the right column from 1280 px (was 1536) with narrower side columns there. An empty ติดตาม tab lists คนที่น่าติดตาม with follow buttons. FirstPicks avoids two ตี้ with the same photo. New clips get a 6 s silent preview (was 3). `docs/API.md` updated.
+- **Owner let me choose (2026-11-10):** posts show "ถูกใจโดย [someone you follow] และอีก N คน" (`likedByFriend`; only people the reader already follows, never blocked or banned, never when the author hid likes; the full likers list stays owner-only). The phone feed top stays (your next plan + the post box are the screen's job), but the post box reads "วันนี้ไปไหนมา?" on phones so it no longer cuts off.
+- **Not taken from the review, on purpose:** author ids and clips for sample posts (samples go before launch; real posts already have follow buttons); a big card instead of the slim line (owner rule 2026-10-29); "onboarding data unused" was fixed by BE-327.
+
+### BE-327 · Feed plan step 1: สำหรับคุณ (owner 2026-11-09)
+- **What changed:** the member home feed's first tab is **สำหรับคุณ** (`tab=foryou`); ล่าสุด moved into the ⋯ menu as โมเมนต์ล่าสุด, and the cards between posts now go with สำหรับคุณ. /moments ทั้งหมด (server page and later pages) uses `tab=mix`: popular mixed with new, the same for everyone. Ranking is `lib/moments/forYou.ts` (pure; weights in `scoreParts`), fed by `forYouPool` in both moment repositories. Seen posts: `lib/moments/seenTracker.ts`, `POST /api/moments/seen`, table `app.moment_seen`. `docs/API.md` updated. Step 4 (translation) is on hold by owner choice.
+- **New admin page วิธีคิดของระบบ** (ระบบ group, `components/admin/SystemLogicView.tsx`, read only, `content.view`): the owner's place to look up how the important rules work. First topic: the For You ranking; its numbers are imported from `FOR_YOU_WEIGHTS`, never typed in. When you change an important rule, update its topic there (or add one).
+- **What to do about it:** run migration **0039** on live (`! npm run db:migrate`). Until then สำหรับคุณ still works but cannot tell what was seen, and seen batches are dropped. Not walked in a browser yet: check the tabs, the ⋯ menu, and that seen posts sink after a reload. Guests are not tracked on the device: they only see the /moments grid, where one shared order keeps the CDN copy.
+
+### BE-326 · Photo and clip editors share one design (owner 2026-11-09)
+- **What changed:** the clip editor takes the photo editor's layout: soft grey stage with the clip in a rounded frame, white เลือกคลิปใหม่ pill, pill tool bar (top of the side panel on wide screens), a fixed-height panel so the clip does not jump when the tool changes, shorter hints. Text size is now a slider like sticker size, both through `SizeSlider` in `components/moments/EditorControls.tsx` (`TEXT_SIZE` replaces `TEXT_SIZES`).
+- **What to do about it:** walk both editors on a phone, upright and wide.
+
 ### BE-325 · CDN cache fixes (2026-11-09)
 - **Found on the live site:** Vercel's CDN ignores cookies (a request with a cookie got `HIT` on the visitor copy), and a response with `Vary: Cookie` is never cached at all.
 - **What changed:** `GET /api/activity` plain URL is now always the public counts (cached); members' named lines moved to `?mine=1` (no screen uses them today). `GET /api/events` drops its `s-maxage` + `Vary: Cookie` (it never cached) for an honest `private, no-store`; the server already keeps the list by table version. `GET /api/spots/browse` is now cached 60 s, and its `t` is rounded to the minute so visitors share copies. `docs/API.md` updated.

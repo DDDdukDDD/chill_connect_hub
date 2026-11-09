@@ -6,6 +6,9 @@ import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import { realPlace } from './feedRules';
+import { FOR_YOU_WEIGHTS, GUEST_READER, rankForYou, type ForYouReader } from './forYou';
+import { liveKey, type TargetLive } from './targetLive';
+import { isSpotOpenNow } from '../openHours';
 import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
@@ -140,13 +143,37 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     isSample: moment.isSample,
     // Only the author learns that staff did not count the photo as a visit
     evidenceRejected: viewer && moment.authorId === viewer.id && moment.evidenceRejected ? { note: moment.evidenceRejected.note } : undefined,
+    /** Someone the viewer follows who liked it (feeds only); never shown when the author hid the likes */
+    likedByFriend: moment.likesOff || !moment.feedFacts?.friendLike ? undefined : { id: moment.feedFacts.friendLike.id, name: tidyDisplayName(moment.feedFacts.friendLike.name).trim() || moment.feedFacts.friendLike.name },
+    /** What the ตี้, อีเวนต์, challenge or place offers now (feeds only, filled by withLive) */
+    live: undefined as TargetLive | undefined,
   };
 }
 
 export type FeedItem = ReturnType<typeof toFeedItem>;
 
+const LIVE_TYPES = new Set<MomentTargetType>(['community', 'fair', 'challenge', 'spot']);
+
+/** Adds `live` to feed posts: one read for the whole page, and only targets that still invite the reader get one */
+async function withLive(items: FeedItem[]): Promise<FeedItem[]> {
+  const targets = items.flatMap((m) => (m.targetId && LIVE_TYPES.has(m.targetType) ? [{ type: m.targetType, ref: m.targetId }] : []));
+  if (targets.length === 0) return items;
+  const rows = await momentRepository.targetFacts(targets).catch((error) => {
+    console.warn('Moment targets:', (error as Error).message);
+    return [];
+  });
+  const live = new Map<string, TargetLive>();
+  for (const row of rows) {
+    if (row.type === 'community') live.set(liveKey(row.type, row.ref), { kind: 'meetup', startsAt: row.startsAt, seatsLeft: row.seatsLeft });
+    else if (row.type === 'fair') live.set(liveKey(row.type, row.ref), { kind: 'fair', startsAt: row.startsAt, endsAt: row.endsAt });
+    else if (row.type === 'challenge') live.set(liveKey(row.type, row.ref), { kind: 'challenge', xp: row.xp });
+    else if (isSpotOpenNow(row.openHours)) live.set(liveKey(row.type, row.ref), { kind: 'spot', openNow: true });
+  }
+  return items.map((m) => (m.targetId && live.has(liveKey(m.targetType, m.targetId)) ? { ...m, live: live.get(liveKey(m.targetType, m.targetId)) } : m));
+}
+
 export interface MomentListOptions {
-  /** all | popular | following | saved | mine */
+  /** foryou | mix | all | popular | following | saved | mine (foryou and mix only without a filter; mix = foryou as a guest sees it) */
   tab?: string;
   author?: string;
   category?: string;
@@ -184,10 +211,74 @@ export async function listMoments(viewer: Member | null, options: MomentListOpti
   return readMoments(viewer, options);
 }
 
+/** How many of the newest posts the "สำหรับคุณ" feed ranks; after them the feed goes on newest first */
+const FOR_YOU_POOL = FOR_YOU_WEIGHTS.poolSize;
+/** A For You page after the first: `fy|<the first page's time in ms>|<how many came before>` */
+const FOR_YOU_CURSOR = /^fy\|(\d{13})\|(\d{1,4})$/;
+
+/** The ranked pool for one reader at one moment in time (kept 2 minutes, so the next pages need no new read) */
+function rankedPool(viewer: Member | null, asOf: number) {
+  return cacheManager.getOrSet(
+    `moments:foryou:${viewer?.id ?? 'guest'}:${asOf}`,
+    async () => {
+      const [pool, affinity, followers] = await Promise.all([
+        momentRepository.forYouPool({ viewerId: viewer?.id, blockedIds: viewer?.blockedIds, asOf: new Date(asOf), limit: FOR_YOU_POOL }),
+        viewer ? momentRepository.readerAffinity(viewer.id) : Promise.resolve(new Map<string, number>()),
+        viewer ? memberRepository.followerIds(viewer.id) : Promise.resolve([] as string[]),
+      ]);
+      const following = new Set(viewer?.followingIds ?? []);
+      const interests = viewer?.preferences?.interests;
+      const reader: ForYouReader = viewer
+        ? {
+            id: viewer.id,
+            following,
+            mutual: new Set(followers.filter((id) => following.has(id))),
+            affinity,
+            interests: new Set([...(interests?.communityCategories ?? []), ...(interests?.spotVibes ?? []), ...(interests?.fairCategories ?? [])]),
+            province: viewer.preferences?.province || undefined,
+          }
+        : GUEST_READER;
+      return {
+        ids: rankForYou(pool, reader, asOf).map((post) => post.id),
+        // Where newest-first takes over once the pool has been shown, when there are older posts
+        after: pool.length >= FOR_YOU_POOL ? pool[pool.length - 1].cursorAt : undefined,
+      };
+    },
+    { ttlMs: 120_000, tags: viewer ? [] : ['moments-guest'] }
+  );
+}
+
+/**
+ * The "สำหรับคุณ" tab (lib/moments/forYou.ts). Signed out (or tab "mix") it is the same mix of popular and new for
+ * everyone, worked out once a minute. Every page ranks the pool as it was at the first page's time, so pages join up.
+ */
+async function readForYou(viewer: Member | null, personal: boolean, page: number, limit: number, cursor?: string) {
+  const reader = personal ? viewer : null;
+  const at = cursor ? FOR_YOU_CURSOR.exec(cursor) : null;
+  const now = Date.now();
+  // A time from the cursor is trusted only when it is recent; a guest's first page is shared for the minute
+  const asOf = at && Number(at[1]) <= now && now - Number(at[1]) < 6 * 3_600_000 ? Number(at[1]) : reader ? now : Math.floor(now / 60_000) * 60_000;
+  // Without a cursor a page number still works (the /moments grid refreshes its pages by number)
+  const offset = at ? Number(at[2]) : (page - 1) * limit;
+  const { ids, after } = await rankedPool(reader, asOf);
+  const items = await momentRepository.feedByIds(ids.slice(offset, offset + limit), { viewerId: viewer?.id, blockedIds: viewer?.blockedIds });
+  const nextCursor = offset + limit < ids.length ? `fy|${asOf}|${offset + limit}` : after;
+  const people = await loadPeople(items);
+  return {
+    moments: await withLive(items.map((moment) => toFeedItem(moment, viewer, people))),
+    requiresLogin: false,
+    pagination: pagination(Math.floor(offset / limit) + 1, limit, { hasNext: Boolean(nextCursor), nextCursor }),
+  };
+}
+
 async function readMoments(viewer: Member | null, options: MomentListOptions) {
-  const tab = options.tab ?? 'all';
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
+  const filtered = Boolean(options.author || options.category || options.targetType || options.targetId || options.location || options.q || options.tag);
+  const ranked = (options.tab === 'foryou' || options.tab === 'mix') && !filtered;
+  // A ranked feed that has shown its whole pool carries on newest first with the usual cursor
+  if (ranked && (!options.cursor || FOR_YOU_CURSOR.test(options.cursor))) return readForYou(viewer, options.tab === 'foryou', page, limit, options.cursor);
+  const tab = ranked || options.tab === 'foryou' || options.tab === 'mix' ? 'all' : (options.tab ?? 'all');
   if ((tab === 'saved' || tab === 'mine' || tab === 'following') && !viewer) {
     return { moments: [] as FeedItem[], requiresLogin: true, pagination: pagination(1, limit, { totalCount: 0, hasNext: false }) };
   }
@@ -218,7 +309,7 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
   });
   const people = await loadPeople(found.items);
   return {
-    moments: found.items.map((moment) => toFeedItem(moment, viewer, people)),
+    moments: await withLive(found.items.map((moment) => toFeedItem(moment, viewer, people))),
     requiresLogin: false,
     pagination: pagination(page, limit, found),
   };

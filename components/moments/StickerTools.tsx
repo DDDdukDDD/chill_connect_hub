@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Camera, Coffee, Flower2, Heart, Music, Plus, Sparkles, Star, Sun, Trash2, UtensilsCrossed, ZoomIn, ZoomOut } from 'lucide-react';
+import { Camera, Coffee, Flower2, Heart, Music, Plus, Sparkles, Star, Sun, Trash2, UtensilsCrossed } from 'lucide-react';
+import { SizeSlider } from './EditorControls';
 import { FACE_STICKERS, ICON_STICKERS, MAX_FUN_STICKERS, STICKER_SCALE_RANGE, STICKER_STYLES, WORD_STICKERS, drawFace, type FunSticker } from '@/lib/media/photoEdit';
 
 /** The sticker panel shared by the photo and clip editors: pick a face, icon or word, then its colour and size */
@@ -56,20 +57,7 @@ export function StickerTools({ sticker, count, on, onAdd, onEdit, onRemove, onNe
           ))}
         </div>
         {/* Any size in between, not three steps (owner 2026-11-09) */}
-        <div className="flex items-center gap-2">
-          <ZoomOut className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
-          <input
-            type="range"
-            aria-label="ขนาดสติกเกอร์"
-            min={STICKER_SCALE_RANGE.min}
-            max={STICKER_SCALE_RANGE.max}
-            step={0.05}
-            value={sticker.scale}
-            onChange={(e) => onEdit({ scale: Number(e.target.value) })}
-            className="flex-1 min-w-0 h-8 accent-[#2563EB] cursor-pointer"
-          />
-          <ZoomIn className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
-        </div>
+        <SizeSlider label="ขนาดสติกเกอร์" min={STICKER_SCALE_RANGE.min} max={STICKER_SCALE_RANGE.max} step={0.05} value={sticker.scale} onChange={(scale) => onEdit({ scale })} />
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={onRemove} className="h-8 px-3 rounded-full bg-slate-100 hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-600 cursor-pointer inline-flex items-center gap-1">
             <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />

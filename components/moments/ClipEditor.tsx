@@ -248,7 +248,7 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
             </span>
           </p>
           {filmstrip}
-          <p className="text-xs text-slate-500">{canTrim ? `ลากขอบสองข้างเพื่อเลือกช่วง ยาวได้ถึง ${MAX_VIDEO_SECONDS} วินาที ภาพต้นช่วงจะเป็นปกให้เอง` : 'ภาพต้นคลิปจะเป็นปกให้เอง'}</p>
+          <p className="text-xs text-slate-500">{canTrim ? `ยาวได้ถึง ${MAX_VIDEO_SECONDS} วิ · ภาพต้นช่วงเป็นปก` : 'ภาพต้นคลิปเป็นปก'}</p>
         </div>
       )}
       {tool === 'filter' && (
@@ -283,7 +283,7 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
               if (next) setListening(false);
             }}
           />
-          <p className="text-xs text-slate-500">{muted ? 'คลิปจะโพสต์แบบไม่มีเสียง เหมาะกับที่เสียงดังหรือมีเสียงคนอื่นติดมา' : 'แตะรูปลำโพงบนคลิปเพื่อลองฟังเสียง'}</p>
+          <p className="text-xs text-slate-500">{muted ? 'โพสต์แบบไม่มีเสียง' : 'แตะลำโพงบนคลิปเพื่อลองฟัง'}</p>
         </div>
       )}
     </>
@@ -301,10 +301,11 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
         </button>
       </div>
 
-      {/* The clip comes first: tools under it on an upright screen, beside it on a wide one */}
+      {/* The same layout as the photo editor: the clip on a soft grey stage, then one tool's controls and the tool bar.
+          The panel keeps one height, so the clip does not jump when the tool changes */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row overflow-hidden">
-        <div className="relative [container-type:size] flex-1 min-h-[40vh] landscape:min-h-0 min-w-0 bg-black flex items-center justify-center sm:p-4">
-          <label className="absolute top-3 left-3 z-10 h-9 px-3.5 rounded-full bg-black/60 hover:bg-black/75 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer focus-within:ring-2 focus-within:ring-white">
+        <div className="relative [container-type:size] flex-1 min-h-0 min-w-0 bg-[#F6F7FB] flex items-center justify-center p-3 sm:p-4">
+          <label className="absolute top-3 left-3 z-10 h-9 px-3.5 rounded-full bg-white/90 hover:bg-white shadow-sm text-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer focus-within:ring-2 focus-within:ring-[#2563EB]">
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
             เลือกคลิปใหม่
             <input
@@ -319,10 +320,10 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
             />
           </label>
           {!canPreview && (
-            <p className="px-6 text-center text-sm font-medium leading-relaxed text-white/85">เครื่องนี้แสดงตัวอย่างคลิปนี้ไม่ได้ แต่โพสต์ได้ตามปกติ<br />ถ้าคลิปไม่เล่นบนบางเครื่อง ลองตั้งกล้องเป็น H.264 (Most Compatible) นะ</p>
+            <p className="px-6 text-center text-sm font-medium leading-relaxed text-slate-600">เครื่องนี้แสดงตัวอย่างคลิปนี้ไม่ได้ แต่โพสต์ได้ตามปกติ<br />ถ้าคลิปไม่เล่นบนบางเครื่อง ลองตั้งกล้องเป็น H.264 (Most Compatible) นะ</p>
           )}
           {src && canPreview && (
-            <div className="relative" style={{ aspectRatio: `${ratio}`, width: `min(100cqw, ${100 * ratio}cqh)` }}>
+            <div className="relative overflow-hidden rounded-2xl bg-black shadow-sm" style={{ aspectRatio: `${ratio}`, width: `min(100cqw, ${100 * ratio}cqh)` }}>
               <video
                 ref={video}
                 // A blob: link from the browser, which encodeURI leaves as it is; CodeQL needs it for text that started in a file input
@@ -376,11 +377,12 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
           )}
         </div>
 
-        <div className="shrink-0 landscape:w-[320px] flex flex-col border-t landscape:border-t-0 landscape:border-l border-slate-100 min-h-0">
-          <div className="landscape:flex-1 min-h-0 max-h-[40vh] landscape:max-h-none overflow-y-auto px-4 py-3">{panel}</div>
-          <div className="shrink-0 grid border-t border-slate-100 pb-[env(safe-area-inset-bottom)]" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }} role="group" aria-label="เครื่องมือแต่งคลิป">
+        <div className="shrink-0 h-[15.5rem] sm:portrait:h-[15rem] landscape:h-auto landscape:w-[320px] flex flex-col landscape:border-l border-slate-100 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 landscape:order-2">{panel}</div>
+          {/* Under the thumb on a phone; on a wide screen the tools head the panel, as in the photo editor */}
+          <div className="shrink-0 grid gap-1 px-2 py-1.5 border-t landscape:border-t-0 landscape:border-b border-slate-100 pb-[max(0.375rem,env(safe-area-inset-bottom))] landscape:pb-1.5 landscape:order-1" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }} role="group" aria-label="เครื่องมือแต่งคลิป">
             {tools.map(({ id, label, Icon }) => (
-              <button key={id} type="button" onClick={() => setTool(id)} aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-14 text-[11px] cursor-pointer ${tool === id ? 'font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:text-slate-900'}`}>
+              <button key={id} type="button" onClick={() => setTool(id)} aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl text-[11px] cursor-pointer transition-colors active:scale-95 ${tool === id ? 'bg-[#EFF6FF] font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
                 <Icon className="w-5 h-5" aria-hidden="true" />
                 {label}
               </button>

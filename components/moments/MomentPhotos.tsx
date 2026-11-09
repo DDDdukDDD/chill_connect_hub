@@ -39,7 +39,10 @@ const responsive = (src: string) =>
 const DOUBLE_TAP_MS = 260;
 
 /** A post made in the 4:5 shape; any other ratio keeps the square frame, as before */
-const isTall = (ratio?: number) => typeof ratio === 'number' && ratio > 0.78 && ratio < 0.82;
+/** Upright photos and clips (4:5 posts, 2:3 samples, 9:16 clips) fill a 4:5 frame like IG; wide clips keep 16:9; the rest are square */
+const isTall = (ratio?: number) => typeof ratio === 'number' && ratio > 0 && ratio <= 0.85;
+const isWide = (ratio?: number) => typeof ratio === 'number' && ratio >= 1.25;
+const frameOf = (ratio?: number) => (isTall(ratio) ? 'aspect-[4/5]' : isWide(ratio) ? 'aspect-video' : 'aspect-square');
 
 export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
   const [index, setIndex] = useState(0);
@@ -76,7 +79,7 @@ export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }:
   };
 
   if (video) {
-    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className="relative w-full aspect-square overflow-hidden rounded-2xl bg-black" />;
+    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className={`relative w-full ${frameOf(ratio)} overflow-hidden rounded-2xl bg-black`} />;
   }
 
   return (

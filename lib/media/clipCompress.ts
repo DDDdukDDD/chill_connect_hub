@@ -18,8 +18,8 @@ import { canvasHasFilter, drawFiltered } from './clipFilter';
 
 const SHORT_SIDE = 720;
 const MAX_FRAME_RATE = 30;
-/** The silent loop feeds and grids autoplay (docs/VIDEO_PLAN.md, stage 1): about 150–300 KB */
-const PREVIEW_SECONDS = 3;
+/** The silent loop feeds and grids autoplay (docs/VIDEO_PLAN.md, stage 1): 6 s since 2026-11-09 (was 3, felt like a GIF), about 300–600 KB */
+const PREVIEW_SECONDS = 6;
 const PREVIEW_SHORT_SIDE = 360;
 const PREVIEW_FRAME_RATE = 24;
 
