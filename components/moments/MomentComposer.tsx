@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
 import { useMentionPicker } from '@/components/moments/MentionPicker';
 import { PlacePicker } from '@/components/moments/PlacePicker';
@@ -101,16 +101,16 @@ function thumbnailOf(photo: EditedPhoto, shape: PostShape): string {
 }
 
 /** A small picture of the edited photo, with everything on it */
-function EditedThumb({ photo, shape }: { photo: EditedPhoto; shape: PostShape }) {
+function EditedThumb({ photo, shape, width = 200, className = 'w-full h-full object-cover' }: { photo: EditedPhoto; shape: PostShape; width?: number; className?: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const height = Math.round(200 / shape);
+  const height = Math.round(width / shape);
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
-    drawBase(ctx, photo, 200, height);
-    drawOverlays(ctx, photo, 200, height);
-  }, [photo, height]);
-  return <canvas ref={canvas} width={200} height={height} className="w-full h-full object-cover" aria-hidden="true" />;
+    drawBase(ctx, photo, width, height);
+    drawOverlays(ctx, photo, width, height);
+  }, [photo, width, height]);
+  return <canvas ref={canvas} width={width} height={height} className={className} aria-hidden="true" />;
 }
 
 /** A clip on its way to a post: the chosen part, the cover's moment, text on it, and whether it keeps its sound */
@@ -127,6 +127,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [clip, setClip] = useState<ClipDraft | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [options, setOptions] = useState<PostOptions>({ commentsOff: false, likesOff: false, sharesOff: false });
+  // Which photo the wide post step shows
+  const [previewAt, setPreviewAt] = useState(0);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const captionInput = useRef<HTMLTextAreaElement>(null);
   const photoUrls = useRef<string[]>([]);
@@ -411,7 +413,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         aria-modal="true"
         aria-labelledby="create-moment-title"
         className={`focus:outline-hidden bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
-          isWide ? 'h-dvh sm:portrait:h-[min(94dvh,1080px)] sm:portrait:max-w-2xl sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : step === 'details' ? 'h-dvh sm:h-auto sm:max-h-[92dvh] sm:max-w-lg' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
+          isWide ? 'h-dvh sm:portrait:h-[min(94dvh,1080px)] sm:portrait:max-w-2xl sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : step === 'details' ? 'h-dvh sm:portrait:h-auto sm:portrait:max-h-[92dvh] sm:portrait:max-w-lg sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -513,9 +515,43 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5">
+            {/* A wide screen keeps the editor's frame (owner 2026-11-09: the dialog shrank and the photo was cut): the post
+                as it will look on the left, the words and choices on the right, like Instagram on a computer */}
+            <div className="flex-1 min-h-0 flex flex-col sm:landscape:flex-row">
+              <div className="hidden sm:landscape:flex flex-1 min-w-0 min-h-0 relative items-center justify-center bg-[#F6F7FB] p-4 [container-type:size]">
+                {clip?.cover ? (
+                  <div className="relative h-full max-w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                    <img src={clip.cover} alt="ปกคลิป" className="h-full w-auto max-w-full object-contain rounded-2xl shadow-sm" />
+                    <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white"><Play className="h-5 w-5 fill-current" /></span>
+                    </span>
+                  </div>
+                ) : (
+                  photos[previewAt] && (
+                    <div style={{ aspectRatio: `${shape}`, width: `min(100cqw, ${100 * shape}cqh)` }}>
+                      <EditedThumb key={photos[previewAt].id} photo={photos[previewAt]} shape={shape} width={900} className="w-full h-full rounded-2xl shadow-sm bg-white" />
+                    </div>
+                  )
+                )}
+                {!clip && photos.length > 1 && (
+                  <>
+                    <button type="button" onClick={() => setPreviewAt((i) => (i - 1 + photos.length) % photos.length)} aria-label="รูปก่อนหน้า" className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow text-slate-700 flex items-center justify-center cursor-pointer hover:bg-white">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button type="button" onClick={() => setPreviewAt((i) => (i + 1) % photos.length)} aria-label="รูปถัดไป" className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow text-slate-700 flex items-center justify-center cursor-pointer hover:bg-white">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <span className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5" aria-hidden="true">
+                      {photos.map((p, i) => <span key={p.id} className={`h-1.5 rounded-full transition-all ${i === previewAt ? 'w-4 bg-[#2563EB]' : 'w-1.5 bg-slate-300'}`} />)}
+                    </span>
+                  </>
+                )}
+              </div>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-5 sm:landscape:flex-none sm:landscape:w-[380px] sm:landscape:border-l border-slate-100">
               <div className="flex items-start gap-3">
-                <div className="relative shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100">
+                {/* On a phone the post shows small beside the words, in its real shape rather than cut square */}
+                <div className="relative shrink-0 w-20 rounded-xl overflow-hidden bg-slate-100 sm:landscape:hidden" style={{ aspectRatio: clip?.cover ? '4 / 5' : `${shape}` }}>
                   {clip?.cover ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
@@ -577,6 +613,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
                   <PostOptionFields value={options} onChange={setOptions} />
                 </div>
               </details>
+            </div>
             </div>
           </form>
         )}
