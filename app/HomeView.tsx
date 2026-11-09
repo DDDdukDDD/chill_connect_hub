@@ -528,12 +528,14 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
 
               <div className="text-center md:text-left">
                 <h1 className="text-[29px] leading-[1.3] sm:text-[36px] lg:text-[44px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
-                  คอมมูนิตี้ของคน
+                  {/* The positioning, word for word (owner 2026-11-09, docs/PRODUCT_DIRECTION.md): the h1 names who it is for,
+                      the line under it finishes the sentence with the promise */}
+                  โซเชียลแพลตฟอร์ม
                   <br />
-                  ชอบ<span className="text-[#F26430]">ออกไปใช้ชีวิต</span>
+                  สำหรับคนชอบ<span className="text-[#F26430] whitespace-nowrap">ออกไปใช้ชีวิต</span>
                 </h1>
                 <p className="mt-3 text-[15px] sm:text-lg lg:text-xl font-semibold text-slate-700">
-                  พบเจอมิตรภาพใหม่ <span className="whitespace-nowrap">ส่งต่อความประทับใจ</span>
+                  ที่ทำให้<span className="whitespace-nowrap">ทุกการใช้ชีวิต<span className="text-[#F26430]">มีความหมาย</span></span>
                 </p>
                 {/* Two ways in: the open ตี้ photos (main) and friends' moments, each scrolls to its section below */}
                 <div className="mt-5 lg:mt-6 flex items-center justify-center md:justify-start gap-2.5 sm:gap-3">
@@ -571,7 +573,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
               <PromoBoard campaigns={campaigns} onOpen={myCampaigns.open} onOpenReward={myCampaigns.openReward} />
             </div>
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
-              {/* 2. Proof of the community the hero names ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต"): people and their moments
+              {/* 2. Proof of the social platform the hero names: people and their moments
                   first, then how to start (owner 2026-10-23) */}
               <section id="journey-moments" className="space-y-4 scroll-mt-24">
                 {sectionHead('เพื่อน & โมเมนต์', '/moments')}

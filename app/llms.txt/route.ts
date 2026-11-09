@@ -6,7 +6,7 @@ export const dynamic = 'force-static';
 
 const body = `# Chillwaa
 
-> Chillwaa (www.chillwaa.com) คือคอมมูนิตี้คนชอบออกไปใช้ชีวิตทั่วไทย: เข้าตี้หรือเปิดตี้ชวนเพื่อนไปด้วยกัน หาที่เที่ยวและอีเวนต์ ทำชาเลนจ์ได้ XP เหรียญ และของรางวัล แล้วแชร์โมเมนต์ให้เพื่อนๆ ดู
+> Chillwaa (www.chillwaa.com) คือโซเชียลแพลตฟอร์มสำหรับคนชอบออกไปใช้ชีวิต ที่ทำให้ทุกการใช้ชีวิตมีความหมาย: เข้าตี้หรือเปิดตี้ชวนเพื่อนไปด้วยกัน หาที่เที่ยวและอีเวนต์ ทำชาเลนจ์ได้ XP เหรียญ และของรางวัล แล้วแชร์โมเมนต์ให้เพื่อนๆ ดู
 > Chillwaa is a Thai community for people who like to go out: join or host small group meetups ("ตี้"), find places and events, complete challenges for XP, badges and partner rewards, and share moments with friends.
 
 - ตี้ (meetup): กลุ่มเล็กๆ ที่นัดไปทำกิจกรรมด้วยกัน เช่น วิ่ง นั่งคาเฟ่ บอร์ดเกม ดูคอนเสิร์ต มาคนเดียวได้ คนเปิดตี้ต้องผ่านการตรวจจากทีมงาน นัดเจอในที่สาธารณะ และเช็กอินที่จุดนัด

@@ -20,6 +20,41 @@ Item template:
 
 ---
 
+### BE-325 · CDN cache fixes (2026-11-09)
+- **Found on the live site:** Vercel's CDN ignores cookies (a request with a cookie got `HIT` on the visitor copy), and a response with `Vary: Cookie` is never cached at all.
+- **What changed:** `GET /api/activity` plain URL is now always the public counts (cached); members' named lines moved to `?mine=1` (no screen uses them today). `GET /api/events` drops its `s-maxage` + `Vary: Cookie` (it never cached) for an honest `private, no-store`; the server already keeps the list by table version. `GET /api/spots/browse` is now cached 60 s, and its `t` is rounded to the minute so visitors share copies. `docs/API.md` updated.
+- **Rule for new routes:** an answer that depends on the session must have its own URL (like `?mine=1`) before the shared one gets `s-maxage`; never rely on `Vary: Cookie`.
+
+### BE-324 · Posting, round 2: clip editor (owner 2026-11-09)
+- **What changed:** the pick step is two choices again, โพสต์รูป / โพสต์คลิป (owner: people already know which they came to post), in the new soft style. Clip editor tools: ช่วงคลิป · ฟิลเตอร์ · ข้อความ · สติกเกอร์ · เสียง. The part is chosen on a filmstrip of 10 frames with two white handles and a playhead. The ปก tool is gone: the cover is the frame 0.5 s into the part, with the filter, text and stickers on it. Filters are the same seven names as photos, defined as CSS filter steps in `lib/media/clipFilter.ts`: CSS on the preview, the canvas `filter` per frame when posting, worked out pixel by pixel on Safari (no canvas `filter`) with the CSS spec's matrices, so an iPhone posts the look it previewed. Stickers reuse the photo set through the new shared `components/moments/StickerTools.tsx`. เลือกคลิปใหม่ opens the clip picker directly; cancelling keeps the current clip. Text and sticker sizes now follow the frame's short side (`lib/media/photoEdit.ts`), so they are no longer oversized on a wide clip; photos (1:1, 4:5) look the same as before. A sticker's size is a slider (0.4–2×) instead of three steps. Trim handles are blue with a white grip so they show on the white panel.
+- **Not done (by choice):** music (rights), speed, joining several parts.
+- **What to do about it:** walk a real phone (iPhone especially): filter look in the posted clip vs the preview, and how long posting takes with a filter on (Safari reads back every frame).
+
+### BE-323 · Page scroll lock is counted (owner report 2026-11-09)
+- **What changed:** the owner twice saw the live home feed stop scrolling after posting a clip (menus still worked, a reload fixed it). Not reproduced in headless Chrome. Most likely cause: two scroll locks that "remember and put back" `body.style.overflow` and release in the other order, leaving `hidden`. `lockPageScroll()` in `components/auth/DialogShell.tsx` now counts open locks; `useDialogBehavior` and the full-screen clip page (`MomentDetailView`) use it. Walked: feed → full-screen clip → back, page scrolls.
+- **What to do about it:** any new full-screen layer uses `lockPageScroll()`, never its own overflow write. If the owner sees it again, note the phone, browser and the last taps before it.
+
+### BE-322 · Posting, round 1: photo editor and post step tidied (owner 2026-11-09)
+- **What changed:** one "เลือกรูปหรือคลิป" picker (the file decides: a clip wins and posts alone). Photo editor: the photo and its thumbnail strip on a soft grey stage, no instruction lines; crop = shape chips + zoom slider (1x up) + its own "ทั้งรูป / เต็มกรอบ" button; filters as round previews; light = brightness, contrast and colour, all shown; filters four to a row on wide screens; tool bar as soft pills, at the top of the side panel on wide screens. Post step: settings fold into "ตั้งค่าเพิ่มเติม" with a one-line summary. Walked signed in at 390×844 and 1280×800. Then (same day): text and stickers share seven colours (white, ink, rose, brand orange, yellow, green, blue); text background cycles none / solid / see-through; eight feeling faces (`FACE_STICKERS`, kind `face`) lead the sticker panel. Round 2 (clip editor filmstrip) is next.
+
+### BE-321 · Clips up to 30 s with a movable end (owner 2026-11-09)
+- **What changed:** `MAX_VIDEO_SECONDS` 15 → 30 (`lib/moments/types.ts`, read by the composer and the server check). The clip editor has one track with two handles (start and end, 1–30 s; moving one pushes the other). A file within 30 s starts whole, a longer one with the first 15 s (`DEFAULT_CLIP_SECONDS`). `compressClip(file, startS, endS, …)`. `ClipPlayer` now holds the chosen end also for an original file that could not be shrunk. `docs/API.md` says 30.
+- **What to do about it:** joining two separate parts is not built (LAUNCH_CHECKLIST stage 8). Not walked on a real phone yet.
+
+### BE-320 · Follow button moved away from the name (owner 2026-11-09)
+- **What changed:** on the home feed card it sits right before the ... menu; on the photo moment page it leads the actions on the right; on a clip it is an outlined pill at the end of the author row. Tapping the name or photo for the profile no longer risks a follow.
+
+### BE-319 · Global groundwork: country on provinces, English place names, map point required (owner 2026-11-09)
+- **What changed:** migration 0038 adds `app.provinces.country_code` (ISO alpha-2, default `TH`). `LifestyleSpotItem.titleEn` (stored in `details`, not shown yet) is filled by the OSM and tourism-directory importers; `runSpotScraper` drops places without coordinates. `db/backfill-place-title-en.mjs` filled 130 of 132 OSM places on dev.
+- **What to do about it:** on live, the owner runs `! npm run db:migrate` (0038) and `node db/backfill-place-title-en.mjs --live`. New code: no new Thailand-only assumptions where avoidable (plan in LAUNCH_CHECKLIST "เตรียมพร้อม Global").
+
+### BE-318 · Positioning on the landing hero and site descriptions (owner 2026-11-09)
+- **What changed:** hero h1 "โซเชียลแพลตฟอร์ม / สำหรับคนชอบออกไปใช้ชีวิต" + line "ที่ทำให้ทุกการใช้ชีวิตมีความหมาย" (`app/HomeView.tsx`); wordmark subtitle "โซเชียลคนชอบออกไปใช้ชีวิต"; the same sentence in layout metadata, JSON-LD, manifest and llms.txt. Positioning and differentiator in `docs/PRODUCT_DIRECTION.md`. /about, onboarding and the sign-up popup still say คอมมูนิตี้.
+
+### BE-317 · Top 15 of every destination has vibe text; follow on the post page (owner 2026-11-08)
+- **What changed:** `db/content/featured-top15-vibes.json`: 194 vibe texts for the 15 best places (curation score) of each of the 13 destinations on /spots, and 3 places to draft (navy recruit centre, army camp, former Tiger Temple). Applied on dev only. The full-screen post page (`components/moments/MomentDetailView.tsx`) has the same "· ติดตาม" as the feed.
+- **What to do about it:** on live, `node db/apply-spot-vibes.mjs db/content/featured-top15-vibes.json --apply` once the owner OKs it. OSM found almost nothing new for Chiang Mai, Phuket and Chonburi (all already imported).
+
 ### BE-312..316 · Database review items 1, 3, 5, 6, 7 (owner 2026-11-08)
 - **What changed:** 0036 drops `place_images`, `rate_limit_hits`, `import_runs`, `api_usage`, the waitlist states and `offered_at` of `event_participants`, and adds a CHECK on `sponsored_slots.pillar` (BE-312). `participants_count` = joined members, never the host: the host keeps a joined row but takes no seat; 0037 recounts real ตี้ and อีเวนต์ (BE-313). Spot Buddy minimum is people at the meet, host included: use `tripPeopleMissing` / `isTripConfirmed` (BE-314; fixes host + 2 looking short). Redemptions check XP and insert under a per-member lock (BE-315). On read, the typed column wins over its details copy for places publicationStatus/meetupAllowed, events max/min/registrationOpen, challenges status/visibility/isOfficial/rewardPoints; the public places list filters on `publication_status` (BE-316).
 - **What to do about it:** run 0036 and 0037 on live **after** this code is deployed (the old code still writes `place_images` and counts the host). Item 9 is postponed (LAUNCH_CHECKLIST stage 7).

@@ -31,6 +31,8 @@ export interface SpotRelatedMoment {
 export interface LifestyleSpotItem {
   id: string;
   title: string;
+  /** English name from the source, kept at import for a later English site (global plan, owner 2026-11-09); not shown yet */
+  titleEn?: string;
   category: 'park' | 'art' | 'cafe' | 'oldtown' | 'workspace' | 'viewpoint' | 'nature' | 'temple' | 'beach' | 'market' | 'museum' | 'bar' | 'coworking' | 'restaurant' | 'attraction' | 'mall';
   categoryLabel: string;
   province: string;

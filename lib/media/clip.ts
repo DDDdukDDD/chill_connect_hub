@@ -1,5 +1,6 @@
 import { VIDEO_TYPES } from '@/lib/moments/types';
-import { drawText, type PhotoText } from './photoEdit';
+import { drawOverlays, type FunSticker, type PhotoText } from './photoEdit';
+import { canvasHasFilter, drawFiltered } from './clipFilter';
 
 /**
  * Reading a member's clip on their own device, before anything uploads. A phone's camera roll is less tidy than a
@@ -129,10 +130,10 @@ export function plainCover(): string {
   return canvas.toDataURL('image/jpeg', 0.8);
 }
 
-/** The cover with the clip's text drawn on it, so grids show the same picture the clip starts with */
-export async function coverWithText(cover: string, texts: PhotoText[]): Promise<string> {
-  const shown = texts.filter((t) => t.text.trim());
-  if (!shown.length) return cover;
+/** The cover with the clip's filter, text and stickers on it, so grids show the same picture the clip starts with */
+export async function coverWithEdits(cover: string, edits: { texts: PhotoText[]; stickers: FunSticker[]; filter: string }): Promise<string> {
+  const texts = edits.texts.filter((t) => t.text.trim());
+  if (!texts.length && !edits.stickers.length && edits.filter === 'none') return cover;
   const image = new Image();
   image.src = cover;
   try {
@@ -143,9 +144,40 @@ export async function coverWithText(cover: string, texts: PhotoText[]): Promise<
   const canvas = Object.assign(document.createElement('canvas'), { width: image.naturalWidth, height: image.naturalHeight });
   const ctx = canvas.getContext('2d');
   if (!ctx) return cover;
-  ctx.drawImage(image, 0, 0);
-  shown.forEach((t) => drawText(ctx, t, canvas.width, canvas.height));
+  drawFiltered(ctx, () => ctx.drawImage(image, 0, 0), edits.filter, canvasHasFilter(ctx));
+  drawOverlays(ctx, { texts, stickers: edits.stickers }, canvas.width, canvas.height);
   return canvas.toDataURL('image/jpeg', 0.86);
 }
 
-export const clipClock =(seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+/**
+ * Small frames spread over the whole clip, for the editor's filmstrip. They arrive one by one through `onFrame`;
+ * the answer stops the work (the editor closed or the clip changed). A clip this device cannot draw gives none.
+ */
+export function clipStrip(file: File, fullSeconds: number, count: number, onFrame: (index: number, frame: string) => void): () => void {
+  const { el, close } = openClip(file);
+  let index = 0;
+  let stopped = false;
+  const stop = () => {
+    stopped = true;
+    close();
+  };
+  const next = () => {
+    if (stopped || index >= count) return stop();
+    el.currentTime = Math.min(fullSeconds - 0.05, ((index + 0.5) / count) * fullSeconds);
+  };
+  el.onerror = stop;
+  el.onloadedmetadata = next;
+  el.onseeked = () => {
+    if (stopped) return;
+    const scale = 160 / Math.max(1, Math.min(el.videoWidth, el.videoHeight));
+    const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(el.videoWidth * scale), height: Math.round(el.videoHeight * scale) });
+    if (!canvas.width) return stop();
+    canvas.getContext('2d')?.drawImage(el, 0, 0, canvas.width, canvas.height);
+    onFrame(index, canvas.toDataURL('image/jpeg', 0.7));
+    index += 1;
+    next();
+  };
+  return stop;
+}
+
+export const clipClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;

@@ -42,14 +42,13 @@ export async function GET(request: Request) {
       );
     }
 
-    // Events created by someone the viewer blocked are left out. That answer is personal, so it is not shared-cached.
+    // Events created by someone the viewer blocked are left out, so the answer depends on the session and the CDN must
+    // not keep it. (It used to say s-maxage with Vary: Cookie, but Vercel then caches nothing, checked 2026-11-09; the
+    // list itself is cached on the server by table version, so each call costs one small query.)
     const blocked = new Set((await getSessionMember(request))?.blockedIds ?? []);
     const withoutBlocked = <T extends object>(items: T[]): T[] =>
       blocked.size ? items.filter((ev) => !blocked.has((ev as { createdByMemberId?: string }).createdByMemberId ?? '')) : items;
-    const listHeaders = {
-      'Cache-Control': blocked.size ? 'private, no-store' : 'public, s-maxage=30, stale-while-revalidate=120',
-      Vary: 'Cookie',
-    };
+    const listHeaders = { 'Cache-Control': 'private, no-store' };
 
     // ?ids=a,b,c → those approved events (ended ones included), in the order asked; for lists of saved events
     const ids = searchParams.get('ids');

@@ -173,11 +173,12 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
     if (tapTimer.current) clearTimeout(tapTimer.current);
   }, []);
 
-  // Stays inside the chosen part; a whole file (startS 0) just loops on its own
+  // Stays inside the chosen part. A shrunk clip is exactly that part and just loops; an original file that could not be
+  // shrunk may run on past the chosen end (the end can be pulled in since 2026-11-09), so the end is held too
   const keepInPart = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    if (!isFull || startS <= 0 || !durationS) return;
+    if (!isFull || !durationS) return;
     const el = e.currentTarget;
-    if (el.currentTime < startS - 0.25 || el.currentTime >= startS + durationS) el.currentTime = startS;
+    if (el.currentTime < startS - 0.25 || el.currentTime >= startS + durationS + 0.1) el.currentTime = startS;
   };
 
   const togglePlay = () => {

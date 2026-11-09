@@ -60,7 +60,7 @@ Response `200`:
 ```ts
 { success: true, events: EventItem[], total: number, pagination: Pagination }
 ```
-Cache: `public, s-maxage=30, stale-while-revalidate=120` — a newly created or approved event can take up to ~30s to appear through a CDN.
+Cache: `private, no-store` (since 2026-11-09, BE-325). The answer depends on the session (blocked hosts are left out), and Vercel's CDN ignores cookies, so it is not CDN-cached; the server keeps the list by table version, so a call costs one small query.
 
 **Sample meetups roll forward (prototype stage):**
 - Community events whose id comes from the bundled `MOCK_EVENTS` have fixed 2026 dates. When one has ended, every read (this endpoint, admin lists) returns its `date` moved forward by whole 77-day cycles, which keeps its weekday.
@@ -135,6 +135,8 @@ Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพ�
 - `latitude` / `longitude` are validated for imported spots (inside Thailand), so they are safe for maps and nearby searches.
 
 ### `GET /api/spots/browse` — the /spots list, worked out on the server (added 2026-10-28, BE-176)
+
+Cache: `public, s-maxage=60, stale-while-revalidate=300` (BE-325); no session is read. `t` is rounded down to the minute, so visitors in the same minute share the CDN's copy.
 
 What `/spots` shows: published places filtered, ranked and counted with the page's own rules (`lib/spotBrowse.ts`), so the browser no longer downloads the whole catalog (~7 MB). Hidden-tier places show only when searched for or saved.
 
@@ -304,8 +306,8 @@ Posts go live at once. **3 distinct member reports hide a post** until a moderat
 |---|---|---|
 | `GET /api/moments` | `?tab=all\|popular\|following\|saved\|mine&category=heal\|move\|chill\|learn&location&targetType&targetId&q&tag&page&limit(≤30)&cursor` | `{ moments: FeedItem[], pagination }`; `saved`/`mine` without login → `{ moments: [], requiresLogin: true }`. Each item's `comments` holds **only the newest visible comment**; `commentsCount` is the full count, and `GET /api/moments/[id]` has them all. To continue the newest order, pass `pagination.nextCursor` as `cursor` (a new or deleted post between pages neither repeats nor skips one; a bad cursor gives an empty list). `pagination.totalCount` and `totalPages` come only without a cursor. `popular` has no cursor and pages by `page` |
 | `POST /api/moments` | `{ caption? (0–500, optional since 2026-11-02), images: string[] (1–10, URLs returned by /api/upload), location?, category?: heal\|move\|chill\|learn, targetType?: spot\|community\|fair\|challenge\|general, targetId?, targetTitle? }` | `201 { moment: FeedItem }` · `400` (Thai `message`) · `429` (10 posts/hour) |
-| `POST /api/moments` with a clip (trial, 2026-11-02) | Add `video: { url, durationS }`, with `images` holding only the cover. `durationS` is at most 15 (15.5 with rounding); `url` must come from `/api/upload/video`. Feed items and moment pages carry `video`; `images[0]` is its cover, so grids keep working. Since 2026-11-07 `video` may also carry `previewUrl` (from `/api/upload/video`): a 3 s silent loop that feeds and grids autoplay instead of `url`; older clips have none | `400` when a rule fails |
-| `POST /api/moments` options (2026-11-02) | Add `commentsOff?`, `likesOff?`, `sharesOff?` (booleans). `video` also takes `startS`, where in the file the post starts playing; the file may run longer than `durationS`, which stays at most 15 | Feed items always carry the three booleans. A closed post answers `400` to `like` or `comment`, shows `comments: []` and `likesCount: 0` |
+| `POST /api/moments` with a clip (trial, 2026-11-02) | Add `video: { url, durationS }`, with `images` holding only the cover. `durationS` is at most 30 (30.5 with rounding; 15 until 2026-11-09); `url` must come from `/api/upload/video`. Feed items and moment pages carry `video`; `images[0]` is its cover, so grids keep working. Since 2026-11-07 `video` may also carry `previewUrl` (from `/api/upload/video`): a 3 s silent loop that feeds and grids autoplay instead of `url`; older clips have none | `400` when a rule fails |
+| `POST /api/moments` options (2026-11-02) | Add `commentsOff?`, `likesOff?`, `sharesOff?` (booleans). `video` also takes `startS`, where in the file the post starts playing; the file may run longer than `durationS`, which stays at most 30 | Feed items always carry the three booleans. A closed post answers `400` to `like` or `comment`, shows `comments: []` and `likesCount: 0` |
 | `GET /api/moments/[id]` | — | `{ moment }` (published, or the viewer's own) · `404` |
 | `GET /api/moments/[id]/likes` | — | `{ people: [{ id, name, avatar, isFollowing }] }`, newest heart first, for the post's **owner only** (`403` for anyone else, `401` signed out); blocked and closed accounts are left out (2026-11-07) |
 | `PATCH /api/moments/[id]` | `{ caption?, location?, images?, commentsOff?, likesOff?, sharesOff? }`. `images` is the whole new list (1..10, BE-303): keep, reorder, drop, or add URLs from `/api/upload`; a clip post must send its list unchanged (`400`). Dropped photos are deleted from storage unless another own post shows them | own posts only (`403`) |
@@ -380,7 +382,7 @@ Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
 ### `/api/upload/video` — a moment's clip (trial, 2026-11-02)
 - `GET` → `{ mode: "r2" | "direct" | "server" | "off" }`: `r2` = send it straight to Cloudflare R2 with a signed link (since 2026-11-07), `direct` = send it straight to Vercel Blob with a signed URL, `server` = a local server keeps it, `off` = hosted without Blob storage, so clips cannot be uploaded.
 - `POST`: Same rules as posting a moment (signed in, verified, pledge), 20 files an hour per member (a clip and its preview are two). MP4, MOV or WEBM, up to 50 MB. In `r2` mode it takes JSON `{ contentType, size, preview? }` and answers `{ uploadUrl, url, cacheControl }`: the phone `PUT`s the file to `uploadUrl` within 10 minutes with headers `Content-Type` and `Cache-Control` exactly as given, and posts `url`; the size and type are signed into the link, so R2 refuses any other file (`preview: true` names it as the clip's preview). In `direct` mode it answers `uploadPresigned`'s request from `@vercel/blob/client` and the signed URL holds the type and size limits (works with the store's OIDC login, no `BLOB_READ_WRITE_TOKEN`); in `server` mode it takes `multipart/form-data` with `file` and checks the file's first bytes.
-- The 15 seconds is read on the phone and the number is checked when posting. The server does not open the file to measure it, so a modified client could send a longer clip within the 50 MB.
+- The 30 seconds is read on the phone and the number is checked when posting. The server does not open the file to measure it, so a modified client could send a longer clip within the 50 MB.
 
 ### `POST /api/upload` — image upload
 
@@ -607,7 +609,7 @@ For a signed-in member the server ignores `participantsCount` in the body: the e
 - `POST { action: 'remove_chat_message', id: reportId, messageId }` (permission `community.review`): deletes another message of that room. The report stays open.
 
 ### `GET /api/events` — blocked members
-When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, and that answer is sent with `Cache-Control: private, no-store`. Other answers stay shared-cached. All answers carry `Vary: Cookie`. `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
+When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, Every answer is `Cache-Control: private, no-store` (see above). `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
 
 ### Moments feed — blocked members
 `comments` and `commentsCount` of each moment leave out comments from people the viewer blocked.
@@ -765,10 +767,10 @@ Public; `404` for an unknown or draft challenge. Answer:
 ## Live activity, "ตอนนี้ในชิลล์" (added 2026-10-16, BE-076)
 
 ### `GET /api/activity`
-The server decides from its own session which shape to send.
+Two URLs, because Vercel's CDN ignores cookies (2026-11-09, BE-325): one URL that answered by session served the cached visitor answer to members.
 
-- **Signed in:** `{ success, mode: 'member', items: LiveItem[] }`, the 12 newest lines, newest first, at most 2 per shown name. Never the viewer's own actions, people the viewer blocked, people who blocked the viewer, or banned members. `Cache-Control: private, no-store`.
-- **Signed out:** `{ success, mode: 'public', counts: { since, meetupJoins, questJoins, moments } }`, the last 7 days, no names. Cached 60 seconds.
+- **`?mine=1`, signed in:** `{ success, mode: 'member', items: LiveItem[] }`, the 12 newest lines, newest first, at most 2 per shown name. Never the viewer's own actions, people the viewer blocked, people who blocked the viewer, or banned members. `Cache-Control: private, no-store`.
+- **Plain URL (everyone, also `?mine=1` signed out):** `{ success, mode: 'public', counts: { since, meetupJoins, questJoins, moments } }`, the last 7 days, no names. Cached 60 seconds.
 
 `LiveItem` (`lib/social/liveActivity.ts`): `{ id, kind, at, timeAgo, person: { name, avatar? }, target: { type, id?, title } }`.
 - `kind`: `meetup_join` | `meetup_host` | `quest_join` | `quest_finish` | `moment`

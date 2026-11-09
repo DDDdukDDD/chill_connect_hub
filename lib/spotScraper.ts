@@ -72,6 +72,8 @@ export async function runSpotScraper(targetSource?: string, options?: SpotScrape
 
   for (const sourceResult of sourceResults) {
     for (const spot of sourceResult.items) {
+      // Every imported place has a map point: coordinates work in any country, a province name does not (global plan 2026-11-09)
+      if (!Number.isFinite(spot.latitude) || !Number.isFinite(spot.longitude)) continue;
       const normalizedPlace = `${normalizePlace(spot.title)}|${normalizePlace(spot.province)}`;
       if (knownIds.has(spot.id) || (spot.sourceUrl && knownSourceUrls.has(spot.sourceUrl)) || knownPlaces.has(normalizedPlace)) {
         duplicatesBySource.set(sourceResult.sourceId, (duplicatesBySource.get(sourceResult.sourceId) || 0) + 1);

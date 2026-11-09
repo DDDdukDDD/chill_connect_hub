@@ -10,7 +10,7 @@ import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { LikersDialog } from '@/components/moments/LikersDialog';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
-import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { DialogShell, dialogButton, lockPageScroll } from '@/components/auth/DialogShell';
 import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -66,11 +66,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
   useEffect(() => {
     if (!isFull) return;
-    const before = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = before;
-    };
+    // The shared, counted lock: a dialog open on top of this page can close in either order (owner 2026-11-09)
+    return lockPageScroll();
   }, [isFull]);
 
   /** Back where the tap came from; otherwise (opened here, or a shared link) to this moment's page */
@@ -135,6 +132,36 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   /** Comments before the newest three, folded until the reader opens them */
   // The newest three threads show first
   const hiddenComments = Math.max(0, moment.comments.filter((c) => !c.parentId).length - 3);
+
+  // "ติดตาม" by the name for someone not followed yet, like the feed (owner 2026-11-08); after the tap it reads "กำลังติดตาม"
+  const [justFollowed, setJustFollowed] = useState(false);
+  const [isFollowBusy, setIsFollowBusy] = useState(false);
+  const showFollow = Boolean(moment.authorId) && !moment.isMine && !moment.isSample && (!moment.isFollowingAuthor || justFollowed);
+  const follow = async () => {
+    if (!isLoggedIn) return requireLogin('เพื่อติดตาม');
+    if (!moment.authorId || isFollowBusy) return;
+    setIsFollowBusy(true);
+    const result = await call(`/api/members/${encodeURIComponent(moment.authorId)}/actions`, 'POST', { action: 'follow' });
+    setIsFollowBusy(false);
+    if (!result.ok) return showToast(result.message);
+    setJustFollowed(true);
+    setMoment((m) => ({ ...m, isFollowingAuthor: true }));
+  };
+  const followLink = (onDark: boolean, place = '') =>
+    showFollow &&
+    (justFollowed ? (
+      <span className={`shrink-0 text-sm ${place} ${onDark ? 'text-white/80' : 'text-slate-500'}`}>กำลังติดตาม</span>
+    ) : (
+      <button
+        type="button"
+        onClick={follow}
+        disabled={isFollowBusy}
+        aria-label={`ติดตาม ${moment.userName}`}
+        className={`shrink-0 text-sm ${place} font-semibold pointer-events-auto hover:underline disabled:opacity-60 cursor-pointer ${onDark ? 'text-white' : 'text-[#2563EB] hover:text-[#1D4ED8]'}`}
+      >
+        ติดตาม
+      </button>
+    ));
 
   const toggle = (action: 'like' | 'unlike' | 'save' | 'unsave') => {
     if (!isLoggedIn) return requireLogin();
@@ -260,18 +287,22 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={moment.userName} src={moment.userAvatar} className="w-9 h-9 text-sm" />
                 <div className="min-w-0">
-                  {moment.authorId ? (
-                    <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="block text-sm font-bold truncate hover:underline pointer-events-auto">
-                      {moment.userName}
-                    </Link>
-                  ) : (
-                    <span className="block text-sm font-bold truncate">{moment.userName}</span>
-                  )}
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    {moment.authorId ? (
+                      <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="text-sm font-bold truncate hover:underline pointer-events-auto">
+                        {moment.userName}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-bold truncate">{moment.userName}</span>
+                    )}
+                  </div>
                   <TaggedFriends people={moment.tagged} className="text-xs text-white" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-white/80">
                     {moment.timeAgo}
                   </time>
                 </div>
+                {/* On a clip, follow ends the author row as an outlined pill, apart from the name (owner 2026-11-09) */}
+                {followLink(true, 'ml-auto rounded-full border border-white/70 px-3 py-1')}
               </div>
               <div className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
                 <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
@@ -371,13 +402,15 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               <div className="flex items-center gap-3">
                 <Avatar name={moment.userName} src={moment.userAvatar} className="w-10 h-10 text-sm" />
                 <div className="min-w-0">
-                  {moment.authorId ? (
-                    <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="block text-sm font-bold text-slate-900 hover:underline truncate">
-                      {moment.userName}
-                    </Link>
-                  ) : (
-                    <span className="block text-sm font-bold text-slate-900 truncate">{moment.userName}</span>
-                  )}
+                  <div className="flex items-baseline gap-1.5 min-w-0">
+                    {moment.authorId ? (
+                      <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="text-sm font-bold text-slate-900 hover:underline truncate">
+                        {moment.userName}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-bold text-slate-900 truncate">{moment.userName}</span>
+                    )}
+                  </div>
                   <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-slate-500">
                     {moment.timeAgo}
@@ -385,6 +418,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 </div>
                 {/* Share and report (or delete your own) sit with the author, away from the reactions */}
                 <div className="ml-auto flex items-center gap-0.5 shrink-0">
+                  {/* Follow leads the actions on the right, away from the name, so a tap meant for the profile never follows (owner 2026-11-09) */}
+                  {followLink(false, 'h-9 px-2 inline-flex items-center')}
                   {moment.isTaggedMe && (
                     <button type="button" onClick={removeMyTag} className={`${iconButton} text-slate-500`}>
                       <UserMinus className="w-4 h-4" aria-hidden="true" />

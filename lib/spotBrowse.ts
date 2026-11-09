@@ -91,7 +91,8 @@ export async function browseSpots(params: SpotBrowseParams): Promise<SpotBrowseR
   const province = params.province || ALL_PROVINCES;
   const category = params.category && params.category !== 'all' ? params.category : '';
   const ids = params.ids ? new Set(params.ids) : null;
-  const openedAt = params.openedAt ?? Date.now();
+  // Whole minutes: the list's address carries this time, and visitors in the same minute then share the CDN's copy
+  const openedAt = Math.floor((params.openedAt ?? Date.now()) / 60_000) * 60_000;
   const districts = province !== ALL_PROVINCES && params.districts?.length ? new Set(params.districts.map((name) => districtName(name, province))) : null;
   const now = Date.now();
   const districtCounts = new Map<string, number>();

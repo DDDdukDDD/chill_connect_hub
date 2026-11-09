@@ -256,9 +256,11 @@ export function mapDirectoryRecord(record: DirectoryRecord, sourceUrl: string, i
   const fee = isRestaurant ? undefined : formatFee(attraction.Info);
   const phone = unique([record.Telephone || '', record.Mobile || '']).join(', ');
 
+  const titleEn = (record.Name?.en || '').replace(/\s+/g, ' ').trim();
   return {
     id: `ttd-${record.ID}`,
     title,
+    ...(titleEn && titleEn !== title && { titleEn }),
     category,
     categoryLabel: isRestaurant ? DEFAULT_LABELS.cafe : labelTypes.slice(0, 2).join(' · ') || DEFAULT_LABELS[category],
     province,

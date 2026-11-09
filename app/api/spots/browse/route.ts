@@ -11,7 +11,8 @@ export async function GET(request: Request) {
     const ids = searchParams.get('ids');
     if (ids && ids.split(',').length > 500) return NextResponse.json({ success: false, error: 'Too many ids' }, { status: 400 });
     const result = await browseSpots(browseParamsFrom((key) => searchParams.get(key)));
-    return NextResponse.json({ success: true, ...result });
+    // The same answer for everyone (no session is read), so the CDN may keep it a minute, like GET /api/spots
+    return NextResponse.json({ success: true, ...result }, { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } });
   } catch (error) {
     console.error('GET /api/spots/browse failed:', error);
     return NextResponse.json({ success: false, error: 'Could not load places' }, { status: 500 });
