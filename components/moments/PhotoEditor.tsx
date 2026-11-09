@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Blend, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Blend, CopyCheck, Crop, Maximize2, Minimize2, Plus, Sticker, SunMedium, Type, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
-  FACE_STICKERS, FILTERS, ICON_STICKERS, drawFace, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
+  FILTERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
   type EditedPhoto, type FunSticker, type PhotoText, type PostShape,
 } from '@/lib/media/photoEdit';
 import { Segmented, TextTools, newText } from './EditorControls';
+import { StickerTools, newFunSticker } from './StickerTools';
 
 /**
  * Second step of posting photos, the way Instagram does it: the post's shape (1:1 or 4:5), crop, filter, light and
@@ -24,10 +25,7 @@ const TOOLS: { id: Tool; label: string; Icon: typeof Crop }[] = [
   { id: 'text', label: 'ข้อความ', Icon: Type },
   { id: 'sticker', label: 'สติกเกอร์', Icon: Sticker },
 ];
-const ICON_BUTTONS: Record<string, typeof Heart> = { heart: Heart, star: Star, sparkles: Sparkles, sun: Sun, coffee: Coffee, food: UtensilsCrossed, music: Music, camera: Camera, flower: Flower2 };
 const PREVIEW_WIDTH = 900;
-/** Where new stickers land, in turn (shares of the frame) */
-const STICKER_SPOTS: [number, number][] = [[0.3, 0.25], [0.7, 0.4], [0.3, 0.6], [0.7, 0.75], [0.5, 0.5]];
 /** How long a finger rests on a thumbnail before it can be dragged; moving sooner scrolls the row instead */
 const HOLD_MS = 280;
 
@@ -41,22 +39,6 @@ interface PhotoEditorProps {
   onShapeChange: (shape: PostShape) => void;
   onBack: () => void;
   onNext: () => void;
-}
-
-/** A feeling face for the picker, drawn by the same code that puts it on the photo */
-function FaceButtonArt({ value }: { value: string }) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const ctx = canvas.current?.getContext('2d');
-    const face = FACE_STICKERS[value];
-    if (!ctx || !face) return;
-    ctx.clearRect(0, 0, 96, 96);
-    ctx.save();
-    ctx.scale(4, 4);
-    drawFace(ctx, face, STICKER_STYLES.find((s) => s.id === 'yellow') ?? STICKER_STYLES[0]);
-    ctx.restore();
-  }, [value]);
-  return <canvas ref={canvas} width={96} height={96} className="w-11 h-11" aria-hidden="true" />;
 }
 
 /** One filter's look on this photo, small */
@@ -257,13 +239,9 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
 
   const addFun = (kind: FunSticker['kind'], value: string) => {
     if (photo.stickers.length >= MAX_FUN_STICKERS) return;
-    const id = `s${Math.max(0, ...photo.stickers.map((s) => Number(s.id.slice(1)))) + 1}`;
-    // Each new one lands on its own spot, so they do not hide each other
-    const [x, y] = STICKER_SPOTS[photo.stickers.length % STICKER_SPOTS.length];
-    // Faces start yellow, like the faces everyone knows; icons and words start rose
-    const sticker: FunSticker = { id, kind, value, style: kind === 'face' ? 'yellow' : 'rose', x, y, scale: 1 };
+    const sticker = newFunSticker(photo.stickers, kind, value);
     update({ stickers: [...photo.stickers, sticker] });
-    setSelectedFun(id);
+    setSelectedFun(sticker.id);
   };
   const editFun = (change: Partial<FunSticker>) => update({ stickers: photo.stickers.map((s) => (s.id === selectedFun ? { ...s, ...change } : s)) });
   const removeFun = () => {
@@ -407,59 +385,9 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       {tool === 'text' && (
         <TextTools text={textOn} hasTexts={photo.texts.length > 0} on="รูป" onType={typeText} onEdit={editText} onRemove={removeText} onNew={() => setSelectedText(null)} />
       )}
-      {tool === 'sticker' &&
-        (funOn ? (
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5" role="group" aria-label={funOn.kind !== 'word' ? 'สีไอคอน' : 'สีสติกเกอร์'}>
-              {STICKER_STYLES.map((style) => (
-                <button key={style.id} type="button" onClick={() => editFun({ style: style.id })} aria-label={`สี${style.label}`} aria-pressed={funOn.style === style.id} style={{ background: style.fill }} className={`w-7 h-7 rounded-full border cursor-pointer ${funOn.style === style.id ? 'ring-2 ring-offset-1 ring-[#2563EB] border-transparent' : 'border-slate-300'}`} />
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Segmented label="ขนาดสติกเกอร์" options={STICKER_SCALES} value={funOn.scale} onChange={(scale) => editFun({ scale })} />
-              <button type="button" onClick={removeFun} className="h-8 px-3 rounded-full bg-slate-100 hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-600 cursor-pointer inline-flex items-center gap-1">
-                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                ลบ
-              </button>
-              <button type="button" onClick={() => setSelectedFun(null)} className="h-8 px-2.5 rounded-full text-xs font-bold text-[#2563EB] hover:bg-blue-50 cursor-pointer inline-flex items-center gap-1">
-                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-                เพิ่มสติกเกอร์อื่น
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">ลากสติกเกอร์บนรูปไปวางตรงที่ชอบ</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Feelings first: they say the most about the moment */}
-            <div className="grid grid-cols-4 sm:portrait:grid-cols-8 gap-1.5" role="group" aria-label="สติกเกอร์ความรู้สึก">
-              {Object.entries(FACE_STICKERS).map(([key, { label }]) => (
-                <button key={key} type="button" onClick={() => addFun('face', key)} disabled={photo.stickers.length >= MAX_FUN_STICKERS} aria-label={`ติดหน้า${label}`} title={label} className="aspect-square rounded-2xl bg-slate-100 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-transform active:scale-90">
-                  <FaceButtonArt value={key} />
-                </button>
-              ))}
-            </div>
-            <div className="space-y-1.5">
-              <div className="grid grid-cols-5 sm:portrait:grid-cols-9 gap-1.5" role="group" aria-label="สติกเกอร์ไอคอน">
-                {Object.entries(ICON_STICKERS).map(([key, { label }]) => {
-                  const Icon = ICON_BUTTONS[key];
-                  return (
-                    <button key={key} type="button" onClick={() => addFun('icon', key)} disabled={photo.stickers.length >= MAX_FUN_STICKERS} aria-label={`ติดสติกเกอร์${label}`} className="aspect-square rounded-2xl bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-[#F43F5E] flex items-center justify-center cursor-pointer">
-                      <Icon className="w-6 h-6" aria-hidden="true" />
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label="สติกเกอร์คำ">
-                {WORD_STICKERS.map((word) => (
-                  <button key={word} type="button" onClick={() => addFun('word', word)} disabled={photo.stickers.length >= MAX_FUN_STICKERS} className="h-8 px-3 rounded-full bg-[#F43F5E] hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold text-white whitespace-nowrap cursor-pointer">
-                    {word}
-                  </button>
-                ))}
-              </div>
-              {photo.stickers.length >= MAX_FUN_STICKERS && <p className="text-xs text-slate-500">ติดได้สูงสุด {MAX_FUN_STICKERS} ชิ้นต่อรูป</p>}
-            </div>
-          </div>
-        ))}
+      {tool === 'sticker' && (
+        <StickerTools sticker={funOn} count={photo.stickers.length} on="รูป" onAdd={addFun} onEdit={editFun} onRemove={removeFun} onNew={() => setSelectedFun(null)} />
+      )}
     </>
   );
 

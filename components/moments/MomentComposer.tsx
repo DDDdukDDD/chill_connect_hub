@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
@@ -13,9 +13,9 @@ import { ClipEditor } from '@/components/moments/ClipEditor';
 import { PhotoEditor } from '@/components/moments/PhotoEditor';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
-import { clipFrame, coverWithText, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
+import { clipFrame, coverWithEdits, plainCover, readClipDuration, withClipType } from '@/lib/media/clip';
 import { canShrinkClips } from '@/lib/media/clipCompress';
-import { drawBase, drawOverlays, newPhoto, type EditedPhoto, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
+import { drawBase, drawOverlays, newPhoto, type EditedPhoto, type FunSticker, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { startPosting } from '@/lib/moments/postingJobs';
 import { publishMoment, type UploadsSoFar } from '@/components/moments/publishMoment';
 import { DEFAULT_CLIP_SECONDS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
@@ -113,8 +113,10 @@ function EditedThumb({ photo, shape, width = 200, className = 'w-full h-full obj
   return <canvas ref={canvas} width={width} height={height} className={className} aria-hidden="true" />;
 }
 
-/** A clip on its way to a post: the chosen part, the cover's moment, text on it, and whether it keeps its sound */
-type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number; coverAtS: number; texts: PhotoText[]; muted: boolean; cover?: string };
+/** A clip on its way to a post: the chosen part, its filter, text and stickers, and whether it keeps its sound */
+type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number; filter: string; texts: PhotoText[]; stickers: FunSticker[]; muted: boolean; cover?: string };
+/** The cover is this far into the chosen part: the very first frame is often dark or blurred (owner 2026-11-09) */
+const COVER_OFFSET_S = 0.5;
 
 export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
   const session = useMemberSession();
@@ -144,8 +146,6 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [savedSpotTargets, setSavedSpotTargets] = useState<MomentLinkTarget[]>([]);
   const [savedEvents, setSavedEvents] = useState<EventItem[]>([]);
   const [openedAt] = useState(() => Date.now());
-  // Steady, because the clip editor keeps the cover inside the chosen part with an effect that calls it
-  const setCoverAt = useCallback((coverAtS: number) => setClip((prev) => (prev && prev.coverAtS !== coverAtS ? { ...prev, coverAtS } : prev)), []);
   const activity = useMyActivity();
   const { joinedQuestIds } = useMyRewards(true);
 
@@ -278,7 +278,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     try {
       const fullSeconds = await readClipDuration(file);
       // A clip within the limit starts whole; a longer one starts with the first DEFAULT_CLIP_SECONDS (owner 2026-11-09)
-      setClip({ file, fullSeconds, startS: 0, endS: fullSeconds <= MAX_VIDEO_SECONDS ? fullSeconds : DEFAULT_CLIP_SECONDS, coverAtS: 0, texts: [], muted: false });
+      setClip({ file, fullSeconds, startS: 0, endS: fullSeconds <= MAX_VIDEO_SECONDS ? fullSeconds : DEFAULT_CLIP_SECONDS, filter: 'none', texts: [], stickers: [], muted: false });
       setStep('clip');
     } catch {
       onToast('อุปกรณ์นี้เปิดคลิปนี้ไม่ได้ ลองเลือกจากมือถือ หรือแปลงเป็น MP4 นะ');
@@ -298,12 +298,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Leaving the clip step: the chosen frame, with the clip's text on it, becomes the cover every grid shows */
+  /** Leaving the clip step: a frame near the start of the part, with the clip's edits on it, becomes the cover every grid shows */
   const finishClip = async () => {
     if (!clip) return;
     setIsPreparing(true);
-    const frame = await clipFrame(clip.file, clip.coverAtS);
-    const cover = frame ? await coverWithText(frame, clip.texts) : plainCover();
+    const frame = await clipFrame(clip.file, Math.min(clip.endS, clip.startS + COVER_OFFSET_S));
+    const cover = frame ? await coverWithEdits(frame, clip) : plainCover();
     setClip({ ...clip, cover });
     setIsPreparing(false);
     setStep('details');
@@ -322,7 +322,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     const draft = {
       photos,
       shape,
-      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, endS: clip.endS, texts: clip.texts, muted: clip.muted, cover: clip.cover } : null,
+      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, endS: clip.endS, filter: clip.filter, texts: clip.texts, stickers: clip.stickers, muted: clip.muted, cover: clip.cover } : null,
       caption: caption.trim(),
       location,
       target: linkedTarget,
@@ -430,34 +430,45 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
               {isPreparing ? (
                 <p role="status" className="py-10 text-center text-sm font-semibold text-slate-600">กำลังเปิดไฟล์…</p>
               ) : (
-                // One way in (owner 2026-11-09): the file says whether it is photos or a clip, like Instagram's gallery
-                <label className="group rounded-3xl bg-linear-to-br from-[#FFF1F2] to-[#EFF6FF] hover:from-[#FFE4E6] hover:to-[#DBEAFE] transition-colors text-center cursor-pointer flex flex-col items-center gap-2 px-4 py-9 focus-within:ring-2 focus-within:ring-[#2563EB]">
-                  <span className="flex items-center -space-x-2 transition-transform group-hover:scale-105 group-active:scale-95" aria-hidden="true">
-                    <span className="w-12 h-12 rounded-2xl bg-white shadow-sm -rotate-6 flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6 text-[#F43F5E]" />
+                // Two ways in again (owner 2026-11-09): people already know whether they came to post photos or a clip
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="group rounded-3xl bg-linear-to-br from-[#FFF1F2] to-[#FFE4E6]/60 hover:to-[#FFE4E6] transition-colors text-center cursor-pointer flex flex-col items-center gap-2 px-3 py-8 focus-within:ring-2 focus-within:ring-[#F43F5E]">
+                    <span className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center transition-transform group-hover:scale-105 group-active:scale-95" aria-hidden="true">
+                      <ImageIcon className="w-7 h-7 text-[#F43F5E]" />
                     </span>
-                    <span className="w-12 h-12 rounded-2xl bg-white shadow-sm rotate-6 flex items-center justify-center">
-                      <Video className="w-6 h-6 text-[#2563EB]" />
+                    <span className="text-base font-bold text-slate-900">โพสต์รูป</span>
+                    <span className="text-xs text-slate-600">ได้ถึง {MAX_MOMENT_IMAGES} รูป</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        e.target.value = '';
+                        if (files.length) void addPhotos(files);
+                      }}
+                    />
+                  </label>
+                  <label className="group rounded-3xl bg-linear-to-br from-[#EFF6FF] to-[#DBEAFE]/60 hover:to-[#DBEAFE] transition-colors text-center cursor-pointer flex flex-col items-center gap-2 px-3 py-8 focus-within:ring-2 focus-within:ring-[#2563EB]">
+                    <span className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center transition-transform group-hover:scale-105 group-active:scale-95" aria-hidden="true">
+                      <Video className="w-7 h-7 text-[#2563EB]" />
                     </span>
-                  </span>
-                  <span className="text-base font-bold text-slate-900">เลือกรูปหรือคลิป</span>
-                  <span className="text-xs text-slate-600">รูปได้ถึง {MAX_MOMENT_IMAGES} รูป · คลิปยาวได้ถึง {MAX_VIDEO_SECONDS} วิ</span>
-                  {/* image/* and video/*, not a list of types: phones then open the gallery as well as the camera */}
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="sr-only"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files ?? []);
-                      e.target.value = '';
-                      // A clip in the pick wins and posts on its own (a post is photos or one clip)
-                      const video = files.find((file) => file.type.startsWith('video/') || /\.(mp4|m4v|mov|qt|webm)$/i.test(file.name));
-                      if (video) void addClip(video);
-                      else if (files.length) void addPhotos(files);
-                    }}
-                  />
-                </label>
+                    <span className="text-base font-bold text-slate-900">โพสต์คลิป</span>
+                    <span className="text-xs text-slate-600">ยาวได้ถึง {MAX_VIDEO_SECONDS} วิ</span>
+                    {/* video/*, not a list of types: phones then open the gallery as well as the camera */}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) void addClip(file);
+                      }}
+                    />
+                  </label>
+                </div>
               )}
             </div>
           </>
@@ -481,24 +492,25 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
         {step === 'clip' && clip && (
           <ClipEditor
+            key={`${clip.file.name}-${clip.file.size}-${clip.file.lastModified}`}
             file={clip.file}
             fullSeconds={clip.fullSeconds}
             startS={clip.startS}
             endS={clip.endS}
             onRangeChange={(startS, endS) => setClip({ ...clip, startS, endS })}
-            coverAtS={clip.coverAtS}
-            onCoverChange={setCoverAt}
+            filter={clip.filter}
+            onFilterChange={(filter) => setClip({ ...clip, filter })}
             texts={clip.texts}
             onTextsChange={(texts) => setClip({ ...clip, texts })}
+            stickers={clip.stickers}
+            onStickersChange={(stickers) => setClip({ ...clip, stickers })}
             muted={clip.muted}
             onMutedChange={(muted) => setClip({ ...clip, muted })}
             canEdit={canShrinkClips()}
             isBusy={isPreparing}
             onBack={leave}
-            onReplace={() => {
-              setClip(null);
-              setStep('pick');
-            }}
+            // Straight to the clip picker: they came to post a clip (owner 2026-11-09); the current one stays if they cancel
+            onReplace={(file) => void addClip(file)}
             onNext={() => void finishClip()}
           />
         )}

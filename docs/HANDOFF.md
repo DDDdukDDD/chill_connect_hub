@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-324 · Posting, round 2: clip editor (owner 2026-11-09)
+- **What changed:** the pick step is two choices again, โพสต์รูป / โพสต์คลิป (owner: people already know which they came to post), in the new soft style. Clip editor tools: ช่วงคลิป · ฟิลเตอร์ · ข้อความ · สติกเกอร์ · เสียง. The part is chosen on a filmstrip of 10 frames with two white handles and a playhead. The ปก tool is gone: the cover is the frame 0.5 s into the part, with the filter, text and stickers on it. Filters are the same seven names as photos, defined as CSS filter steps in `lib/media/clipFilter.ts`: CSS on the preview, the canvas `filter` per frame when posting, worked out pixel by pixel on Safari (no canvas `filter`) with the CSS spec's matrices, so an iPhone posts the look it previewed. Stickers reuse the photo set through the new shared `components/moments/StickerTools.tsx`. เลือกคลิปใหม่ opens the clip picker directly; cancelling keeps the current clip. Text and sticker sizes now follow the frame's short side (`lib/media/photoEdit.ts`), so they are no longer oversized on a wide clip; photos (1:1, 4:5) look the same as before. A sticker's size is a slider (0.4–2×) instead of three steps. Trim handles are blue with a white grip so they show on the white panel.
+- **Not done (by choice):** music (rights), speed, joining several parts.
+- **What to do about it:** walk a real phone (iPhone especially): filter look in the posted clip vs the preview, and how long posting takes with a filter on (Safari reads back every frame).
+
 ### BE-323 · Page scroll lock is counted (owner report 2026-11-09)
 - **What changed:** the owner twice saw the live home feed stop scrolling after posting a clip (menus still worked, a reload fixed it). Not reproduced in headless Chrome. Most likely cause: two scroll locks that "remember and put back" `body.style.overflow` and release in the other order, leaving `hidden`. `lockPageScroll()` in `components/auth/DialogShell.tsx` now counts open locks; `useDialogBehavior` and the full-screen clip page (`MomentDetailView`) use it. Walked: feed → full-screen clip → back, page scrolls.
 - **What to do about it:** any new full-screen layer uses `lockPageScroll()`, never its own overflow write. If the owner sees it again, note the phone, browser and the last taps before it.

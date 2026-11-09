@@ -184,7 +184,8 @@ export function drawFace(ctx: Ctx, face: FaceSticker, style: { fill: string; ink
   ctx.fillStyle = '#60A5FA';
   face.tears?.forEach((d) => ctx.fill(new Path2D(d)));
 }
-export const STICKER_SCALES: [string, number][] = [['เล็ก', 0.75], ['กลาง', 1], ['ใหญ่', 1.4]];
+/** A sticker's size slides between these (1 is the normal size, measured on the frame's short side) */
+export const STICKER_SCALE_RANGE = { min: 0.4, max: 2 } as const;
 export const MAX_FUN_STICKERS = 8;
 
 export function newPhoto(id: string, url: string, image: HTMLImageElement): EditedPhoto {
@@ -311,23 +312,24 @@ function roundedRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: nu
 
 /**
  * One text, centred on its point. `font` is passed in where `document` is not around to read it (a clip's frames are
- * drawn while it converts).
+ * drawn while it converts). Sizes follow the frame's short side, so text on a wide clip is not oversized (owner 2026-11-09).
  */
 export function drawText(ctx: Ctx, t: PhotoText, w: number, h: number, font = fontFamily()) {
-  const { lines, lineHeight, boxW, boxH } = layoutText(ctx, t, w, font);
+  const side = Math.min(w, h);
+  const { lines, lineHeight, boxW, boxH } = layoutText(ctx, t, side, font);
   const [cx, cy] = [t.x * w, t.y * h];
   ctx.save();
   let ink = t.color;
   if (t.background === 'solid' || t.background === 'soft') {
     // The box takes the chosen colour; the letters turn ink or white so they stay readable
     ctx.fillStyle = t.background === 'solid' ? t.color : withAlpha(t.color, SOFT_ALPHA);
-    roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, t.size * w * 0.35);
+    roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, t.size * side * 0.35);
     ctx.fill();
     ink = LIGHT_TEXT_COLORS.includes(t.color) ? INK : '#FFFFFF';
   } else {
     ctx.shadowColor = t.color === INK ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)';
-    ctx.shadowBlur = w * 0.02;
-    ctx.shadowOffsetY = w * 0.002;
+    ctx.shadowBlur = side * 0.02;
+    ctx.shadowOffsetY = side * 0.002;
   }
   ctx.fillStyle = ink;
   ctx.textAlign = 'center';
@@ -340,12 +342,6 @@ export function drawText(ctx: Ctx, t: PhotoText, w: number, h: number, font = fo
     ctx.fillText(line, cx, middle + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   });
   ctx.restore();
-}
-
-/** Where a text sits, for finding what was touched */
-export function textBox(ctx: Ctx, t: PhotoText, w: number) {
-  const { boxW, boxH } = layoutText(ctx, t, w);
-  return { boxW, boxH };
 }
 
 const STICKER_FONT = 0.034;
@@ -407,14 +403,16 @@ function layoutFun(ctx: Ctx, s: FunSticker, w: number) {
   return { boxW: Math.max(m.width, ink) * 1.06 + fontPx * 1.6, boxH: fontPx * 1.9, fontPx };
 }
 
+/** Sized by the frame's short side, like text */
 function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
-  const { boxW, boxH, fontPx } = layoutFun(ctx, s, w);
+  const side = Math.min(w, h);
+  const { boxW, boxH, fontPx } = layoutFun(ctx, s, side);
   const style = styleOf(s.style);
   const [cx, cy] = [s.x * w, s.y * h];
   if (s.kind === 'word') {
     ctx.save();
     ctx.shadowColor = 'rgba(15,23,42,0.28)';
-    ctx.shadowBlur = w * 0.016;
+    ctx.shadowBlur = side * 0.016;
     ctx.fillStyle = style.fill;
     roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, boxH / 2);
     ctx.fill();
@@ -426,7 +424,7 @@ function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
     ctx.translate(cx - boxW / 2, cy - boxH / 2);
     ctx.scale(boxW / 24, boxH / 24);
     ctx.shadowColor = 'rgba(15,23,42,0.3)';
-    ctx.shadowBlur = w * 0.012;
+    ctx.shadowBlur = side * 0.012;
     if (face) drawFace(ctx, face, style);
   } else if (s.kind === 'icon') {
     // The icon alone, in the chosen colour; a soft shadow keeps it readable on a light or busy photo
@@ -435,7 +433,7 @@ function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
     ctx.translate(cx - side / 2, cy - side / 2);
     ctx.scale(side / 24, side / 24);
     ctx.shadowColor = 'rgba(15,23,42,0.4)';
-    ctx.shadowBlur = w * 0.012;
+    ctx.shadowBlur = side * 0.012;
     ctx.strokeStyle = style.fill;
     ctx.lineWidth = 2.4;
     ctx.lineCap = 'round';
@@ -451,7 +449,10 @@ function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
   ctx.restore();
 }
 
-export function drawOverlays(ctx: CanvasRenderingContext2D, photo: EditedPhoto, w: number, h: number) {
+/** Text and stickers over a photo or a clip */
+export type Overlays = Pick<EditedPhoto, 'texts' | 'stickers'> & { sticker?: PhotoSticker };
+
+export function drawOverlays(ctx: Ctx, photo: Overlays, w: number, h: number) {
   if (photo.sticker) drawPlaceSticker(ctx, photo.sticker, w, h);
   photo.stickers.forEach((s) => drawFun(ctx, s, w, h));
   photo.texts.forEach((t) => drawText(ctx, t, w, h));
@@ -460,14 +461,15 @@ export function drawOverlays(ctx: CanvasRenderingContext2D, photo: EditedPhoto, 
 export type OverlayHit = { type: 'text'; id: string } | { type: 'fun'; id: string } | { type: 'sticker' };
 
 /** What sits under a point (0..1 of the frame): the newest text first, then fun stickers, then the place sticker */
-export function hitOverlay(ctx: CanvasRenderingContext2D, photo: EditedPhoto, w: number, h: number, x: number, y: number): OverlayHit | null {
+export function hitOverlay(ctx: Ctx, photo: Overlays, w: number, h: number, x: number, y: number): OverlayHit | null {
   const inside = (cx: number, cy: number, bw: number, bh: number) => Math.abs((x - cx) * w) <= bw / 2 && Math.abs((y - cy) * h) <= bh / 2;
+  const side = Math.min(w, h);
   for (const t of [...photo.texts].reverse()) {
-    const { boxW, boxH } = layoutText(ctx, t, w);
+    const { boxW, boxH } = layoutText(ctx, t, side);
     if (inside(t.x, t.y, boxW, boxH)) return { type: 'text', id: t.id };
   }
   for (const s of [...photo.stickers].reverse()) {
-    const { boxW, boxH } = layoutFun(ctx, s, w);
+    const { boxW, boxH } = layoutFun(ctx, s, side);
     if (inside(s.x, s.y, boxW, boxH)) return { type: 'fun', id: s.id };
   }
   if (photo.sticker) {
