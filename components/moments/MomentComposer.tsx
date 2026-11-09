@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
 import { useMentionPicker } from '@/components/moments/MentionPicker';
 import { PlacePicker } from '@/components/moments/PlacePicker';
@@ -428,40 +428,34 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
               {isPreparing ? (
                 <p role="status" className="py-10 text-center text-sm font-semibold text-slate-600">กำลังเปิดไฟล์…</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="rounded-2xl bg-[#FFF1F2] hover:bg-[#FFE4E6] transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-[#F43F5E]">
-                    <ImageIcon className="w-7 h-7 text-[#F43F5E]" aria-hidden="true" />
-                    <span className="text-base font-bold text-slate-900">โพสต์รูป</span>
-                    <span className="text-xs text-slate-600 leading-relaxed">สูงสุด {MAX_MOMENT_IMAGES} รูป แต่งรูป ติดสติกเกอร์ได้</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="sr-only"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files ?? []);
-                        e.target.value = '';
-                        if (files.length) void addPhotos(files);
-                      }}
-                    />
-                  </label>
-                  <label className="rounded-2xl bg-slate-100 hover:bg-slate-200 transition-colors text-center cursor-pointer flex flex-col items-center gap-1.5 px-3 py-7 focus-within:ring-2 focus-within:ring-slate-500">
-                    <Video className="w-7 h-7 text-slate-700" aria-hidden="true" />
-                    <span className="text-base font-bold text-slate-900">โพสต์คลิป</span>
-                    <span className="text-xs text-slate-600 leading-relaxed">เลือกช่วงได้ถึง {MAX_VIDEO_SECONDS} วินาที เลือกปก ใส่ข้อความได้</span>
-                    {/* video/*, not a list of types: phones then open the gallery as well as the camera */}
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        e.target.value = '';
-                        if (file) void addClip(file);
-                      }}
-                    />
-                  </label>
-                </div>
+                // One way in (owner 2026-11-09): the file says whether it is photos or a clip, like Instagram's gallery
+                <label className="group rounded-3xl bg-linear-to-br from-[#FFF1F2] to-[#EFF6FF] hover:from-[#FFE4E6] hover:to-[#DBEAFE] transition-colors text-center cursor-pointer flex flex-col items-center gap-2 px-4 py-9 focus-within:ring-2 focus-within:ring-[#2563EB]">
+                  <span className="flex items-center -space-x-2 transition-transform group-hover:scale-105 group-active:scale-95" aria-hidden="true">
+                    <span className="w-12 h-12 rounded-2xl bg-white shadow-sm -rotate-6 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6 text-[#F43F5E]" />
+                    </span>
+                    <span className="w-12 h-12 rounded-2xl bg-white shadow-sm rotate-6 flex items-center justify-center">
+                      <Video className="w-6 h-6 text-[#2563EB]" />
+                    </span>
+                  </span>
+                  <span className="text-base font-bold text-slate-900">เลือกรูปหรือคลิป</span>
+                  <span className="text-xs text-slate-600">รูปได้ถึง {MAX_MOMENT_IMAGES} รูป · คลิปยาวได้ถึง {MAX_VIDEO_SECONDS} วิ</span>
+                  {/* image/* and video/*, not a list of types: phones then open the gallery as well as the camera */}
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="sr-only"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = '';
+                      // A clip in the pick wins and posts on its own (a post is photos or one clip)
+                      const video = files.find((file) => file.type.startsWith('video/') || /\.(mp4|m4v|mov|qt|webm)$/i.test(file.name));
+                      if (video) void addClip(video);
+                      else if (files.length) void addPhotos(files);
+                    }}
+                  />
+                </label>
               )}
             </div>
           </>
@@ -567,10 +561,22 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
 
               {placeField}
 
-              <div>
-                <p className="text-sm font-bold text-slate-900">ตั้งค่าโพสต์</p>
-                <PostOptionFields value={options} onChange={setOptions} />
-              </div>
+              {/* Most people never change these, so they fold away behind one row that says what is set (owner 2026-11-09) */}
+              <details className="group -mt-5 border-b border-slate-100">
+                <summary className="flex items-center gap-3 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <Settings2 className="w-5 h-5 shrink-0 text-slate-500" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-slate-900">ตั้งค่าเพิ่มเติม</span>
+                    <span className="block text-xs text-slate-500 truncate">
+                      {OPTION_ROWS.filter(([key]) => options[key]).map(([, label]) => label).join(' · ') || 'ทุกคนคอมเมนต์ ไลก์ และแชร์ได้'}
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 shrink-0 text-slate-400 transition-transform group-open:rotate-90" aria-hidden="true" />
+                </summary>
+                <div className="pb-2 pl-8">
+                  <PostOptionFields value={options} onChange={setOptions} />
+                </div>
+              </details>
             </div>
           </form>
         )}

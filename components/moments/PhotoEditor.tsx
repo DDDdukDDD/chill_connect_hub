@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowLeft, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, SlidersHorizontal, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
   FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
@@ -20,7 +20,7 @@ type Tool = 'crop' | 'filter' | 'light' | 'text' | 'sticker';
 const TOOLS: { id: Tool; label: string; Icon: typeof Crop }[] = [
   { id: 'crop', label: 'ครอป', Icon: Crop },
   { id: 'filter', label: 'ฟิลเตอร์', Icon: Sparkles },
-  { id: 'light', label: 'ปรับแสง', Icon: SunMedium },
+  { id: 'light', label: 'แสง', Icon: SunMedium },
   { id: 'text', label: 'ข้อความ', Icon: Type },
   { id: 'sticker', label: 'สติกเกอร์', Icon: Sticker },
 ];
@@ -57,25 +57,24 @@ function FilterPreview({ photo, filter }: { photo: EditedPhoto; filter: string }
     applyTone(data, toneOf({ filter, light: 0, contrast: 0, color: 0 }));
     ctx.putImageData(data, 0, 0);
   }, [photo.image, filter]);
-  return <canvas ref={canvas} width={72} height={72} className="w-16 h-16 rounded-xl" aria-hidden="true" />;
+  return <canvas ref={canvas} width={72} height={72} className="w-14 h-14 rounded-full" aria-hidden="true" />;
 }
 
-function Slider({ label, value, min, max, step, onChange, shown }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void; shown?: string }) {
+/** A light slider: the name on the left, a small number only once it moves off zero */
+function Slider({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) {
   return (
-    <label className="block">
-      <span className="flex items-center justify-between text-xs font-semibold text-slate-700">
-        {label}
-        <span className="tabular-nums text-slate-500">{shown ?? value}</span>
-      </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-8 accent-[#2563EB] cursor-pointer" />
+    <label className="flex items-center gap-3">
+      <span className="w-16 shrink-0 text-xs font-semibold text-slate-700">{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} onDoubleClick={() => onChange(0)} className="flex-1 h-8 accent-[#2563EB] cursor-pointer" />
+      <span className={`w-8 shrink-0 text-right text-xs tabular-nums ${value ? 'font-semibold text-slate-700' : 'text-transparent'}`}>{value > 0 ? `+${value}` : value}</span>
     </label>
   );
 }
 
-/** Copies one photo's filter or light to the others */
+/** Copies one photo's filter or light to the others; quiet, so it never looks like the main action */
 function ApplyAll({ onClick, done }: { onClick: () => void; done: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap">
+    <button type="button" onClick={onClick} className="h-8 px-2 rounded-full text-xs font-semibold text-[#2563EB] hover:bg-blue-50 cursor-pointer inline-flex items-center gap-1 whitespace-nowrap">
       <CopyCheck className="w-4 h-4" aria-hidden="true" />
       {done ? 'ใช้กับทุกรูปแล้ว' : 'ใช้กับทุกรูป'}
     </button>
@@ -88,6 +87,8 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [selectedFun, setSelectedFun] = useState<string | null>(null);
   const [copied, setCopied] = useState<'filter' | 'light' | null>(null);
+  // Brightness is what most people touch; contrast and colour wait behind "ปรับเพิ่ม"
+  const [moreLight, setMoreLight] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const base = useRef<HTMLCanvasElement | null>(null);
   const baseKey = useRef('');
@@ -106,6 +107,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
   const funOn = photo?.stickers.find((s) => s.id === selectedFun) ?? null;
   /** Below 1 the whole photo shows, with white around it */
   const fitZoom = photo ? minZoom(photo, shape) : 1;
+  const isWhole = Boolean(photo) && fitZoom < 1 && photo.zoom < 1;
 
   useEffect(() => {
     loadEditorFont()?.then(() => setFontReady((n) => n + 1));
@@ -325,18 +327,49 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
   const panel = (
     <>
       {tool === 'crop' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
+          {/* The shape is the post's, so it reads as a choice for the whole post */}
           <Segmented label="รูปทรงโพสต์" options={POST_SHAPES.map((s) => [s.label, s.ratio] as [string, PostShape])} value={shape} onChange={onShapeChange} />
-          <Slider label="ซูม" value={Math.max(photo.zoom, fitZoom)} min={fitZoom} max={MAX_ZOOM} step={0.01} shown={fitZoom < 1 && photo.zoom <= fitZoom + 0.005 ? 'เห็นทั้งรูป' : `${photo.zoom.toFixed(1)}x`} onChange={(zoom) => update({ zoom, ...clampPan({ ...photo, zoom }, shape, photo.panX, photo.panY) })} />
-          <p className="text-xs text-slate-500">{fitZoom < 1 ? 'เลื่อนซ้ายสุดเพื่อเห็นทั้งรูป ลากบนรูปเพื่อเลื่อน' : 'ลากบนรูปเพื่อเลื่อน'} ทุกรูปในโพสต์ใช้รูปทรงเดียวกัน</p>
+          <div className="flex items-center gap-2">
+            <ZoomOut className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+            <input
+              type="range"
+              aria-label="ซูม"
+              min={1}
+              max={MAX_ZOOM}
+              step={0.01}
+              value={Math.max(1, photo.zoom)}
+              onChange={(e) => {
+                const zoom = Number(e.target.value);
+                update({ zoom, ...clampPan({ ...photo, zoom }, shape, photo.panX, photo.panY) });
+              }}
+              className="flex-1 h-8 accent-[#2563EB] cursor-pointer"
+            />
+            <ZoomIn className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+            {/* "See it all" is its own button, not the far end of the zoom slider (owner 2026-11-09: that read as confusing) */}
+            {fitZoom < 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const zoom = isWhole ? 1 : fitZoom;
+                  update({ zoom, ...clampPan({ ...photo, zoom }, shape, 0, 0) });
+                }}
+                aria-pressed={isWhole}
+                className={`shrink-0 h-8 px-3 rounded-full text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors ${isWhole ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                {isWhole ? <Maximize2 className="w-3.5 h-3.5" aria-hidden="true" /> : <Minimize2 className="w-3.5 h-3.5" aria-hidden="true" />}
+                {isWhole ? 'เต็มกรอบ' : 'ทั้งรูป'}
+              </button>
+            )}
+          </div>
         </div>
       )}
       {tool === 'filter' && (
-        <div className="space-y-2">
-          <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+        <div className="space-y-1">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 py-1">
             {FILTERS.map((f) => (
-              <button key={f.id} type="button" onClick={() => { update({ filter: f.id }); setCopied(null); }} aria-pressed={photo.filter === f.id} className="shrink-0 flex flex-col items-center gap-1 cursor-pointer">
-                <span className={`rounded-[14px] p-0.5 border-2 ${photo.filter === f.id ? 'border-[#2563EB]' : 'border-transparent'}`}>
+              <button key={f.id} type="button" onClick={() => { update({ filter: f.id }); setCopied(null); }} aria-pressed={photo.filter === f.id} className="group shrink-0 flex flex-col items-center gap-1 cursor-pointer">
+                <span className={`rounded-full p-0.5 ring-2 transition-transform group-active:scale-95 ${photo.filter === f.id ? 'ring-[#2563EB]' : 'ring-transparent'}`}>
                   <FilterPreview photo={photo} filter={f.id} />
                 </span>
                 <span className={`text-xs ${photo.filter === f.id ? 'font-bold text-slate-900' : 'font-medium text-slate-600'}`}>{f.label}</span>
@@ -348,10 +381,22 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       )}
       {tool === 'light' && (
         <div className="space-y-0.5">
-          <Slider label="ความสว่าง" value={photo.light} min={-100} max={100} step={1} onChange={(light) => { update({ light }); setCopied(null); }} />
-          <Slider label="คอนทราสต์" value={photo.contrast} min={-100} max={100} step={1} onChange={(contrast) => { update({ contrast }); setCopied(null); }} />
-          <Slider label="ความสด" value={photo.color} min={-100} max={100} step={1} onChange={(color) => { update({ color }); setCopied(null); }} />
-          {photos.length > 1 && <div className="pt-1.5"><ApplyAll onClick={() => copyToAll('light')} done={copied === 'light'} /></div>}
+          <Slider label="สว่าง" value={photo.light} min={-100} max={100} step={1} onChange={(light) => { update({ light }); setCopied(null); }} />
+          {moreLight && (
+            <>
+              <Slider label="คอนทราสต์" value={photo.contrast} min={-100} max={100} step={1} onChange={(contrast) => { update({ contrast }); setCopied(null); }} />
+              <Slider label="ความสด" value={photo.color} min={-100} max={100} step={1} onChange={(color) => { update({ color }); setCopied(null); }} />
+            </>
+          )}
+          <div className="flex items-center gap-1 pt-1">
+            {!moreLight && (
+              <button type="button" onClick={() => setMoreLight(true)} className="h-8 px-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1">
+                <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+                ปรับเพิ่ม
+              </button>
+            )}
+            {photos.length > 1 && <ApplyAll onClick={() => copyToAll('light')} done={copied === 'light'} />}
+          </div>
         </div>
       )}
       {tool === 'text' && (
@@ -417,31 +462,30 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
         </button>
       </div>
 
-      {/* The photo comes first: tools sit under it on an upright screen (phone, iPad held upright), beside it on a wide one */}
+      {/* The photo is the hero (owner 2026-11-09: minimal, cute, easy): the photo and its strip of thumbnails on one side,
+          one tool's controls and the tool bar on the other. Upright screens stack them; wide screens put them side by side */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row overflow-hidden">
-        {/* On a phone this box leaves the tools room under it; on a bigger upright screen it takes all the height the tools
-            leave. The frame is the largest one of the post's shape that fits */}
-        <div className="[container-type:size] shrink-0 h-[min(100vw,calc(100dvh-20rem))] sm:portrait:h-auto sm:portrait:flex-1 sm:portrait:min-h-0 landscape:h-full landscape:flex-1 landscape:min-w-0 flex items-center justify-center bg-slate-100 sm:p-4">
-          <canvas
-            ref={canvas}
-            width={PREVIEW_WIDTH}
-            height={previewHeight}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            aria-label="รูปที่กำลังแต่ง"
-            role="img"
-            style={{ touchAction: 'none', aspectRatio: `${shape}`, width: `min(100cqw, ${100 * shape}cqh)` }}
-            className={`block bg-slate-200 ${tool === 'crop' ? 'cursor-move' : ''}`}
-          />
-        </div>
-
-        <div className="flex-1 min-h-0 min-w-0 sm:portrait:flex-none sm:portrait:h-[17rem] landscape:flex-none landscape:w-[320px] flex flex-col border-t landscape:border-t-0 landscape:border-l border-slate-100">
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
-            {/* The photos in this post, in the post's order */}
-            <div className={tool === 'text' || tool === 'sticker' ? 'hidden landscape:sm:block' : 'block'}>
-              <div ref={strip} className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" aria-label="รูปในโพสต์นี้">
+        <div className="shrink-0 sm:portrait:flex-1 sm:portrait:min-h-0 landscape:flex-1 landscape:min-w-0 flex flex-col bg-[#F6F7FB]">
+          {/* On a phone this box leaves the tools room under it; on a bigger screen it takes the height left. The frame is the
+              largest one of the post's shape that fits */}
+          <div className="[container-type:size] h-[min(100vw,calc(100dvh-23rem))] sm:portrait:h-auto sm:portrait:flex-1 sm:portrait:min-h-0 landscape:flex-1 landscape:min-h-0 flex items-center justify-center sm:p-4">
+            <canvas
+              ref={canvas}
+              width={PREVIEW_WIDTH}
+              height={previewHeight}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              aria-label="รูปที่กำลังแต่ง"
+              role="img"
+              style={{ touchAction: 'none', aspectRatio: `${shape}`, width: `min(100cqw, ${100 * shape}cqh)` }}
+              className={`block bg-white sm:rounded-2xl sm:shadow-sm ${tool === 'crop' ? 'cursor-move' : ''}`}
+            />
+          </div>
+          {/* The photos in this post, in the post's order: tap to edit one, hold and drag to move it, × takes it out. No
+              line of instructions: the first is marked ปก and the + says what it does */}
+          <div ref={strip} className="shrink-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-2.5 sm:[&>*:first-child]:ml-auto sm:[&>*:last-child]:mr-auto" aria-label="รูปในโพสต์นี้ แตะค้างแล้วลากเพื่อสลับลำดับ">
                 {photos.map((p, i) => (
                   <div
                     key={p.id}
@@ -477,7 +521,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
                   </div>
                 ))}
                 {photos.length < maxPhotos && (
-                  <label className="shrink-0 w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="เพิ่มรูป">
+                  <label className="shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#2563EB] hover:text-[#2563EB] text-slate-500 flex items-center justify-center cursor-pointer transition-colors" aria-label="เพิ่มรูป">
                     <Plus className="w-5 h-5" aria-hidden="true" />
                     <input
                       type="file"
@@ -491,15 +535,22 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
                     />
                   </label>
                 )}
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{photos.length > 1 ? 'แตะค้างที่รูปแล้วลากเพื่อสลับลำดับ รูปแรกเป็นปก แตะ × เพื่อเอาออก' : 'แตะ × เพื่อเอารูปนี้ออกแล้วเลือกใหม่ หรือ + เพื่อเพิ่มรูป'}</p>
-            </div>
-            {panel}
           </div>
+        </div>
 
-          <div className="shrink-0 grid grid-cols-5 border-t border-slate-100 pb-[env(safe-area-inset-bottom)]" role="group" aria-label="เครื่องมือแต่งรูป">
+        <div className="flex-1 min-h-0 min-w-0 sm:portrait:flex-none sm:portrait:h-[15rem] landscape:flex-none landscape:w-[320px] flex flex-col landscape:border-l border-slate-100">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 landscape:order-2">{panel}</div>
+
+          {/* Under the thumb on a phone; on a wide screen the tools head the panel, so eyes do not jump to the bottom */}
+          <div className="shrink-0 grid grid-cols-5 gap-1 px-2 py-1.5 border-t landscape:border-t-0 landscape:border-b border-slate-100 pb-[max(0.375rem,env(safe-area-inset-bottom))] landscape:pb-1.5 landscape:order-1" role="group" aria-label="เครื่องมือแต่งรูป">
             {TOOLS.map(({ id, label, Icon }) => (
-              <button key={id} type="button" onClick={() => setTool(id)} aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-14 text-[11px] cursor-pointer ${tool === id ? 'font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:text-slate-900'}`}>
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTool(id)}
+                aria-pressed={tool === id}
+                className={`flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl text-[11px] cursor-pointer transition-colors active:scale-95 ${tool === id ? 'bg-[#EFF6FF] font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              >
                 <Icon className="w-5 h-5" aria-hidden="true" />
                 {label}
               </button>
