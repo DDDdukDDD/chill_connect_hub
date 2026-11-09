@@ -25,8 +25,17 @@ export interface PhotoText {
   color: string;
   /** Letter size as a share of the frame's width */
   size: number;
-  boxed: boolean;
+  /** Behind the letters: nothing (a soft shadow), the text colour solid, or the text colour see-through (owner 2026-11-09) */
+  background: TextBackground;
 }
+
+export type TextBackground = 'none' | 'solid' | 'soft';
+/** One button cycles through these, like Instagram's "A" */
+export const TEXT_BACKGROUNDS: { id: TextBackground; label: string }[] = [
+  { id: 'none', label: 'ไม่มีพื้น' },
+  { id: 'solid', label: 'พื้นทึบ' },
+  { id: 'soft', label: 'พื้นโปร่ง' },
+];
 
 /** The place sticker: one per photo, the place the post is about */
 export interface PhotoSticker {
@@ -87,7 +96,16 @@ export const FILTERS: { id: string; label: string; tone: Partial<Tone> }[] = [
   { id: 'mono', label: 'ขาวดำ', tone: { saturation: 0, contrast: 1.1 } },
 ];
 
-export const TEXT_COLORS = ['#FFFFFF', '#0F172A', '#F43F5E', '#FACC15', '#2563EB'];
+/** Seven colours (owner 2026-11-09): white, ink, rose, the brand orange, yellow, green, blue */
+export const TEXT_COLORS = ['#FFFFFF', '#0F172A', '#F43F5E', '#F26430', '#FACC15', '#16A34A', '#2563EB'];
+/** Colours light enough that letters on them are ink, not white */
+const LIGHT_TEXT_COLORS = ['#FFFFFF', '#FACC15'];
+const SOFT_ALPHA = 0.62;
+
+function withAlpha(hex: string, alpha: number) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
 export const MAX_ZOOM = 3;
 /** The upload's width; a tall post is 1.25 times as high */
 const OUTPUT_WIDTH = 1440;
@@ -251,21 +269,28 @@ export function drawText(ctx: Ctx, t: PhotoText, w: number, h: number, font = fo
   const { lines, lineHeight, boxW, boxH } = layoutText(ctx, t, w, font);
   const [cx, cy] = [t.x * w, t.y * h];
   ctx.save();
-  if (t.boxed) {
-    // Dark letters on a white box, light letters on a dark one
-    const light = ['#FFFFFF', '#FACC15'].includes(t.color);
-    ctx.fillStyle = light ? 'rgba(15,23,42,0.78)' : 'rgba(255,255,255,0.94)';
+  let ink = t.color;
+  if (t.background === 'solid' || t.background === 'soft') {
+    // The box takes the chosen colour; the letters turn ink or white so they stay readable
+    ctx.fillStyle = t.background === 'solid' ? t.color : withAlpha(t.color, SOFT_ALPHA);
     roundedRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, t.size * w * 0.35);
     ctx.fill();
+    ink = LIGHT_TEXT_COLORS.includes(t.color) ? INK : '#FFFFFF';
   } else {
     ctx.shadowColor = t.color === INK ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)';
     ctx.shadowBlur = w * 0.02;
     ctx.shadowOffsetY = w * 0.002;
   }
-  ctx.fillStyle = t.color;
+  ctx.fillStyle = ink;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  lines.forEach((line, i) => ctx.fillText(line, cx, cy + (i - (lines.length - 1) / 2) * lineHeight));
+  // Centred on the letters as drawn, not on the font's box: a Thai font leaves room above and below for vowel and
+  // tone marks, which made the words sit high in their box (owner 2026-11-09)
+  ctx.textBaseline = 'alphabetic';
+  lines.forEach((line, i) => {
+    const m = ctx.measureText(line || ' ');
+    const middle = cy + (i - (lines.length - 1) / 2) * lineHeight;
+    ctx.fillText(line, cx, middle + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+  });
   ctx.restore();
 }
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { TEXT_COLORS, type PhotoText } from '@/lib/media/photoEdit';
+import { TEXT_BACKGROUNDS, TEXT_COLORS, type PhotoText } from '@/lib/media/photoEdit';
 
 /** Controls the photo editor and the clip editor share, so text works the same on both */
 
@@ -27,10 +27,36 @@ export function Segmented<T extends string | number | boolean>({ label, options,
   );
 }
 
+/**
+ * One button for what sits behind the letters, cycling none → solid → see-through, like Instagram's "A". Its little
+ * "Aa" shows the current look in the chosen colour, so no slider is needed (owner 2026-11-09)
+ */
+function BackgroundButton({ text, onEdit }: { text: PhotoText; onEdit: (change: Partial<PhotoText>) => void }) {
+  const at = Math.max(0, TEXT_BACKGROUNDS.findIndex((b) => b.id === text.background));
+  const current = TEXT_BACKGROUNDS[at];
+  const next = TEXT_BACKGROUNDS[(at + 1) % TEXT_BACKGROUNDS.length];
+  const light = text.color === '#FFFFFF' || text.color === '#FACC15';
+  const swatch =
+    current.id === 'none'
+      ? { color: text.color, background: 'transparent', textShadow: light ? '0 0 2px rgba(0,0,0,0.6)' : 'none' }
+      : { color: light ? '#0F172A' : '#FFFFFF', background: current.id === 'solid' ? text.color : `${text.color}9E` };
+  return (
+    <button
+      type="button"
+      onClick={() => onEdit({ background: next.id })}
+      aria-label={`พื้นหลังข้อความ: ${current.label} แตะเพื่อเปลี่ยนเป็น${next.label}`}
+      className="h-8 pl-1 pr-3 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 cursor-pointer inline-flex items-center gap-1.5 transition-colors active:scale-95"
+    >
+      <span aria-hidden="true" style={swatch} className="w-6 h-6 rounded-lg border border-slate-300/70 flex items-center justify-center text-[11px] font-bold leading-none">Aa</span>
+      {current.label}
+    </button>
+  );
+}
+
 /** A new text in the middle of the frame */
 export function newText(texts: PhotoText[], value: string): PhotoText {
   const id = `t${Math.max(0, ...texts.map((t) => Number(t.id.slice(1)))) + 1}`;
-  return { id, text: value, x: 0.5, y: 0.5, color: TEXT_COLORS[0], size: TEXT_SIZES[1][1], boxed: false };
+  return { id, text: value, x: 0.5, y: 0.5, color: TEXT_COLORS[0], size: TEXT_SIZES[1][1], background: 'none' };
 }
 
 interface TextToolsProps {
@@ -72,9 +98,7 @@ export function TextTools({ text, hasTexts, on, onType, onEdit, onRemove, onNew 
             ))}
           </div>
           <Segmented label="ขนาดข้อความ" options={TEXT_SIZES} value={text.size} onChange={(size) => onEdit({ size })} />
-          <button type="button" onClick={() => onEdit({ boxed: !text.boxed })} aria-pressed={text.boxed} className={`h-8 px-3 rounded-full border text-xs font-semibold cursor-pointer ${text.boxed ? 'border-[#2563EB] bg-blue-50 text-[#1D4ED8]' : 'border-transparent bg-slate-100 text-slate-700'}`}>
-            พื้นหลัง
-          </button>
+          <BackgroundButton text={text} onEdit={onEdit} />
           <button type="button" onClick={onNew} className="h-8 px-2.5 rounded-full text-xs font-bold text-[#2563EB] hover:bg-blue-50 cursor-pointer inline-flex items-center gap-1">
             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
             เพิ่มอีกข้อความ
