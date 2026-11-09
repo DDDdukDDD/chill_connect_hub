@@ -43,6 +43,27 @@ const SIZES = { sm: 'max-w-[420px]', md: 'max-w-[520px]', lg: 'max-w-[680px]' };
  * and `tabIndex={-1}` on the panel so stacked dialogs know which one is on top.
  * `focusField: false` starts on the panel, so a phone does not open its keyboard over a dialog that is mostly reading.
  */
+/**
+ * The page behind stays still while any dialog is open. Counted, not "remember and put back": with a remembered value,
+ * two dialogs that close in the other order than they opened put back "hidden" and leave the page unable to scroll
+ * until a reload (owner 2026-11-09, seen after posting a clip).
+ */
+let scrollLocks = 0;
+let overflowBeforeLocks = '';
+export function lockPageScroll(): () => void {
+  if (scrollLocks++ === 0) {
+    overflowBeforeLocks = document.body.style.overflow === 'hidden' ? '' : document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    scrollLocks = Math.max(0, scrollLocks - 1);
+    if (scrollLocks === 0) document.body.style.overflow = overflowBeforeLocks;
+  };
+}
+
 export function useDialogBehavior(panelRef: React.RefObject<HTMLElement | null>, onClose: () => void, { active = true, focusField = true }: { active?: boolean; focusField?: boolean } = {}) {
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -53,8 +74,7 @@ export function useDialogBehavior(panelRef: React.RefObject<HTMLElement | null>,
     const panel = panelRef.current;
     if (!active || !panel) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlockScroll = lockPageScroll();
     (panel.querySelector<HTMLElement>(focusField ? '[data-autofocus], input, select, textarea' : '[data-autofocus]') ?? panel).focus({ preventScroll: true });
 
     const isTopMost = () => {
@@ -84,7 +104,7 @@ export function useDialogBehavior(panelRef: React.RefObject<HTMLElement | null>,
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       previouslyFocused?.focus?.({ preventScroll: true });
     };
     // panelRef is a stable ref; focusField never changes while a dialog is open

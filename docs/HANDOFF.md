@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-323 · Page scroll lock is counted (owner report 2026-11-09)
+- **What changed:** the owner twice saw the live home feed stop scrolling after posting a clip (menus still worked, a reload fixed it). Not reproduced in headless Chrome. Most likely cause: two scroll locks that "remember and put back" `body.style.overflow` and release in the other order, leaving `hidden`. `lockPageScroll()` in `components/auth/DialogShell.tsx` now counts open locks; `useDialogBehavior` and the full-screen clip page (`MomentDetailView`) use it. Walked: feed → full-screen clip → back, page scrolls.
+- **What to do about it:** any new full-screen layer uses `lockPageScroll()`, never its own overflow write. If the owner sees it again, note the phone, browser and the last taps before it.
+
 ### BE-322 · Posting, round 1: photo editor and post step tidied (owner 2026-11-09)
 - **What changed:** one "เลือกรูปหรือคลิป" picker (the file decides: a clip wins and posts alone). Photo editor: the photo and its thumbnail strip on a soft grey stage, no instruction lines; crop = shape chips + zoom slider (1x up) + its own "ทั้งรูป / เต็มกรอบ" button; filters as round previews; light = brightness, contrast and colour behind "ปรับเพิ่ม"; tool bar as soft pills, at the top of the side panel on wide screens. Post step: settings fold into "ตั้งค่าเพิ่มเติม" with a one-line summary. Walked signed in at 390×844 and 1280×800. Round 2 (clip editor filmstrip) is next.
 

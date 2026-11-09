@@ -10,7 +10,7 @@ import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { LikersDialog } from '@/components/moments/LikersDialog';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
-import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { DialogShell, dialogButton, lockPageScroll } from '@/components/auth/DialogShell';
 import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -66,11 +66,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
   useEffect(() => {
     if (!isFull) return;
-    const before = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = before;
-    };
+    // The shared, counted lock: a dialog open on top of this page can close in either order (owner 2026-11-09)
+    return lockPageScroll();
   }, [isFull]);
 
   /** Back where the tap came from; otherwise (opened here, or a shared link) to this moment's page */
