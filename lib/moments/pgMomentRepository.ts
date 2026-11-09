@@ -273,6 +273,21 @@ const hydrateFeed = (tx: Sql, ids: string[], query: MomentFeedQuery) => {
     where m.id in ${tx(ids)}`;
 };
 
+/** Feed posts for these moment ids (uuids), in the same order */
+async function feedMoments(db: Sql, ids: string[], query: Pick<MomentFeedQuery, 'viewerId' | 'blockedIds'>): Promise<Moment[]> {
+  if (ids.length === 0) return [];
+  const rows = await hydrateFeed(db, ids, query as MomentFeedQuery);
+  const byId = new Map(rows.map((r) => [r.id as string, r]));
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+    if (!row) return [];
+    return [{
+      ...rowToMoment(row),
+      feedFacts: { likes: row.like_count, comments: Number(row.shown_comments), liked: row.viewer_liked, saved: row.viewer_saved, reported: row.viewer_reported },
+    }];
+  });
+}
+
 // The database's own text for the time keeps its microseconds, which a JavaScript date would lose
 const CURSOR = /^(\d{4}-\d{2}-\d{2} [\d:.]+[+-]\d{2}(?::\d{2})?)\|([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
@@ -305,19 +320,87 @@ export const pgMomentRepository: MomentRepository = {
     const onPage = found.slice(0, query.limit);
     const totalCount = usesCursor ? undefined : Number(found[0]?.total ?? 0);
     if (onPage.length === 0) return { items: [], totalCount, hasNext: false };
-    const rows = await hydrateFeed(db, onPage.map((r) => r.id as string), query);
-    const byId = new Map(rows.map((r) => [r.id as string, r]));
-    const items = onPage.flatMap((r) => {
-      const row = byId.get(r.id);
-      if (!row) return [];
-      return [{
-        ...rowToMoment(row),
-        feedFacts: { likes: row.like_count, comments: Number(row.shown_comments), liked: row.viewer_liked, saved: row.viewer_saved, reported: row.viewer_reported },
-      }];
-    });
+    const items = await feedMoments(db, onPage.map((r) => r.id as string), query);
     const last = onPage[onPage.length - 1];
     const hasNext = found.length > query.limit;
     return { items, totalCount, hasNext, ...(hasNext && query.sort === 'newest' ? { nextCursor: `${last.at}|${last.id}` } : {}) };
+  },
+  async forYouPool(query) {
+    const db = sql();
+    const read = (withSeen: boolean) => db`
+      select m.slug, a.legacy_id as author_legacy, m.created_at, m.created_at::text as at, m.id,
+        m.like_count + m.sample_likes as likes, m.save_count, m.comment_count, m.video_url is not null as is_clip, m.category,
+        array_remove(array[e.category, p.category] || coalesce(p.vibe_tags, '{}'), null) as target_categories,
+        coalesce(e.province_code, p.province_code) as target_province,
+        ${placeRule(db)} as is_place,
+        coalesce((e.event_type = 'community' and e.approval_status = 'approved' and e.registration_open and e.starts_at > ${query.asOf}
+            and coalesce(e.details->>'status', 'recruiting') not in ('full', 'cancelled', 'ended')
+            and (e.max_participants is null or e.participants_count < e.max_participants))
+          or (e.event_type = 'public_venue' and e.approval_status = 'approved' and e.ends_at > ${query.asOf})
+          or (q.status = 'active' and (q.ends_at is null or q.ends_at > ${query.asOf})), false) as joinable,
+        ${withSeen && query.viewerId
+          ? db`exists (select 1 from app.moment_seen s where s.moment_id = m.id and s.seen_at <= ${query.asOf} and s.seen_at > ${query.asOf}::timestamptz - interval '30 days'
+              and s.member_id = (select id from app.members where legacy_id = ${query.viewerId}))`
+          : db`false`} as seen
+      from app.moments m
+      left join app.members a on a.id = m.author_id
+      left join app.events e on e.id = m.event_id
+      left join app.places p on p.id = m.place_id
+      left join app.quests q on q.id = m.quest_id
+      where ${feedFilters(db, { blockedIds: query.blockedIds, sort: 'newest', page: 1, limit: query.limit })} and m.created_at <= ${query.asOf}
+      order by m.created_at desc, m.id desc limit ${query.limit}`;
+    // Before migration 0039 the seen table is missing: the feed still works, it just cannot tell what was seen
+    const rows = await read(true).catch((error) => (error?.code === '42P01' ? read(false) : Promise.reject(error)));
+    return rows.map((r) => ({
+      id: r.slug,
+      authorId: r.author_legacy ?? null,
+      createdAt: iso(r.created_at) as string,
+      likes: Number(r.likes),
+      saves: Number(r.save_count),
+      comments: Number(r.comment_count),
+      isClip: r.is_clip,
+      category: orUndefined(r.category),
+      targetCategories: r.target_categories ?? [],
+      targetProvince: orUndefined(r.target_province),
+      joinable: r.joinable,
+      isPlace: r.is_place,
+      seen: r.seen,
+      cursorAt: `${r.at}|${r.id}`,
+    }));
+  },
+  async readerAffinity(viewerId) {
+    const db = sql();
+    const rows = await db`
+      with me as (select id from app.members where legacy_id = ${viewerId})
+      select a.legacy_id, count(*)::int as n from (
+        select m.author_id from app.moment_likes l join app.moments m on m.id = l.moment_id
+          where l.member_id = (select id from me) and l.created_at > now() - interval '90 days'
+        union all
+        select m.author_id from app.moment_comments c join app.moments m on m.id = c.moment_id
+          where c.author_id = (select id from me) and c.created_at > now() - interval '90 days'
+      ) t join app.members a on a.id = t.author_id
+      group by a.legacy_id`;
+    return new Map(rows.map((r) => [r.legacy_id as string, r.n as number]));
+  },
+  async feedByIds(slugs, query) {
+    if (slugs.length === 0) return [];
+    const db = sql();
+    const found = await db`
+      select m.id, m.slug from app.moments m left join app.members a on a.id = m.author_id
+      where ${feedFilters(db, { blockedIds: query.blockedIds, sort: 'newest', page: 1, limit: slugs.length })} and m.slug in ${db(slugs)}`;
+    const idOf = new Map(found.map((r) => [r.slug as string, r.id as string]));
+    return feedMoments(db, slugs.flatMap((slug) => (idOf.has(slug) ? [idOf.get(slug) as string] : [])), query);
+  },
+  async markSeen(viewerId, slugs) {
+    if (slugs.length === 0) return;
+    const db = sql();
+    await db`
+      insert into app.moment_seen (member_id, moment_id, seen_at)
+      select x.id, m.id, now() from app.members x join app.moments m on m.slug in ${db(slugs)}
+      where x.legacy_id = ${viewerId}
+      on conflict (member_id, moment_id) do update set seen_at = excluded.seen_at`;
+    // Rows are kept 30 days; about one batch in fifty clears the older ones (the seen_at index makes it quick)
+    if (Math.random() < 0.02) await db`delete from app.moment_seen where seen_at < now() - interval '30 days'`;
   },
   async typeCounts() {
     const db = sql();

@@ -116,6 +116,9 @@ function persist(moments: Moment[]) {
 
 const likeCount = (moment: Moment) => moment.likedBy.length + moment.sampleLikes;
 
+/** Without the database, what each member saw is kept in this server's memory only: member id → moment id → when */
+const seenByMember = new Map<string, Map<string, number>>();
+
 export const jsonMomentRepository: MomentRepository = {
   async findById(id) {
     return load().find((m) => m.id === id) ?? null;
@@ -196,6 +199,49 @@ export const jsonMomentRepository: MomentRepository = {
     const hasNext = sorted.length > from + query.limit;
     const last = items[items.length - 1];
     return { items, ...(usesCursor ? {} : { totalCount: sorted.length }), hasNext, ...(hasNext && query.sort === 'newest' ? { nextCursor: `${last.createdAt}|${last.id}` } : {}) };
+  },
+  async forYouPool(query) {
+    const { items } = await jsonMomentRepository.feed({ viewerId: query.viewerId, blockedIds: query.blockedIds, sort: 'newest', page: 1, limit: 5000 });
+    const asOf = query.asOf.getTime();
+    const seen = (query.viewerId && seenByMember.get(query.viewerId)) || new Map<string, number>();
+    return items
+      .filter((m) => Date.parse(m.createdAt) <= asOf)
+      .slice(0, query.limit)
+      .map((m) => ({
+        id: m.id,
+        authorId: m.authorId,
+        createdAt: m.createdAt,
+        likes: likeCount(m),
+        saves: m.savedBy.length,
+        comments: m.comments.length,
+        isClip: Boolean(m.video),
+        category: m.category,
+        // Without the database the ตี้, places and challenges behind a post are not looked up
+        targetCategories: [],
+        joinable: false,
+        isPlace: isPlaceMoment(m),
+        seen: (seen.get(m.id) ?? Infinity) <= asOf,
+        cursorAt: `${m.createdAt}|${m.id}`,
+      }));
+  },
+  async readerAffinity(viewerId) {
+    const counts = new Map<string, number>();
+    for (const m of load()) {
+      if (!m.authorId) continue;
+      const times = (m.likedBy.includes(viewerId) ? 1 : 0) + m.comments.filter((c) => c.authorId === viewerId).length;
+      if (times) counts.set(m.authorId, (counts.get(m.authorId) ?? 0) + times);
+    }
+    return counts;
+  },
+  async feedByIds(ids, query) {
+    const { items } = await jsonMomentRepository.feed({ viewerId: query.viewerId, blockedIds: query.blockedIds, sort: 'newest', page: 1, limit: 5000 });
+    const byId = new Map(items.map((m) => [m.id, m]));
+    return ids.flatMap((id) => (byId.has(id) ? [byId.get(id) as Moment] : []));
+  },
+  async markSeen(viewerId, ids) {
+    const seen = seenByMember.get(viewerId) ?? new Map<string, number>();
+    for (const id of ids) seen.set(id, Date.now());
+    seenByMember.set(viewerId, seen);
   },
   async typeCounts() {
     const { memberRepository } = await import('../members');

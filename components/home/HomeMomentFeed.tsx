@@ -5,7 +5,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -19,6 +19,7 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { optimizedImage } from '@/lib/optimizedImage';
 
 const PAGE_SIZE = 8;
@@ -30,15 +31,16 @@ export const REPORT_REASONS = ['ชวนลงทุน ขายของ ห�
 // Where the moment came from, in its pillar's colors, and what the reader can do there
 const TARGETS = MOMENT_TARGETS;
 
-/** The three tabs, plus two personal views opened from the shortcuts or the ⋯ next to the tabs */
-export type FeedView = 'all' | 'following' | 'popular' | 'saved' | 'mine';
+/** The three tabs, plus personal views opened from the shortcuts or the ⋯ next to the tabs (FEED_PLAN step 1: สำหรับคุณ comes first) */
+export type FeedView = 'foryou' | 'all' | 'following' | 'popular' | 'saved' | 'mine';
 const TABS: [FeedView, string][] = [
-  ['all', 'ล่าสุด'],
+  ['foryou', 'สำหรับคุณ'],
   ['following', 'ติดตาม'],
   ['popular', 'ยอดฮิต'],
 ];
-const PERSONAL: Partial<Record<FeedView, string>> = { saved: 'โมเมนต์ที่บันทึก', mine: 'โมเมนต์ของฉัน' };
+const PERSONAL: Partial<Record<FeedView, string>> = { all: 'โมเมนต์ล่าสุด', saved: 'โมเมนต์ที่บันทึก', mine: 'โมเมนต์ของฉัน' };
 const EMPTY: Record<FeedView, string> = {
+  foryou: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   all: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   following: 'ยังไม่ได้ติดตามใครเลย กดชื่อเพื่อนในโมเมนต์ แล้วกดติดตามที่โปรไฟล์',
   popular: 'ยังไม่มีโมเมนต์ยอดฮิต',
@@ -141,8 +143,12 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         ['report', moment.hasReported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้', Flag],
       ] as const);
 
+  // Seen posts sink in สำหรับคุณ; own posts need no note
+  const articleRef = useRef<HTMLElement>(null);
+  useEffect(() => (articleRef.current && !moment.isMine ? watchSeen(articleRef.current) : undefined), [moment.isMine]);
+
   return (
-    <article id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
+    <article ref={articleRef} data-seen-id={moment.id} id={`moment-${moment.id}`} className="py-5 border-b border-slate-200 space-y-3">
       <div className="flex items-center gap-2.5 min-w-0">
         {moment.authorId ? (
           <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} aria-label={`โปรไฟล์ของ ${moment.userName}`} className="shrink-0">
@@ -433,8 +439,8 @@ function shareInitial(type: string, id: string, title: string, location: string)
  * photo showcase for browsing (no posting there).
  */
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
-  // Cards between the posts belong to ล่าสุด only (owner 2026-11-02): a chosen view shows just what was asked for
-  const inserts = sort === 'all' ? feedInserts : {};
+  // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
+  const inserts = sort === 'foryou' ? feedInserts : {};
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
   const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
@@ -455,6 +461,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [editing, setEditing] = useState<({ id: string; caption: string; photos: EditablePhoto[] | null; ratio: number } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
+  // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
+  useEffect(() => flushSeen, []);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Old share links (/moments?createForEvent=…) forward here as /?share=<type>:<id>&title=&location=; the form opens tied to that event
@@ -723,9 +731,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         {PERSONAL[sort] ? (
           <button
             type="button"
-            onClick={() => setSort('all')}
+            onClick={() => setSort('foryou')}
             className="shrink-0 h-8 pl-3 pr-2 rounded-full bg-[#FFF1F2] text-[#BE123C] text-[13px] font-bold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
-            aria-label={`${PERSONAL[sort]} กลับไปดูทั้งหมด`}
+            aria-label={`${PERSONAL[sort]} กลับไปที่สำหรับคุณ`}
           >
             {PERSONAL[sort]}
             <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -750,7 +758,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             <button
               type="button"
               onClick={() => setIsViewMenuOpen((open) => !open)}
-              aria-label="โมเมนต์ที่บันทึก และโมเมนต์ของฉัน"
+              aria-label="โมเมนต์ล่าสุด ที่บันทึก และของฉัน"
               aria-expanded={isViewMenuOpen}
               className="w-8 h-8 rounded-full text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
             >
@@ -760,7 +768,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               <>
                 <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-20 cursor-default" onClick={() => setIsViewMenuOpen(false)} />
                 <ul className="absolute right-0 top-9 z-30 w-48 rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl">
-                  {(['saved', 'mine'] as const).map((value) => (
+                  {(['all', 'saved', 'mine'] as const).map((value) => (
                     <li key={value}>
                       <button
                         type="button"
@@ -770,7 +778,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
                         }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                       >
-                        {value === 'saved' ? <Bookmark className="w-4 h-4" aria-hidden="true" /> : <Camera className="w-4 h-4" aria-hidden="true" />}
+                        {value === 'all' ? <Clock className="w-4 h-4" aria-hidden="true" /> : value === 'saved' ? <Bookmark className="w-4 h-4" aria-hidden="true" /> : <Camera className="w-4 h-4" aria-hidden="true" />}
                         {PERSONAL[value]}
                       </button>
                     </li>

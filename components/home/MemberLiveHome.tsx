@@ -73,7 +73,7 @@ export interface MemberLiveHomeProps {
  */
 export function MemberLiveHome(props: MemberLiveHomeProps) {
   const { name, plans, isLoaded } = props;
-  const [feedView, setFeedView] = useState<FeedView>('all');
+  const [feedView, setFeedView] = useState<FeedView>('foryou');
   const hasPlans = plans.length > 0;
   const [shareRequest, setShareRequest] = useState<ShareRequest | null>(null);
   const showPicks = isLoaded && !hasPlans;

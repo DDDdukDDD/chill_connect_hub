@@ -36,6 +36,8 @@ export default async function MomentsPage({ searchParams }: Props) {
 
   await ensureSampleMembers(); // development sample accounts for the sample posts
   const list = await listMoments(null, {
+    // ทั้งหมด is popular mixed with new (the grid's next pages ask for the same)
+    tab: !place && chip === 'all' ? 'mix' : undefined,
     targetType: place?.targetType ?? (chip === 'all' ? undefined : chip),
     targetId: place?.targetId,
     location: place && !place.targetId && !place.tag ? place.location : undefined,

@@ -1,3 +1,5 @@
+import type { ForYouCandidate } from './forYou';
+
 /**
  * Moments: member photo posts (the /moments feed). Stored through MomentRepository so the JSON prototype
  * store can later be replaced by a database without changing the API.
@@ -171,10 +173,29 @@ export interface MomentFeedPage {
   nextCursor?: string;
 }
 
+/** The newest posts the "สำหรับคุณ" feed ranks (lib/moments/forYou.ts) */
+export interface ForYouPoolQuery {
+  viewerId?: string;
+  blockedIds?: string[];
+  /** Posts made and posts seen after this time are left out, so every page of one feed ranks the same list */
+  asOf: Date;
+  limit: number;
+}
+
+/** A pool post, with the database's own text of its time for a newest-first cursor after the pool */
+export type ForYouPoolPost = ForYouCandidate & { cursorAt: string };
+
 export type MomentTypeCounts = { all: number; spot: number; community: number; fair: number; challenge: number };
 
 export interface MomentRepository {
   feed(query: MomentFeedQuery): Promise<MomentFeedPage>;
+  forYouPool(query: ForYouPoolQuery): Promise<ForYouPoolPost[]>;
+  /** Authors whose posts the member liked or commented on in the last 90 days: author id → how many times */
+  readerAffinity(viewerId: string): Promise<Map<string, number>>;
+  /** Feed posts by id, in the order asked, as `feed` returns them (ids no longer shown are left out) */
+  feedByIds(ids: string[], query: Pick<MomentFeedQuery, 'viewerId' | 'blockedIds'>): Promise<Moment[]>;
+  /** Notes that the member had these posts on screen (moment ids) */
+  markSeen(viewerId: string, ids: string[]): Promise<void>;
   typeCounts(): Promise<MomentTypeCounts>;
   findById(id: string): Promise<Moment | null>;
   create(moment: Moment): Promise<Moment>;
