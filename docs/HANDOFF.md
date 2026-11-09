@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-326 · Photo and clip editors share one design (owner 2026-11-09)
+- **What changed:** the clip editor takes the photo editor's layout: soft grey stage with the clip in a rounded frame, white เลือกคลิปใหม่ pill, pill tool bar (top of the side panel on wide screens), a fixed-height panel so the clip does not jump when the tool changes, shorter hints. Text size is now a slider like sticker size, both through `SizeSlider` in `components/moments/EditorControls.tsx` (`TEXT_SIZE` replaces `TEXT_SIZES`).
+- **What to do about it:** walk both editors on a phone, upright and wide.
+
 ### BE-325 · CDN cache fixes (2026-11-09)
 - **Found on the live site:** Vercel's CDN ignores cookies (a request with a cookie got `HIT` on the visitor copy), and a response with `Vary: Cookie` is never cached at all.
 - **What changed:** `GET /api/activity` plain URL is now always the public counts (cached); members' named lines moved to `?mine=1` (no screen uses them today). `GET /api/events` drops its `s-maxage` + `Vary: Cookie` (it never cached) for an honest `private, no-store`; the server already keeps the list by table version. `GET /api/spots/browse` is now cached 60 s, and its `t` is rounded to the minute so visitors share copies. `docs/API.md` updated.

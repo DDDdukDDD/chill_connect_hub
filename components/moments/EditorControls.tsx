@@ -1,12 +1,24 @@
 'use client';
 
 import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { TEXT_BACKGROUNDS, TEXT_COLORS, type PhotoText } from '@/lib/media/photoEdit';
 
 /** Controls the photo editor and the clip editor share, so text works the same on both */
 
-export const TEXT_SIZES: [string, number][] = [['เล็ก', 0.045], ['กลาง', 0.07], ['ใหญ่', 0.1]];
+/** Text size as a share of the frame's short side: any size in between, like stickers (owner 2026-11-09) */
+export const TEXT_SIZE = { min: 0.035, normal: 0.07, max: 0.14 } as const;
+
+/** One size slider, small on the left and big on the right, for text and stickers alike */
+export function SizeSlider({ label, min, max, step, value, onChange }: { label: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <ZoomOut className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+      <input type="range" aria-label={label} min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="flex-1 min-w-0 h-8 accent-[#2563EB] cursor-pointer" />
+      <ZoomIn className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+    </div>
+  );
+}
 
 /** Two or three choices side by side (DESIGN_SYSTEM.md, segmented switch) */
 export function Segmented<T extends string | number | boolean>({ label, options, value, onChange }: { label: string; options: [string, T][]; value: T; onChange: (value: T) => void }) {
@@ -56,7 +68,7 @@ function BackgroundButton({ text, onEdit }: { text: PhotoText; onEdit: (change: 
 /** A new text in the middle of the frame */
 export function newText(texts: PhotoText[], value: string): PhotoText {
   const id = `t${Math.max(0, ...texts.map((t) => Number(t.id.slice(1)))) + 1}`;
-  return { id, text: value, x: 0.5, y: 0.5, color: TEXT_COLORS[0], size: TEXT_SIZES[1][1], background: 'none' };
+  return { id, text: value, x: 0.5, y: 0.5, color: TEXT_COLORS[0], size: TEXT_SIZE.normal, background: 'none' };
 }
 
 interface TextToolsProps {
@@ -91,18 +103,20 @@ export function TextTools({ text, hasTexts, on, onType, onEdit, onRemove, onNew 
         )}
       </div>
       {text ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center gap-1.5" role="group" aria-label="สีข้อความ">
             {TEXT_COLORS.map((color) => (
               <button key={color} type="button" onClick={() => onEdit({ color })} aria-label={`สี ${color}`} aria-pressed={text.color === color} style={{ background: color }} className={`w-7 h-7 rounded-full border cursor-pointer ${text.color === color ? 'ring-2 ring-offset-1 ring-[#2563EB] border-transparent' : 'border-slate-300'}`} />
             ))}
           </div>
-          <Segmented label="ขนาดข้อความ" options={TEXT_SIZES} value={text.size} onChange={(size) => onEdit({ size })} />
-          <BackgroundButton text={text} onEdit={onEdit} />
-          <button type="button" onClick={onNew} className="h-8 px-2.5 rounded-full text-xs font-bold text-[#2563EB] hover:bg-blue-50 cursor-pointer inline-flex items-center gap-1">
-            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-            เพิ่มอีกข้อความ
-          </button>
+          <SizeSlider label="ขนาดข้อความ" min={TEXT_SIZE.min} max={TEXT_SIZE.max} step={0.005} value={text.size} onChange={(size) => onEdit({ size })} />
+          <div className="flex flex-wrap items-center gap-2">
+            <BackgroundButton text={text} onEdit={onEdit} />
+            <button type="button" onClick={onNew} className="h-8 px-2.5 rounded-full text-xs font-bold text-[#2563EB] hover:bg-blue-50 cursor-pointer inline-flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+              เพิ่มอีกข้อความ
+            </button>
+          </div>
         </div>
       ) : (
         hasTexts && <p className="text-xs text-slate-500">แตะข้อความบน{on}เพื่อแก้ไข</p>
