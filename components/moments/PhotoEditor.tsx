@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Blend, Camera, Coffee, CopyCheck, Crop, Flower2, Heart, Maximize2, Minimize2, Music, Plus, Sparkles, Star, Sticker, Sun, SunMedium, Trash2, Type, UtensilsCrossed, X, ZoomIn, ZoomOut } from 'lucide-react';
 import {
-  FILTERS, ICON_STICKERS, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
+  FACE_STICKERS, FILTERS, ICON_STICKERS, drawFace, MAX_FUN_STICKERS, MAX_ZOOM, POST_SHAPES, minZoom, STICKER_SCALES, STICKER_STYLES, WORD_STICKERS,
   applyTone, clampPan, drawBase, drawOverlays, hitOverlay, loadEditorFont, toneOf,
   type EditedPhoto, type FunSticker, type PhotoText, type PostShape,
 } from '@/lib/media/photoEdit';
@@ -41,6 +41,22 @@ interface PhotoEditorProps {
   onShapeChange: (shape: PostShape) => void;
   onBack: () => void;
   onNext: () => void;
+}
+
+/** A feeling face for the picker, drawn by the same code that puts it on the photo */
+function FaceButtonArt({ value }: { value: string }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = canvas.current?.getContext('2d');
+    const face = FACE_STICKERS[value];
+    if (!ctx || !face) return;
+    ctx.clearRect(0, 0, 96, 96);
+    ctx.save();
+    ctx.scale(4, 4);
+    drawFace(ctx, face, STICKER_STYLES.find((s) => s.id === 'yellow') ?? STICKER_STYLES[0]);
+    ctx.restore();
+  }, [value]);
+  return <canvas ref={canvas} width={96} height={96} className="w-11 h-11" aria-hidden="true" />;
 }
 
 /** One filter's look on this photo, small */
@@ -244,7 +260,8 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
     const id = `s${Math.max(0, ...photo.stickers.map((s) => Number(s.id.slice(1)))) + 1}`;
     // Each new one lands on its own spot, so they do not hide each other
     const [x, y] = STICKER_SPOTS[photo.stickers.length % STICKER_SPOTS.length];
-    const sticker: FunSticker = { id, kind, value, style: 'rose', x, y, scale: 1 };
+    // Faces start yellow, like the faces everyone knows; icons and words start rose
+    const sticker: FunSticker = { id, kind, value, style: kind === 'face' ? 'yellow' : 'rose', x, y, scale: 1 };
     update({ stickers: [...photo.stickers, sticker] });
     setSelectedFun(id);
   };
@@ -393,7 +410,7 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
       {tool === 'sticker' &&
         (funOn ? (
           <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5" role="group" aria-label={funOn.kind === 'icon' ? 'สีไอคอน' : 'สีสติกเกอร์'}>
+            <div className="flex items-center gap-1.5" role="group" aria-label={funOn.kind !== 'word' ? 'สีไอคอน' : 'สีสติกเกอร์'}>
               {STICKER_STYLES.map((style) => (
                 <button key={style.id} type="button" onClick={() => editFun({ style: style.id })} aria-label={`สี${style.label}`} aria-pressed={funOn.style === style.id} style={{ background: style.fill }} className={`w-7 h-7 rounded-full border cursor-pointer ${funOn.style === style.id ? 'ring-2 ring-offset-1 ring-[#2563EB] border-transparent' : 'border-slate-300'}`} />
               ))}
@@ -413,6 +430,14 @@ export function PhotoEditor({ photos, onChange, onAddFiles, maxPhotos, shape, on
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Feelings first: they say the most about the moment */}
+            <div className="grid grid-cols-4 sm:portrait:grid-cols-8 gap-1.5" role="group" aria-label="สติกเกอร์ความรู้สึก">
+              {Object.entries(FACE_STICKERS).map(([key, { label }]) => (
+                <button key={key} type="button" onClick={() => addFun('face', key)} disabled={photo.stickers.length >= MAX_FUN_STICKERS} aria-label={`ติดหน้า${label}`} title={label} className="aspect-square rounded-2xl bg-slate-100 hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer transition-transform active:scale-90">
+                  <FaceButtonArt value={key} />
+                </button>
+              ))}
+            </div>
             <div className="space-y-1.5">
               <div className="grid grid-cols-5 sm:portrait:grid-cols-9 gap-1.5" role="group" aria-label="สติกเกอร์ไอคอน">
                 {Object.entries(ICON_STICKERS).map(([key, { label }]) => {

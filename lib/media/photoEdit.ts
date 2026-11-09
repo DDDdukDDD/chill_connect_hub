@@ -47,8 +47,8 @@ export interface PhotoSticker {
 /** A fun sticker: a line icon on a round badge, or a short word on a pill */
 export interface FunSticker {
   id: string;
-  kind: 'icon' | 'word';
-  /** An ICON_STICKERS key, or the word itself */
+  kind: 'icon' | 'word' | 'face';
+  /** An ICON_STICKERS or FACE_STICKERS key, or the word itself */
   value: string;
   /** A STICKER_STYLES id */
   style: string;
@@ -125,17 +125,65 @@ export const ICON_STICKERS: Record<string, { label: string; paths: string[] }> =
   flower: { label: 'ดอกไม้', paths: ['M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1', 'M10 8a2 2 0 1 0 4 0a2 2 0 1 0 -4 0', 'M12 10v12', 'M12 22c4.2 0 7-1.667 7-5-4.2 0-7 1.667-7 5Z', 'M12 22c-4.2 0-7-1.667-7-5 4.2 0 7 1.667 7 5Z'] },
 };
 
+/**
+ * Feelings as round, cute faces (owner 2026-11-09: "emotion น่ารักๆ ที่บอกความรู้สึกได้"). Drawn in a 24-unit box on a
+ * filled circle in the sticker's colour: `lines` are strokes and `dots` are filled shapes in the ink colour, `hearts`
+ * and `tears` take their own colours, `blush` adds soft cheeks. One drawing serves the canvas and the picker buttons.
+ */
+export interface FaceSticker { label: string; lines: string[]; dots?: string[]; hearts?: string[]; tears?: string[]; blush?: boolean }
+const EYES_HAPPY = ['M7.4 10.6q1.6-2.2 3.2 0', 'M13.4 10.6q1.6-2.2 3.2 0'];
+const dot = (x: number, y: number, r: number) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`;
+const heart = (x: number, y: number) => `M${x} ${y + 2.3}l-2.1-2a1.3 1.3 0 0 1 2.1-1.5 1.3 1.3 0 0 1 2.1 1.5z`;
+export const FACE_STICKERS: Record<string, FaceSticker> = {
+  happy: { label: 'ยิ้ม', lines: [...EYES_HAPPY, 'M8.4 13.9q3.6 3.6 7.2 0'], blush: true },
+  love: { label: 'หลงรัก', lines: ['M9 14.6q3 2.6 6 0'], hearts: [heart(9, 8.6), heart(15, 8.6)], blush: true },
+  laugh: { label: 'ขำ', lines: ['M7.6 8.8l2.1 1.3-2.1 1.3', 'M16.4 8.8l-2.1 1.3 2.1 1.3'], dots: ['M8 13.4h8a4 4 0 0 1-8 0z'] },
+  wow: { label: 'ว้าว', lines: ['M10.4 15.6a1.6 1.8 0 1 0 3.2 0a1.6 1.8 0 1 0-3.2 0'], dots: [dot(9, 10.4, 1.15), dot(15, 10.4, 1.15)] },
+  shy: { label: 'เขิน', lines: ['M7.4 10.2q1.6 1.3 3.2 0', 'M13.4 10.2q1.6 1.3 3.2 0', 'M10.4 14.6q1.6 1.1 3.2 0'], blush: true },
+  cool: { label: 'เท่', lines: ['M11 9.9h2', 'M10 15.6q2.6 1.3 4.6-.9'], dots: ['M5.8 9h5.2v2.1a2.3 2.3 0 0 1-2.3 2.3h-.6a2.3 2.3 0 0 1-2.3-2.3z', 'M13 9h5.2v2.1a2.3 2.3 0 0 1-2.3 2.3h-.6a2.3 2.3 0 0 1-2.3-2.3z'] },
+  chill: { label: 'ชิลล์', lines: ['M7.4 10.6h3.2', 'M13.4 10.6h3.2', 'M10.2 15.2q1.8.9 3.6 0'], blush: true },
+  touched: { label: 'ซึ้ง', lines: [...EYES_HAPPY, 'M9 14.4q3 2.6 6 0'], tears: ['M17.2 11.6c1 1.4 1.5 2.2 1.5 2.9a1.5 1.5 0 0 1-3 0c0-.7.5-1.5 1.5-2.9z'] },
+};
+
 /** Short words friends say about a day out */
 export const WORD_STICKERS = ['ชิลล์มาก', 'ฟินสุดๆ', 'วิวปังมาก', 'อร่อยต้องซ้ำ', 'มากับแก๊ง', 'ไปอีกแน่', 'แนะนำเลย', 'วันดีๆ'];
 
 /** Badge or pill colour, and the colour of the icon or word on it */
+/** The same seven colours as text (owner 2026-11-09), in the same order */
 export const STICKER_STYLES: { id: string; label: string; fill: string; ink: string }[] = [
   { id: 'white', label: 'ขาว', fill: '#FFFFFF', ink: ROSE },
-  { id: 'rose', label: 'ชมพู', fill: ROSE, ink: '#FFFFFF' },
-  { id: 'yellow', label: 'เหลือง', fill: '#FACC15', ink: INK },
-  { id: 'blue', label: 'น้ำเงิน', fill: '#2563EB', ink: '#FFFFFF' },
   { id: 'ink', label: 'ดำ', fill: INK, ink: '#FFFFFF' },
+  { id: 'rose', label: 'ชมพู', fill: ROSE, ink: '#FFFFFF' },
+  { id: 'orange', label: 'ส้ม', fill: '#F26430', ink: '#FFFFFF' },
+  { id: 'yellow', label: 'เหลือง', fill: '#FACC15', ink: INK },
+  { id: 'green', label: 'เขียว', fill: '#16A34A', ink: '#FFFFFF' },
+  { id: 'blue', label: 'น้ำเงิน', fill: '#2563EB', ink: '#FFFFFF' },
 ];
+
+/** Draws a face in its 24-unit box (the caller has moved and scaled the context) */
+export function drawFace(ctx: Ctx, face: FaceSticker, style: { fill: string; ink: string }) {
+  const warm = style.fill === ROSE || style.fill === '#F26430';
+  ctx.fillStyle = style.fill;
+  ctx.fill(new Path2D(dot(12, 12, 10.5)));
+  // The shadow lifts the face off the photo; the features on it stay crisp
+  ctx.shadowColor = 'transparent';
+  if (face.blush) {
+    ctx.fillStyle = warm ? 'rgba(255,255,255,0.35)' : 'rgba(244,63,94,0.32)';
+    ctx.fill(new Path2D(dot(6.6, 13.6, 1.7)));
+    ctx.fill(new Path2D(dot(17.4, 13.6, 1.7)));
+  }
+  ctx.strokeStyle = style.ink;
+  ctx.fillStyle = style.ink;
+  ctx.lineWidth = 1.7;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  face.lines.forEach((d) => ctx.stroke(new Path2D(d)));
+  face.dots?.forEach((d) => ctx.fill(new Path2D(d)));
+  ctx.fillStyle = style.fill === ROSE ? '#FFFFFF' : ROSE;
+  face.hearts?.forEach((d) => ctx.fill(new Path2D(d)));
+  ctx.fillStyle = '#60A5FA';
+  face.tears?.forEach((d) => ctx.fill(new Path2D(d)));
+}
 export const STICKER_SCALES: [string, number][] = [['เล็ก', 0.75], ['กลาง', 1], ['ใหญ่', 1.4]];
 export const MAX_FUN_STICKERS = 8;
 
@@ -347,8 +395,8 @@ const styleOf = (id: string) => STICKER_STYLES.find((s) => s.id === id) ?? STICK
 
 /** Size of a fun sticker: icons stand on their own (no badge behind them), words are pills */
 function layoutFun(ctx: Ctx, s: FunSticker, w: number) {
-  if (s.kind === 'icon') {
-    const d = w * 0.12 * s.scale;
+  if (s.kind !== 'word') {
+    const d = w * (s.kind === 'face' ? 0.14 : 0.12) * s.scale;
     return { boxW: d, boxH: d, fontPx: 0 };
   }
   const fontPx = w * 0.052 * s.scale;
@@ -373,7 +421,14 @@ function drawFun(ctx: Ctx, s: FunSticker, w: number, h: number) {
     ctx.restore();
   }
   ctx.save();
-  if (s.kind === 'icon') {
+  if (s.kind === 'face') {
+    const face = FACE_STICKERS[s.value];
+    ctx.translate(cx - boxW / 2, cy - boxH / 2);
+    ctx.scale(boxW / 24, boxH / 24);
+    ctx.shadowColor = 'rgba(15,23,42,0.3)';
+    ctx.shadowBlur = w * 0.012;
+    if (face) drawFace(ctx, face, style);
+  } else if (s.kind === 'icon') {
     // The icon alone, in the chosen colour; a soft shadow keeps it readable on a light or busy photo
     const icon = ICON_STICKERS[s.value];
     const side = boxW;
