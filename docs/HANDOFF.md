@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-327 · Feed plan step 1: สำหรับคุณ (owner 2026-11-09)
+- **What changed:** the member home feed's first tab is **สำหรับคุณ** (`tab=foryou`); ล่าสุด moved into the ⋯ menu as โมเมนต์ล่าสุด, and the cards between posts now go with สำหรับคุณ. /moments ทั้งหมด (server page and later pages) uses `tab=mix`: popular mixed with new, the same for everyone. Ranking is `lib/moments/forYou.ts` (pure; weights in `scoreParts`), fed by `forYouPool` in both moment repositories. Seen posts: `lib/moments/seenTracker.ts`, `POST /api/moments/seen`, table `app.moment_seen`. `docs/API.md` updated. Step 4 (translation) is on hold by owner choice.
+- **New admin page วิธีคิดของระบบ** (ระบบ group, `components/admin/SystemLogicView.tsx`, read only, `content.view`): the owner's place to look up how the important rules work. First topic: the For You ranking; its numbers are imported from `FOR_YOU_WEIGHTS`, never typed in. When you change an important rule, update its topic there (or add one).
+- **What to do about it:** run migration **0039** on live (`! npm run db:migrate`). Until then สำหรับคุณ still works but cannot tell what was seen, and seen batches are dropped. Not walked in a browser yet: check the tabs, the ⋯ menu, and that seen posts sink after a reload. Guests are not tracked on the device: they only see the /moments grid, where one shared order keeps the CDN copy.
+
 ### BE-326 · Photo and clip editors share one design (owner 2026-11-09)
 - **What changed:** the clip editor takes the photo editor's layout: soft grey stage with the clip in a rounded frame, white เลือกคลิปใหม่ pill, pill tool bar (top of the side panel on wide screens), a fixed-height panel so the clip does not jump when the tool changes, shorter hints. Text size is now a slider like sticker size, both through `SizeSlider` in `components/moments/EditorControls.tsx` (`TEXT_SIZE` replaces `TEXT_SIZES`).
 - **What to do about it:** walk both editors on a phone, upright and wide.

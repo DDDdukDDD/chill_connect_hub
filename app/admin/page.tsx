@@ -17,6 +17,7 @@ import { ScraperEngineView } from '@/components/admin/ScraperEngineView';
 import { EventsModerationView } from '@/components/admin/EventsModerationView';
 import { MediaManagerView } from '@/components/admin/MediaManagerView';
 import { SystemCacheView } from '@/components/admin/SystemCacheView';
+import { SystemLogicView } from '@/components/admin/SystemLogicView';
 import { AdminAuthGate, useAdminSession } from '@/components/admin/AdminAuthGate';
 import { ReviewQueueView } from '@/components/admin/ReviewQueueView';
 import { StaffManagerView } from '@/components/admin/StaffManagerView';
@@ -168,6 +169,8 @@ function AdminConsole() {
         return <MediaManagerView />;
       case 'cache':
         return <SystemCacheView />;
+      case 'logic':
+        return <SystemLogicView />;
       default:
         return <AdminDashboardView onNavigate={setActiveModule} />;
     }
