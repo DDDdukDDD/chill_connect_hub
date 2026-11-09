@@ -60,7 +60,7 @@ Response `200`:
 ```ts
 { success: true, events: EventItem[], total: number, pagination: Pagination }
 ```
-Cache: `public, s-maxage=30, stale-while-revalidate=120` — a newly created or approved event can take up to ~30s to appear through a CDN.
+Cache: `private, no-store` (since 2026-11-09, BE-325). The answer depends on the session (blocked hosts are left out), and Vercel's CDN ignores cookies, so it is not CDN-cached; the server keeps the list by table version, so a call costs one small query.
 
 **Sample meetups roll forward (prototype stage):**
 - Community events whose id comes from the bundled `MOCK_EVENTS` have fixed 2026 dates. When one has ended, every read (this endpoint, admin lists) returns its `date` moved forward by whole 77-day cycles, which keeps its weekday.
@@ -135,6 +135,8 @@ Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพ�
 - `latitude` / `longitude` are validated for imported spots (inside Thailand), so they are safe for maps and nearby searches.
 
 ### `GET /api/spots/browse` — the /spots list, worked out on the server (added 2026-10-28, BE-176)
+
+Cache: `public, s-maxage=60, stale-while-revalidate=300` (BE-325); no session is read. `t` is rounded down to the minute, so visitors in the same minute share the CDN's copy.
 
 What `/spots` shows: published places filtered, ranked and counted with the page's own rules (`lib/spotBrowse.ts`), so the browser no longer downloads the whole catalog (~7 MB). Hidden-tier places show only when searched for or saved.
 
@@ -607,7 +609,7 @@ For a signed-in member the server ignores `participantsCount` in the body: the e
 - `POST { action: 'remove_chat_message', id: reportId, messageId }` (permission `community.review`): deletes another message of that room. The report stays open.
 
 ### `GET /api/events` — blocked members
-When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, and that answer is sent with `Cache-Control: private, no-store`. Other answers stay shared-cached. All answers carry `Vary: Cookie`. `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
+When the signed-in viewer has blocked someone, events that person created are left out of every list and search answer, Every answer is `Cache-Control: private, no-store` (see above). `total` and `pagination` are not recounted after the filter, so a page can be a few items short.
 
 ### Moments feed — blocked members
 `comments` and `commentsCount` of each moment leave out comments from people the viewer blocked.
@@ -765,10 +767,10 @@ Public; `404` for an unknown or draft challenge. Answer:
 ## Live activity, "ตอนนี้ในชิลล์" (added 2026-10-16, BE-076)
 
 ### `GET /api/activity`
-The server decides from its own session which shape to send.
+Two URLs, because Vercel's CDN ignores cookies (2026-11-09, BE-325): one URL that answered by session served the cached visitor answer to members.
 
-- **Signed in:** `{ success, mode: 'member', items: LiveItem[] }`, the 12 newest lines, newest first, at most 2 per shown name. Never the viewer's own actions, people the viewer blocked, people who blocked the viewer, or banned members. `Cache-Control: private, no-store`.
-- **Signed out:** `{ success, mode: 'public', counts: { since, meetupJoins, questJoins, moments } }`, the last 7 days, no names. Cached 60 seconds.
+- **`?mine=1`, signed in:** `{ success, mode: 'member', items: LiveItem[] }`, the 12 newest lines, newest first, at most 2 per shown name. Never the viewer's own actions, people the viewer blocked, people who blocked the viewer, or banned members. `Cache-Control: private, no-store`.
+- **Plain URL (everyone, also `?mine=1` signed out):** `{ success, mode: 'public', counts: { since, meetupJoins, questJoins, moments } }`, the last 7 days, no names. Cached 60 seconds.
 
 `LiveItem` (`lib/social/liveActivity.ts`): `{ id, kind, at, timeAgo, person: { name, avatar? }, target: { type, id?, title } }`.
 - `kind`: `meetup_join` | `meetup_host` | `quest_join` | `quest_finish` | `moment`

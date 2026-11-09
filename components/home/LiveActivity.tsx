@@ -43,7 +43,7 @@ function load() {
     });
 }
 
-/** "ตอนนี้ในชิลล์": named lines for members, last week's counts for visitors (the server decides which) */
+/** "ตอนนี้ในชิลล์": last week's counts, shared-cached for everyone. Named lines come from `/api/activity?mine=1` (no screen shows them today) */
 export function useLiveActivity(): LiveState {
   const [state, setState] = useState<LiveState>(() => shared ?? recall<LiveState>('live-activity') ?? { items: [], counts: null, isLoaded: false, freshIds: new Set() });
 
