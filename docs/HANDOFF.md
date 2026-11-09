@@ -20,6 +20,20 @@ Item template:
 
 ---
 
+### BE-321 · Clips up to 30 s with a movable end (owner 2026-11-09)
+- **What changed:** `MAX_VIDEO_SECONDS` 15 → 30 (`lib/moments/types.ts`, read by the composer and the server check). The clip editor has one track with two handles (start and end, 1–30 s; moving one pushes the other). A file within 30 s starts whole, a longer one with the first 15 s (`DEFAULT_CLIP_SECONDS`). `compressClip(file, startS, endS, …)`. `ClipPlayer` now holds the chosen end also for an original file that could not be shrunk. `docs/API.md` says 30.
+- **What to do about it:** joining two separate parts is not built (LAUNCH_CHECKLIST stage 8). Not walked on a real phone yet.
+
+### BE-320 · Follow button moved away from the name (owner 2026-11-09)
+- **What changed:** on the home feed card it sits right before the ... menu; on the photo moment page it leads the actions on the right; on a clip it is an outlined pill at the end of the author row. Tapping the name or photo for the profile no longer risks a follow.
+
+### BE-319 · Global groundwork: country on provinces, English place names, map point required (owner 2026-11-09)
+- **What changed:** migration 0038 adds `app.provinces.country_code` (ISO alpha-2, default `TH`). `LifestyleSpotItem.titleEn` (stored in `details`, not shown yet) is filled by the OSM and tourism-directory importers; `runSpotScraper` drops places without coordinates. `db/backfill-place-title-en.mjs` filled 130 of 132 OSM places on dev.
+- **What to do about it:** on live, the owner runs `! npm run db:migrate` (0038) and the backfill with `CONFIRM_LIVE`. New code: no new Thailand-only assumptions where avoidable (plan in LAUNCH_CHECKLIST "เตรียมพร้อม Global").
+
+### BE-318 · Positioning on the landing hero and site descriptions (owner 2026-11-09)
+- **What changed:** hero h1 "โซเชียลแพลตฟอร์ม / สำหรับคนชอบออกไปใช้ชีวิต" + line "ที่ทำให้ทุกการใช้ชีวิตมีความหมาย" (`app/HomeView.tsx`); wordmark subtitle "โซเชียลคนชอบออกไปใช้ชีวิต"; the same sentence in layout metadata, JSON-LD, manifest and llms.txt. Positioning and differentiator in `docs/PRODUCT_DIRECTION.md`. /about, onboarding and the sign-up popup still say คอมมูนิตี้.
+
 ### BE-317 · Top 15 of every destination has vibe text; follow on the post page (owner 2026-11-08)
 - **What changed:** `db/content/featured-top15-vibes.json`: 194 vibe texts for the 15 best places (curation score) of each of the 13 destinations on /spots, and 3 places to draft (navy recruit centre, army camp, former Tiger Temple). Applied on dev only. The full-screen post page (`components/moments/MomentDetailView.tsx`) has the same "· ติดตาม" as the feed.
 - **What to do about it:** on live, `node db/apply-spot-vibes.mjs db/content/featured-top15-vibes.json --apply` once the owner OKs it. OSM found almost nothing new for Chiang Mai, Phuket and Chonburi (all already imported).
