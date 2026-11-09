@@ -154,20 +154,6 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         <div className="min-w-0 flex-1">
           <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
             <span className="font-semibold text-slate-900 truncate">{moment.userName}</span>
-            {showFollow &&
-              (justFollowed ? (
-                <span className="shrink-0 text-slate-500">· กำลังติดตาม</span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={follow}
-                  disabled={isFollowing}
-                  aria-label={`ติดตาม ${moment.userName}`}
-                  className="shrink-0 font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline disabled:opacity-60 cursor-pointer"
-                >
-                  · ติดตาม
-                </button>
-              ))}
           </p>
           <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
@@ -175,6 +161,21 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             {moment.location && ` · ${moment.location}`}
           </p>
         </div>
+        {/* Follow sits by the ... menu, away from the name and photo, so a tap meant for the profile never follows (owner 2026-11-09) */}
+        {showFollow &&
+          (justFollowed ? (
+            <span className="shrink-0 text-sm text-slate-500">กำลังติดตาม</span>
+          ) : (
+            <button
+              type="button"
+              onClick={follow}
+              disabled={isFollowing}
+              aria-label={`ติดตาม ${moment.userName}`}
+              className="shrink-0 h-9 px-2 text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline disabled:opacity-60 cursor-pointer"
+            >
+              ติดตาม
+            </button>
+          ))}
         <div className="relative shrink-0">
           <button
             type="button"
