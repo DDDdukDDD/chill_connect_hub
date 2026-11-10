@@ -1,0 +1,96 @@
+import { cacheManager } from '../cache';
+import { db } from '../db';
+import { tidyDisplayName } from '../displayName';
+import { memberRepository, type Member } from '../members';
+import { momentRepository } from '../moments';
+import { thaiTimeAgo } from '../moments/service';
+import { allQuestFinishes } from './questFinishes';
+
+/**
+ * "เพื่อนๆ ทำสำเร็จ" at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
+ * show who achieved what). Two public facts make it: a finished challenge ("ใครทำอยู่บ้าง" is public on the challenge
+ * page) and a post's challenge line ("พิชิตชาเลนจ์ … 2/3", lib/social/achievement.ts). One circle per person:
+ * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.
+ */
+
+const WINDOW_DAYS = 14;
+const ROW_MAX = 15;
+
+export interface AchievementItem {
+  id: string;
+  person: { id: string; name: string; avatar?: string };
+  isMe: boolean;
+  kind: 'finish' | 'step';
+  quest: { id: string; title: string };
+  current?: number;
+  total?: number;
+  href: string;
+  timeAgo: string;
+  at: string;
+}
+
+type Raw = Omit<AchievementItem, 'person' | 'isMe' | 'timeAgo'> & { memberId: string };
+
+/** Everyone's achievements in the window, the same for every reader: read at most once a minute */
+const everyone = () =>
+  cacheManager.getOrSet(
+    'achievements:row',
+    async (): Promise<Raw[]> => {
+      const since = Date.now() - WINDOW_DAYS * 86_400_000;
+      const [finishes, steps] = await Promise.all([
+        allQuestFinishes().then((all) => all.filter((f) => Date.parse(f.finishedAt) >= since)),
+        // A database without migration 0040 has no challenge lines yet
+        momentRepository.recentAchievements(new Date(since), 200).catch(() => []),
+      ]);
+      const titles = new Map<string, string>();
+      for (const id of new Set(finishes.map((f) => f.questId))) {
+        const quest = await db.findQuestById(id);
+        if (quest) titles.set(id, quest.title);
+      }
+      return [
+        ...finishes.flatMap((f): Raw[] =>
+          titles.has(f.questId)
+            ? [{ id: `f:${f.questId}:${f.memberId}`, memberId: f.memberId, kind: 'finish', quest: { id: f.questId, title: titles.get(f.questId) as string }, href: `/challenges/${encodeURIComponent(f.questId)}`, at: f.finishedAt }]
+            : []
+        ),
+        ...steps.map((s): Raw => ({
+          id: `s:${s.momentId}`,
+          memberId: s.authorId,
+          kind: s.achievement.current >= s.achievement.total ? 'finish' : 'step',
+          quest: { id: s.achievement.questId, title: s.achievement.title },
+          current: s.achievement.current,
+          total: s.achievement.total,
+          href: `/moments/${encodeURIComponent(s.momentId)}`,
+          at: s.createdAt,
+        })),
+      ];
+    },
+    { ttlMs: 60_000, tags: ['achievements'] }
+  );
+
+export async function achievementsRow(viewer: Member): Promise<AchievementItem[]> {
+  const blocked = new Set(viewer.blockedIds ?? []);
+  // One circle per person: a finish beats a step, then the newest
+  const best = new Map<string, Raw>();
+  for (const item of await everyone()) {
+    if (blocked.has(item.memberId)) continue;
+    const held = best.get(item.memberId);
+    const better = !held || (item.kind === 'finish' && held.kind === 'step') || (item.kind === held.kind && item.at > held.at);
+    if (better) best.set(item.memberId, item);
+  }
+  if (best.size === 0) return [];
+  const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys()]), memberRepository.followerIds(viewer.id)]);
+  const following = new Set(viewer.followingIds ?? []);
+  const mutual = new Set(followers.filter((id) => following.has(id)));
+  const rank = (id: string) => (id === viewer.id ? 0 : mutual.has(id) ? 1 : following.has(id) ? 2 : 3);
+  const now = Date.now();
+  return [...best.values()]
+    .flatMap((item): AchievementItem[] => {
+      const person = people.get(item.memberId);
+      if (!person || person.status !== 'active' || person.blockedIds?.includes(viewer.id)) return [];
+      const { memberId, ...rest } = item;
+      return [{ ...rest, person: { id: memberId, name: tidyDisplayName(person.displayName).trim() || person.displayName, avatar: person.avatarUrl }, isMe: memberId === viewer.id, timeAgo: thaiTimeAgo(item.at, now) }];
+    })
+    .sort((a, b) => rank(a.person.id) - rank(b.person.id) || b.at.localeCompare(a.at))
+    .slice(0, ROW_MAX);
+}

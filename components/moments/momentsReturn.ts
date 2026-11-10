@@ -11,6 +11,18 @@ const RETURNING_KEY = 'moments:returning';
 /** The "on the way back" mark only counts for a moment, so a later visit from the menu starts fresh */
 const RETURN_WINDOW_MS = 15_000;
 
+// The browser's Back (or Forward) from any page counts as a way back, so a feed left through a profile, a place or a
+// tag link comes back where it was too; the saved URL still has to match, so other pages are never touched
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    try {
+      sessionStorage.setItem(RETURNING_KEY, String(Date.now()));
+    } catch {
+      // nothing to put back then
+    }
+  });
+}
+
 export interface ShowcaseSnapshot {
   /** /moments with its tab, e.g. /moments?type=spot */
   url: string;
@@ -48,7 +60,7 @@ export function saveShowcase(snapshot: ShowcaseSnapshot) {
   write({ ...snapshot, moments: snapshot.moments.map((moment) => ({ ...moment, comments: [] })) });
 }
 
-/** Called when the Home feed opens a clip; the feed shows comments, so they stay */
+/** Called when the Home feed is left for a clip or any other page; the feed shows comments, so they stay */
 export const saveFeedReturn = (snapshot: ShowcaseSnapshot) => write(snapshot);
 
 /** Where the moment page's back link goes: the tab it was opened from, or /moments when it was opened elsewhere */
@@ -89,4 +101,11 @@ export function takeShowcase(url: string): ShowcaseSnapshot | null {
   if (Date.now() - returning > RETURN_WINDOW_MS) return null;
   const snapshot = read();
   return snapshot?.url === url ? snapshot : null;
+}
+
+/** The Reel goes on with the clips that came after this one in the feed or grid it was opened from */
+export function clipsAfter(momentId: string): FeedItem[] {
+  const list = read()?.moments ?? [];
+  const at = list.findIndex((m) => m.id === momentId);
+  return at === -1 ? [] : list.slice(at + 1).filter((m) => m.video);
 }

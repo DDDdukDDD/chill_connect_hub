@@ -15,7 +15,7 @@ import { nightlifeAgeMessage, NIGHTLIFE_CATEGORY } from './nightlife';
 import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
-import { notifyJoined } from '../social/notifications';
+import { notifyFriendsGoing, notifyJoined } from '../social/notifications';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -70,6 +70,10 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
   }
   const host = hostOf(event);
   if (result.success && result.status !== 'already_joined' && host) await notifyJoined(host, member, eventId, event.title);
+  // Friends hear about a ตี้, the thing that takes people out (not a fair saved to a plan)
+  if (result.success && result.status !== 'already_joined' && isCommunity(event)) {
+    notifyFriendsGoing(member, eventId, event.title, host ? [host] : []);
+  }
   return { status: (result.status ?? (result.success ? 'joined' : 'not_found')) as JoinStatus, message: result.message, event: result.updatedEvent ?? event };
 }
 

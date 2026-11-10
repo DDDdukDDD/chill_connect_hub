@@ -98,6 +98,8 @@ export interface Moment {
   moderationNote?: string;
   /** A moderator decided the photo does not show the place or event it is tied to: the post stays, but it is not a visit and counts toward no challenge */
   evidenceRejected?: { at: string; note: string };
+  /** The challenge this post counted toward when it was posted, and how far the author was then (FEED_PLAN step 3.5) */
+  achievement?: MomentAchievement;
   /**
    * Proof of going for challenges (lib/moments/evidence.ts): 'auto' = the phone was at the place when posting,
    * 'pending' = waiting for staff, 'approved' = staff passed it. Missing on older posts (they count as before).
@@ -160,6 +162,8 @@ export interface MomentFeedQuery {
   tag?: string;
   category?: MomentCategory;
   placesOnly?: boolean;
+  /** Clip posts only (the Reel's next clips) */
+  clipsOnly?: boolean;
   sort: 'newest' | 'popular';
   page: number;
   limit: number;
@@ -196,6 +200,25 @@ export type TargetFactRow =
 
 export type MomentTypeCounts = { all: number; spot: number; community: number; fair: number; challenge: number };
 
+export interface MomentAchievement {
+  questId: string;
+  title: string;
+  current: number;
+  total: number;
+}
+
+/** How one hashtag is used across public posts (a post counts once, however often it repeats the tag) */
+export interface HashtagUse {
+  tag: string;
+  /** Posts in the last 7 days, and in the 7 days before that */
+  week: number;
+  weekBefore: number;
+  total: number;
+  /** Different people who used it, ever and in the last 7 days */
+  authors: number;
+  weekAuthors: number;
+}
+
 export interface MomentRepository {
   feed(query: MomentFeedQuery): Promise<MomentFeedPage>;
   forYouPool(query: ForYouPoolQuery): Promise<ForYouPoolPost[]>;
@@ -203,6 +226,10 @@ export interface MomentRepository {
   readerAffinity(viewerId: string): Promise<Map<string, number>>;
   /** Feed posts by id, in the order asked, as `feed` returns them (ids no longer shown are left out) */
   feedByIds(ids: string[], query: Pick<MomentFeedQuery, 'viewerId' | 'blockedIds'>): Promise<Moment[]>;
+  /** Keeps the challenge line on a new post; written on its own, so a database without the column only loses the line */
+  setAchievement(id: string, achievement: MomentAchievement): Promise<void>;
+  /** Public posts with a challenge line since this time, newest first (the achievements row on the member home) */
+  recentAchievements(since: Date, limit: number): Promise<{ momentId: string; authorId: string; achievement: MomentAchievement; createdAt: string }[]>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;
   /**
@@ -211,6 +238,10 @@ export interface MomentRepository {
    */
   targetFacts(targets: { type: MomentTargetType; ref: string }[]): Promise<TargetFactRow[]>;
   typeCounts(): Promise<MomentTypeCounts>;
+  /** Every hashtag in public posts with its counts, the most used first (at most 500) */
+  hashtagUses(): Promise<HashtagUse[]>;
+  /** Hashtags that appear in the same public posts as `tag`, the most shared first */
+  relatedHashtags(tag: string, limit: number): Promise<{ tag: string; posts: number }[]>;
   findById(id: string): Promise<Moment | null>;
   create(moment: Moment): Promise<Moment>;
   /** Applies `change` to the stored moment atomically and returns the result */

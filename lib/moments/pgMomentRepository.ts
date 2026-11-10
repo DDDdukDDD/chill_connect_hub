@@ -42,6 +42,8 @@ function rowToMoment(r: PgRow): Moment {
     caption: r.caption,
     images: r.images,
     imageRatio: orUndefined(r.image_ratio),
+    // Read only when migration 0040 has added the column
+    ...(r.achievement ? { achievement: r.achievement } : {}),
     video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s, ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}), ...(r.video_preview_url ? { previewUrl: r.video_preview_url } : {}) } : undefined,
     ...(r.comments_off ? { commentsOff: true } : {}),
     ...(r.likes_off ? { likesOff: true } : {}),
@@ -218,6 +220,8 @@ const contains = (value: string) => `%${value.replace(/[\\%_]/g, '\\$&')}%`;
 /** What cannot be part of a tag ends it, as HASHTAG in hashtags.ts: Thai is named because [:alnum:] depends on the database's locale */
 const TAG_END = `($|[^[:alnum:]_฀-๿])`;
 const hashtagPattern = (tag: string) => `#${tag.replace(/^#/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${TAG_END}`;
+/** Each hashtag in a caption, as HASHTAG finds them; regexp_matches gives back the part after the # */
+const TAG_CAPTURE = '#([[:alnum:]_฀-๿]+)';
 
 const placeRule = (tx: Sql) => tx`(m.target_type = 'spot' or (m.target_type = 'general' and btrim(m.location_text) <> '' and m.location_text <> all(${tx.array(NOT_A_PLACE)}::text[])))`;
 
@@ -238,6 +242,7 @@ function feedFilters(tx: Sql, query: MomentFeedQuery): Fragment {
     ${query.category ? tx`and m.category = ${query.category}` : tx``}
     ${query.placesOnly ? tx`and ${placeRule(tx)}` : tx``}
     ${query.tag ? tx`and m.caption ~* ${hashtagPattern(query.tag)}` : tx``}
+    ${query.clipsOnly ? tx`and m.video_url is not null` : tx``}
     ${location ? tx`and (m.location_text ilike ${contains(location)} or m.target_title ilike ${contains(location)})` : tx``}
     ${q ? tx`and (m.caption ilike ${contains(q)} or coalesce(a.display_name, m.author_name) ilike ${contains(q)} or m.location_text ilike ${contains(q)})` : tx``}` as unknown as Fragment;
 }
@@ -426,6 +431,19 @@ export const pgMomentRepository: MomentRepository = {
     const idOf = new Map(found.map((r) => [r.slug as string, r.id as string]));
     return feedMoments(db, slugs.flatMap((slug) => (idOf.has(slug) ? [idOf.get(slug) as string] : [])), query);
   },
+  async setAchievement(id, achievement) {
+    const db = sql();
+    await db`update app.moments set achievement = ${db.json(achievement as never)} where slug = ${id}`;
+  },
+  async recentAchievements(since, limit) {
+    const db = sql();
+    const rows = await db`
+      select m.slug, a.legacy_id as author, m.achievement, m.created_at
+      from app.moments m join app.members a on a.id = m.author_id
+      where ${publicRule(db)} and m.achievement is not null and m.created_at >= ${since}
+      order by m.created_at desc limit ${limit}`;
+    return rows.map((r) => ({ momentId: String(r.slug), authorId: String(r.author), achievement: r.achievement, createdAt: new Date(r.created_at).toISOString() }));
+  },
   async markSeen(viewerId, slugs) {
     if (slugs.length === 0) return;
     const db = sql();
@@ -436,6 +454,34 @@ export const pgMomentRepository: MomentRepository = {
       on conflict (member_id, moment_id) do update set seen_at = excluded.seen_at`;
     // Rows are kept 30 days; about one batch in fifty clears the older ones (the seen_at index makes it quick)
     if (Math.random() < 0.02) await db`delete from app.moment_seen where seen_at < now() - interval '30 days'`;
+  },
+  async hashtagUses() {
+    const db = sql();
+    // One row per post and tag, so a tag repeated in one caption counts once; only captions with a # are read
+    const rows = await db`
+      with uses as (
+        select distinct m.id, lower(t[1]) as tag, m.created_at, coalesce(m.author_id::text, m.author_name) as author
+        from app.moments m left join app.members a on a.id = m.author_id
+        cross join lateral regexp_matches(m.caption, ${TAG_CAPTURE}, 'g') as t
+        where ${publicRule(db)} and m.caption like '%#%'
+      )
+      select tag, count(*) as total, count(distinct author) as authors,
+        count(*) filter (where created_at >= now() - interval '7 days') as week,
+        count(*) filter (where created_at >= now() - interval '14 days' and created_at < now() - interval '7 days') as week_before,
+        count(distinct author) filter (where created_at >= now() - interval '7 days') as week_authors
+      from uses group by tag order by total desc, tag limit 500`;
+    return rows.map((r) => ({ tag: String(r.tag), total: Number(r.total), authors: Number(r.authors), week: Number(r.week), weekBefore: Number(r.week_before), weekAuthors: Number(r.week_authors) }));
+  },
+  async relatedHashtags(tag, limit) {
+    const db = sql();
+    const own = tag.trim().replace(/^#/, '').toLowerCase();
+    const rows = await db`
+      select lower(t[1]) as tag, count(distinct m.id) as posts
+      from app.moments m left join app.members a on a.id = m.author_id
+      cross join lateral regexp_matches(m.caption, ${TAG_CAPTURE}, 'g') as t
+      where ${publicRule(db)} and m.caption ~* ${hashtagPattern(own)} and lower(t[1]) <> ${own}
+      group by 1 order by posts desc, 1 limit ${limit}`;
+    return rows.map((r) => ({ tag: String(r.tag), posts: Number(r.posts) }));
   },
   async typeCounts() {
     const db = sql();

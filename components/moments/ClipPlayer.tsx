@@ -87,10 +87,68 @@ interface ClipPlayerProps {
   /** What a tap does instead of pausing: opens the clip full screen */
   onTap?: () => void;
   onDoubleTap?: () => void;
+  /** A thin time bar along the bottom that can be dragged to any part of the clip (the Reel, FEED_PLAN step 3) */
+  showTime?: boolean;
   className?: string;
 }
 
-export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, className = '' }: ClipPlayerProps) {
+/** How long the part that plays is: the chosen part, or the file after its start */
+const partLength = (el: HTMLVideoElement, startS: number, durationS?: number) => durationS || (Number.isFinite(el.duration) ? el.duration - startS : 0);
+
+/**
+ * The Reel's time bar: a native range input, so a finger, a mouse and the keyboard all work. It follows the clip
+ * every frame without re-rendering the player.
+ */
+function TimeBar({ videoRef, startS, durationS }: { videoRef: React.RefObject<HTMLVideoElement | null>; startS: number; durationS?: number }) {
+  const bar = useRef<HTMLInputElement>(null);
+  const dragging = useRef(false);
+  useEffect(() => {
+    let frame = 0;
+    const tick = () => {
+      const el = videoRef.current;
+      const len = el ? partLength(el, startS, durationS) : 0;
+      if (el && bar.current && len > 0 && !dragging.current) {
+        const share = Math.min(1, Math.max(0, (el.currentTime - startS) / len));
+        bar.current.value = String(share * 1000);
+        bar.current.style.setProperty('--share', `${share * 100}%`);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [videoRef, startS, durationS]);
+  const seek = (value: number) => {
+    const el = videoRef.current;
+    const len = el ? partLength(el, startS, durationS) : 0;
+    if (!el || len <= 0) return;
+    el.currentTime = startS + (value / 1000) * len;
+    bar.current?.style.setProperty('--share', `${value / 10}%`);
+  };
+  return (
+    <input
+      ref={bar}
+      type="range"
+      min={0}
+      max={1000}
+      step={1}
+      defaultValue={0}
+      aria-label="เลื่อนดูช่วงในคลิป"
+      onPointerDown={() => {
+        dragging.current = true;
+      }}
+      onPointerUp={() => {
+        dragging.current = false;
+      }}
+      onPointerCancel={() => {
+        dragging.current = false;
+      }}
+      onInput={(e) => seek(Number(e.currentTarget.value))}
+      className="clip-time absolute inset-x-0 bottom-[env(safe-area-inset-bottom)] z-20 w-full"
+    />
+  );
+}
+
+export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, showTime = false, className = '' }: ClipPlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(true);
@@ -261,6 +319,7 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
           >
             {sound && isFull ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
           </button>
+          {showTime && isFull && <TimeBar videoRef={video} startS={startS} durationS={durationS} />}
           {hearts > 0 && (
             <span key={hearts} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
               <Heart className="w-24 h-24 text-white fill-white drop-shadow-lg motion-safe:animate-heart-pop motion-reduce:opacity-0" />

@@ -346,7 +346,14 @@ export async function suggestedMembers(viewer: Member | null, limit = 5) {
     entry.count += 1;
     posts.set(moment.authorId, entry);
   }
-  const picks = [];
+  // People who like the same สาย come first (FEED_PLAN step 3.5); the answer never says why, since interests are private
+  const interestsOf = (member?: Member | null) => {
+    const i = member?.preferences?.interests;
+    return new Set([...(i?.communityCategories ?? []), ...(i?.spotVibes ?? []), ...(i?.fairCategories ?? [])]);
+  };
+  const mine = interestsOf(viewer);
+  const shared = (member: Member) => (mine.size ? [...interestsOf(member)].filter((x) => mine.has(x)).length : 0);
+  const picks: { id: string; displayName: string; avatarUrl?: string; momentCount: number; trusted: boolean; approvedHost: boolean; isSample: boolean; match: number }[] = [];
   for (const [id, entry] of posts) {
     const member = byId.get(id);
     if (!member || member.status !== 'active' || skip.has(id) || trustLevel(member) === 'new' || hasOpenRisk(member)) continue;
@@ -359,10 +366,15 @@ export async function suggestedMembers(viewer: Member | null, limit = 5) {
       trusted: trust.level === 'trusted',
       approvedHost: trust.hostStatus === 'approved',
       isSample: Boolean(member.isSample),
+      match: shared(member),
     });
-    if (picks.length >= limit) break;
   }
-  return picks;
+  // Same สาย first, then the people who post most; the order before was newest poster first, kept as the last tie-break
+  return picks
+    .map((pick, at) => ({ pick, at }))
+    .sort((a, b) => b.pick.match - a.pick.match || b.pick.momentCount - a.pick.momentCount || a.at - b.at)
+    .slice(0, limit)
+    .map(({ pick }) => ({ ...pick, match: undefined }));
 }
 
 export { accountAgeDays };

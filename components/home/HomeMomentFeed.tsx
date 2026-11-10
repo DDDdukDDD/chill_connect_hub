@@ -5,7 +5,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -21,7 +21,12 @@ import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
+import { AchievementLine } from '@/components/moments/AchievementLine';
+import { AchievementsRow } from '@/components/home/AchievementsRow';
+import { ShareSheet } from '@/components/moments/ShareSheet';
+import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
 import { optimizedImage } from '@/lib/optimizedImage';
+import type { Mention } from '@/lib/moments/mentions';
 
 const PAGE_SIZE = 8;
 const NEW_CHECK_MS = 60_000;
@@ -70,9 +75,10 @@ const Avatar = MomentAvatar;
 
 interface PostHandlers {
   onToggle: (id: string, action: Action) => void;
-  onComment: (id: string, text: string, parentId?: string, mentions?: string[]) => Promise<boolean>;
+  /** Shows the comment at once, then the server's copy; false (and the comment gone again) when it could not be sent */
+  onComment: (id: string, text: string, parentId?: string, mentions?: Mention[]) => Promise<boolean>;
   onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
-  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share') => void;
+  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share' | 'card' | 'send') => void;
   onPhotos: (images: string[], index: number) => void;
   /** A clip is opening on its own page: keep the list and the place in it for the way back */
   onLeaveToClip: (id: string) => void;
@@ -93,12 +99,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [justFollowed, setJustFollowed] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const showFollow = Boolean(moment.authorId) && !moment.isMine && !moment.isSample && (!moment.isFollowingAuthor || justFollowed);
+  // Answers at once, like IG; goes back with a message if the server says no
   const follow = async () => {
     if (!moment.authorId || isFollowing) return;
     setIsFollowing(true);
-    const ok = await handlers.onFollow(moment.authorId);
+    setJustFollowed(true);
+    if (!(await handlers.onFollow(moment.authorId))) setJustFollowed(false);
     setIsFollowing(false);
-    if (ok) setJustFollowed(true);
   };
   const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
@@ -125,11 +132,17 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.trim() || isSending) return;
+    // The box clears and the comment shows at once; if it cannot be sent, the words come back to the box
+    const text = draft.trim();
+    const parent = replyTo;
+    const people = mention.mentions;
     setIsSending(true);
-    if (await handlers.onComment(moment.id, draft.trim(), replyTo?.id, mention.mentions.map((m) => m.id))) {
-      setDraft('');
-      mention.reset();
-      setReplyTo(null);
+    setDraft('');
+    mention.reset();
+    setReplyTo(null);
+    if (!(await handlers.onComment(moment.id, text, parent?.id, people))) {
+      setDraft(text);
+      setReplyTo(parent);
     }
     setIsSending(false);
   };
@@ -230,33 +243,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`);
       }} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
 
-      {moment.caption && (
-        <div>
-          <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
-          </p>
-          {foldsCaption && (
-            <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
-              ดูเพิ่มเติม
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Where it was, in one slim line (owner 2026-10-29): the place, then what to do there */}
-      {target && (
-        <Link
-          href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
-          className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
-        >
-          <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
-          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
-          {/* What it still offers (FEED_PLAN: the feed takes people out): the day and seats left, XP, open now */}
-          {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
-          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
-        </Link>
-      )}
-
+      {/* Reactions sit right under the photo, like IG (owner 2026-11-10); the words, the challenge and the place follow */}
       <div className="-my-1.5 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
         {!moment.likesOff && (
         <button
@@ -283,8 +270,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </button>
         )}
         {mayShare && (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
-          <Share2 className="w-[18px] h-[18px]" />
+        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="แชร์หรือชวนเพื่อน" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
+          <Send className="w-[18px] h-[18px] -rotate-12" />
         </button>
         )}
         <button
@@ -307,6 +294,35 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           </Link>
           {moment.likesCount > 1 && <> และอีก <span className="tabular-nums">{(moment.likesCount - 1).toLocaleString()}</span> คน</>}
         </p>
+      )}
+
+      {moment.caption && (
+        <div>
+          <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
+          </p>
+          {foldsCaption && (
+            <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+              ดูเพิ่มเติม
+            </button>
+          )}
+        </div>
+      )}
+
+      {moment.achievement && <AchievementLine achievement={moment.achievement} />}
+
+      {/* Where it was, in one slim line (owner 2026-10-29): the place, then what to do there */}
+      {target && (
+        <Link
+          href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
+          className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
+        >
+          <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
+          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
+          {/* What it still offers (FEED_PLAN: the feed takes people out): the day and seats left, XP, open now */}
+          {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
+          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+        </Link>
       )}
 
       {shownComments.length > 0 && (
@@ -536,6 +552,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [reporting, setReporting] = useState<{ moment: FeedItem; reason: string } | null>(null);
   const [editing, setEditing] = useState<({ id: string; caption: string; photos: EditablePhoto[] | null; ratio: number } & PostOptions) | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [sharing, setSharing] = useState<FeedItem | null>(null);
+  const [inviting, setInviting] = useState<FeedItem | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
   // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
   useEffect(() => flushSeen, []);
@@ -655,6 +673,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     return () => observer.disconnect();
   }, [loadMore, loadedView]);
 
+  // Leaving through any link in the feed (a profile, a place, a tag) keeps the list and the place in it for the way back
+  const rememberPlace = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    const link = (e.target as HTMLElement).closest('a');
+    const href = link?.getAttribute('href');
+    if (!href?.startsWith('/') || link?.target === '_blank' || loadedView !== sort) return;
+    const momentId = (e.target as HTMLElement).closest('article')?.getAttribute('data-seen-id') ?? '';
+    saveFeedReturn({ url: window.location.pathname, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort });
+  };
+
   const replace = (updated: FeedItem) => setMoments((list) => list.map((m) => (m.id === updated.id ? updated : m)));
 
   const handlers: PostHandlers = {
@@ -676,9 +704,22 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         }
       });
     },
-    onComment: async (id, text, parentId, mentions) => {
-      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId, mentions });
+    onComment: async (id, text, parentId, mentions = []) => {
+      const pendingId = `pending-${Date.now()}`;
+      const pending = {
+        id: pendingId, userName: name, userAvatar: avatar ?? '', text, timeAgo: 'เมื่อสักครู่นี้', createdAt: new Date().toISOString(),
+        isMine: true, parentId, authorId: null, mentions, likesCount: 0, isLiked: false, canDelete: false,
+      } as FeedItem['comments'][number];
+      const withPending = (on: boolean) =>
+        setMoments((list) =>
+          list.map((m) =>
+            m.id !== id ? m : on ? { ...m, comments: [...m.comments, pending], commentsCount: m.commentsCount + 1 } : { ...m, comments: m.comments.filter((c) => c.id !== pendingId), commentsCount: m.commentsCount - 1 }
+          )
+        );
+      withPending(true);
+      const result = await call(`/api/moments/${encodeURIComponent(id)}/actions`, 'POST', { action: 'comment', text, parentId, mentions: mentions.map((m) => m.id) });
       if (!result.ok || !result.moment) {
+        withPending(false);
         showToast(result.message);
         return false;
       }
@@ -699,6 +740,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, photos: moment.video ? null : moment.images.map((url) => ({ url })), ratio: postRatio(moment.imageRatio), commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
+      // A 9:16 picture for an IG Story or LINE, like Strava (FEED_PLAN step 3.5)
+      // The share button opens the send sheet: invite friends, the link, the card
+      if (choice === 'send') setSharing(moment);
+      if (choice === 'card') {
+        showToast('กำลังทำการ์ดแชร์…');
+        void import('@/components/moments/shareCard')
+          .then(({ shareCard }) => shareCard(moment))
+          .then((done) => done !== 'cancelled' && showToast(done === 'saved' ? 'บันทึกการ์ดแชร์ลงเครื่องแล้ว' : 'แชร์การ์ดแล้ว'))
+          .catch(() => showToast('ทำการ์ดแชร์ไม่สำเร็จ ลองอีกครั้งนะ'));
+      }
       if (choice === 'copy' || choice === 'share') {
         const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
         // The phone's own share sheet where there is one; otherwise the link is copied
@@ -726,12 +777,14 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       else showToast(result.message);
     },
     onFollow: async (authorId) => {
+      const following = (on: boolean) => setMoments((list) => list.map((m) => (m.authorId === authorId ? { ...m, isFollowingAuthor: on } : m)));
+      following(true);
       const result = await call(`/api/members/${encodeURIComponent(authorId)}/actions`, 'POST', { action: 'follow' });
       if (!result.ok) {
+        following(false);
         showToast(result.message);
         return false;
       }
-      setMoments((list) => list.map((m) => (m.authorId === authorId ? { ...m, isFollowingAuthor: true } : m)));
       return true;
     },
   };
@@ -800,7 +853,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       .map((at) => <React.Fragment key={`tail-${at}`}>{inserts[at]}</React.Fragment>);
 
   return (
-    <div ref={topRef} className="scroll-mt-24">
+    <div ref={topRef} className="scroll-mt-24" onClickCapture={rememberPlace}>
       {/* The title keeps one line: on phones the tabs go under it */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
@@ -890,6 +943,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           </label>
         </div>
       </div>
+
+      {/* Who achieved what, where other apps put stories (owner 2026-11-10); on the main tabs only */}
+      {!PERSONAL[sort] && <AchievementsRow />}
 
       {/* The live line opens the feed: what friends are doing now, right before their moments */}
       {top && <div className="mt-5">{top}</div>}
@@ -1027,6 +1083,28 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             </button>
           </div>
         </DialogShell>
+      )}
+
+      {sharing && (
+        <ShareSheet
+          canInvite
+          canCard={Boolean(sharing.images[0])}
+          onInvite={() => setInviting(sharing)}
+          onLink={() => handlers.onMenu(sharing, 'share')}
+          onCard={() => handlers.onMenu(sharing, 'card')}
+          onClose={() => setSharing(null)}
+        />
+      )}
+      {inviting && (
+        <InviteFriendsDialog
+          momentId={inviting.id}
+          place={inviting.targetTitle || inviting.location}
+          onClose={() => setInviting(null)}
+          onDone={(message) => {
+            setInviting(null);
+            showToast(message);
+          }}
+        />
       )}
 
       <Toast message={toast} />

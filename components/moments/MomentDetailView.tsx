@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Bookmark, Flag, Heart, Link2, MessageCircle, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bookmark, ChevronDown, ChevronUp, Flag, Heart, MessageCircle, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
@@ -13,12 +13,15 @@ import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton, lockPageScroll } from '@/components/auth/DialogShell';
 import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
+import { AchievementLine } from '@/components/moments/AchievementLine';
+import { ShareSheet } from '@/components/moments/ShareSheet';
+import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentFeed';
 import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/MomentsChrome';
 
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
-import { markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
+import { clipsAfter, markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
 
 const Avatar = MomentAvatar;
 
@@ -35,9 +38,42 @@ interface DetailProps {
   openFullScreen?: boolean;
 }
 
-function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, requireLogin, showToast }: DetailProps & MomentsChromeContext) {
+/** The Reel (FEED_PLAN step 3): swiping up or down in full screen steps through clips without leaving the page */
+interface ReelProps {
+  /** The clip after this one, loaded ahead so it starts at once */
+  next?: FeedItem;
+  hasPrev: boolean;
+  step: (by: 1 | -1) => void;
+  /** Which way this clip came in, for its slide */
+  enteredFrom?: 1 | -1;
+  /** The moment first opened: the feed's saved place names it */
+  returnId: string;
+  /** Leaving full screen goes Back to where the first clip was tapped */
+  backOnLeave: boolean;
+  /** This clip came from the Reel's line, not from the server page, so it is read whole in the browser */
+  fromQueue: boolean;
+  onFullChange: (full: boolean) => void;
+}
+
+/** A swipe this far (px) and mostly upright steps to the next clip; a wheel or key step waits this long after the last */
+const SWIPE_PX = 60;
+const STEP_PAUSE_MS = 650;
+let lastStepAt = 0;
+const REEL_HINT_KEY = 'chillwaa:reel-hint-seen';
+/** The swipe hint shows once per device; with storage blocked it simply shows again next time */
+function reelHintSeen(seen?: true): boolean {
+  try {
+    if (seen) localStorage.setItem(REEL_HINT_KEY, '1');
+    return Boolean(localStorage.getItem(REEL_HINT_KEY));
+  } catch {
+    return false;
+  }
+}
+
+function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, requireLogin, showToast }: DetailProps & { reel?: ReelProps } & MomentsChromeContext) {
   const router = useRouter();
-  const myId = useMemberSession().member?.id;
+  const me = useMemberSession().member;
+  const myId = me?.id;
   const [moment, setMoment] = useState(initialMoment);
   const [viewer, setViewer] = useState<number | null>(null);
   const [comment, setComment] = useState('');
@@ -53,7 +89,10 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const commentInput = useRef<HTMLInputElement>(null);
   const mention = useMentionPicker({ value: comment, setValue: setComment, fieldRef: commentInput, extra: threadPeople(moment) });
   const [isFull, setIsFull] = useState(openFullScreen && Boolean(initialMoment.video));
-  const openedFull = useRef(isFull);
+  const openedFull = useRef(reel ? reel.backOnLeave : isFull);
+  const returnId = reel?.returnId ?? initialMoment.id;
+  const onFullChange = reel?.onFullChange;
+  useEffect(() => onFullChange?.(isFull), [isFull, onFullChange]);
   // The cover has the clip's shape: full screen on a computer, a tall clip leaves room, so its words and buttons sit right beside it
   const clipRatio = initialMoment.imageRatio ?? 9 / 16;
   /** Full screen only: the comments open over the clip and it keeps playing */
@@ -95,7 +134,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 
   // The server page is the same for everyone; the signed-in member's likes, saves and own comments are read here
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn && !reel?.fromQueue) return;
     let active = true;
     fetch(`/api/moments/${encodeURIComponent(initialMoment.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -104,17 +143,76 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
     return () => {
       active = false;
     };
+    // reel.fromQueue is fixed for this clip
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, initialMoment.id]);
 
   // Back to the grid where the reader left it: the link goes to the tab it was opened from, and the browser's Back works the same
   const [savedGrid, setSavedGrid] = useState<string | null>(null);
   const backHref = savedGrid ?? '/moments';
   useEffect(() => {
-    setSavedGrid(showcaseUrlFor(initialMoment.id));
-    const onBack = () => markReturning(initialMoment.id);
+    setSavedGrid(showcaseUrlFor(returnId));
+    const onBack = () => markReturning(returnId);
     window.addEventListener('popstate', onBack);
     return () => window.removeEventListener('popstate', onBack);
-  }, [initialMoment.id]);
+  }, [returnId]);
+
+  // Up and down through the clips: a swipe on a phone, the wheel, the arrow keys or the buttons on a computer
+  const canStep = Boolean(reel && isFull && !commentsOpen);
+  const stepBy = useCallback(
+    (by: 1 | -1) => {
+      if (!reel || (by === 1 ? !reel.next : !reel.hasPrev) || Date.now() - lastStepAt < STEP_PAUSE_MS) return;
+      lastStepAt = Date.now();
+      reel.step(by);
+    },
+    [reel]
+  );
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeProps = canStep
+    ? {
+        onTouchStart: (e: React.TouchEvent) => {
+          // The time bar and an opened caption keep their own drag
+          touchStart.current = (e.target as HTMLElement).closest('input, [data-own-scroll]') ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        },
+        onTouchEnd: (e: React.TouchEvent) => {
+          const from = touchStart.current;
+          touchStart.current = null;
+          if (!from) return;
+          const dx = e.changedTouches[0].clientX - from.x;
+          const dy = e.changedTouches[0].clientY - from.y;
+          if (Math.abs(dy) > SWIPE_PX && Math.abs(dy) > Math.abs(dx) * 1.5) stepBy(dy < 0 ? 1 : -1);
+        },
+        onWheel: (e: React.WheelEvent) => {
+          if (Math.abs(e.deltaY) > 25) stepBy(e.deltaY > 0 ? 1 : -1);
+        },
+      }
+    : {};
+  useEffect(() => {
+    if (!canStep) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest('input, textarea')) return;
+      if (e.key === 'ArrowDown') stepBy(1);
+      if (e.key === 'ArrowUp') stepBy(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canStep, stepBy]);
+  // Once per device, a phone is told it can swipe on
+  const [showHint, setShowHint] = useState(false);
+  const hasNext = Boolean(reel?.next);
+  useEffect(() => {
+    if (!canStep || !hasNext || reelHintSeen()) return;
+    // A moment after the clip starts, then gone by itself
+    const show = setTimeout(() => {
+      reelHintSeen(true);
+      setShowHint(true);
+    }, 600);
+    const hide = setTimeout(() => setShowHint(false), 3200);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+  }, [canStep, hasNext]);
 
   // Hearts, saves and comments given here show on the card when the reader goes back
   useEffect(() => {
@@ -140,12 +238,16 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const follow = async () => {
     if (!isLoggedIn) return requireLogin('เพื่อติดตาม');
     if (!moment.authorId || isFollowBusy) return;
+    // Answers at once and goes back with a message if the server says no, like the feed
     setIsFollowBusy(true);
-    const result = await call(`/api/members/${encodeURIComponent(moment.authorId)}/actions`, 'POST', { action: 'follow' });
-    setIsFollowBusy(false);
-    if (!result.ok) return showToast(result.message);
     setJustFollowed(true);
     setMoment((m) => ({ ...m, isFollowingAuthor: true }));
+    const result = await call(`/api/members/${encodeURIComponent(moment.authorId)}/actions`, 'POST', { action: 'follow' });
+    setIsFollowBusy(false);
+    if (result.ok) return;
+    setJustFollowed(false);
+    setMoment((m) => ({ ...m, isFollowingAuthor: false }));
+    showToast(result.message);
   };
   const followLink = (onDark: boolean, place = '') =>
     showFollow &&
@@ -180,15 +282,27 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
   const sendComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = comment.trim();
-    if (!text) return;
+    if (!text || isBusy) return;
+    // Shows at once with the box cleared, like the feed; if it cannot be sent the words come back to the box
+    const parent = replyTo;
+    const people = mention.mentions;
+    const pendingId = `pending-${Date.now()}`;
+    const pending = {
+      id: pendingId, userName: me?.displayName ?? '', userAvatar: me?.avatarUrl ?? '', text, timeAgo: 'เมื่อสักครู่นี้', createdAt: new Date().toISOString(),
+      isMine: true, parentId: parent?.id, authorId: null, mentions: people, likesCount: 0, isLiked: false, canDelete: false,
+    } as FeedItem['comments'][number];
     setIsBusy(true);
-    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text, parentId: replyTo?.id, mentions: mention.mentions.map((m) => m.id) });
-    setIsBusy(false);
-    if (!result.ok || !result.moment) return showToast(result.message);
-    setMoment(result.moment);
+    setMoment((m) => ({ ...m, comments: [...m.comments, pending], commentsCount: m.commentsCount + 1 }));
     setComment('');
     mention.reset();
     setReplyTo(null);
+    const result = await call(`${url}/actions`, 'POST', { action: 'comment', text, parentId: parent?.id, mentions: people.map((m) => m.id) });
+    setIsBusy(false);
+    if (result.ok && result.moment) return setMoment(result.moment);
+    setMoment((m) => ({ ...m, comments: m.comments.filter((c) => c.id !== pendingId), commentsCount: m.commentsCount - 1 }));
+    setComment(text);
+    setReplyTo(parent);
+    showToast(result.message);
   };
 
   const actOnComment = async (body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => {
@@ -216,6 +330,45 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
       () => showToast('คัดลอกลิงก์แล้ว'),
       () => showToast(link)
     );
+  };
+
+  // A 9:16 picture for an IG Story or LINE, like Strava (FEED_PLAN step 3.5)
+  const makeCard = () => {
+    showToast('กำลังทำการ์ดแชร์…');
+    void import('@/components/moments/shareCard')
+      .then(({ shareCard }) => shareCard(moment))
+      .then((done) => done !== 'cancelled' && showToast(done === 'saved' ? 'บันทึกการ์ดแชร์ลงเครื่องแล้ว' : 'แชร์การ์ดแล้ว'))
+      .catch(() => showToast('ทำการ์ดแชร์ไม่สำเร็จ ลองอีกครั้งนะ'));
+  };
+  const mayCard = mayShare && Boolean(moment.images[0]);
+  // The share button opens the send sheet (invite friends, the link, the card), like the feed
+  const [sharing, setSharing] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  // ?invite=<friend id> from a "ไปกันไหม" notice; the address is tidied so a reload or a shared link does not ask again
+  const [inviter, setInviter] = useState<string | null>(null);
+  const invitedBy = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    // Read once, then the address is tidied; the answer shows once the member's session is known
+    if (invitedBy.current === undefined) {
+      invitedBy.current = new URLSearchParams(window.location.search).get('invite');
+      if (invitedBy.current) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('invite');
+        window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+      }
+    }
+    if (isLoggedIn && invitedBy.current) {
+      setInviter(invitedBy.current);
+      invitedBy.current = null;
+    }
+  }, [isLoggedIn]);
+  const answerInvite = async () => {
+    if (!inviter) return;
+    setIsBusy(true);
+    const result = await call(`${url}/actions`, 'POST', { action: 'invite_yes', inviter });
+    setIsBusy(false);
+    setInviter(null);
+    showToast(result.ok ? 'บอกเพื่อนแล้วว่าไปด้วย นัดวันกันได้เลย' : result.message);
   };
 
   const removeMyTag = async () => {
@@ -254,12 +407,29 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
         โมเมนต์ทั้งหมด
       </Link>
 
+      {/* Opened from a friend's "ไปกันไหม": answer in one tap (owner 2026-11-10) */}
+      {inviter && (
+        <div role="status" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[#FFF1F2] px-4 py-3">
+          <Send className="w-5 h-5 text-[#E11D48] -rotate-12 shrink-0" aria-hidden="true" />
+          <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">เพื่อนชวนคุณไป{place ? ` ${place}` : 'ที่นี่'}ด้วยกัน ไปกันไหม?</p>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setInviter(null)} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+              ไว้ก่อน
+            </button>
+            <button type="button" onClick={answerInvite} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
+              ไปด้วย
+            </button>
+          </div>
+        </div>
+      )}
+
       <article className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 items-start">
         {/* A clip fills the screen with everything on it, like a Reel; the place and the comments follow */}
         {moment.video ? (
           <div
             style={{ '--clip-w': `min(100vw, calc(100dvh * ${clipRatio}))` } as React.CSSProperties}
-            className={`overflow-hidden bg-black ${isFull ? `fixed inset-0 z-[60] ${commentsOpen ? 'bottom-[70dvh] lg:bottom-0 lg:right-[400px]' : ''}` : 'relative -mx-4 sm:mx-0 sm:rounded-3xl h-[calc(100dvh-14rem)] xl:h-[calc(100dvh-9rem)] min-h-[340px] lg:sticky lg:top-24'}`}
+            {...swipeProps}
+            className={`overflow-hidden bg-black ${isFull ? `fixed inset-0 z-[60] ${commentsOpen ? 'bottom-[70dvh] lg:bottom-0 lg:right-[400px]' : ''} ${reel?.enteredFrom === 1 ? 'motion-safe:animate-reel-up' : reel?.enteredFrom === -1 ? 'motion-safe:animate-reel-down' : ''}` : 'relative -mx-4 sm:mx-0 sm:rounded-3xl h-[calc(100dvh-14rem)] xl:h-[calc(100dvh-9rem)] min-h-[340px] lg:sticky lg:top-24'}`}
           >
             <ClipPlayer
               url={moment.video.url}
@@ -269,8 +439,33 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               label={title || `คลิปจาก ${place || moment.userName}`}
               onTap={isFull ? undefined : () => setIsFull(true)}
               onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')}
+              showTime={isFull}
               className="absolute inset-0"
             />
+            {/* The next clip loads while this one plays, so a swipe starts it at once */}
+            {isFull && reel?.next?.video && (
+              <>
+                <video src={reel.next.video.url} preload="auto" muted playsInline className="hidden" aria-hidden="true" />
+                {/* eslint-disable-next-line @next/next/no-img-element -- warms the next cover */}
+                {reel.next.images[0] && <img src={reel.next.images[0]} alt="" className="hidden" />}
+              </>
+            )}
+            {canStep && (
+              <div className="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 z-10 flex-col gap-3">
+                <button type="button" onClick={() => stepBy(-1)} disabled={!reel?.hasPrev} aria-label="คลิปก่อนหน้า" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-30 disabled:cursor-default cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white">
+                  <ChevronUp className="h-6 w-6" aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => stepBy(1)} disabled={!reel?.next} aria-label="คลิปถัดไป" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-30 disabled:cursor-default cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white">
+                  <ChevronDown className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+            )}
+            {showHint && (
+              <span role="status" className="lg:hidden pointer-events-none absolute left-1/2 top-[38%] z-10 -translate-x-1/2 inline-flex flex-col items-center gap-1 rounded-2xl bg-black/55 px-4 py-3 text-sm font-semibold text-white whitespace-nowrap motion-safe:animate-toast-in">
+                <ChevronUp className="h-6 w-6 motion-safe:animate-bounce" aria-hidden="true" />
+                ปัดขึ้นดูคลิปถัดไป
+              </span>
+            )}
             {/* On a phone the clip shrinks above the comments, whole and still playing; a tap on it closes them */}
             {commentsOpen && <button type="button" aria-label="ปิดความคิดเห็น" tabIndex={-1} onClick={() => setCommentsOpen(false)} className="absolute inset-0 z-[5] cursor-default lg:hidden" />}
             {isFull && (
@@ -304,7 +499,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                 {/* On a clip, follow ends the author row as an outlined pill, apart from the name (owner 2026-11-09) */}
                 {followLink(true, 'ml-auto rounded-full border border-white/70 px-3 py-1')}
               </div>
-              <div className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
+              <div data-own-scroll={showFullCaption || undefined} className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
                 <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}
                 {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} mentions={moment.tagged} linkClassName="underline" /></p>}
@@ -345,8 +540,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </button>
               )}
               {mayShare && (
-              <button type="button" onClick={share} aria-label="แชร์" className={railButton}>
-                <Share2 className="w-7 h-7 drop-shadow" aria-hidden="true" />
+              <button type="button" onClick={() => setSharing(true)} aria-label="แชร์หรือชวนเพื่อน" className={railButton}>
+                <Send className="w-7 h-7 drop-shadow -rotate-12" aria-hidden="true" />
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
@@ -396,7 +591,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
           </div>
         )}
 
-        <div className="min-w-0 space-y-5">
+        <div className="min-w-0 flex flex-col gap-5">
           {!moment.video && (
             <>
               <div className="flex items-center gap-3">
@@ -427,8 +622,8 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
                     </button>
                   )}
                   {mayShare && (
-                  <button type="button" onClick={share} className={iconButton}>
-                    <Link2 className="w-5 h-5" aria-hidden="true" />
+                  <button type="button" onClick={() => setSharing(true)} aria-label="แชร์หรือชวนเพื่อน" className={iconButton}>
+                    <Send className="w-5 h-5 -rotate-12" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">แชร์</span>
                   </button>
                   )}
@@ -455,6 +650,7 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
             </>
           )}
 
+          {moment.achievement && <AchievementLine achievement={moment.achievement} />}
           {/* Where it is from and the one thing to do next, in the same box as the posts on Home and /moments */}
           {place &&
             (targetHref && target ? (
@@ -477,33 +673,35 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
               </p>
             ))}
 
+
+          {/* On a phone the reactions sit right under the photo (first in this column, like the feed, owner 2026-11-10); on a computer they keep their place under the place box */}
           {!moment.video && (
-            <div className="flex flex-wrap items-center gap-1 border-y border-slate-100 py-1.5 -mx-1">
-              {!moment.likesOff && (
-              <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} className={iconButton}>
-                <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
-                {!canSeeLikers && moment.likesCount.toLocaleString()}
-                <span className="sr-only">ถูกใจ</span>
-              </button>
-              )}
-              {!moment.likesOff && canSeeLikers && (
-              <button type="button" onClick={() => setLikersOpen(true)} className={`${iconButton} -ml-2 underline underline-offset-2`}>
-                {moment.likesCount.toLocaleString()}
-                <span className="sr-only">ดูคนที่ส่งหัวใจ</span>
-              </button>
-              )}
-              {!moment.commentsOff && (
-              <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('เพื่อร่วมคอมเมนต์'))} className={iconButton}>
-                <MessageCircle className="w-5 h-5" aria-hidden="true" />
-                {moment.commentsCount.toLocaleString()}
-                <span className="sr-only">ความคิดเห็น</span>
-              </button>
-              )}
-              <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'} className={`${iconButton} ml-auto`}>
-                <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
-                <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
-              </button>
-            </div>
+          <div className="order-first lg:order-none flex flex-wrap items-center gap-1 border-y border-slate-100 py-1.5 -mx-1">
+            {!moment.likesOff && (
+            <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} className={iconButton}>
+              <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+              {!canSeeLikers && moment.likesCount.toLocaleString()}
+              <span className="sr-only">ถูกใจ</span>
+            </button>
+            )}
+            {!moment.likesOff && canSeeLikers && (
+            <button type="button" onClick={() => setLikersOpen(true)} className={`${iconButton} -ml-2 underline underline-offset-2`}>
+              {moment.likesCount.toLocaleString()}
+              <span className="sr-only">ดูคนที่ส่งหัวใจ</span>
+            </button>
+            )}
+            {!moment.commentsOff && (
+            <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('เพื่อร่วมคอมเมนต์'))} className={iconButton}>
+              <MessageCircle className="w-5 h-5" aria-hidden="true" />
+              {moment.commentsCount.toLocaleString()}
+              <span className="sr-only">ความคิดเห็น</span>
+            </button>
+            )}
+            <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'} className={`${iconButton} ml-auto`}>
+              <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
+              <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
+            </button>
+          </div>
           )}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
@@ -626,6 +824,27 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
           </div>
         </DialogShell>
       )}
+      {sharing && (
+        <ShareSheet
+          canInvite={isLoggedIn}
+          canCard={mayCard}
+          onInvite={() => setInviting(true)}
+          onLink={() => void share()}
+          onCard={makeCard}
+          onClose={() => setSharing(false)}
+        />
+      )}
+      {inviting && (
+        <InviteFriendsDialog
+          momentId={moment.id}
+          place={place}
+          onClose={() => setInviting(false)}
+          onDone={(message) => {
+            setInviting(false);
+            showToast(message);
+          }}
+        />
+      )}
     </main>
   );
 }
@@ -635,5 +854,74 @@ function DetailBody({ initialMoment, openFullScreen = false, isLoggedIn, require
 const LONG_HEADLINE = 60;
 
 export function MomentDetailView(props: DetailProps) {
-  return <MomentsChrome>{(context) => <DetailBody {...props} {...context} />}</MomentsChrome>;
+  return <MomentsChrome>{(context) => (props.initialMoment.video ? <ReelHost {...props} context={context} /> : <DetailBody {...props} {...context} />)}</MomentsChrome>;
+}
+
+/**
+ * A clip's page holds the Reel: once the clip fills the screen, the clips after it (from the feed it was tapped in,
+ * then the newest clips) wait in line, and a swipe brings the next one in place, address and all.
+ */
+function ReelHost({ initialMoment, openFullScreen = false, context }: DetailProps & { context: MomentsChromeContext }) {
+  const [clips, setClips] = useState<FeedItem[]>([initialMoment]);
+  const [at, setAt] = useState(0);
+  const [enteredFrom, setEnteredFrom] = useState<1 | -1 | undefined>();
+  const [isFull, setIsFull] = useState(false);
+  /** undefined: the first page not asked for yet; null: no more clips */
+  const cursor = useRef<string | null | undefined>(undefined);
+  const loading = useRef(false);
+
+  const loadMore = useCallback(async () => {
+    if (loading.current || cursor.current === null) return;
+    loading.current = true;
+    const first = cursor.current === undefined;
+    try {
+      const after = cursor.current ? `&cursor=${encodeURIComponent(cursor.current)}` : '';
+      const json = await fetch(`/api/moments?media=clip&limit=10${after}`, { cache: 'no-store' }).then((res) => res.json());
+      const found: FeedItem[] = [...(first ? clipsAfter(initialMoment.id) : []), ...(Array.isArray(json?.moments) ? json.moments : [])];
+      cursor.current = json?.pagination?.hasNextPage && json.pagination.nextCursor ? json.pagination.nextCursor : null;
+      setClips((list) => {
+        const known = new Set(list.map((m) => m.id));
+        const fresh = found.filter((m) => {
+          if (!m.video || known.has(m.id)) return false;
+          known.add(m.id);
+          return true;
+        });
+        return fresh.length ? [...list, ...fresh] : list;
+      });
+    } catch {
+      cursor.current = null;
+    } finally {
+      loading.current = false;
+    }
+  }, [initialMoment.id]);
+
+  // The line fills when the clip first fills the screen, and again as the reader nears its end
+  useEffect(() => {
+    if (isFull && at >= clips.length - 2) void loadMore();
+  }, [isFull, at, clips.length, loadMore]);
+
+  const step = useCallback(
+    (by: 1 | -1) => {
+      const next = clips[at + by];
+      if (!next) return;
+      setEnteredFrom(by);
+      setAt(at + by);
+      // The address follows the clip on screen, in place of the last, so Back still leaves the Reel in one step
+      window.history.replaceState(window.history.state, '', `/moments/${encodeURIComponent(next.id)}?full=1`);
+    },
+    [clips, at]
+  );
+
+  const current = clips[at];
+  const reel: ReelProps = {
+    next: clips[at + 1],
+    hasPrev: at > 0,
+    step,
+    enteredFrom,
+    returnId: initialMoment.id,
+    backOnLeave: openFullScreen,
+    fromQueue: at > 0,
+    onFullChange: setIsFull,
+  };
+  return <DetailBody key={current.id} initialMoment={current} openFullScreen={openFullScreen || at > 0} reel={reel} {...context} />;
 }

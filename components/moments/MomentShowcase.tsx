@@ -12,6 +12,7 @@ import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
 import { avatarImage } from '@/lib/optimizedImage';
+import { hashtagHref } from '@/lib/moments/hashtags';
 
 const PAGE_SIZE = 24;
 /** The moments pillar colour (rose) */
@@ -45,7 +46,13 @@ interface MomentShowcaseProps {
   place: ShowcasePlace | null;
   /** How many moments each tab holds (counted on the server); left out on one place's moments */
   counts?: Record<Chip, number>;
+  /** How many moments the place or tag holds in all (its page says so under the title) */
+  total?: number;
+  /** A row of tags: the week's trends on /moments, or the tags used alongside this one on a tag page */
+  tags?: { kind: 'week' | 'popular' | 'related'; tags: { tag: string; posts: number }[] };
 }
+
+const TAG_ROW_LABEL = { week: 'มาแรงสัปดาห์นี้', popular: 'แท็กยอดนิยม', related: 'แท็กที่เกี่ยวข้อง' } as const;
 
 /** The server HTML is the same for everyone, so a signed-in member's own hearts are read once in the browser */
 function WhenSignedIn({ isLoggedIn, run }: { isLoggedIn: boolean; run: () => void }) {
@@ -114,31 +121,10 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
             )}
           </span>
         </span>
-        {title && <span className="mt-2 lg:mt-3 px-0.5 text-[13px] lg:text-sm font-medium text-slate-800 leading-relaxed line-clamp-2 group-hover:text-slate-950">{title}</span>}
       </Link>
 
-      {/* Where it was: straight to that place, meetup, fair or challenge */}
-      {target && targetHref ? (
-        <Link href={targetHref} className={`mt-2 lg:mt-3 flex items-center gap-2 lg:gap-2.5 rounded-xl lg:rounded-2xl ${target.box} p-1.5 lg:pl-2 lg:pr-3 lg:py-2 hover:opacity-90 min-w-0 ${focusRing}`}>
-          <span className={`w-6 h-6 lg:w-8 lg:h-8 rounded-lg lg:rounded-xl bg-white ${target.icon} flex items-center justify-center shrink-0 ${index % 2 ? 'rotate-6' : '-rotate-6'}`} aria-hidden="true">
-            <target.Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="hidden lg:block text-[11px] font-medium opacity-80">{target.label}</span>
-            <span className="block text-[11px] lg:text-[13px] font-semibold truncate">{place}</span>
-          </span>
-          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
-        </Link>
-      ) : (
-        place && (
-          <p className="mt-2 px-0.5 flex items-center gap-1 text-[11px] lg:text-xs font-medium text-slate-500 min-w-0">
-            <MOMENT_TARGETS.spot.Icon className="w-3 h-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">{place}</span>
-          </p>
-        )
-      )}
-
-      <div className="mt-2 px-0.5 flex items-center gap-3 lg:gap-4 text-xs lg:text-sm font-medium text-slate-600 tabular-nums">
+      {/* Reactions right under the photo, so every card in a row has them at the same height (owner 2026-11-10) */}
+      <div className="mt-2 lg:mt-3 px-0.5 flex items-center gap-3 lg:gap-4 text-xs lg:text-sm font-medium text-slate-600 tabular-nums">
         {moment.likesOff ? null : onLike ? (
           // Liked straight from the grid; the padding gives a finger-sized target without moving the row
           <button
@@ -166,7 +152,54 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
         </span>
         )}
       </div>
+
+      {/* The title links to the post too; the photo link already names it, so this one stays out of the tab order */}
+      {title && (
+        <Link href={href} tabIndex={-1} aria-hidden="true" className="mt-1.5 lg:mt-2 px-0.5 text-[13px] lg:text-sm font-medium text-slate-800 leading-relaxed line-clamp-2 hover:text-slate-950">
+          {title}
+        </Link>
+      )}
+
+      {/* Where it was: straight to that place, meetup, fair or challenge */}
+      {target && targetHref ? (
+        <Link href={targetHref} className={`mt-2 lg:mt-3 flex items-center gap-2 lg:gap-2.5 rounded-xl lg:rounded-2xl ${target.box} p-1.5 lg:pl-2 lg:pr-3 lg:py-2 hover:opacity-90 min-w-0 ${focusRing}`}>
+          <span className={`w-6 h-6 lg:w-8 lg:h-8 rounded-lg lg:rounded-xl bg-white ${target.icon} flex items-center justify-center shrink-0 ${index % 2 ? 'rotate-6' : '-rotate-6'}`} aria-hidden="true">
+            <target.Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="hidden lg:block text-[11px] font-medium opacity-80">{target.label}</span>
+            <span className="block text-[11px] lg:text-[13px] font-semibold truncate">{place}</span>
+          </span>
+          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+        </Link>
+      ) : (
+        place && (
+          <p className="mt-2 px-0.5 flex items-center gap-1 text-[11px] lg:text-xs font-medium text-slate-500 min-w-0">
+            <MOMENT_TARGETS.spot.Icon className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{place}</span>
+          </p>
+        )
+      )}
+
     </article>
+  );
+}
+
+/** Real links, so people and search engines can follow a tag; one line that scrolls sideways on a phone */
+function TagRow({ kind, tags }: NonNullable<MomentShowcaseProps['tags']>) {
+  return (
+    <nav aria-label={TAG_ROW_LABEL[kind]} className="mt-3 sm:mt-4 flex items-center gap-2 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0">
+      <span className="shrink-0 text-[13px] font-semibold text-slate-500 whitespace-nowrap">{TAG_ROW_LABEL[kind]}</span>
+      {tags.map(({ tag }) => (
+        <Link
+          key={tag}
+          href={hashtagHref(tag)}
+          className={`shrink-0 inline-flex items-center h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 whitespace-nowrap transition-colors ${focusRing}`}
+        >
+          #{tag}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
@@ -247,7 +280,7 @@ const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number, cursor?:
  * /moments: a playful header (the landing page's cream band, tilted prints and stickers) over a full-width grid
  * of moment posts. Posting happens on Home; a card opens the moment's own page.
  */
-export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, initialChip, place, counts }: MomentShowcaseProps) {
+export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, initialChip, place, counts, total, tags }: MomentShowcaseProps) {
   const [chip, setChip] = useState<Chip>(initialChip);
   const [moments, setMoments] = useState(initialMoments);
   const [page, setPage] = useState(1);
@@ -391,6 +424,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                   )}
                 </h1>
                 <p className="mt-2 sm:mt-3 text-sm sm:text-lg font-semibold text-slate-700">
+                  {total ? <span className="tabular-nums">{total.toLocaleString()} โมเมนต์ · </span> : null}
                   เห็นที่ไหนน่าไป <span className="whitespace-nowrap">แตะดูแล้วไปต่อได้เลย</span>
                 </p>
                 <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center md:justify-start gap-3">
@@ -454,6 +488,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                 })}
               </nav>
             )}
+            {tags && tags.tags.length > 0 && <TagRow {...tags} />}
 
             <div className={`mt-4 sm:mt-7 transition-opacity duration-200 ${isLoading && page === 1 ? 'opacity-50' : ''}`} aria-busy={isLoading} onClickCapture={rememberPlace}>
               {moments.length === 0 && !isLoading ? (
@@ -467,7 +502,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
               <div ref={sentinelRef} className="py-8 flex justify-center">
                 <button
                   type="button"
-                  onClick={() => void load(chip, page + 1)}
+                  onClick={() => void load(chip, page + 1, cursor)}
                   disabled={isLoading}
                   className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 cursor-pointer disabled:cursor-wait"
                 >
