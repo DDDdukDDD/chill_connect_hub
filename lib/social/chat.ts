@@ -7,6 +7,7 @@ import type { Member } from '../members/types';
 import { fairGroupById } from './fairGroups';
 import { isMutual, pairMembersOf } from './meetAgain';
 import { chatStore, type ChatMessage } from './chatStore';
+import { friendPlanStore } from './friendPlanStore';
 import { guardMemberText } from './textRules';
 
 /**
@@ -19,11 +20,11 @@ const KEEP_PER_ROOM = 500;
 const PAGE = 100;
 
 async function roomOf(member: Member, roomId: string): Promise<{ title: string; members: number }> {
-  // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts)
+  // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts), or who share a "ไปกัน" plan
   const pair = pairMembersOf(roomId);
   if (pair) {
     const otherId = pair[0] === member.id ? pair[1] : pair[1] === member.id ? pair[0] : null;
-    if (!otherId || !(await isMutual(member.id, otherId))) throw new MemberAuthError('แชตนี้เปิดเมื่อเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
+    if (!otherId || !((await isMutual(member.id, otherId)) || (await friendPlanStore.between(member.id, otherId)))) throw new MemberAuthError('แชตนี้เปิดเมื่อมีแผนไปกันหรือเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
     const other = await memberRepository.findById(otherId);
     if (!other || other.status !== 'active' || other.blockedIds?.includes(member.id) || member.blockedIds?.includes(otherId)) throw new MemberAuthError('ห้องแชตนี้ปิดแล้ว', 403);
     return { title: tidyDisplayName(other.displayName).trim() || other.displayName, members: 2 };

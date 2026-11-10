@@ -10,7 +10,7 @@ const MAX_INVITES = 10;
 
 /**
  * "ไปกันไหม" (owner 2026-11-10): send a post to friends as an invitation to go there together. Only friends (people
- * who follow each other) are listed; each gets one notice with the post, and can answer "ไปด้วย" on it.
+ * who follow each other) are listed; each gets one notice with the post, and can answer "ไปกัน" on it.
  */
 export function InviteFriendsDialog({ momentId, place, onClose, onDone }: { momentId: string; place: string; onClose: () => void; onDone: (message: string) => void }) {
   const [friends, setFriends] = useState<TagFriend[] | null>(null);

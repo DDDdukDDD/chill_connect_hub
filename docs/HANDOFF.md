@@ -20,6 +20,20 @@ Item template:
 
 ---
 
+### BE-338 · Moment page place line like the feed (owner 2026-11-10)
+- **What changed:** the moment page shows its place as the feed's slim line (icon, place, what it still offers, "ไปที่นี่บ้าง →") instead of the coloured box. `findPublicMoment` now adds `live` (seats left, open now), as the feeds do.
+
+### BE-337 · "ไปกัน" plans: chat, date, reminders, ไปกับเพื่อน XP (owner 2026-11-10)
+- **What changed:** the invite answer "ไปด้วย" is now **ไปกัน**, and it makes a plan for the two (`lib/social/friendPlans.ts`, `app.friend_plans`, migration **0043**). The post is saved for both; the plan opens their two-person chat (`pair~` rooms now open for a mutual "อยากเจออีก" **or** a shared plan, owner: yes); the day is set in the chat (plan card on top, `GroupChatModal` gained `header` and `subtitle`). My Hub shows **แผนไปกันกับเพื่อน** above the schedule column (`components/myhub/FriendPlans.tsx`, `/myhub?plan=<id>` opens a chat). The hourly job reminds both the day before (`plan_soon`) and asks the day after (`plan_after`, link opens the posting form at the place with the friend tagged: `/?share=…&with=&withName=`). When both post at the place, both get `plan_together` and each earns **40 XP** (`points.fromPlans`) once their own post is proven. API in docs/API.md ("ไปกัน" plans). Walked on dev through the API (18 checks, plus the +40 after approval); the reminder job was not run.
+- **What to do about it:** run migration 0043 on live before this reaches main (`npm run db:migrate`).
+
+### BE-336 · Reaction row: "ชวนไป" pill, darker lines (owner 2026-11-10)
+- **What changed:** under every post (feed, moment page, Reel buttons) the paper plane is a soft grey pill **ชวนไป**; heart, comment and bookmark stay plain icons; the feed row is darker (slate-800). On a photo post's page the header share button is gone (the row has it). DESIGN_SYSTEM.md (Icons) records the row.
+
+### BE-335 · Clip posting errors say where; Reel shows the cover while loading (owner 2026-11-10)
+- **What changed:** clip posts stopped working on live after 2026-11-09 10:58 (photos fine; not reproduced on dev). A failed post now names the step and code ("อัปโหลดคลิปไม่สำเร็จ (R2 403)", "โพสต์ไม่สำเร็จ (รหัส 504)", or the error name), and `POST /api/moments` logs unexpected errors (answering 500, was 400). `ClipPlayer` keeps the cover picture over the video until its first frame plays, so a Reel swipe no longer shows black.
+- **What to do about it:** after deploy, post one clip on a phone and read the card. The dev R2 bucket's CORS allows only localhost, so clip uploads on Preview fail until its address is added.
+
 ### BE-334 · CodeQL "DOM text reinterpreted as HTML" fixed, admin feature map (owner 2026-11-10)
 - **What changed:** (1) CodeQL flagged CaptionText, ClipPlayer and the moment page's back link (js/xss-through-dom). The Home feed saved its place for the way back with a post id read off the page (`data-seen-id`, and since BE-333 the link's `href`); CodeQL follows sessionStorage, so everything read back from that snapshot counted as page text. The feed now takes the id from its own loaded list, and the achievements row passes the post id from its data (`AchievementItem.momentId`, `onOpenMoment`). Back from a row circle still returns to the feed (walked). (2) **/admin วิธีคิดของระบบ** opens with **ฟีเจอร์สำคัญของ Chillwaa**: every main feature in one line each, linking to new topics for the friends row, the challenge line, "ไปกันไหม" + friend-going notices, how the Home feed loads, and Spot Buddy trip rules. Numbers come from code: new `lib/social/socialRules.ts` (row window and size, invite limits, friends told, load-ahead) used by the code itself; `TRIP_CANCEL_BEFORE_MS` moved to `lib/spotTripRules.ts`.
 - **What to do about it:** when a feature or rule changes, update its topic on that page (AGENTS-level habit, owner 2026-11-10).

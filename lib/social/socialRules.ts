@@ -16,3 +16,6 @@ export const FRIENDS_GOING_MAX = 30;
 
 /** Home feed: posts per page, and how far before the end the next page starts loading (about three posts) */
 export const HOME_FEED_LOAD_AHEAD_PX = 1800;
+
+/** "ไปกับเพื่อน" (owner 2026-11-10): XP each person earns when both went to a "ไปกัน" plan's place (lib/social/friendPlans.ts) */
+export const PLAN_TOGETHER_POINTS = 40;

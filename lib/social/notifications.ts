@@ -135,26 +135,31 @@ const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat',
 const systemHref = (n: StoredNotification) => (n.type === 'evidence' ? undefined : n.type === 'rejected' ? (n.eventId ? '/myhub' : n.path ?? '/myhub') : n.type === 'approved' || n.type === 'draw_won' || n.type === 'draw_result' ? n.path : n.type === 'seat' || n.type === 'trip_cancelled' ? `/community/${encodeURIComponent(n.eventId ?? '')}` : `/challenges/${encodeURIComponent(n.questId ?? '')}`);
 
 /** Where a notice about a person leads; undefined means their moment or, without one, their profile */
-const personHref = (n: StoredNotification) => (n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : (n.type === 'joined' || n.type === 'tee_changed' || n.type === 'friend_going') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : n.type === 'invite' && n.momentId ? `/moments/${encodeURIComponent(n.momentId)}?invite=${encodeURIComponent(n.actorId)}` : undefined);
+const personHref = (n: StoredNotification) => ((n.type === 'invite_yes' || n.type === 'plan_soon' || n.type === 'plan_after' || n.type === 'plan_together') && n.path ? n.path : n.type === 'match' && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#meet-again` : (n.type === 'question' || n.type === 'answer') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}#questions` : (n.type === 'joined' || n.type === 'tee_changed' || n.type === 'friend_going') && n.eventId ? `/community/${encodeURIComponent(n.eventId)}` : n.type === 'invite' && n.momentId ? `/moments/${encodeURIComponent(n.momentId)}?invite=${encodeURIComponent(n.actorId)}` : undefined);
 
 /**
  * "ไปกันไหม" (owner 2026-11-10): a member sends a post to a friend as an invitation. Friends only (they follow each
- * other); one notice per friend and post, however often it is sent. The friend answers "ไปด้วย" on the post's page.
+ * other); one notice per friend and post, however often it is sent. The friend answers "ไปกัน" on the post's page.
  */
 export async function notifyInvite(recipientId: string, actor: Member, momentId: string, place: string): Promise<void> {
   await quietly(() => saveAndPush({ id: newId(), memberId: recipientId, type: 'invite', actorId: actor.id, momentId, preview: place.slice(0, 80) || undefined, createdAt: now() }, { memberId: recipientId, actorId: actor.id, types: ['invite'], momentId }));
 }
 
-/** The friend said yes to an invitation: the one who asked is told, once per post */
-export async function notifyInviteYes(inviterId: string, actor: Member, momentId: string, place: string): Promise<void> {
-  await quietly(() => saveAndPush({ id: newId(), memberId: inviterId, type: 'invite_yes', actorId: actor.id, momentId, preview: place.slice(0, 80) || undefined, createdAt: now() }, { memberId: inviterId, actorId: actor.id, types: ['invite_yes'], momentId }));
+/** The friend said yes to an invitation: the one who asked is told, once per post, and led to the plan's chat */
+export async function notifyInviteYes(inviterId: string, actor: Member, momentId: string, place: string, planPath?: string): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId: inviterId, type: 'invite_yes', actorId: actor.id, momentId, preview: place.slice(0, 80) || undefined, path: planPath, createdAt: now() }, { memberId: inviterId, actorId: actor.id, types: ['invite_yes'], momentId }));
 }
 
-/** Whether this member really invited the reader to this post (so "ไปด้วย" can only answer a real invitation) */
+/** A "ไปกัน" plan's notices (lib/social/friendPlans.ts): the actor is the friend going along, `path` where it leads */
+export async function notifyPlan(type: 'plan_soon' | 'plan_after' | 'plan_together', memberId: string, friendId: string, path: string, place: string): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId, type, actorId: friendId, preview: place.slice(0, 80) || undefined, path, createdAt: now() }));
+}
+
+/** Whether this member really invited the reader to this post (so "ไปกัน" can only answer a real invitation) */
 export const wasInvited = (memberId: string, inviterId: string, momentId: string): Promise<boolean> =>
   notificationStore.exists({ memberId, actorId: inviterId, types: ['invite'], momentId });
 
-const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', invite: 'ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?', friend_going: 'จะไปตี้นี้ ไปด้วยกันไหม?', invite_yes: 'ตอบว่าไปด้วย! นัดวันกันเลย', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', invite: 'ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?', friend_going: 'จะไปตี้นี้ ไปด้วยกันไหม?', invite_yes: 'ตอบว่าไปกัน! เปิดแชตนัดวันกันเลย', plan_soon: 'พรุ่งนี้ไปกันนะ เช็กเวลานัดในแชตอีกที', plan_after: 'ไปมาแล้วเป็นไงบ้าง? โพสต์โมเมนต์ที่นี่แล้วแท็กกันได้เลย', plan_together: 'ไปด้วยกันครบแล้ว! ได้โบนัสไปกับเพื่อน', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
 // A mention in a comment travels as 'tagged' with the comment, but reads as what it is
 const messageOf = (n: { type: NotificationType; commentId?: string }) => (n.type === 'tagged' && n.commentId ? 'พูดถึงคุณในความคิดเห็น' : MESSAGES[n.type]);
 

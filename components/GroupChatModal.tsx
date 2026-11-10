@@ -27,6 +27,10 @@ interface GroupChatModalProps {
   /** A fair meet-up group (grp_…) instead of the whole event */
   roomId?: string;
   roomTitle?: string;
+  /** The line under the title, in place of the people count (a "ไปกัน" plan says where they are going) */
+  subtitle?: string;
+  /** Pinned above the messages, like the plan card of a "ไปกัน" chat (components/myhub/FriendPlans.tsx) */
+  header?: React.ReactNode;
 }
 
 const POLL_MS = 4000;
@@ -42,7 +46,7 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour:
  * Group chat for the people who joined an event (or a fair meet-up group).
  * Messages live on the server (/api/chat/{roomId}); the list refreshes every few seconds while open.
  */
-export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle }) => {
+export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle, subtitle, header }) => {
   const room = roomId || event?.id || '';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [info, setInfo] = useState<{ title: string; members: number } | null>(null);
@@ -151,12 +155,13 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
         <header className="shrink-0 flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-100">
           <div className="min-w-0">
             <h3 id="group-chat-title" className="text-base font-bold text-slate-900 truncate">{title}</h3>
-            <p className="text-xs font-medium text-slate-500">{info ? `แชตของคนที่เข้าร่วม · ${info.members} คน` : 'แชตของคนที่เข้าร่วม'}</p>
+            <p className="text-xs font-medium text-slate-500 truncate">{subtitle ?? (info ? `แชตของคนที่เข้าร่วม · ${info.members} คน` : 'แชตของคนที่เข้าร่วม')}</p>
           </div>
           <button type="button" onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="ปิด">
             <X className="w-5 h-5" />
           </button>
         </header>
+        {header}
 
         <div ref={listRef} className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-slate-50/60" aria-live="polite">
           {state === 'loading' && <p className="text-sm font-medium text-slate-500 text-center py-8">กำลังเปิดแชต…</p>}

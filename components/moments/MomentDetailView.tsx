@@ -22,6 +22,7 @@ import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/M
 import { useClamped } from './useClamped';
 
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
+import { targetLiveText } from '@/components/moments/targetLiveText';
 import { clipsAfter, markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
 
 const Avatar = MomentAvatar;
@@ -232,6 +233,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
+  const live = targetLiveText(moment.live ?? initialMoment.live);
   /** Comments before the newest three, folded until the reader opens them */
   // The newest three threads show first
   const hiddenComments = Math.max(0, moment.comments.filter((c) => !c.parentId).length - 3);
@@ -373,7 +375,10 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     const result = await call(`${url}/actions`, 'POST', { action: 'invite_yes', inviter });
     setIsBusy(false);
     setInviter(null);
-    showToast(result.ok ? 'บอกเพื่อนแล้วว่าไปด้วย นัดวันกันได้เลย' : result.message);
+    if (!result.ok) return showToast(result.message);
+    showToast('บอกเพื่อนแล้วว่าไปกัน เปิดแชตนัดวันกันเลย');
+    // The answer made a plan for the two: its chat (in My Hub) is where the day is set (owner 2026-11-10)
+    if (result.planId) router.push(`/myhub?plan=${encodeURIComponent(result.planId)}`);
   };
 
   const removeMyTag = async () => {
@@ -422,7 +427,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               ไว้ก่อน
             </button>
             <button type="button" onClick={answerInvite} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
-              ไปด้วย
+              ไปกัน
             </button>
           </div>
         </div>
@@ -545,8 +550,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               </button>
               )}
               {mayShare && (
-              <button type="button" onClick={() => setSharing(true)} aria-label="แชร์หรือชวนเพื่อน" className={railButton}>
+              <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={railButton}>
                 <Send className="w-7 h-7 drop-shadow -rotate-12" aria-hidden="true" />
+                ชวนไป
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
@@ -626,10 +632,11 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                       <span className="sr-only sm:not-sr-only">เอาแท็กออก</span>
                     </button>
                   )}
-                  {mayShare && (
-                  <button type="button" onClick={() => setSharing(true)} aria-label="แชร์หรือชวนเพื่อน" className={iconButton}>
+                  {/* A photo post has "ชวนไป" in its reaction row; a clip has no row, so it keeps this one */}
+                  {mayShare && moment.video && (
+                  <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={iconButton}>
                     <Send className="w-5 h-5 -rotate-12" aria-hidden="true" />
-                    <span className="sr-only sm:not-sr-only">แชร์</span>
+                    <span className="sr-only sm:not-sr-only">ชวนไป</span>
                   </button>
                   )}
                   {moment.isMine ? (
@@ -656,25 +663,22 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           )}
 
           {moment.achievement && <AchievementLine achievement={moment.achievement} />}
-          {/* Where it is from and the one thing to do next, in the same box as the posts on Home and /moments */}
+          {/*
+            Where it is from and the one thing to do next: the same slim line as the feed (owner 2026-11-10), with what
+            the place still offers (seats left, open now). A reaction returns the moment without it, so the first copy is kept.
+          */}
           {place &&
             (targetHref && target ? (
-              <Link href={targetHref} className={`flex items-center gap-2.5 rounded-2xl ${target.box} pl-2 pr-3 py-2 hover:opacity-90`}>
-                <span className={`w-8 h-8 rounded-xl bg-white ${target.icon} flex items-center justify-center shrink-0`} aria-hidden="true">
-                  <target.Icon className="w-4 h-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[11px] font-medium opacity-80">{target.label}</span>
-                  <span className="block text-[13px] font-semibold truncate">{place}</span>
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+              <Link href={targetHref} className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold">
+                <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
+                <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{place}</span>
+                {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
+                <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
               </Link>
             ) : (
-              <p className="flex items-center gap-2.5 rounded-2xl bg-slate-100 text-slate-700 pl-2 pr-3 py-2">
-                <span className="w-8 h-8 rounded-xl bg-white text-slate-500 flex items-center justify-center shrink-0" aria-hidden="true">
-                  <MOMENT_TARGETS.spot.Icon className="w-4 h-4" />
-                </span>
-                <span className="text-[13px] font-semibold truncate">{place}</span>
+              <p className="flex items-center gap-1.5 min-w-0 text-[13px] font-semibold text-slate-800">
+                <MOMENT_TARGETS.spot.Icon className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+                <span className="min-w-0 truncate">{place}</span>
               </p>
             ))}
 
@@ -702,9 +706,17 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               <span className="sr-only">ความคิดเห็น</span>
             </button>
             )}
-            <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'} className={`${iconButton} ml-auto`}>
+            {/* The same row as the feed (design 1, owner 2026-11-10): "ชวนไป" is the one action with a shape */}
+            {mayShare && (
+            <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
+              <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-slate-100 group-hover:bg-slate-200 text-sm text-slate-800 font-semibold transition-colors">
+                <Send className="w-[18px] h-[18px] -rotate-12" aria-hidden="true" />
+                ชวนไป
+              </span>
+            </button>
+            )}
+            <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={`${iconButton} ml-auto`}>
               <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
-              <span className="hidden sm:inline">{moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}</span>
             </button>
           </div>
           )}

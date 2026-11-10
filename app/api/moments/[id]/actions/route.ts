@@ -5,6 +5,7 @@ import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { notify, notifyInvite, notifyInviteYes, removeNotifications, wasInvited } from '@/lib/social/notifications';
+import { planPath, startPlan } from '@/lib/social/friendPlans';
 import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
 
 /**
@@ -26,6 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     let moment;
     let autoHidden = false;
+    let planId: string | undefined;
     switch (body.action) {
       case 'like':
       case 'unlike':
@@ -96,13 +98,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         const inviter = typeof body.inviter === 'string' ? body.inviter : '';
         moment = await visibleMoment(id);
         if (!inviter || !(await wasInvited(member.id, inviter, moment.id))) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
-        await notifyInviteYes(inviter, member, moment.id, moment.targetTitle || moment.location);
+        // The answer makes a plan for the two (owner 2026-11-10); the one who asked is led to its chat
+        const plan = await startPlan(member, inviter, moment);
+        planId = plan.id;
+        await notifyInviteYes(inviter, member, moment.id, moment.targetTitle || moment.location, planPath(plan));
         break;
       }
       default:
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
-    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }) });
+    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }), ...(planId && { planId }) });
   } catch (error) {
     if (error instanceof MomentError || error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     return NextResponse.json({ success: false, message: 'ทำรายการไม่สำเร็จ' }, { status: 400 });

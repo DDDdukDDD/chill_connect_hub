@@ -52,6 +52,8 @@ export interface MomentComposerInitial {
   /** Files already chosen from the feed's รูป or คลิป button; the form starts at their edit step */
   photoFiles?: File[];
   clipFile?: File;
+  /** Friends tagged from the start (a "ไปกัน" plan's day-after link); the server keeps only real friends */
+  tagged?: TagFriend[];
 }
 
 /** What the author closes on a post */
@@ -138,7 +140,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   const [caption, setCaption] = useState(initial?.caption ?? '');
   const [customLocation, setCustomLocation] = useState(initial?.location ?? '');
   const [linkedTarget, setLinkedTarget] = useState<MomentLinkTarget | null>(initial?.target ?? null);
-  const [tagged, setTagged] = useState<TagFriend[]>([]);
+  const [tagged, setTagged] = useState<TagFriend[]>(initial?.tagged ?? []);
   // "@ชื่อ" in the caption tags that friend too (the server keeps friends only)
   const mention = useMentionPicker({ value: caption, setValue: setCaption, fieldRef: captionInput });
   const [pickerOpen, setPickerOpen] = useState<'place' | 'friends' | null>(null);

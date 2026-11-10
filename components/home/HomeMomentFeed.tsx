@@ -60,7 +60,7 @@ type Action = 'like' | 'unlike' | 'save' | 'unsave';
 
 export const MOMENT_REACTED_EVENT = 'cch:moment-reacted';
 
-export async function call(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: FeedItem; autoHidden?: boolean }> {
+export async function call(url: string, method: string, body?: unknown): Promise<{ ok: boolean; message: string; moment?: FeedItem; autoHidden?: boolean; planId?: string }> {
   try {
     const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const json = await res.json().catch(() => null);
@@ -68,7 +68,7 @@ export async function call(url: string, method: string, body?: unknown): Promise
     // The journey band's moments path (JourneyBand) moves on at the first like or comment
     const action = (body as { action?: string } | undefined)?.action;
     if (ok && (action === 'like' || action === 'comment')) window.dispatchEvent(new Event(MOMENT_REACTED_EVENT));
-    return { ok, message: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', moment: json?.moment, autoHidden: json?.autoHidden };
+    return { ok, message: json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ', moment: json?.moment, autoHidden: json?.autoHidden, planId: json?.planId };
   } catch {
     return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };
   }
@@ -247,8 +247,11 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`);
       }} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
 
-      {/* Reactions sit right under the photo, like IG (owner 2026-11-10); the words, the challenge and the place follow */}
-      <div className="-my-1.5 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
+      {/*
+        Reactions sit right under the photo, like IG (owner 2026-11-10); the words, the challenge and the place follow.
+        Design 1 (owner 2026-11-10): the usual icons stay quiet, "ชวนไป" is the one action with a shape.
+      */}
+      <div className="-my-1.5 flex items-center gap-1 text-[13px] font-semibold text-slate-800">
         {!moment.likesOff && (
         <button
           type="button"
@@ -257,7 +260,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
-          <Heart className={`w-[18px] h-[18px] ${moment.isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
           {moment.likesCount > 0 && !friendLike && <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>}
         </button>
         )}
@@ -269,13 +272,16 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label="ความคิดเห็น"
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
-          <MessageCircle className="w-[18px] h-[18px]" />
+          <MessageCircle className="w-5 h-5" aria-hidden="true" />
           {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
         {mayShare && (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="แชร์หรือชวนเพื่อน" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
-          <Send className="w-[18px] h-[18px] -rotate-12" />
+        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
+          <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
+            <Send className="w-[18px] h-[18px] -rotate-12" aria-hidden="true" />
+            ชวนไป
+          </span>
         </button>
         )}
         <button
@@ -285,7 +291,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'}
           className={`inline-flex items-center justify-center min-h-11 min-w-11 ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
         >
-          <Bookmark className={`w-[18px] h-[18px] ${moment.isSaved ? 'fill-current' : ''}`} />
+          <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-current' : ''}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -522,12 +528,15 @@ function SuggestedToFollow({ onFollow, onSeePosts }: { onFollow: (id: string) =>
   );
 }
 
-function shareInitial(type: string, id: string, title: string, location: string): MomentComposerInitial {
+function shareInitial(type: string, id: string, title: string, location: string, withFriend?: { id: string; name: string }): MomentComposerInitial {
   const targetType = type === 'spot' || type === 'fair' ? type : 'community';
+  // A "ไปกัน" plan's day-after link may name a place with no page ('general:'): the words only, with the friend tagged
+  const isPlace = type !== 'general';
   return {
-    target: id && title ? { type: targetType, id, title, location } : undefined,
+    target: isPlace && id && title ? { type: targetType, id, title, location } : undefined,
     location,
-    caption: title ? (targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
+    caption: title ? (isPlace && targetType === 'community' ? `แชร์ความประทับใจจากตี้ "${title}"\n` : `ไปมาแล้ว "${title}"\n`) : undefined,
+    ...(withFriend ? { tagged: [{ ...withFriend, avatar: '' }] } : {}),
   };
 }
 
@@ -575,7 +584,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     const share = params.get('share');
     if (!share) return;
     const [type, ...rest] = share.split(':');
-    setComposerInitial(shareInitial(type, rest.join(':'), params.get('title') ?? '', params.get('location') ?? ''));
+    const withId = params.get('with');
+    setComposerInitial(shareInitial(type, rest.join(':'), params.get('title') ?? '', params.get('location') ?? '', withId ? { id: withId, name: params.get('withName') ?? '' } : undefined));
     setIsComposerOpen(true);
     window.history.replaceState(null, '', window.location.pathname);
   }, []);

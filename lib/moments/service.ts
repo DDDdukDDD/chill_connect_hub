@@ -362,7 +362,8 @@ export async function findPublicMoment(id: string): Promise<FeedItem | null> {
   const moment = await momentRepository.findById(id);
   if (!moment) return null;
   const people = await loadPeople([moment]);
-  return isPubliclyVisible(moment, people) ? toFeedItem(moment, null, people) : null;
+  // With what the place still offers (seats left, open now), the same line as the feeds (owner 2026-11-10)
+  return isPubliclyVisible(moment, people) ? (await withLive([toFeedItem(moment, null, people)]))[0] : null;
 }
 
 function cleanVideo(input: unknown, imageCount: number): Moment['video'] {

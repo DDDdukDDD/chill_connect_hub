@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
-import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, FRIENDS_GOING_MAX, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, FRIENDS_GOING_MAX, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -304,8 +304,11 @@ const TOPICS: Topic[] = [
           items={[
             'กดแชร์ใต้โพสต์ แล้วเลือก "ชวนเพื่อนไปด้วยกัน"',
             `ชวนได้เฉพาะเพื่อน (ติดตามกันสองฝ่าย ไม่ได้บล็อกกัน) ครั้งละไม่เกิน ${INVITE_MAX_FRIENDS} คน และไม่เกิน ${INVITE_SENDS_PER_HOUR} ครั้งต่อชั่วโมง`,
-            'เพื่อนได้แจ้งเตือน "ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?" เปิดโพสต์แล้วตอบ "ไปด้วย" ได้ในแตะเดียว',
-            'ตอบได้เฉพาะคำชวนที่มีจริง คนชวนได้แจ้งเตือน "ตอบว่าไปด้วย!" ครั้งเดียวต่อโพสต์',
+            'เพื่อนได้แจ้งเตือน "ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?" เปิดโพสต์แล้วตอบ "ไปกัน" ได้ในแตะเดียว',
+            'ตอบได้เฉพาะคำชวนที่มีจริง คนชวนได้แจ้งเตือน "ตอบว่าไปกัน!" ครั้งเดียวต่อโพสต์ กดแล้วเปิดแชตของแผน',
+            'ตอบ "ไปกัน" แล้วเกิดแผนของสองคน: โพสต์ถูกบันทึกให้ทั้งคู่ แผนขึ้นในมายฮับ (แผนไปกันกับเพื่อน) และเปิดแชตสองคนได้ เลือกวันนัดในแชต',
+            'วันก่อนนัด ทั้งคู่ได้แจ้งเตือน วันหลังนัด (ภายใน 7 วัน) คนที่ยังไม่ได้โพสต์ได้แจ้งเตือนชวนโพสต์ที่นั่น โดยแท็กเพื่อนไว้ให้แล้ว',
+            `ทั้งคู่โพสต์ที่สถานที่ของแผนหลังสร้างแผน = ไปด้วยกันครบ แต่ละคนได้โบนัสไปกับเพื่อน ${PLAN_TOGETHER_POINTS} XP เมื่อโพสต์ของตัวเองผ่านการยืนยัน`,
           ]}
         />
         <H>เพื่อนจะไปตี้นี้</H>

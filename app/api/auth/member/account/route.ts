@@ -1,3 +1,4 @@
+import { removePlansBy } from '@/lib/social/friendPlans';
 import { NextResponse } from 'next/server';
 import { removeNotificationsOf } from '@/lib/social/notifications';
 import { removeMeetAgainOf } from '@/lib/social/meetAgain';
@@ -51,6 +52,7 @@ export async function DELETE(request: Request) {
   await removeRedemptionsBy(member.id);
   await removeQuestJoinsBy(member.id);
   await removeCampaignEntriesBy(member.id);
+  await removePlansBy(member.id);
   await removeWinnerEntriesBy(member.id);
   await removeVouchersBy(member.id);
   await removeFinishesBy(member.id);
