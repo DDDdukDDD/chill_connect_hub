@@ -15,7 +15,7 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [x] `เจ้าของ` ตั้ง `CRON_SECRET` (ข้อความสุ่มยาวๆ) บน Vercel Production และใน GitHub > Settings > Secrets > Actions ชื่อเดียวกันค่าเดียวกัน ถ้าไม่ตั้ง ทริปที่คนไม่ครบจะไม่ถูกยกเลิกเอง
 - [ ] `เจ้าของ` ดู Vercel > Observability > Data Cache ว่ามี hit จริง ข้อนี้ยืนยันว่า cache ข้ามเซิร์ฟเวอร์ทำงาน (จากภายนอกยืนยันได้แค่ว่าโค้ดขึ้นแล้ว)
 - [ ] `เจ้าของ` ตัดสินใจจากตัวเลขด้านบน: อยู่ต่อ, ย้ายเว็บจริงไป org `Chillwaa` หรืออัปเกรด Pro
-- [ ] `เจ้าของ` ตั้ง `DATABASE_URL` และ `R2_*` (bucket dev, `media-dev.chillwaa.com`) เฉพาะ environment Preview ให้ชี้ฐานและที่เก็บไฟล์ของฝั่งพัฒนา แล้ว redeploy (ยังไม่รู้ว่า preview ต่อฐานไหน)
+- [x] `เจ้าของ` ตั้ง `DATABASE_URL` และ `R2_*` (bucket dev, `media-dev.chillwaa.com`) เฉพาะ environment Preview ให้ชี้ฐานและที่เก็บไฟล์ของฝั่งพัฒนา แล้ว redeploy (ยังไม่รู้ว่า preview ต่อฐานไหน)
 
 ## ขั้น 1: บริการและบัญชี (เปิดไม่ได้ถ้ายังไม่เสร็จ)
 
