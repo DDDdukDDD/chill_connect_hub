@@ -10,6 +10,9 @@ import { type VisitTargetType, isVisitTargetType, markVisit, markedVisitOf, mark
 import { guardPosting } from '@/lib/members/safety';
 import { MemberAuthError } from '@/lib/members/accounts';
 
+/** At most this many places in one "เคยไปที่ไหนมาแล้วบ้าง?" answer */
+const MARK_MANY_MAX = 40;
+
 const MAX_TARGETS = 40;
 
 /**
@@ -76,6 +79,17 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => ({}));
+    // Onboarding's "เคยไปที่ไหนมาแล้วบ้าง?" (owner 2026-11-11): places the member has been, all at once. Marked visits
+    // fill the passport and earn no XP (VISIT_POINTS.marked = 0), so they are only checked to exist and be public
+    if (body.action === 'mark_many') {
+      const ids = Array.isArray(body.targetIds) ? [...new Set((body.targetIds as unknown[]).filter((id): id is string => typeof id === 'string'))].slice(0, MARK_MANY_MAX) : [];
+      if (ids.length === 0) return NextResponse.json({ success: false, message: 'เลือกสถานที่ก่อนนะ' }, { status: 400 });
+      if (await isRateLimited(`visit-mark-many:${member.id}`, 5, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
+      const spots = await Promise.all(ids.map((id) => db.findSpotById(id)));
+      const real = ids.filter((_, i) => spots[i] && spots[i]!.publicationStatus !== 'draft');
+      for (const id of real) await markVisit(member.id, 'spot', id);
+      return NextResponse.json({ success: true, marked: real.length });
+    }
     const targetType = body.targetType;
     const targetId = typeof body.targetId === 'string' ? body.targetId : '';
     if ((targetType !== 'spot' && targetType !== 'fair') || !targetId) {

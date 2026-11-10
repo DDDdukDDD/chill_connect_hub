@@ -6,6 +6,7 @@ import type { AuditEntry } from '@/lib/auditLog';
 import { AdminPageHeader, PillarBadge, adminButton } from './AdminUI';
 import type { AdminModuleFilters, AdminModuleId, AdminNavigate } from './AdminSidebar';
 import { useAdminSession } from './AdminAuthGate';
+import { RetentionPanel } from './RetentionPanel';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface QueueItem {
@@ -229,6 +230,9 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
           </ul>
         </div>
       </section>
+
+      {/* Do new members come back (owner 2026-11-11): the number a 9.5 platform is judged by */}
+      <RetentionPanel />
 
       {/* Is the community alive: the content above is workload, this is whether people use the site */}
       <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">

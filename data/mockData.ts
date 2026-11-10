@@ -181,6 +181,13 @@ export interface QuestRule {
   friendsVia?: 'invite' | 'any';
   /** Counts weekends instead of places: every Saturday–Sunday (Bangkok) with a counted visit is one */
   perWeekend?: boolean;
+  /**
+   * Counts the member's own posts instead of visits (owner 2026-11-11, the starter challenges a new member can do in a
+   * minute from the sofa): published moments posted since they joined the challenge; `withPlace` needs a place or a
+   * location on the post. There is no location proof, so such a challenge is meant to be easy and finishes once.
+   * targetTypes stays empty.
+   */
+  posts?: { withPlace?: boolean };
 }
 
 export interface ChallengeQuest {

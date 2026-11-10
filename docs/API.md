@@ -418,6 +418,8 @@ All `/api/admin/*` routes require admin access:
 
 Every request is checked against the caller's **role** (matrix in `lib/permissions.ts`, read from the server session, never from the client):
 
+`GET /api/admin/retention` (BE-341, `content.view`) → `{ weeks: [{ week, signups, back1, back7, posted7, planned7, starter }] }`: new members per sign-up week (Monday, Bangkok) for 8 weeks, and how many came back the next day / within 7 days, posted or made a "ไปกัน" plan within 7 days, and finished a starter challenge. Totals only. Comeback days come from `app.member_days` (migration 0044), one row per member per Bangkok day, written on the first signed-in request of the day (`lib/members/activeDays.ts`); counting began 2026-11-11.
+
 | Permission | Owner (เจ้าของ) | Editor (บรรณาธิการเนื้อหา) | Moderator (ผู้ดูแลชุมชน) | Data Ops (ทีมข้อมูล) |
 |---|:-:|:-:|:-:|:-:|
 | `content.view` (every `GET`) | ✓ | ✓ | ✓ | ✓ |
@@ -663,6 +665,7 @@ With `&month=1` the answer adds `month: { month: "2026-10", chill: MonthItem[], 
 
 ### `POST /api/visits` — the signed-in member
 - `{ action: 'mark', targetType: 'spot' | 'fair', targetId, rating? }`: "I have been here". `rating` is a whole number 1 to 5 and is optional; sending the action again updates the rating. A fair can be marked from its start date. `community` is refused: the host's check-in is its evidence.
+- `{ action: 'mark_many', targetIds: [spotId] }` → `{ marked }` (BE-340, onboarding's "เคยไปที่ไหนมาแล้วบ้าง?"): marks up to 40 published places at once, without ratings; 5 calls an hour. Marked visits fill the passport and earn no XP.
 - `{ action: 'unmark', targetType, targetId }`.
 - Answer: `{ success, mark | null, proof, points, quests }` (`proof` has the fields of one target above, without `quests`). Errors: 401 signed out, 403 inactive account, 404 unknown target, 429 more than 30 marks an hour.
 
@@ -696,6 +699,7 @@ Every filter given must match. `categories` is a place's `category` (`cafe`, `pa
 - `asHost` (1–15, `community` only): counts ตี้ the member **hosted** where at least this many guests were checked in, instead of ones they went to. Such a challenge has no list of places (`targets` empty) and is not in `GET /api/visits?targets=` answers.
 - `withFriends` (1–15, `community` only) and `friendsVia: 'invite' | 'any'`: a ตี้ counts only when at least this many friends were checked in there too. Friends = the member who invited them and those they invited (`invite`), plus members who follow each other (`any`, the default).
 - `perWeekend: true`: counts weekends instead of places; only visits on a Saturday or Sunday (Bangkok) count, and each weekend counts once; `count` is the number of weekends.
+- `posts: { withPlace?: true }` (BE-340, 2026-11-11, the starter challenges): counts the member's own **published moments** posted since they joined the challenge, instead of visits; `withPlace` needs a place or a location on the post. `targetTypes` is empty and `count` is 1–20. No location proof, so such a challenge is easy and finishes once (`db/seed-starter-quests.mjs` makes the two starters through the admin API). New members are joined to them at the end of onboarding.
 
 `progressPercent`, `current`, `total` and `completedCountInfo` on a quest are still the old display text; real progress for the signed-in member is in `GET /api/visits?mine=1`.
 

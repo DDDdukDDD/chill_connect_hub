@@ -44,6 +44,7 @@ import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
+import { LifeMapIntro } from '@/components/onboarding/LifeMapIntro';
 import { FIRST_STEP_KEY, FollowRow, flavourFromGoals, isSocialOnly, type FirstStep } from '@/components/home/onboardingFirstStep';
 
 /**
@@ -417,6 +418,13 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   const [saved] = useState(() => (finishedRun && finishedRun.preview === preview && finishedRun.memberId === (session.member?.id ?? null) ? finishedRun : null));
   const [step, setStep] = useState(saved ? QUESTION_STEPS - 1 : 0);
   const [done, setDone] = useState(Boolean(saved));
+  // The first "wow" (owner 2026-11-11): places already been, the reveal and the first missions, once, between the
+  // answers and the summary (components/onboarding/LifeMapIntro.tsx). A member coming back to edit skips it
+  const [lifeMapDone, setLifeMapDone] = useState(Boolean(saved));
+  // /onboarding?preview=1&step=lifemap opens that part straight away, to look at its design (saves nothing)
+  useEffect(() => {
+    if (preview && new URLSearchParams(window.location.search).get('step') === 'lifemap') setDone(true);
+  }, [preview]);
   const [error, setError] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
   const [nameError, setNameError] = useState('');
@@ -1110,6 +1118,19 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
           </section>
         ) : (
           <>
+            {done && !lifeMapDone ? (
+              <section className="cch-rise flex-1 flex flex-col">
+                <LifeMapIntro
+                  province={province || 'กรุงเทพฯ'}
+                  preview={preview}
+                  onDone={() => {
+                    setLifeMapDone(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </section>
+            ) : (
+            <>
             {progress}
             {done ? (
               <section className="cch-rise flex-1 flex flex-col">
@@ -1477,6 +1498,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
               </span>
             </div>
             </div>
+          </>
+            )}
           </>
             )}
           </>

@@ -214,11 +214,14 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       ];
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
   // with nothing in the period yet it says so instead of leaving the question open
-  const showPlaces = tracked && !plan && !earned && !isEnded;
+  const showPlaces = tracked && !plan && !earned && !isEnded && !quest.rule?.posts;
   // On a desktop, places sit under the reward while deciding (what you get, then where); once joined they move to the main column
   const placesBesideReward = showPlaces && !joined;
   // A host challenge is done by hosting: it offers to open a ตี้ instead of places to go
   const isHostQuest = Boolean(quest.rule?.asHost);
+  // A starter challenge counts posts (QuestRule.posts): its next step is the posting form, not a list of places
+  const isPostQuest = Boolean(quest.rule?.posts);
+  const postHref = '/?share=general:';
   const memories = earned ? detail.mine?.memories ?? [] : [];
   const finishedDate = earned ? shortDate(detail.mine?.finishedAt) : '';
   const next = earned ? detail.next : null;
@@ -301,6 +304,13 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
       </a>
     );
+  } else if (tracked && isPostQuest) {
+    mainAction = (
+      <Link href={postHref} className={dialogButton.primary}>
+        โพสต์โมเมนต์
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+      </Link>
+    );
   } else if (tracked && isHostQuest) {
     mainAction = (
       <Link href="/community?create=1" className={dialogButton.primary}>
@@ -367,6 +377,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           </button>
         ) : plan ? (
           <a href="#plan" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>แผนของฉัน</a>
+        ) : tracked && isPostQuest ? (
+          <Link href={postHref} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>โพสต์โมเมนต์</Link>
         ) : tracked ? (
           <a href="#places" onClick={(e) => { e.preventDefault(); if (isHostQuest) document.getElementById('places')?.scrollIntoView({ behavior: 'smooth' }); else scrollToPlaces(); }} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{isHostQuest ? 'ตั้งตี้ของฉัน' : placesButton}</a>
         ) : (

@@ -5,6 +5,7 @@ import { db } from '../db';
 import { parseQuestDate } from '../questLifecycle';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '../dateUtils';
 import { momentRepository } from '../moments';
+import type { Moment } from '../moments/types';
 import { memberRepository } from '../members';
 import { joinsOf } from './questJoins';
 import { bangkokDay, countedStamps, planNeeded } from './questPlan';
@@ -66,6 +67,11 @@ export function parseQuestRule(input: unknown): QuestRule | null {
   const raw = input as Record<string, unknown>;
   const targetTypes = (Array.isArray(raw.targetTypes) ? raw.targetTypes : []).filter(isVisitTargetType);
   const count = Math.round(Number(raw.count));
+  // A starter challenge counts posts, not visits (QuestRule.posts)
+  if (raw.posts && typeof raw.posts === 'object') {
+    if (!(count >= 1 && count <= 20)) return null;
+    return { targetTypes: [], count, posts: { withPlace: (raw.posts as { withPlace?: unknown }).withPlace === true || undefined } };
+  }
   if (targetTypes.length === 0 || !(count >= 1 && count <= 100)) return null;
   return {
     targetTypes: [...new Set(targetTypes)],
@@ -410,7 +416,17 @@ export async function progressOf(memberId: string) {
   const finishedIds = new Set((await questMemberStore.finishes({ memberId })).map((finish) => finish.questId));
   const joined = new Set([...joinList.map((join) => join.questId), ...finishedIds]);
   const quests: QuestProgress[] = [];
+  // The member's posts, read once and only when a starter challenge counts them (QuestRule.posts)
+  let posts: Moment[] | null = null;
+  const myPosts = async () => (posts ??= (await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 100 })).items);
   for (const quest of await questsWithRules()) {
+    if (quest.rule.posts) {
+      const join = joinList.find((item) => item.questId === quest.id);
+      const fits = (m: Moment) => m.createdAt >= (join?.joinedAt ?? '') && (!quest.rule.posts?.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim()));
+      const current = finishedIds.has(quest.id) ? quest.rule.count : join ? Math.min(quest.rule.count, (await myPosts()).filter(fits).length) : 0;
+      quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
+      continue;
+    }
     const counted: Visit[] = [];
     for (const visit of await visitsFor(quest.rule)) {
       const key = targetKey(visit.targetType, visit.targetId);
@@ -462,7 +478,8 @@ export interface QuestCheckItem {
  * whether it counts, waits for review, or was not counted (so they can send another photo).
  */
 export async function checklistOf(quest: ChallengeQuest, memberId: string): Promise<{ items: QuestCheckItem[]; current: number; total: number } | null> {
-  if (!quest.rule) return null;
+  // A starter challenge counts posts, so it has no list of places
+  if (!quest.rule || quest.rule.posts) return null;
   const ruled = quest as ChallengeQuest & { rule: QuestRule };
   const items: QuestCheckItem[] = [];
   const seen = new Set<string>();

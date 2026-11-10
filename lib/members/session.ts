@@ -4,6 +4,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { readCookie } from '../adminSession';
 import { memberRepository } from './index';
+import { noteActiveDay } from './activeDays';
 import type { Member } from './types';
 
 /**
@@ -111,7 +112,10 @@ async function memberFromSessionToken(token: string | null | undefined): Promise
   const stored = await memberRepository.findFresh(payload.sub);
   if (!stored || stored.sessionVersion !== payload.ver) return null;
   const member = await refreshMemberStatus(stored);
-  return member.status === 'active' ? member : null;
+  if (member.status !== 'active') return null;
+  // Retention: the first signed-in request of the day is noted, once (lib/members/activeDays.ts)
+  noteActiveDay(member.id);
+  return member;
 }
 
 /** Same-origin check for cookie-authenticated writes (CSRF defense on top of SameSite=Lax) */
