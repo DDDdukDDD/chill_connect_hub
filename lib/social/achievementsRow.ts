@@ -7,7 +7,7 @@ import { thaiTimeAgo } from '../moments/service';
 import { allQuestFinishes } from './questFinishes';
 
 /**
- * "เพื่อนๆ ทำสำเร็จ" at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
+ * "เพื่อนๆ กำลังออกไปใช้ชีวิต" at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
  * show who achieved what). Two public facts make it: a finished challenge ("ใครทำอยู่บ้าง" is public on the challenge
  * page) and a post's challenge line ("พิชิตชาเลนจ์ … 2/3", lib/social/achievement.ts). One circle per person:
  * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.

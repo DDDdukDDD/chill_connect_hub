@@ -449,7 +449,8 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                   )}
                 </div>
               </div>
-              <div className="order-1 md:order-2">
+              {/* A tag or place page on a phone starts with its name and posts: the prints are the /moments welcome, not worth a screen half there */}
+              <div className={`order-1 md:order-2 ${placeName ? 'hidden md:block' : ''}`}>
                 <Collage />
               </div>
             </div>

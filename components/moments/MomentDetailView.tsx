@@ -19,6 +19,7 @@ import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentFeed';
 import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/MomentsChrome';
+import { useClamped } from './useClamped';
 
 import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
 import { clipsAfter, markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
@@ -84,6 +85,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   // Long threads open on the newest few; every comment is still in the server HTML
   const [showAllComments, setShowAllComments] = useState(false);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  // "ดูเพิ่มเติม" on a clip: more text below, or a title the two lines really cut off
+  const [titleRef, titleCut] = useClamped<HTMLHeadingElement>(!showFullCaption);
   /** Own comment waiting for "ลบเลย": deleting cannot be undone, so it takes a second tap */
   const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const commentInput = useRef<HTMLInputElement>(null);
@@ -150,6 +153,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   // Back to the grid where the reader left it: the link goes to the tab it was opened from, and the browser's Back works the same
   const [savedGrid, setSavedGrid] = useState<string | null>(null);
   const backHref = savedGrid ?? '/moments';
+  // Says where it goes: opened from the Home feed (a post, a clip, the achievements row), it goes back there
+  const backLabel = savedGrid === '/' ? 'กลับหน้าแรก' : 'โมเมนต์ทั้งหมด';
   useEffect(() => {
     setSavedGrid(showcaseUrlFor(returnId));
     const onBack = () => markReturning(returnId);
@@ -404,7 +409,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 xl:pb-16">
       <Link href={backHref} scroll={!savedGrid} onClick={() => markReturning(moment.id)} className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900">
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        โมเมนต์ทั้งหมด
+        {backLabel}
       </Link>
 
       {/* Opened from a friend's "ไปกันไหม": answer in one tap (owner 2026-11-10) */}
@@ -500,10 +505,10 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 {followLink(true, 'ml-auto rounded-full border border-white/70 px-3 py-1')}
               </div>
               <div data-own-scroll={showFullCaption || undefined} className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
-                <h1 className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
+                <h1 ref={titleRef} className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}
                 {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} mentions={moment.tagged} linkClassName="underline" /></p>}
-                {(rest || title.length > 80) && (
+                {(rest || titleCut) && (
                   <button type="button" onClick={() => setShowFullCaption((open) => !open)} className="mt-1 text-xs font-bold text-white/80 hover:text-white cursor-pointer">
                     {showFullCaption ? 'ย่อ' : 'ดูเพิ่มเติม'}
                   </button>
@@ -760,7 +765,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                     aria-expanded={showAllComments}
                     className="block text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline cursor-pointer tabular-nums"
                   >
-                    {showAllComments ? 'ซ่อนความคิดเห็นก่อนหน้า' : `ดูความคิดเห็นทั้งหมด (${moment.comments.length.toLocaleString()})`}
+                    {showAllComments ? 'ซ่อนความคิดเห็นก่อนหน้า' : `ดูความคิดเห็นก่อนหน้าอีก ${hiddenComments.toLocaleString()} รายการ`}
                   </button>
                 )}
                 {/* Older threads stay in the HTML (search engines read them) and show when the reader asks */}

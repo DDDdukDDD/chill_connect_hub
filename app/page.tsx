@@ -3,7 +3,12 @@ import { connection } from 'next/server';
 import { discoverCounts, listPublicQuests, listUpcomingEvents } from '@/lib/publicContent';
 import { ALL_PROVINCES } from '@/lib/discoverMatch';
 import { homeCampaigns } from '@/lib/campaigns/store';
-import { HOME_CARD_WIDTH, memberHomeData, sizedImage } from '@/lib/homeData';
+import { HOME_CARD_WIDTH, memberHomeData, sizedImage, type HomeFeedStart } from '@/lib/homeData';
+import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
+import { listMoments } from '@/lib/moments/service';
+import { achievementsRow } from '@/lib/social/achievementsRow';
+import { ensureSampleMembers } from '@/lib/members/sampleMembers';
+import type { Member } from '@/lib/members/types';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { homeEvents } from '@/lib/homeFairs';
 import { eventListItem } from '@/lib/listItems';
@@ -24,9 +29,10 @@ export default async function HomePage() {
   const [upcoming, quests, member] = await Promise.all([listUpcomingEvents(), listPublicQuests(), getPageMember()]);
   // Every ตี้, and of the อีเวนต์ only what the page shows (the row, and a member's band pool)
   const { events, fairTotal } = homeEvents(upcoming, Boolean(member));
-  const [memberData, spotTotal] = await Promise.all([
+  const [memberData, spotTotal, feedStart] = await Promise.all([
     member ? memberHomeData(member, events) : null,
     member ? null : discoverCounts('', ALL_PROVINCES).then((counts) => counts.spots),
+    member ? homeFeedStart(member) : null,
   ]);
   // As list items: the tiles and rows never read the detail-only fields, which were most of the page's weight.
   // Each ตี้ comes with its สาย worked out here: the browser matched keywords for every ตี้ on every สาย card
@@ -48,9 +54,20 @@ export default async function HomePage() {
       signedIn={Boolean(member)}
       // What GET /api/auth/member would answer, so the page knows who is here as it hydrates
       session={{ member: member ? toPublicMember(member) : null, providers: providerStatus() }}
-      memberData={memberData}
+      memberData={memberData && feedStart ? { ...memberData, feedStart } : memberData}
       spotTotal={spotTotal}
       fairTotal={fairTotal}
     />
   );
+}
+
+/** The member feed's first page and achievements row, with the page: the same answers /api/moments?tab=foryou and /api/achievements give. A failure leaves them to the browser as before */
+async function homeFeedStart(member: Member): Promise<HomeFeedStart | null> {
+  try {
+    await ensureSampleMembers();
+    const [feed, achievements] = await Promise.all([listMoments(member, { tab: 'foryou', page: 1, limit: HOME_FEED_PAGE_SIZE }), achievementsRow(member)]);
+    return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, achievements };
+  } catch {
+    return null;
+  }
 }

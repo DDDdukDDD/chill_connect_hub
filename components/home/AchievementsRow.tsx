@@ -11,13 +11,18 @@ import { recall, remember } from '@/lib/clientMemory';
 const MEMORY_KEY = 'achievements-row';
 
 /**
- * "เพื่อนๆ ทำสำเร็จ" above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
+ * "เพื่อนๆ กำลังออกไปใช้ชีวิต" above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
  * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
  * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
  */
-export function AchievementsRow() {
-  const [items, setItems] = useState<AchievementItem[]>(() => recall<AchievementItem[]>(MEMORY_KEY) ?? []);
+export function AchievementsRow({ initial }: { initial?: AchievementItem[] }) {
+  // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
+  const [items, setItems] = useState<AchievementItem[]>(() => initial ?? recall<AchievementItem[]>(MEMORY_KEY) ?? []);
   useEffect(() => {
+    if (initial) {
+      remember(MEMORY_KEY, initial);
+      return;
+    }
     let active = true;
     fetch('/api/achievements', { cache: 'no-store' })
       .then((res) => res.json())
@@ -30,11 +35,11 @@ export function AchievementsRow() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initial]);
   if (items.length === 0) return null;
   return (
-    <section aria-labelledby="achievements-heading" className="mt-5">
-      <h3 id="achievements-heading" className="text-[13px] font-semibold text-slate-500">เพื่อนๆ ทำสำเร็จ</h3>
+    <section aria-labelledby="achievements-heading" className="mt-4">
+      <h3 id="achievements-heading" className="text-[13px] font-semibold text-slate-500">เพื่อนๆ กำลังออกไปใช้ชีวิต</h3>
       <ul className="mt-2 flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {items.map((item) => {
           const done = item.kind === 'finish';
@@ -63,7 +68,8 @@ export function AchievementsRow() {
                   </span>
                 </span>
                 <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">
-                  {name}
+                  {/* Under a 72px circle only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
+                  {name.replace(/\s*\(.*$/, '') || name}
                 </span>
               </Link>
             </li>

@@ -23,15 +23,17 @@ import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { AchievementLine } from '@/components/moments/AchievementLine';
 import { AchievementsRow } from '@/components/home/AchievementsRow';
+import { useClamped } from '@/components/moments/useClamped';
+import type { HomeFeedStart } from '@/lib/homeData';
+import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { ShareSheet } from '@/components/moments/ShareSheet';
 import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = HOME_FEED_PAGE_SIZE;
 const NEW_CHECK_MS = 60_000;
 /** A longer caption folds to two lines, so the reactions stay near the photo */
-const CAPTION_FOLD_CHARS = 90;
 export const REPORT_REASONS = ['ชวนลงทุน ขายของ หรือขายประกัน', 'หลอกลวงหรือขอข้อมูลส่วนตัว', 'เนื้อหาไม่เหมาะสม', 'คุกคามหรือพูดจาไม่ดี', 'อื่นๆ'];
 
 // Where the moment came from, in its pillar's colors, and what the reader can do there
@@ -107,7 +109,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     if (!(await handlers.onFollow(moment.authorId))) setJustFollowed(false);
     setIsFollowing(false);
   };
-  const foldsCaption = !showWholeCaption && (moment.caption.length > CAPTION_FOLD_CHARS || moment.caption.includes('\n'));
+  // Two lines until opened; "ดูเพิ่มเติม" only when the two lines really cut the caption off
+  const [captionRef, captionCut] = useClamped<HTMLParagraphElement>(!showWholeCaption);
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
   const live = targetLiveText(moment.live);
   // Gone once the reader takes back their own like and the friend was the only one counted
@@ -298,10 +301,10 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
 
       {moment.caption && (
         <div>
-          <p className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${foldsCaption ? 'line-clamp-2' : ''}`}>
+          <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
             <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
           </p>
-          {foldsCaption && (
+          {!showWholeCaption && captionCut && (
             <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
               ดูเพิ่มเติม
             </button>
@@ -431,6 +434,8 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
 }
 
 export interface HomeMomentFeedProps {
+  /** The first page of สำหรับคุณ and the achievements row, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
+  start?: HomeFeedStart;
   avatar?: string;
   name: string;
   /** Shown under the "share a moment" box, before the posts, e.g. the live ticker */
@@ -530,17 +535,21 @@ function shareInitial(type: string, id: string, title: string, location: string)
  * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
  * photo showcase for browsing (no posting there).
  */
-export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted }: HomeMomentFeedProps) {
+export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted, start }: HomeMomentFeedProps) {
   // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
   const inserts = sort === 'foryou' ? feedInserts : {};
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
-  const [moments, setMoments] = useState<FeedItem[]>(() => recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? []);
+  // The server's first page wins (it is fresh); otherwise the one seen last time shows at once while it refreshes
+  const serverFirst = start && sort === 'foryou' ? start : undefined;
+  // The view whose first page is already here (the server's, or one restored on the way back): no fetch for it
+  const fetchedView = useRef<FeedView | null>(serverFirst ? sort : null);
+  const [moments, setMoments] = useState<FeedItem[]>(() => (serverFirst ? remember(`home-feed:${sort}`, { items: serverFirst.items, hasNext: serverFirst.hasNext }).items : (recall<{ items: FeedItem[] }>(`home-feed:${sort}`)?.items ?? [])));
   const [page, setPage] = useState(1);
-  const [cursor, setCursor] = useState<string | undefined>();
-  const [hasMore, setHasMore] = useState(() => recall<{ hasNext: boolean }>(`home-feed:${sort}`)?.hasNext ?? false);
+  const [cursor, setCursor] = useState<string | undefined>(() => (serverFirst ? serverFirst.nextCursor : undefined));
+  const [hasMore, setHasMore] = useState(() => (serverFirst ? serverFirst.hasNext : (recall<{ hasNext: boolean }>(`home-feed:${sort}`)?.hasNext ?? false)));
   // The view whose list is on screen; until it matches the chosen view, placeholders show
-  const [loadedView, setLoadedView] = useState<FeedView | null>(() => (recall(`home-feed:${sort}`) ? sort : null));
+  const [loadedView, setLoadedView] = useState<FeedView | null>(() => (serverFirst || recall(`home-feed:${sort}`) ? sort : null));
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -614,6 +623,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     const snapshot = takeShowcase(window.location.pathname);
     if (!snapshot) return;
     restored.current = true;
+    fetchedView.current = (snapshot.view as FeedView | undefined) ?? sort;
     const view = (snapshot.view as FeedView | undefined) ?? sort;
     if (view !== sort) setSort(view);
     setMoments(snapshot.moments);
@@ -631,6 +641,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       restored.current = false;
       return;
     }
+    // The server's page (or the restored list) is this view already: fetch only when the member changes the view
+    if (fetchedView.current === sort) return;
+    fetchedView.current = sort;
     reload(sort);
   }, [sort, reload]);
 
@@ -664,11 +677,11 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       .finally(() => setIsLoadingMore(false));
   }, [isLoadingMore, hasMore, fetchPage, sort, page, cursor]);
 
-  // The next page loads before the end of the list comes into view
+  // The next page loads about three posts before the end, so a quick thumb never meets the bottom of the list (or the footer jumping away under it)
   useEffect(() => {
     const target = sentinelRef.current;
     if (!target) return;
-    const observer = new IntersectionObserver((entries) => entries[0].isIntersecting && loadMore(), { rootMargin: '600px' });
+    const observer = new IntersectionObserver((entries) => entries[0].isIntersecting && loadMore(), { rootMargin: '1800px' });
     observer.observe(target);
     return () => observer.disconnect();
   }, [loadMore, loadedView]);
@@ -679,7 +692,10 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     const link = (e.target as HTMLElement).closest('a');
     const href = link?.getAttribute('href');
     if (!href?.startsWith('/') || link?.target === '_blank' || loadedView !== sort) return;
-    const momentId = (e.target as HTMLElement).closest('article')?.getAttribute('data-seen-id') ?? '';
+    // The post the link sits in; a link outside the posts that opens a moment (the achievements row) names it in its
+    // href, so that moment's back link still knows it came from here instead of falling back to /moments
+    const linkedMoment = href.match(/^\/moments\/(?!tag\/)([^/?#]+)/)?.[1];
+    const momentId = (e.target as HTMLElement).closest('article')?.getAttribute('data-seen-id') ?? (linkedMoment ? decodeURIComponent(linkedMoment) : '');
     saveFeedReturn({ url: window.location.pathname, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort });
   };
 
@@ -920,6 +936,10 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         )}
       </div>
 
+      {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. Above the posting
+          box (owner 2026-11-10): seeing what friends did comes more often than posting */}
+      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} />}
+
       <div className="mt-3">
         {/* Photos and clips are two ways in (owner 2026-11-02); each button goes straight to the phone's picker */}
         <div className="flex items-center gap-1 rounded-full border border-slate-200 p-1.5">
@@ -943,9 +963,6 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           </label>
         </div>
       </div>
-
-      {/* Who achieved what, where other apps put stories (owner 2026-11-10); on the main tabs only */}
-      {!PERSONAL[sort] && <AchievementsRow />}
 
       {/* The live line opens the feed: what friends are doing now, right before their moments */}
       {top && <div className="mt-5">{top}</div>}

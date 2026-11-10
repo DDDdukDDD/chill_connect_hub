@@ -9,6 +9,8 @@ export type MomentStatus = 'published' | 'hidden' | 'removed';
 export type MomentCategory = 'heal' | 'move' | 'chill' | 'learn';
 
 export const MAX_MOMENT_IMAGES = 10;
+/** Posts per page in the member home feed: the server's first page (app/page.tsx) and the next pages the feed asks for */
+export const HOME_FEED_PAGE_SIZE = 8;
 export const MAX_CAPTION_LENGTH = 500;
 export const MAX_COMMENT_LENGTH = 300;
 /**
