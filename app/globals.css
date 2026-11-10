@@ -51,7 +51,55 @@
     0%, 100% { transform: translateY(0); }
     45% { transform: translateY(-0.28em); }
   }
+  /* The Reel's next or previous clip slides in from below or above (components/moments/MomentDetailView.tsx) */
+  --animate-reel-up: reel-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes reel-up {
+    0% { transform: translateY(18%); opacity: 0.4; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  --animate-reel-down: reel-down 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes reel-down {
+    0% { transform: translateY(-18%); opacity: 0.4; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
 }
+
+/* The Reel's time bar (components/moments/ClipPlayer.tsx): a thin white line that thickens under a finger or the mouse */
+.clip-time {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.clip-time::-webkit-slider-runnable-track {
+  height: 3px;
+  background: linear-gradient(to right, rgb(255 255 255 / 0.95) var(--share, 0%), rgb(255 255 255 / 0.3) var(--share, 0%));
+  transition: height 120ms;
+}
+.clip-time:hover::-webkit-slider-runnable-track,
+.clip-time:active::-webkit-slider-runnable-track { height: 6px; }
+.clip-time:hover::-webkit-slider-thumb,
+.clip-time:active::-webkit-slider-thumb { margin-top: -3px; }
+.clip-time::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.clip-time:hover::-webkit-slider-thumb,
+.clip-time:active::-webkit-slider-thumb,
+.clip-time:focus-visible::-webkit-slider-thumb { opacity: 1; }
+.clip-time::-moz-range-track { height: 3px; background: rgb(255 255 255 / 0.3); }
+.clip-time::-moz-range-progress { height: 3px; background: rgb(255 255 255 / 0.95); }
+.clip-time::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 9999px; background: #fff; }
+.clip-time:focus-visible { outline: none; }
 
 :root {
   /* 🕊️ Modern Pure White Canvas (To revert to classic beige, change to #FAF7F2) */

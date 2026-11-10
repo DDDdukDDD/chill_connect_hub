@@ -497,6 +497,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
             spots={memberSpots}
             cardKinds={interests.kinds}
             isSpotsLoaded={isSpotsLoaded}
+            feedStart={serverMemberData?.feedStart}
           />
         ) : isMemberPending ? (
           <MemberHomeSkeleton />

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
-import { countMomentsByType, listMoments } from '@/lib/moments/service';
+import { countMomentsByType, listMoments, trendingHashtags } from '@/lib/moments/service';
+import { hashtagHref } from '@/lib/moments/hashtags';
 import { jsonLdHtml, momentCollectionJsonLd } from '@/lib/structuredData';
 import { MomentShowcase, type ShowcasePlace } from '@/components/moments/MomentShowcase';
 import { isMomentTarget } from '@/components/moments/momentTargets';
@@ -25,28 +26,31 @@ export default async function MomentsPage({ searchParams }: Props) {
     const share = new URLSearchParams({ share: `${type}:${shareId}`, title: one(params.eventTitle) ?? '', location: one(params.location) ?? '' });
     redirect(`/?${share}`);
   }
+  // A hashtag has its own page since FEED_PLAN step 2
+  const oldTag = one(params.tag);
+  if (oldTag) redirect(hashtagHref(oldTag));
 
   const targetType = one(params.targetType);
   const targetId = one(params.targetId);
   const location = one(params.location);
-  const tag = one(params.tag);
-  const place: ShowcasePlace | null = tag ? { tag, location: `#${tag}` } : targetType && targetId ? { targetType, targetId, location: location || 'ที่นี่' } : location ? { location } : null;
+  const place: ShowcasePlace | null = targetType && targetId ? { targetType, targetId, location: location || 'ที่นี่' } : location ? { location } : null;
   const type = one(params.type);
   const chip = !place && isMomentTarget(type) ? type : 'all';
 
   await ensureSampleMembers(); // development sample accounts for the sample posts
-  const list = await listMoments(null, {
-    // ทั้งหมด is popular mixed with new (the grid's next pages ask for the same)
-    tab: !place && chip === 'all' ? 'mix' : undefined,
-    targetType: place?.targetType ?? (chip === 'all' ? undefined : chip),
-    targetId: place?.targetId,
-    location: place && !place.targetId && !place.tag ? place.location : undefined,
-    tag,
-    limit: 24,
-  });
-
-  // A count beside each tab (not on one place's moments, which has no tabs)
-  const counts = place ? undefined : await countMomentsByType();
+  const [list, counts, trending] = await Promise.all([
+    listMoments(null, {
+      // ทั้งหมด is popular mixed with new (the grid's next pages ask for the same)
+      tab: !place && chip === 'all' ? 'mix' : undefined,
+      targetType: place?.targetType ?? (chip === 'all' ? undefined : chip),
+      targetId: place?.targetId,
+      location: place && !place.targetId ? place.location : undefined,
+      limit: 24,
+    }),
+    // A count beside each tab, and the week's tags (not on one place's moments, which has no tabs)
+    place ? undefined : countMomentsByType(),
+    place ? undefined : trendingHashtags(),
+  ]);
   const moments = list.moments.filter((moment) => moment.images[0]);
 
   return (
@@ -60,7 +64,15 @@ export default async function MomentsPage({ searchParams }: Props) {
           )}
         />
       )}
-      <MomentShowcase initialMoments={moments} initialHasMore={list.pagination.hasNextPage} initialCursor={list.pagination.nextCursor} initialChip={chip} place={place} counts={counts} />
+      <MomentShowcase
+        initialMoments={moments}
+        initialHasMore={list.pagination.hasNextPage}
+        initialCursor={list.pagination.nextCursor}
+        initialChip={chip}
+        place={place}
+        counts={counts}
+        tags={trending?.tags.length ? trending : undefined}
+      />
     </>
   );
 }

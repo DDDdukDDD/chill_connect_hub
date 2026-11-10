@@ -6,10 +6,11 @@ import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { notify } from '@/lib/social/notifications';
 import { isRateLimited } from '@/lib/rateLimit';
+import { recordAchievement } from '@/lib/social/achievement';
 
 /**
  * Moments feed. ?tab=all|popular|following|saved|mine &author=<memberId> &category=heal|move|chill|learn
- * &location &targetType &targetId &q &tag &page &limit(≤30) &cursor (pagination.nextCursor of the page before)
+ * &location &targetType &targetId &q &tag &media=clip &page &limit(≤30) &cursor (pagination.nextCursor of the page before)
  * Posts by members the viewer has blocked are left out.
  * "saved", "mine" and "following" need a signed-in member (otherwise an empty list with requiresLogin).
  */
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
     location: searchParams.get('location') ?? undefined,
     q: searchParams.get('q') ?? undefined,
     tag: searchParams.get('tag') ?? undefined,
+    media: searchParams.get('media') ?? undefined,
     cursor: searchParams.get('cursor') ?? undefined,
     page: Number.parseInt(searchParams.get('page') || '1', 10) || 1,
     limit: Number.parseInt(searchParams.get('limit') || '12', 10) || 12,
@@ -45,7 +47,8 @@ export async function POST(request: Request) {
     // Trust rules: verified members only; new accounts have a daily limit and cannot post contact details
     const caption = typeof input?.caption === 'string' ? input.caption : '';
     await guardPosting(member, 'moment', withoutMentions(caption, await captionMentions(member, caption, [...(Array.isArray(input?.taggedIds) ? input.taggedIds : []), ...(Array.isArray(input?.mentions) ? input.mentions : [])])));
-    const moment = await createMoment(member, input);
+    // The challenge line is worked out once, here (FEED_PLAN step 3.5)
+    const moment = await recordAchievement(member.id, await createMoment(member, input));
     await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
     const people = await loadPeople([moment]);
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, people) }, { status: 201 });

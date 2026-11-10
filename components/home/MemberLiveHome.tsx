@@ -20,9 +20,12 @@ import type { LifestyleSpotItem } from '@/data/spotsData';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import type { FeedCardKind } from '@/lib/homeInterests';
 import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
+import type { HomeFeedStart } from '@/lib/homeData';
 
 
 export interface MemberLiveHomeProps {
+  /** The feed's first page and achievements row from the server (app/page.tsx) */
+  feedStart?: HomeFeedStart;
   name: string;
   /** The running campaigns (server, homeCampaigns()); shown again with the member's own progress */
   campaigns?: Campaign[];
@@ -108,6 +111,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
             avatar={props.avatar}
             inserts={feedCards(props, showPicks)}
             tailUpTo={FIRST_SLOTS[FIRST_SLOTS.length - 1]}
+            start={props.feedStart}
           />
         </main>
 

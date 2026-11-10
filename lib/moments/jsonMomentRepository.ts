@@ -6,7 +6,7 @@ import { IS_SERVERLESS } from '../db/databaseFile';
 import { AsyncMutex } from '../db/mutex';
 import { isPlaceMoment } from './feedRules';
 import { POPULAR_WEIGHTS } from './forYou';
-import { hasHashtag } from './hashtags';
+import { hasHashtag, relatedOf, tallyHashtags } from './hashtags';
 import type { Moment, MomentFeedQuery, MomentQuery, MomentRepository, MomentStatus } from './types';
 
 /**
@@ -188,6 +188,7 @@ export const jsonMomentRepository: MomentRepository = {
       if (query.category && m.category !== query.category) return false;
       if (query.placesOnly && !isPlaceMoment(m)) return false;
       if (query.tag && !hasHashtag(m.caption, query.tag)) return false;
+      if (query.clipsOnly && !m.video) return false;
       if (location && !m.location.toLowerCase().includes(location) && !(m.targetTitle ?? '').toLowerCase().includes(location)) return false;
       return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q);
     });
@@ -246,10 +247,28 @@ export const jsonMomentRepository: MomentRepository = {
     const byId = new Map(items.map((m) => [m.id, m]));
     return ids.flatMap((id) => (byId.has(id) ? [byId.get(id) as Moment] : []));
   },
+  async setAchievement(id, achievement) {
+    await jsonMomentRepository.mutate(id, (m) => ({ ...m, achievement }));
+  },
+  async recentAchievements(since, limit) {
+    const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
+    return items
+      .filter((m) => m.achievement && m.authorId && Date.parse(m.createdAt) >= since.getTime())
+      .slice(0, limit)
+      .map((m) => ({ momentId: m.id, authorId: m.authorId as string, achievement: m.achievement!, createdAt: m.createdAt }));
+  },
   async markSeen(viewerId, ids) {
     const seen = seenByMember.get(viewerId) ?? new Map<string, number>();
     for (const id of ids) seen.set(id, Date.now());
     seenByMember.set(viewerId, seen);
+  },
+  async hashtagUses() {
+    const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
+    return tallyHashtags(items.map((m) => ({ caption: m.caption, createdAt: m.createdAt, author: m.authorId ?? m.authorName })));
+  },
+  async relatedHashtags(tag, limit) {
+    const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000, tag });
+    return relatedOf(items.map((m) => m.caption), tag, limit);
   },
   async typeCounts() {
     const { memberRepository } = await import('../members');

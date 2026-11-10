@@ -6,10 +6,12 @@ import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { evidenceForNewMoment } from './evidence';
 import { realPlace } from './feedRules';
+import { normalTag } from './hashtags';
 import { FOR_YOU_WEIGHTS, GUEST_READER, rankForYou, type ForYouReader } from './forYou';
 import { liveKey, type TargetLive } from './targetLive';
 import { isSpotOpenNow } from '../openHours';
 import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
+import { INVITE_MAX_FRIENDS } from '../social/socialRules';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -142,6 +144,8 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     targetTitle: realPlace(moment.targetTitle) || undefined,
     isSample: moment.isSample,
     // Only the author learns that staff did not count the photo as a visit
+    // The challenge it counted toward; gone if staff later find the photo is not of the place
+    achievement: moment.evidenceRejected ? undefined : moment.achievement,
     evidenceRejected: viewer && moment.authorId === viewer.id && moment.evidenceRejected ? { note: moment.evidenceRejected.note } : undefined,
     /** Someone the viewer follows who liked it (feeds only); never shown when the author hid the likes */
     likedByFriend: moment.likesOff || !moment.feedFacts?.friendLike ? undefined : { id: moment.feedFacts.friendLike.id, name: tidyDisplayName(moment.feedFacts.friendLike.name).trim() || moment.feedFacts.friendLike.name },
@@ -183,6 +187,8 @@ export interface MomentListOptions {
   q?: string;
   /** One hashtag, with or without the # */
   tag?: string;
+  /** 'clip': clip posts only, newest first (the Reel's next clips) */
+  media?: string;
   page?: number;
   limit?: number;
   /** `pagination.nextCursor` of the page before; the next page then starts right after it */
@@ -274,7 +280,7 @@ async function readForYou(viewer: Member | null, personal: boolean, page: number
 async function readMoments(viewer: Member | null, options: MomentListOptions) {
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
-  const filtered = Boolean(options.author || options.category || options.targetType || options.targetId || options.location || options.q || options.tag);
+  const filtered = Boolean(options.author || options.category || options.targetType || options.targetId || options.location || options.q || options.tag || options.media === 'clip');
   const ranked = (options.tab === 'foryou' || options.tab === 'mix') && !filtered;
   // A ranked feed that has shown its whole pool carries on newest first with the usual cursor
   if (ranked && (!options.cursor || FOR_YOU_CURSOR.test(options.cursor))) return readForYou(viewer, options.tab === 'foryou', page, limit, options.cursor);
@@ -302,6 +308,7 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
     tag: options.tag || undefined,
     category,
     placesOnly: placeTab,
+    clipsOnly: options.media === 'clip' || undefined,
     sort: tab === 'popular' ? 'popular' : 'newest',
     page,
     limit,
@@ -314,6 +321,38 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
     pagination: pagination(page, limit, found),
   };
 }
+
+const HASHTAG_TTL_MS = 6 * 3_600_000;
+/** Counted again every few hours, not on each visit: a day-old trend is still this week's trend (FEED_PLAN step 2) */
+const hashtagUses = () => cacheManager.getOrSet('moments:hashtag-uses', () => momentRepository.hashtagUses(), { ttlMs: HASHTAG_TTL_MS, tags: ['moments-hashtags'] });
+
+/** A tag page needs this many posts before it is worth a search engine's time (sitemap, and noindex below it) */
+export const TAG_PAGE_MIN_POSTS = 3;
+const TRENDING_MAX = 8;
+const TRENDING_MIN = 3;
+
+export type TrendingTags = { kind: 'week' | 'popular'; tags: { tag: string; posts: number }[] };
+
+/**
+ * The row of tags on /moments. "This week" are the tags that grew most in 7 days, counted by people rather than posts so
+ * one member cannot push a tag up alone. While there are too few, the most used tags show instead, under their own
+ * name; with fewer still the row is left out.
+ */
+export async function trendingHashtags(): Promise<TrendingTags> {
+  const uses = await hashtagUses().catch(() => []);
+  const week = uses
+    .filter((use) => use.week >= 2)
+    .map((use) => ({ tag: use.tag, posts: use.week, score: use.weekAuthors * 2 + use.week - use.weekBefore * 0.5 }))
+    .sort((a, b) => b.score - a.score || b.posts - a.posts)
+    .slice(0, TRENDING_MAX);
+  if (week.length >= TRENDING_MIN) return { kind: 'week', tags: week.map(({ tag, posts }) => ({ tag, posts })) };
+  const popular = uses.filter((use) => use.authors >= 2).slice(0, TRENDING_MAX);
+  return { kind: 'popular', tags: popular.length >= TRENDING_MIN ? popular.map((use) => ({ tag: use.tag, posts: use.total })) : [] };
+}
+
+/** Tags used together with this one, for its page */
+export const relatedHashtags = (tag: string) =>
+  cacheManager.getOrSet(`moments:hashtag-related:${normalTag(tag)}`, () => momentRepository.relatedHashtags(normalTag(tag), 10).catch(() => []), { ttlMs: HASHTAG_TTL_MS, tags: ['moments-hashtags'] });
 
 /** How many public moments each /moments tab holds, counted by the database */
 export const countMomentsByType = () => cacheManager.getOrSet('moments:type-counts', () => momentRepository.typeCounts(), { ttlMs: 30_000, tags: ['moments-guest'] });
@@ -344,6 +383,23 @@ export async function taggableFriends(member: Member): Promise<Member[]> {
 }
 
 const MAX_MOMENT_TAGS = 10;
+const MAX_INVITES = INVITE_MAX_FRIENDS;
+
+/**
+ * "ไปกันไหม" (owner 2026-11-10): the friends this post may be sent to, out of the ones asked for. Friends only (they
+ * follow each other, neither blocks the other), at most 10 at a time; a post closed to sharing goes nowhere but its author's.
+ */
+export async function inviteTargets(member: Member, id: string, ids: unknown): Promise<{ moment: Moment; friends: Member[] }> {
+  const moment = await requireVisible(id);
+  if (moment.sharesOff && moment.authorId !== member.id) throw new MomentError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
+  const asked = pickedIds(ids);
+  const friends = (await taggableFriends(member)).filter((friend) => asked.has(friend.id)).slice(0, MAX_INVITES);
+  if (friends.length === 0) throw new MomentError('เลือกเพื่อนที่จะชวนก่อนนะ', 400);
+  return { moment, friends };
+}
+
+/** The post a friend answers "ไปด้วย" on, if it can still be seen */
+export const visibleMoment = (id: string): Promise<Moment> => requireVisible(id);
 
 const asMention = (person: Member): Mention => ({ id: person.id, name: tidyDisplayName(person.displayName).trim() || person.displayName });
 const pickedIds = (input: unknown): Set<string> =>

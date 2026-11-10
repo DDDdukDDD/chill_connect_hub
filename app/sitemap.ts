@@ -3,7 +3,8 @@ import { db } from '@/lib/db';
 import { isEventEnded } from '@/lib/dateUtils';
 import { absoluteUrl, SEARCH_INDEXING_ON } from '@/lib/site';
 import type { LifestyleSpotItem } from '@/data/spotsData';
-import { listMoments, type FeedItem } from '@/lib/moments/service';
+import { listMoments, TAG_PAGE_MIN_POSTS, type FeedItem } from '@/lib/moments/service';
+import { hashtagHref, tallyHashtags } from '@/lib/moments/hashtags';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import { ONLINE, eventInProvince, spotInProvince } from '@/lib/discoverMatch';
 
@@ -58,7 +59,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Members' moments: published only (hidden, removed and banned authors' posts drop out)
   const momentPages = moments.map((m) => page(`/moments/${encodeURIComponent(m.id)}`, 'weekly', 0.5, new Date(m.createdAt)));
 
-  return [...staticPages, ...provincePages, ...eventPages, ...questPages, ...spotPages, ...momentPages];
+  // A hashtag's page once it holds a few posts (FEED_PLAN step 2), counted from the moments already read
+  const tagPages = tallyHashtags(moments.map((m) => ({ caption: m.caption, createdAt: m.createdAt, author: m.authorId ?? m.userName })))
+    .filter((use) => use.total >= TAG_PAGE_MIN_POSTS)
+    .map((use) => page(hashtagHref(use.tag), 'weekly', 0.5));
+
+  return [...staticPages, ...provincePages, ...eventPages, ...questPages, ...spotPages, ...momentPages, ...tagPages];
 }
 
 async function allPublicMoments(): Promise<FeedItem[]> {

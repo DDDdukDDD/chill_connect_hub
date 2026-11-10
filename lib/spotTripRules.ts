@@ -7,6 +7,8 @@ export const SPOT_TRIP_MAX_PEOPLE = 15;
 export const SPOT_TRIP_EARLIEST = '06:00';
 export const SPOT_TRIP_LATEST = '19:00';
 export const MAX_OPEN_SPOT_TRIPS = 2;
+/** A trip still short of SPOT_TRIP_MIN_PEOPLE this long before it starts is called off (lib/social/tripAutoCancel.ts) */
+export const TRIP_CANCEL_BEFORE_MS = 2 * 60 * 60 * 1000;
 export const SPOT_TRIP_TRANSPORT = 'เจอกันที่สถานที่ (ต่างคนต่างเดินทาง)';
 /** Where at the place people meet: a fixed list, so a trip cannot point somewhere else */
 export const SPOT_TRIP_MEETING_POINTS = ['ทางเข้าหลัก', 'จุดประชาสัมพันธ์', 'หน้าร้าน'] as const;

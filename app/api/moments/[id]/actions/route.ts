@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { inviteTargets, visibleMoment, addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
-import { notify, removeNotifications } from '@/lib/social/notifications';
+import { notify, notifyInvite, notifyInviteYes, removeNotifications, wasInvited } from '@/lib/social/notifications';
+import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
 
 /**
  * Member actions on a moment:
@@ -12,6 +13,7 @@ import { notify, removeNotifications } from '@/lib/social/notifications';
  * { action: 'comment', text, parentId? } · { action: 'delete_comment', commentId } (the commenter or the post's author; its replies go with it)
  * { action: 'like_comment' | 'unlike_comment', commentId }
  * { action: 'report', reason } · { action: 'untag' } (the member takes themselves off the post)
+ * { action: 'invite', to: [memberId] } ("ไปกันไหม": friends only, up to 10) · { action: 'invite_yes', inviter } (answers a real invitation)
  * Returns the updated feed item (for report: also { autoHidden }).
  */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -81,6 +83,20 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         const result = await reportMoment(member, id, body.reason);
         moment = result.moment;
         autoHidden = result.autoHidden;
+        break;
+      }
+      case 'invite': {
+        if (await isRateLimited(`moment-invite:${member.id}`, INVITE_SENDS_PER_HOUR, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
+        const { moment: post, friends } = await inviteTargets(member, id, body.to);
+        await Promise.all(friends.map((friend) => notifyInvite(friend.id, member, post.id, post.targetTitle || post.location)));
+        moment = post;
+        break;
+      }
+      case 'invite_yes': {
+        const inviter = typeof body.inviter === 'string' ? body.inviter : '';
+        moment = await visibleMoment(id);
+        if (!inviter || !(await wasInvited(member.id, inviter, moment.id))) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
+        await notifyInviteYes(inviter, member, moment.id, moment.targetTitle || moment.location);
         break;
       }
       default:
