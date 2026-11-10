@@ -20,6 +20,9 @@ Item template:
 
 ---
 
+### BE-339 · "ไปกัน" through LINE: invite links, plan sheet, /moments place line (owner 2026-11-11)
+- **What changed:** owner: Thai friends talk in LINE, keep our chat too. (1) The share sheet's **ชวนไปกันทาง LINE** makes a signed link (`invite_link`, `lib/social/inviteLinks.ts`) and opens LINE with "ไป…กันไหม?". Anyone opening it, guest or member, sees "<name> ชวนคุณไป… ไปกันไหม?"; a guest signs up first and the invitation waits in session storage until answered. "ไปกัน" through a link makes the plan with the sender and follows them. Forged tokens, bare ids without a notice and one's own link answer 404 (walked on dev, 8 checks). (2) In My Hub a plan opens a **plan sheet**: **คุยต่อใน LINE** (ready-made message with the plan link), **แชตใน Chillwaa**, the day picker and cancel; the in-app chat keeps the plan card on top. (3) `/moments` grid cards show their place as the feed's slim line.
+
 ### BE-338 · Moment page place line like the feed (owner 2026-11-10)
 - **What changed:** the moment page shows its place as the feed's slim line (icon, place, what it still offers, "ไปที่นี่บ้าง →") instead of the coloured box. `findPublicMoment` now adds `live` (seats left, open now), as the feeds do.
 

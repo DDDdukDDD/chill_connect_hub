@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, MapPin, MessageCircle } from 'lucide-react';
 import { GroupChatModal } from '@/components/GroupChatModal';
+import { DialogShell } from '@/components/auth/DialogShell';
+import { openLineShare } from '@/components/moments/lineInvite';
 import type { PlanView } from '@/lib/social/friendPlans';
 
 /**
  * "ไปกัน" plans in My Hub (owner 2026-11-10): each plan made when a friend answered "ไปกัน" on a post. Tapping one
- * opens the two-person chat with the plan pinned on top, where the day is set. /myhub?plan=<id> (from the notices)
- * opens that chat straight away. Nothing shows while the member has no plan.
+ * opens the plan: talk it over in LINE first (where Thai friends already talk), set the day right there, or use the
+ * chat in Chillwaa, which keeps the plan pinned on top. /myhub?plan=<id> (from the notices) opens the plan straight
+ * away. Nothing shows while the member has no plan.
  */
 
 const todayInBangkok = () => new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -25,8 +28,16 @@ async function patchPlan(id: string, body: unknown): Promise<{ ok: boolean; mess
   }
 }
 
-/** Pinned above the messages: where, when, and the day picker */
-function PlanCard({ plan, onChanged, onCancelled }: { plan: PlanView; onChanged: (plan: PlanView) => void; onCancelled: () => void }) {
+/** LINE's ready-made message: the plan and a link back to it */
+const lineText = (plan: PlanView) =>
+  `${plan.dateLabel ? `นัดไป${plan.title} ${plan.dateLabel} นะ` : `ไป${plan.title}กันวันไหนดี?`} ${window.location.origin}/myhub?plan=${encodeURIComponent(plan.id)}`;
+
+/**
+ * Where, when, and the day picker. In the plan sheet it leads with LINE and offers the in-app chat; pinned above the
+ * chat's messages it shows the plan alone.
+ */
+function PlanCard({ plan, onChanged, onCancelled, onOpenChat }: { plan: PlanView; onChanged: (plan: PlanView) => void; onCancelled: () => void; onOpenChat?: () => void }) {
+  const inSheet = Boolean(onOpenChat);
   const [isPicking, setIsPicking] = useState(false);
   const [day, setDay] = useState(plan.date ?? '');
   const [isBusy, setIsBusy] = useState(false);
@@ -51,7 +62,7 @@ function PlanCard({ plan, onChanged, onCancelled }: { plan: PlanView; onChanged:
   };
 
   return (
-    <div className="shrink-0 border-b border-slate-100 px-4 sm:px-5 py-3 space-y-2.5">
+    <div className={inSheet ? 'space-y-3' : 'shrink-0 border-b border-slate-100 px-4 sm:px-5 py-3 space-y-2.5'}>
       <div className="flex items-center gap-3">
         {plan.image ? (
           // eslint-disable-next-line @next/next/no-img-element -- a small thumb of the post's own photo
@@ -61,7 +72,7 @@ function PlanCard({ plan, onChanged, onCancelled }: { plan: PlanView; onChanged:
         )}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 truncate">ไป{plan.title}</p>
-          <p className={`text-[13px] font-medium ${plan.date ? 'text-slate-700' : 'text-slate-500'}`}>{plan.dateLabel ? `นัดกัน ${plan.dateLabel}` : 'ยังไม่ได้นัดวัน คุยกันแล้วเลือกวันได้เลย'}</p>
+          <p className={`text-[13px] font-medium ${plan.date ? 'text-slate-700' : 'text-slate-500'}`}>{plan.dateLabel ? `นัดกัน ${plan.dateLabel}` : `กับ ${plan.friend.name} · ยังไม่ได้นัดวัน`}</p>
         </div>
         {plan.placeHref && (
           <Link href={plan.placeHref} className="shrink-0 h-9 px-3 inline-flex items-center rounded-full text-[13px] font-semibold text-slate-700 hover:bg-slate-100">
@@ -69,6 +80,18 @@ function PlanCard({ plan, onChanged, onCancelled }: { plan: PlanView; onChanged:
           </Link>
         )}
       </div>
+
+      {onOpenChat && (
+        <div className="grid gap-2">
+          <button type="button" onClick={() => openLineShare(lineText(plan))} className="h-11 rounded-full bg-[#06C755] hover:bg-[#05B34C] text-sm font-bold text-white inline-flex items-center justify-center gap-2 cursor-pointer">
+            <MessageCircle className="w-4 h-4" aria-hidden="true" />
+            คุยต่อใน LINE
+          </button>
+          <button type="button" onClick={onOpenChat} className="h-10 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer">
+            แชตใน Chillwaa
+          </button>
+        </div>
+      )}
 
       {isPicking ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -112,6 +135,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   const searchParams = useSearchParams();
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
   // Held in a ref: the page passes a new function each render, which must not reload the plans
   const countRef = useRef(onCount);
   useEffect(() => {
@@ -128,16 +152,25 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
     void load();
   }, [load]);
 
-  // A notice links to /myhub?plan=<id>: open that chat once the plans are in
+  // A notice links to /myhub?plan=<id>: open that plan once the plans are in
   const asked = searchParams.get('plan');
   useEffect(() => {
     if (asked && plans.some((p) => p.id === asked)) setOpenId(asked);
   }, [asked, plans]);
 
   const open = plans.find((p) => p.id === openId) ?? null;
+  const chat = plans.find((p) => p.id === chatId) ?? null;
   const close = () => {
     setOpenId(null);
     if (asked) window.history.replaceState(window.history.state, '', window.location.pathname);
+  };
+  const changed = (next: PlanView) => setPlans((all) => all.map((p) => (p.id === next.id ? next : p)));
+  const cancelled = (id: string) => {
+    const left = plans.filter((p) => p.id !== id);
+    setPlans(left);
+    countRef.current?.(left.length);
+    setChatId(null);
+    close();
   };
 
   if (plans.length === 0) return null;
@@ -165,35 +198,27 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
               </Link>
             ) : (
               <button type="button" onClick={() => setOpenId(plan.id)} className="shrink-0 h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer">
-                <MessageCircle className="w-4 h-4" aria-hidden="true" />
-                {plan.date ? 'แชต' : 'คุยนัดวัน'}
+                {plan.date ? 'ดูแผน' : 'นัดวันกัน'}
               </button>
             )}
           </li>
         ))}
       </ul>
-      {open && (
+      {open && !chat && (
+        <DialogShell onClose={close} title={`แผนไปกับ${open.friend.name}`} size="sm" focusField={false}>
+          <PlanCard key={`sheet:${open.id}:${open.date ?? ''}`} plan={open} onChanged={changed} onCancelled={() => cancelled(open.id)} onOpenChat={() => setChatId(open.id)} />
+        </DialogShell>
+      )}
+      {chat && (
         <GroupChatModal
           isOpen
-          onClose={close}
+          onClose={() => setChatId(null)}
           event={null}
-          roomId={open.roomId}
-          roomTitle={open.friend.name}
-          subtitle={`แผนไป${open.title}`}
+          roomId={chat.roomId}
+          roomTitle={chat.friend.name}
+          subtitle={`แผนไป${chat.title}`}
           emptyText="ยังไม่มีข้อความ ทักกันแล้วเลือกวันที่ไปกันได้เลย"
-          header={
-            <PlanCard
-              key={`${open.id}:${open.date ?? ''}`}
-              plan={open}
-              onChanged={(next) => setPlans((all) => all.map((p) => (p.id === next.id ? next : p)))}
-              onCancelled={() => {
-                const left = plans.filter((p) => p.id !== open.id);
-                setPlans(left);
-                countRef.current?.(left.length);
-                close();
-              }}
-            />
-          }
+          header={<PlanCard key={`chat:${chat.id}:${chat.date ?? ''}`} plan={chat} onChanged={changed} onCancelled={() => cancelled(chat.id)} />}
         />
       )}
     </section>

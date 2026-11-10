@@ -21,6 +21,7 @@ import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
+import { inviteViaLine } from '@/components/moments/lineInvite';
 import { AchievementLine } from '@/components/moments/AchievementLine';
 import { AchievementsRow } from '@/components/home/AchievementsRow';
 import { useClamped } from '@/components/moments/useClamped';
@@ -1119,6 +1120,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           canInvite
           canCard={Boolean(sharing.images[0])}
           onInvite={() => setInviting(sharing)}
+          onLine={() => void inviteViaLine(sharing.id, sharing.targetTitle || sharing.location || '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => handlers.onMenu(sharing, 'share')}
           onCard={() => handlers.onMenu(sharing, 'card')}
           onClose={() => setSharing(null)}

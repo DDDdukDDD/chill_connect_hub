@@ -6,6 +6,9 @@ import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { notify, notifyInvite, notifyInviteYes, removeNotifications, wasInvited } from '@/lib/social/notifications';
 import { planPath, startPlan } from '@/lib/social/friendPlans';
+import { inviteToken, inviterFromToken, isInviteToken } from '@/lib/social/inviteLinks';
+import { memberRepository } from '@/lib/members';
+import { setFollowing } from '@/lib/members/safety';
 import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
 
 /**
@@ -28,6 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     let moment;
     let autoHidden = false;
     let planId: string | undefined;
+    let inviteLink: string | undefined;
     switch (body.action) {
       case 'like':
       case 'unlike':
@@ -94,10 +98,27 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         moment = post;
         break;
       }
-      case 'invite_yes': {
-        const inviter = typeof body.inviter === 'string' ? body.inviter : '';
+      case 'invite_link': {
+        // "ส่งทาง LINE" (owner 2026-11-10): a signed link that asks friends outside Chillwaa "ไปกันไหม"
         moment = await visibleMoment(id);
-        if (!inviter || !(await wasInvited(member.id, inviter, moment.id))) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
+        if (moment.sharesOff && moment.authorId !== member.id) return NextResponse.json({ success: false, message: 'เจ้าของโพสต์ปิดการแชร์ไว้' }, { status: 403 });
+        inviteLink = `/moments/${encodeURIComponent(moment.id)}?invite=${encodeURIComponent(inviteToken(moment.id, member.id))}`;
+        break;
+      }
+      case 'invite_yes': {
+        const asked = typeof body.inviter === 'string' ? body.inviter : '';
+        moment = await visibleMoment(id);
+        // From a LINE link: the signature names the inviter; from the bell: a real invitation notice must exist
+        const fromLink = isInviteToken(asked);
+        const inviter = fromLink ? inviterFromToken(moment.id, asked) ?? '' : asked;
+        if (!inviter || inviter === member.id || (!fromLink && !(await wasInvited(member.id, inviter, moment.id)))) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
+        if (fromLink) {
+          if (await isRateLimited(`invite-link-yes:${member.id}`, 20, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ตอบบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
+          const person = await memberRepository.findById(inviter);
+          if (!person || person.status !== 'active' || person.blockedIds?.includes(member.id) || member.blockedIds?.includes(inviter)) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
+          // Whoever came through a friend's link follows them, so the friend's posts are in their feed from the start
+          if (!member.followingIds?.includes(inviter)) await setFollowing(member, inviter, true).catch(() => null);
+        }
         // The answer makes a plan for the two (owner 2026-11-10); the one who asked is led to its chat
         const plan = await startPlan(member, inviter, moment);
         planId = plan.id;
@@ -107,7 +128,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       default:
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
-    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }), ...(planId && { planId }) });
+    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }), ...(planId && { planId }), ...(inviteLink && { inviteLink }) });
   } catch (error) {
     if (error instanceof MomentError || error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     return NextResponse.json({ success: false, message: 'ทำรายการไม่สำเร็จ' }, { status: 400 });
