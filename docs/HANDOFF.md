@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-342 · `npm run smoke`: the main flows in one command (owner 2026-11-11)
+- **What changed:** `scripts/smoke.mjs` walks the API on the local dev server: sign-up, life map marks, posting, starter challenges and their XP, "ไปกัน" from the bell and from a LINE link (forged and own links refused), plans, chat, admin retention. 17 checks; it deletes its accounts at the end and refuses to run when the dev database address is the live one.
+- **What to do about it:** run `npm run smoke` (with `npm run dev` running) before pushing a round that touches posting, challenges, plans or chat.
+
 ### BE-341 · Retention in /admin: do new members come back (owner 2026-11-11)
 - **What changed:** /admin home opens with **สมาชิกใหม่กลับมาไหม**: per sign-up week, the share who came back the next day and within 7 days, posted or made a "ไปกัน" plan within 7 days, and finished a starter challenge (`GET /api/admin/retention`). Comeback days come from new `app.member_days` (migration **0044**), one row per member per Bangkok day, written once a day per server when a signed-in session is read (`lib/members/activeDays.ts`, called in `getSessionMember`). Counting began 2026-11-11.
 - **What to do about it:** run 0044 on live before this reaches main.
