@@ -7,6 +7,7 @@ import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { notify } from '@/lib/social/notifications';
 import { isRateLimited } from '@/lib/rateLimit';
 import { recordAchievement } from '@/lib/social/achievement';
+import { notePlanVisit } from '@/lib/social/friendPlans';
 
 /**
  * Moments feed. ?tab=all|popular|following|saved|mine &author=<memberId> &category=heal|move|chill|learn
@@ -50,10 +51,13 @@ export async function POST(request: Request) {
     // The challenge line is worked out once, here (FEED_PLAN step 3.5)
     const moment = await recordAchievement(member.id, await createMoment(member, input));
     await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
+    // Posting at the place of a "ไปกัน" plan marks the member as having been (lib/social/friendPlans.ts)
+    await notePlanVisit(member, moment).catch((error) => console.error('[moments] plan visit failed', error));
     const people = await loadPeople([moment]);
     return NextResponse.json({ success: true, moment: toFeedItem(moment, member, people) }, { status: 201 });
   } catch (error) {
     if (error instanceof MomentError || error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
-    return NextResponse.json({ success: false, message: 'โพสต์ไม่สำเร็จ' }, { status: 400 });
+    console.error('[moments] post failed', error);
+    return NextResponse.json({ success: false, message: 'โพสต์ไม่สำเร็จ' }, { status: 500 });
   }
 }

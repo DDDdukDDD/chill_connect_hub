@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
+import { runPlanReminders } from '@/lib/social/friendPlans';
 
 /**
  * Work that must happen at a time, not when someone opens a page. Called every hour by the GitHub Actions schedule
@@ -33,6 +34,8 @@ export async function GET(request: Request) {
   await run('shortTrips', () => cancelShortTrips());
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
+  // "ไปกัน" plans: the day-before reminder and the day-after question
+  await run('friendPlans', () => runPlanReminders());
   // Once a day: moment files no post points to
   await run('momentOrphans', () => cleanMomentOrphans());
   return NextResponse.json({ success: true, results }, { headers: { 'Cache-Control': 'no-store' } });

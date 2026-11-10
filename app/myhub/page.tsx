@@ -20,6 +20,7 @@ import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
+import { FriendPlans } from '@/components/myhub/FriendPlans';
 import { TipHostModal } from '@/components/TipHostModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ChallengeQuest, EventItem } from '@/data/mockData';
@@ -190,6 +191,8 @@ function MyHubContent() {
   const [scheduleWhen, setScheduleWhen] = useState<'upcoming' | 'past' | 'saved'>('upcoming');
   // The schedule opens on the list; the month grid is the other way to look at it
   const [scheduleView, setScheduleView] = useState<'list' | 'month'>('list');
+  // A "ไปกัน" plan means the hub is not empty, even with no ตี้ yet (the empty-state words change)
+  const [hasFriendPlans, setHasFriendPlans] = useState(false);
   const [openedAt] = useState(() => Date.now());
   // User Created Events (Host)
   const [userCreatedEvents, setUserCreatedEvents] = useState<EventItem[]>([]);
@@ -1076,7 +1079,7 @@ function MyHubContent() {
     return (
       <section aria-label="เริ่มที่ไหนดี" className={underTabs ? undefined : scheduleDivider}>
         <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
-        <p className="mt-1 text-sm font-medium text-slate-600">มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้</p>
+        <p className="mt-1 text-sm font-medium text-slate-600">{hasFriendPlans ? 'อยากไปที่อื่นอีก เลือกตี้หรืออีเวนต์ที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้' : 'มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้'}</p>
 
         {/* Real meetups that are open now: something to say yes to, not only doors to other pages */}
         {renderSuggested()}
@@ -2187,6 +2190,8 @@ function MyHubContent() {
 
                 </div>
                 <div id="my-schedule" className={`${hubMainMode === 'calendar' ? 'order-3' : 'order-2'} lg:order-none min-w-0 space-y-6 scroll-mt-24`}>
+              {/* "ไปกัน" plans with friends sit above whatever the column shows (owner 2026-11-10); nothing when there are none */}
+              <FriendPlans onCount={(n) => setHasFriendPlans(n > 0)} />
               {hubMainMode === 'calendar' ? (
                 renderMasterCalendarView()
               ) : hubMainMode === 'hosting' ? (

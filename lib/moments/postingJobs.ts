@@ -51,7 +51,9 @@ async function execute(id: string) {
     setTimeout(() => dismissPosting(id), DONE_SHOWN_MS);
   } catch (err) {
     if (!(err instanceof PostingError)) console.error('Moment post failed:', err);
-    set(id, { state: 'failed', error: err instanceof PostingError ? err.message : GENERAL_ERROR });
+    // An unexpected error names itself, so a screenshot of the card shows where it broke
+    const detail = err instanceof Error ? `${err.name}${err.message ? `: ${err.message.slice(0, 60)}` : ''}` : '';
+    set(id, { state: 'failed', error: err instanceof PostingError ? err.message : detail ? `${GENERAL_ERROR} (${detail})` : GENERAL_ERROR });
   }
 }
 

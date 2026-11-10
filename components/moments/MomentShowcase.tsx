@@ -12,6 +12,7 @@ import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
 import { avatarImage } from '@/lib/optimizedImage';
+import { targetLiveText } from '@/components/moments/targetLiveText';
 import { hashtagHref } from '@/lib/moments/hashtags';
 
 const PAGE_SIZE = 24;
@@ -81,9 +82,10 @@ function Avatar({ name, src }: { name: string; src?: string }) {
 }
 
 /** A moment the way the Home feed shows a post, in a smaller size: who, the photo, the words, where it was, and the reactions */
-function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number; onLike?: (moment: FeedItem) => void }) {
+function MomentCard({ moment, onLike }: { moment: FeedItem; onLike?: (moment: FeedItem) => void }) {
   const title = momentTitle(moment.caption);
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
+  const live = targetLiveText(moment.live);
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
   const href = `/moments/${encodeURIComponent(moment.id)}${moment.video ? '?full=1' : ''}`;
@@ -160,17 +162,16 @@ function MomentCard({ moment, index, onLike }: { moment: FeedItem; index: number
         </Link>
       )}
 
-      {/* Where it was: straight to that place, meetup, fair or challenge */}
+      {/*
+        Where it was: the feed's slim line (owner 2026-11-10), straight to that place, meetup, fair or challenge.
+        Narrow phone tiles keep the place only; wider screens add what it still offers and the next step.
+      */}
       {target && targetHref ? (
-        <Link href={targetHref} className={`mt-2 lg:mt-3 flex items-center gap-2 lg:gap-2.5 rounded-xl lg:rounded-2xl ${target.box} p-1.5 lg:pl-2 lg:pr-3 lg:py-2 hover:opacity-90 min-w-0 ${focusRing}`}>
-          <span className={`w-6 h-6 lg:w-8 lg:h-8 rounded-lg lg:rounded-xl bg-white ${target.icon} flex items-center justify-center shrink-0 ${index % 2 ? 'rotate-6' : '-rotate-6'}`} aria-hidden="true">
-            <target.Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="hidden lg:block text-[11px] font-medium opacity-80">{target.label}</span>
-            <span className="block text-[11px] lg:text-[13px] font-semibold truncate">{place}</span>
-          </span>
-          <span className="hidden lg:inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap">{target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+        <Link href={targetHref} className={`group mt-2 px-0.5 flex items-center gap-1.5 min-w-0 text-[11px] lg:text-[13px] font-semibold ${focusRing}`}>
+          <target.Icon className={`w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
+          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{place}</span>
+          {live && <span className={`hidden lg:inline shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
+          <span className={`hidden lg:inline-flex shrink-0 items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
         </Link>
       ) : (
         place && (
@@ -208,8 +209,8 @@ export function MomentGrid({ items, onLike }: { items: FeedItem[]; onLike?: (mom
   if (items.length === 0) return null;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-7 sm:gap-x-4 lg:gap-x-8 lg:gap-y-12">
-      {items.map((moment, index) => (
-        <MomentCard key={moment.id} moment={moment} index={index} onLike={onLike} />
+      {items.map((moment) => (
+        <MomentCard key={moment.id} moment={moment} onLike={onLike} />
       ))}
     </div>
   );

@@ -216,7 +216,7 @@ Slim 6px scrollbars with a transparent track and a soft slate thumb are set glob
 
 ### Icons and emoji
 
-- Icons come from `lucide-react` only, drawn as line icons.
+- Icons come from `lucide-react` only, drawn as line icons. The reaction row under a post (owner 2026-11-10): heart, comment and bookmark stay plain icons; "ชวนไป" (paper plane) sits in a soft `bg-slate-100` pill as the one shaped action in the row.
 - **No emoji** in headings, titles, buttons, option cards, `<option>` text, or titles stored in data (`ปั้นเซรามิก` is right, `ปั้นเซรามิก 🎨` is wrong).
 - No raw unicode arrows (`↗`, `→`). Use `<ArrowRight />`.
 - Never print raw markdown (`**text**`) in the UI. Use `<strong>` or `RichTextEditor`.

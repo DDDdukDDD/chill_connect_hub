@@ -11,6 +11,7 @@ import { bangkokDay, countedStamps, planNeeded } from './questPlan';
 import { questMemberStore } from './stores';
 import { questStampStore } from './questStampStore';
 import { checkedInTogether, friendIdsOf } from './friends';
+import { planPoints } from './friendPlans';
 import { type Visit, type VisitEvidence, type VisitTargetType, isVisitTargetType, targetKey, visitsOf } from './visits';
 
 /**
@@ -435,8 +436,10 @@ export async function progressOf(memberId: string) {
   // waiting for staff (no location at the place) earns once it passes: XP buys vouchers, so it needs proof too
   const visitPoints = visits.reduce((sum, visit) => sum + (targets.get(targetKey(visit.targetType, visit.targetId)) && !visit.pending ? VISIT_POINTS[visit.evidence] : 0), 0);
   const questPoints = quests.reduce((sum, quest) => sum + (quest.completed && quest.joined ? quest.rewardPoints : 0), 0);
+  // "ไปกับเพื่อน" (owner 2026-11-10): a plan both went to, on the member's own proven visit
+  const planBonus = await planPoints(memberId, visits, (visit) => Boolean(targets.get(targetKey(visit.targetType, visit.targetId))));
 
-  return { visits, quests, points: { total: visitPoints + questPoints, fromVisits: visitPoints, fromQuests: questPoints } };
+  return { visits, quests, points: { total: visitPoints + questPoints + planBonus, fromVisits: visitPoints, fromQuests: questPoints, fromPlans: planBonus } };
 }
 
 /** One line of a challenge's checklist for the member */

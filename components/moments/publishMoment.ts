@@ -38,15 +38,15 @@ async function uploadClip(file: File, onShare?: (share: number) => void): Promis
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contentType: file.type, size: file.size, preview: file.name === 'clip-preview.mp4' }),
     }).then((r) => r.json()).catch(() => null);
-    if (!ticket?.success || !ticket.uploadUrl || !ticket.url) return null;
+    if (!ticket?.success || !ticket.uploadUrl || !ticket.url) throw new PostingError((ticket as { message?: string } | null)?.message || 'ขอลิงก์อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', ticket.uploadUrl as string);
       xhr.setRequestHeader('Content-Type', file.type);
       if (ticket.cacheControl) xhr.setRequestHeader('Cache-Control', ticket.cacheControl);
       if (onShare) xhr.upload.onprogress = (e) => e.lengthComputable && onShare(e.loaded / e.total);
-      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 upload ${xhr.status}`)));
-      xhr.onerror = () => reject(new Error('R2 upload failed'));
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new PostingError(`อัปโหลดคลิปไม่สำเร็จ (R2 ${xhr.status}) ลองอีกครั้งนะ`)));
+      xhr.onerror = () => reject(new PostingError('อัปโหลดคลิปไม่สำเร็จ (ต่อที่เก็บไฟล์ไม่ได้) ลองอีกครั้งนะ'));
       xhr.send(file);
     });
     return ticket.url;
@@ -125,7 +125,7 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
       if (clip.file.size > MAX_VIDEO_BYTES) throw new PostingError(`ย่อคลิปบนเครื่องนี้ไม่สำเร็จ และไฟล์ใหญ่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองเลือกคลิปที่สั้นลงนะ`);
     }
     report(0.5, 'กำลังอัปโหลดคลิป…');
-    const clipUrl = await uploadClip(small?.file ?? clip.file, (share) => report(0.5 + share * 0.42, 'กำลังอัปโหลดคลิป…')).catch(() => null);
+    const clipUrl = await uploadClip(small?.file ?? clip.file, (share) => report(0.5 + share * 0.42, 'กำลังอัปโหลดคลิป…'));
     if (!clipUrl) throw new PostingError('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
     // The silent loop feeds autoplay; without it the post still goes, its clip then waits for a tap
     const previewUrl = small?.preview ? await uploadClip(small.preview).catch(() => null) : null;
@@ -168,7 +168,8 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
   }).catch(() => null);
   if (!res) throw new PostingError('เชื่อมต่อไม่ได้ ลองอีกครั้งนะ');
   const json = await res.json().catch(() => null);
-  if (!res.ok || json?.success === false || !json?.moment) throw new PostingError(json?.message || 'โพสต์ไม่สำเร็จ ลองอีกครั้งนะ');
+  // The status code tells a timeout or a blocked request apart from a refusal with words (clip posts failing, 2026-11-10)
+  if (!res.ok || json?.success === false || !json?.moment) throw new PostingError(json?.message ? `${json.message}${res.ok ? '' : ` (${res.status})`}` : `โพสต์ไม่สำเร็จ (รหัส ${res.status}) ลองอีกครั้งนะ`);
 
   // A moment at a place or event is a visit: say so when it counted toward a challenge the member is doing
   let counted: CountedQuest | null = null;
