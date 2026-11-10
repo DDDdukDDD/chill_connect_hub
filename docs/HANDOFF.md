@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-343 · Places in Chiang Mai, Phuket and Chonburi (owner 2026-11-11)
+- **What changed:** the OpenStreetMap importer (`lib/scrapers/osmWikidata.ts`) now also asks for Buddhist temples, beaches, islands, waterfalls, peaks and national parks, in two smaller Overpass queries with a longer wait (one big query timed out), and uses the Thai Wikipedia title before an English name. Imported on **dev only**: Chiang Mai +26, Phuket +10, Chonburi +10, with "why go" texts for 43 in `db/content/cities-osm-2026-11-11-vibes.json` and 3 drafts. `scripts/import-osm-places.cjs` replaces the temporary import script (dev by default, `--live` for live).
+- **What to do about it:** owner looks at /spots on localhost:3000; when OK, run the import with `--live` per province, then apply the vibes file on live (LAUNCH_CHECKLIST).
+
 ### BE-342 · `npm run smoke`: the main flows in one command (owner 2026-11-11)
 - **What changed:** `scripts/smoke.mjs` walks the API on the local dev server: sign-up, life map marks, posting, starter challenges and their XP, "ไปกัน" from the bell and from a LINE link (forged and own links refused), plans, chat, admin retention. 17 checks; it deletes its accounts at the end and refuses to run when the dev database address is the live one.
 - **What to do about it:** run `npm run smoke` (with `npm run dev` running) before pushing a round that touches posting, challenges, plans or chat.
