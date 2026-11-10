@@ -1,7 +1,7 @@
 import type { EventItem } from '@/data/mockData';
 import { db } from '../db';
 import { meetupTimes } from '../dateUtils';
-import { isTripConfirmed, SPOT_TRIP_MIN_PEOPLE } from '../spotTripRules';
+import { isTripConfirmed, SPOT_TRIP_MIN_PEOPLE, TRIP_CANCEL_BEFORE_MS } from '../spotTripRules';
 import { notifyTripCancelled } from './notifications';
 import { waitlistStore } from './stores';
 
@@ -11,7 +11,7 @@ import { waitlistStore } from './stores';
  * is what the 3-person rule is there to prevent, so the trip never goes ahead short.
  * Run by the hourly job (app/api/cron/hourly); doing it again finds nothing new.
  */
-export const TRIP_CANCEL_BEFORE_MS = 2 * 60 * 60 * 1000;
+export { TRIP_CANCEL_BEFORE_MS };
 
 const hostOf = (event: EventItem) => (event as { createdByMemberId?: string }).createdByMemberId;
 

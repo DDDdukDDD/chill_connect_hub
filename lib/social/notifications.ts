@@ -6,6 +6,7 @@ import { thaiTimeAgo } from '../moments/service';
 import { notificationStore, type NotificationMatch, type NotificationType, type StoredNotification } from './notificationStore';
 import { afterResponse, pushConfigured, sendPush, type PushMessage } from './push';
 import { pushStore } from './pushStore';
+import { FRIENDS_GOING_MAX } from './socialRules';
 
 export type { NotificationType };
 
@@ -79,7 +80,7 @@ export async function notifyDecision(memberId: string, type: 'approved' | 'rejec
 
 /** Tells a host that someone joined their ตี้; joining again after leaving stays one notification */
 /** How many friends hear that someone joined a ตี้, at most (the newest friendships first would need more reads; any 30 is fine) */
-const MAX_FRIENDS_TOLD = 30;
+const MAX_FRIENDS_TOLD = FRIENDS_GOING_MAX;
 
 /**
  * "เพื่อนจะไปตี้นี้ ไปด้วยกันไหม?" (owner 2026-11-10: notices that give a reason to go out). Friends only (they follow each

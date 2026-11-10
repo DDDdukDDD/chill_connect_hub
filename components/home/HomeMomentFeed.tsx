@@ -30,6 +30,7 @@ import { ShareSheet } from '@/components/moments/ShareSheet';
 import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
+import { HOME_FEED_LOAD_AHEAD_PX } from '@/lib/social/socialRules';
 
 const PAGE_SIZE = HOME_FEED_PAGE_SIZE;
 const NEW_CHECK_MS = 60_000;
@@ -681,7 +682,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   useEffect(() => {
     const target = sentinelRef.current;
     if (!target) return;
-    const observer = new IntersectionObserver((entries) => entries[0].isIntersecting && loadMore(), { rootMargin: '1800px' });
+    const observer = new IntersectionObserver((entries) => entries[0].isIntersecting && loadMore(), { rootMargin: `${HOME_FEED_LOAD_AHEAD_PX}px` });
     observer.observe(target);
     return () => observer.disconnect();
   }, [loadMore, loadedView]);
@@ -692,12 +693,13 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     const link = (e.target as HTMLElement).closest('a');
     const href = link?.getAttribute('href');
     if (!href?.startsWith('/') || link?.target === '_blank' || loadedView !== sort) return;
-    // The post the link sits in; a link outside the posts that opens a moment (the achievements row) names it in its
-    // href, so that moment's back link still knows it came from here instead of falling back to /moments
-    const linkedMoment = href.match(/^\/moments\/(?!tag\/)([^/?#]+)/)?.[1];
-    const momentId = (e.target as HTMLElement).closest('article')?.getAttribute('data-seen-id') ?? (linkedMoment ? decodeURIComponent(linkedMoment) : '');
-    saveFeedReturn({ url: window.location.pathname, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort });
+    // The post the link sits in, taken from the loaded list: nothing read off the page goes into storage (CodeQL
+    // js/xss-through-dom, 2026-11-10), since what the moment page reads back from there ends up in links and players
+    const seenId = (e.target as HTMLElement).closest('article')?.getAttribute('data-seen-id');
+    saveReturn(moments.find((m) => m.id === seenId)?.id ?? '');
   };
+  const saveReturn = (momentId: string) =>
+    saveFeedReturn({ url: window.location.pathname, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort });
 
   const replace = (updated: FeedItem) => setMoments((list) => list.map((m) => (m.id === updated.id ? updated : m)));
 
@@ -938,7 +940,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
       {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. Above the posting
           box (owner 2026-11-10): seeing what friends did comes more often than posting */}
-      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} />}
+      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
 
       <div className="mt-3">
         {/* Photos and clips are two ways in (owner 2026-11-02); each button goes straight to the phone's picker */}

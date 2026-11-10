@@ -15,7 +15,7 @@ const MEMORY_KEY = 'achievements-row';
  * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
  * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
  */
-export function AchievementsRow({ initial }: { initial?: AchievementItem[] }) {
+export function AchievementsRow({ initial, onOpenMoment }: { initial?: AchievementItem[]; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<AchievementItem[]>(() => initial ?? recall<AchievementItem[]>(MEMORY_KEY) ?? []);
   useEffect(() => {
@@ -48,6 +48,7 @@ export function AchievementsRow({ initial }: { initial?: AchievementItem[] }) {
             <li key={item.id} className="shrink-0 w-[72px]">
               <Link
                 href={item.href}
+                onClick={() => item.momentId && onOpenMoment?.(item.momentId)}
                 aria-label={`${name} ${done ? 'พิชิตชาเลนจ์' : 'กำลังพิชิตชาเลนจ์'} ${item.quest.title}${done ? '' : ` ${item.current}/${item.total}`} · ${item.timeAgo}`}
                 className="group flex flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >

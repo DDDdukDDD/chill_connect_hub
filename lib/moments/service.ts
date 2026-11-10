@@ -11,6 +11,7 @@ import { FOR_YOU_WEIGHTS, GUEST_READER, rankForYou, type ForYouReader } from './
 import { liveKey, type TargetLive } from './targetLive';
 import { isSpotOpenNow } from '../openHours';
 import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
+import { INVITE_MAX_FRIENDS } from '../social/socialRules';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -382,7 +383,7 @@ export async function taggableFriends(member: Member): Promise<Member[]> {
 }
 
 const MAX_MOMENT_TAGS = 10;
-const MAX_INVITES = 10;
+const MAX_INVITES = INVITE_MAX_FRIENDS;
 
 /**
  * "ไปกันไหม" (owner 2026-11-10): the friends this post may be sent to, out of the ones asked for. Friends only (they

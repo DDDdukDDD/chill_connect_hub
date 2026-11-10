@@ -5,6 +5,7 @@ import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { notify, notifyInvite, notifyInviteYes, removeNotifications, wasInvited } from '@/lib/social/notifications';
+import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
 
 /**
  * Member actions on a moment:
@@ -85,7 +86,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         break;
       }
       case 'invite': {
-        if (await isRateLimited(`moment-invite:${member.id}`, 30, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
+        if (await isRateLimited(`moment-invite:${member.id}`, INVITE_SENDS_PER_HOUR, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
         const { moment: post, friends } = await inviteTargets(member, id, body.to);
         await Promise.all(friends.map((friend) => notifyInvite(friend.id, member, post.id, post.targetTitle || post.location)));
         moment = post;

@@ -5,6 +5,7 @@ import { memberRepository, type Member } from '../members';
 import { momentRepository } from '../moments';
 import { thaiTimeAgo } from '../moments/service';
 import { allQuestFinishes } from './questFinishes';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
 
 /**
  * "เพื่อนๆ กำลังออกไปใช้ชีวิต" at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
@@ -13,8 +14,8 @@ import { allQuestFinishes } from './questFinishes';
  * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.
  */
 
-const WINDOW_DAYS = 14;
-const ROW_MAX = 15;
+const WINDOW_DAYS = ACHIEVEMENTS_WINDOW_DAYS;
+const ROW_MAX = ACHIEVEMENTS_ROW_MAX;
 
 export interface AchievementItem {
   id: string;
@@ -24,6 +25,8 @@ export interface AchievementItem {
   quest: { id: string; title: string };
   current?: number;
   total?: number;
+  /** The post a step circle opens (finishes open the challenge) */
+  momentId?: string;
   href: string;
   timeAgo: string;
   at: string;
@@ -60,6 +63,7 @@ const everyone = () =>
           quest: { id: s.achievement.questId, title: s.achievement.title },
           current: s.achievement.current,
           total: s.achievement.total,
+          momentId: s.momentId,
           href: `/moments/${encodeURIComponent(s.momentId)}`,
           at: s.createdAt,
         })),
