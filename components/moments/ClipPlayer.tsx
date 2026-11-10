@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Heart, Play, Volume2, VolumeX } from 'lucide-react';
+import { Play, Heart, Volume2, VolumeX } from 'lucide-react';
 
 /**
  * A moment's clip, played the way Instagram plays one (owner 2026-11-02): it starts by itself once it is on screen,
@@ -155,6 +155,8 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
   // The big play button only when a tap is what it takes; a clip about to start by itself just shows its cover
   const [needsTap, setNeedsTap] = useState(false);
   const [hearts, setHearts] = useState(0);
+  // The video has painted a frame; until then the cover picture shows instead of black
+  const [hasFrame, setHasFrame] = useState(false);
   const sound = useSyncExternalStore(subscribeSound, () => soundOn, () => false);
   // The full file, rather than the preview or nothing; switched on by the reader, never back
   const [isFull, setIsFull] = useState(preview === undefined);
@@ -287,8 +289,24 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
         onTimeUpdate={keepInPart}
         onPlay={() => setIsPaused(false)}
         onPause={() => setIsPaused(true)}
+        onPlaying={() => setHasFrame(true)}
+        onEmptied={() => setHasFrame(false)}
         className={`absolute inset-0 w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`}
       />
+      {/*
+        The cover as a real picture until the clip shows its first frame: phones paint a video's poster late or not at
+        all, so a swipe in the Reel (or the switch from the preview loop to the full file) showed black (owner 2026-11-10)
+      */}
+      {poster && (
+        // eslint-disable-next-line @next/next/no-img-element -- the same address the Reel warms ahead, so it is already cached
+        <img
+          src={poster}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-200 ${fit === 'cover' ? 'object-cover' : 'object-contain'} ${hasFrame ? 'opacity-0' : 'opacity-100'}`}
+        />
+      )}
       {interactive && (
         <>
           <button

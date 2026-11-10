@@ -61,7 +61,7 @@ export function PostingProgress() {
               {job.state === 'failed' && (
                 <p className="flex items-start gap-1.5 text-sm font-semibold text-slate-800">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" aria-hidden="true" />
-                  <span className="min-w-0 line-clamp-2">{job.error}</span>
+                  <span className="min-w-0 line-clamp-3">{job.error}</span>
                 </p>
               )}
             </div>
