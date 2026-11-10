@@ -31,6 +31,8 @@ interface GroupChatModalProps {
   subtitle?: string;
   /** Pinned above the messages, like the plan card of a "ไปกัน" chat (components/myhub/FriendPlans.tsx) */
   header?: React.ReactNode;
+  /** Words for a room with no messages yet */
+  emptyText?: string;
 }
 
 const POLL_MS = 4000;
@@ -46,7 +48,7 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour:
  * Group chat for the people who joined an event (or a fair meet-up group).
  * Messages live on the server (/api/chat/{roomId}); the list refreshes every few seconds while open.
  */
-export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle, subtitle, header }) => {
+export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle, subtitle, header, emptyText }) => {
   const room = roomId || event?.id || '';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [info, setInfo] = useState<{ title: string; members: number } | null>(null);
@@ -166,7 +168,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
         <div ref={listRef} className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-slate-50/60" aria-live="polite">
           {state === 'loading' && <p className="text-sm font-medium text-slate-500 text-center py-8">กำลังเปิดแชต…</p>}
           {state === 'ready' && messages.length === 0 && (
-            <p className="text-sm font-medium text-slate-500 text-center py-8">ยังไม่มีข้อความ ทักทายกันก่อนวันงานได้เลย</p>
+            <p className="text-sm font-medium text-slate-500 text-center py-8">{emptyText ?? 'ยังไม่มีข้อความ ทักทายกันก่อนวันงานได้เลย'}</p>
           )}
           {messages.map((m) => (
             <div key={m.id} className={`flex items-end gap-2 ${m.isMine ? 'flex-row-reverse' : ''}`}>

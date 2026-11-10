@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, MapPin, MessageCircle } from 'lucide-react';
@@ -108,14 +108,21 @@ function PlanCard({ plan, onChanged, onCancelled }: { plan: PlanView; onChanged:
   );
 }
 
-export function FriendPlans() {
+export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) {
   const searchParams = useSearchParams();
   const [plans, setPlans] = useState<PlanView[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Held in a ref: the page passes a new function each render, which must not reload the plans
+  const countRef = useRef(onCount);
+  useEffect(() => {
+    countRef.current = onCount;
+  });
 
   const load = useCallback(async () => {
     const json = await fetch('/api/plans', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    setPlans(Array.isArray(json?.plans) ? json.plans : []);
+    const list: PlanView[] = Array.isArray(json?.plans) ? json.plans : [];
+    setPlans(list);
+    countRef.current?.(list.length);
   }, []);
   useEffect(() => {
     void load();
@@ -144,7 +151,7 @@ export function FriendPlans() {
               // eslint-disable-next-line @next/next/no-img-element -- member avatar
               <img src={plan.friend.avatar} alt="" className="w-10 h-10 shrink-0 rounded-full object-cover bg-slate-100" />
             ) : (
-              <span className="w-10 h-10 shrink-0 rounded-full bg-slate-200" aria-hidden="true" />
+              <span className="w-10 h-10 shrink-0 rounded-full bg-slate-100 text-sm font-bold text-slate-600 flex items-center justify-center" aria-hidden="true">{plan.friend.name.trim().charAt(0).toUpperCase()}</span>
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900 truncate">ไป{plan.title}</p>
@@ -173,13 +180,16 @@ export function FriendPlans() {
           roomId={open.roomId}
           roomTitle={open.friend.name}
           subtitle={`แผนไป${open.title}`}
+          emptyText="ยังไม่มีข้อความ ทักกันแล้วเลือกวันที่ไปกันได้เลย"
           header={
             <PlanCard
               key={`${open.id}:${open.date ?? ''}`}
               plan={open}
               onChanged={(next) => setPlans((all) => all.map((p) => (p.id === next.id ? next : p)))}
               onCancelled={() => {
-                setPlans((all) => all.filter((p) => p.id !== open.id));
+                const left = plans.filter((p) => p.id !== open.id);
+                setPlans(left);
+                countRef.current?.(left.length);
                 close();
               }}
             />
