@@ -11,6 +11,7 @@ import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { InvitePill } from '@/components/invites/InvitePill';
 import { InviteNudge } from '@/components/invites/InviteNudge';
+import { PhoneActionBar } from '@/components/detail/PhoneActionBar';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -583,17 +584,17 @@ export default function FairDetailPage({
           ]}
           actions={
             <>
-              <button type="button" onClick={toggleInHub} aria-pressed={isFav} className={isFav ? heroButton.done : heroButton.primary}>
+              <button type="button" onClick={toggleInHub} aria-pressed={isFav} className={`${isFav ? heroButton.done : heroButton.primary} max-sm:px-4`}>
                 {isFav ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
                 {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
               </button>
               {officialWebsiteUrl && (
-                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={heroButton.quiet}>
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={`${heroButton.quiet} max-sm:px-3`}>
                   {officialLinkLabel}
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
-              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-4`} />}
+              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
@@ -1013,7 +1014,19 @@ export default function FairDetailPage({
 
       {chatGroup && <GroupChatModal isOpen onClose={() => setChatGroup(null)} event={eventData} roomId={chatGroup.id} roomTitle={chatGroup.title} />}
 
-      <MobileNav activeTab={activeNavTab} setActiveTab={setActiveNavTab} />
+      {/* Phones and tablets: when, ชวนไป and บันทึก stay in reach once the header scrolls away (owner 2026-11-12) */}
+      <MobileNav
+        activeTab={activeNavTab}
+        setActiveTab={setActiveNavTab}
+        actionBar={eventData ? (
+          <PhoneActionBar
+            title={cleanText(formatEventDateRange(eventData)) || cleanText(eventData.title)}
+            status={isEnded ? { text: 'งานจบแล้ว', tone: 'closed' } : isOngoing ? { text: 'กำลังจัดอยู่ตอนนี้', tone: 'open' } : { text: cleanText(fairPlace(eventData.location)), tone: 'plain' }}
+            invite={isEnded ? undefined : { target: { type: 'fair', id: eventData.id }, place: eventData.title, isLoggedIn, onRequireLogin: () => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }, onMessage: showToast }}
+            primary={{ label: isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามรอบหน้า' : 'บันทึกงานนี้', onClick: toggleInHub, done: isFav }}
+          />
+        ) : undefined}
+      />
     </div>
   );
 }

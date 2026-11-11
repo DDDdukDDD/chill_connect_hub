@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-350 · Phone action bar on places and อีเวนต์; page walk at 360px and desktop (owner 2026-11-12)
+- **Action bar:** /spots/[id] and /events/[id] now get the bar that rises over the phone menu once the header buttons scroll away, like ตี้ and ชาเลนจ์ (`components/detail/PhoneActionBar.tsx` through MobileNav `actionBar`): name or dates, open / ongoing status, ชวนไป (icon) and the main button (บันทึกที่นี่ / บันทึกงานนี้). `InvitePill` takes `iconOnly`.
+- **Walk:** every main page as guest and member at 360px (top and scrolled) and 1280px, headless Chrome on dev: no horizontal scroll, no text under 11px, one h1 each, no console errors (one hydration warning on /events/[id] did not come back on a second run). Fixed: the header buttons on /challenges/[id] and /events/[id] wrapped to a second row at 360px (share icon-only, ชวนไป icon-only on อีเวนต์, tighter padding). Three smoke accounts left from a run on 2026-11-11 were deleted from dev.
+
 ### BE-349 · ชวนไป made sturdier: numbers, "ไม่สะดวก", quiet plans close, "วันไหนว่าง" (owner 2026-11-12)
 - **Bug fixed (from BE-347):** a member who came in through an invitation (pledge only) was sent back to onboarding by `OnboardingResume` on every page, looping with the pledge screen. Now a pledged member is never forced; the OAuth callback and `AuthPanel` treat them as onboarded enough, and My Hub shows `FinishProfileNudge` ("ตอบ 3 ข้อ", closable for a week).
 - **Numbers:** /admin shows "ชวนไป ทีละขั้น" under retention (`lib/social/inviteFunnel.ts`, 30 days): plans, links sent, links opened, ไปกัน (and new members among them), ไม่สะดวก, dated, went together, closed quiet. Opens count from the banner's first read (`&open=1`).

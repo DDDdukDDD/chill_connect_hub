@@ -10,6 +10,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { InvitePill } from '@/components/invites/InvitePill';
+import { PhoneActionBar } from '@/components/detail/PhoneActionBar';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
@@ -669,9 +670,18 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
           }}
         />
       )}
+      {/* Phones and tablets: the place, whether it is open, ชวนไป and บันทึก stay in reach once the header scrolls away */}
       <MobileNav
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
+        actionBar={spot ? (
+          <PhoneActionBar
+            title={cleanText(spot.title)}
+            status={openStatus.badgeVariant === 'unspecified' ? undefined : { text: [openStatus.statusText, openStatus.subText].filter(Boolean).join(' · '), tone: openStatus.isOpen ? 'open' : 'closed' }}
+            invite={{ target: { type: 'spot', id: spot.id }, place: spot.title, isLoggedIn, onRequireLogin: () => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }, onMessage: showToast }}
+            primary={{ label: isFavorite ? 'บันทึกแล้ว' : 'บันทึกที่นี่', onClick: () => toggleFavorite(spot.id), done: isFavorite }}
+          />
+        ) : undefined}
       />
 
       {/* Toast */}

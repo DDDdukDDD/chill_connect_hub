@@ -16,6 +16,7 @@ export function InvitePill({
   onMessage,
   className,
   iconOnlyOnPhone = false,
+  iconOnly = false,
 }: {
   target: InviteTarget;
   place: string;
@@ -25,13 +26,15 @@ export function InvitePill({
   className: string;
   /** Rows that keep one main button on a phone show only the icon there */
   iconOnlyOnPhone?: boolean;
+  /** Only the paper plane at every width (the phone action bar) */
+  iconOnly?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
       <button type="button" onClick={() => (isLoggedIn ? setIsOpen(true) : onRequireLogin())} aria-label="ชวนเพื่อนไป" className={className}>
         <Send className="w-4 h-4 -rotate-12" aria-hidden="true" />
-        <span className={iconOnlyOnPhone ? 'max-sm:sr-only' : undefined}>ชวนไป</span>
+        <span className={iconOnly ? 'sr-only' : iconOnlyOnPhone ? 'max-sm:sr-only' : undefined}>ชวนไป</span>
       </button>
       {isOpen && (
         <InviteSheet
