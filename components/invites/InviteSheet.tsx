@@ -17,14 +17,14 @@ export interface InviteTarget {
   id: string;
 }
 
-type SendResult = { ok: boolean; message?: string; invited?: number; link?: string };
+type SendResult = { ok: boolean; message?: string; invited?: number; link?: string; dateLabel?: string };
 
 /** POST /api/invites: friends picked get a notice; the link is the same invitation for LINE */
-export async function sendInvites(target: InviteTarget, to: string[] = []): Promise<SendResult> {
+export async function sendInvites(target: InviteTarget, to: string[] = [], day?: string): Promise<SendResult> {
   try {
-    const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to }) });
+    const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to, ...(day ? { day } : {}) }) });
     const json = await res.json().catch(() => null);
-    return { ok: res.ok && json?.success !== false, message: json?.message, invited: json?.invited, link: json?.share || json?.link };
+    return { ok: res.ok && json?.success !== false, message: json?.message, invited: json?.invited, link: json?.share || json?.link, dateLabel: json?.dateLabel };
   } catch {
     return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };
   }
@@ -34,10 +34,22 @@ export async function sendInvites(target: InviteTarget, to: string[] = []): Prom
  * The words LINE opens with (owner 2026-11-11): the invitation on its own line, then the short link on the next, so the
  * chat reads like a friend asking and LINE's preview card (the /i/<code> page) carries the picture.
  */
-export const inviteWords = (place: string, isTee = false) =>
-  place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม? กดดูแล้วตอบได้เลย` : `ไป${place}กันไหม? กดดูแล้วตอบได้เลย`) : 'ไปด้วยกันไหม? กดดูแล้วตอบได้เลย';
-export const inviteLineText = (place: string, link: string, isTee = false) => `${inviteWords(place, isTee)}
+/** With a day ("ส. 15 พ.ย.") it leads: an invitation with a day gets answered more often (owner 2026-11-12) */
+export const inviteWords = (place: string, isTee = false, dateLabel?: string) =>
+  `${dateLabel ? `${dateLabel} ` : ''}${place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม?` : `ไป${place}กันไหม?`) : 'ไปด้วยกันไหม?'} กดดูแล้วตอบได้เลย`;
+export const inviteLineText = (place: string, link: string, isTee = false, dateLabel?: string) => `${inviteWords(place, isTee, dateLabel)}
 ${window.location.origin}${link}`;
+
+/** The coming Saturday and Sunday in Bangkok ("YYYY-MM-DD"); today counts when it is one */
+function weekendDays(): { sat: string; sun: string } {
+  const today = new Date(Date.now() + 7 * 3600e3);
+  const at = (weekday: number) => {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() + ((weekday - d.getUTCDay() + 7) % 7));
+    return d.toISOString().slice(0, 10);
+  };
+  return { sat: at(6), sun: at(0) };
+}
 
 /**
  * "ชวนไป" (owner 2026-11-10; every section and up to 15 friends, 2026-11-11). Friends who follow each other are listed
@@ -51,6 +63,11 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const isTee = target.type === 'community';
+  // "ไปวันไหน" (owner 2026-11-12): an invitation with a day gets answered more often. Optional; a ตี้ has its own date
+  // and a challenge has none. Left unset, the plan picks its day later ("วันไหนว่าง").
+  const canPickDay = !isTee && target.type !== 'quest';
+  const weekend = useMemo(() => weekendDays(), []);
+  const [day, setDay] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -74,30 +91,56 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
     if (picked.length === 0 || isSending) return;
     setIsSending(true);
     setError('');
-    const result = await sendInvites(target, picked);
+    const result = await sendInvites(target, picked, day || undefined);
     setIsSending(false);
     if (!result.ok) return setError(result.message || 'ส่งคำชวนไม่สำเร็จ ลองอีกครั้งนะ');
     onDone(picked.length === 1 ? 'ส่งคำชวนให้เพื่อนแล้ว' : `ส่งคำชวนให้เพื่อน ${picked.length} คนแล้ว`);
   };
 
-  const apps = useAppsInvite(target, place, (how) => (how === 'copied' ? onDone(appsInviteCopied) : onClose()), setError);
+  const apps = useAppsInvite(target, place, (how) => (how === 'copied' ? onDone(appsInviteCopied) : onClose()), setError, day || undefined);
 
   const viaLine = async () => {
     setError('');
-    const result = await sendInvites(target);
+    const result = await sendInvites(target, [], day || undefined);
     if (!result.ok || !result.link) return setError(result.message || 'ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ');
-    openLineShare(inviteLineText(place, result.link, isTee));
+    openLineShare(inviteLineText(place, result.link, isTee, result.dateLabel));
   };
 
   return (
     <DialogShell onClose={onClose} title="ชวนไป" subtitle={place ? (isTee ? `ชวนเพื่อนมาตี้ ${place}` : `ชวนเพื่อนไป ${place} ด้วยกัน`) : 'ชวนเพื่อนไปด้วยกัน'} size="sm">
+      {canPickDay && (
+        <div className="mb-4" role="radiogroup" aria-label="ไปวันไหน">
+          <p className="mb-2 text-[13px] font-semibold text-slate-500">ไปวันไหน</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: '', label: 'ยังไม่ระบุ' },
+              { value: weekend.sat, label: 'เสาร์นี้' },
+              { value: weekend.sun, label: 'อาทิตย์นี้' },
+            ].map((option) => {
+              const on = day === option.value;
+              return (
+                <button
+                  key={option.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setDay(option.value)}
+                  className={`h-9 px-4 rounded-full text-[13px] font-semibold cursor-pointer transition-colors ${on ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <button type="button" onClick={viaLine} className="w-full flex items-center gap-3 py-2 mb-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer">
         <span className="w-10 h-10 shrink-0 rounded-full bg-[#06C755] text-white flex items-center justify-center" aria-hidden="true">
           <MessageCircle className="w-5 h-5" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-slate-900">ชวนทาง LINE</span>
-          <span className="block text-[13px] text-slate-500">ส่งลิงก์ให้เพื่อนที่ยังไม่ได้อยู่ใน Chillwaa</span>
+          <span className="block text-[13px] text-slate-500">ส่งให้เพื่อนในแชต LINE</span>
         </span>
       </button>
       <button type="button" onClick={() => void apps.go()} disabled={apps.busy} className="w-full flex items-center gap-3 py-2 mb-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer">

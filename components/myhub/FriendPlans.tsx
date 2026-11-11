@@ -31,6 +31,115 @@ async function send(url: string, method: 'PATCH' | 'POST', body: unknown): Promi
 }
 const patchPlan = (id: string, body: unknown) => send(`/api/plans/${encodeURIComponent(id)}`, 'PATCH', body);
 
+const THAI_DAYS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const addDaysTo = (ymd: string, n: number) => new Date(Date.parse(`${ymd}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+/** The days one can mark free: from today (or the อีเวนต์'s first day) for 30 days, not past its last day */
+function freeDayChoices(plan: PlanView): string[] {
+  const today = todayInBangkok();
+  const first = plan.dateMin && plan.dateMin > today ? plan.dateMin : today;
+  const days: string[] = [];
+  for (let d = first; days.length < 30 && (!plan.dateMax || d <= plan.dateMax); d = addDaysTo(d, 1)) days.push(d);
+  return days;
+}
+
+/**
+ * "วันไหนว่าง" (owner 2026-11-12): the hard part of going together is a day everyone can make. Each person ticks the
+ * days they are free; the day most can make leads, and one tap sets it.
+ */
+function FreeDays({ plan, onChanged, onSetDay, onPickOwn, isBusy }: { plan: PlanView; onChanged: (plan: PlanView) => void; onSetDay: (day: string) => void; onPickOwn: () => void; isBusy: boolean }) {
+  const [isMarking, setIsMarking] = useState(false);
+  // Two weeks first, so the sheet stays short; the next two on request
+  const [isAllDays, setIsAllDays] = useState(false);
+  const [picked, setPicked] = useState<string[]>(plan.myFreeDays);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const best = plan.freeDays[0];
+  const total = plan.people.length;
+
+  const toggle = (day: string) => setPicked((now) => (now.includes(day) ? now.filter((d) => d !== day) : now.length >= 14 ? now : [...now, day]));
+  const save = async () => {
+    setIsSaving(true);
+    setError('');
+    const result = await patchPlan(plan.id, { freeDays: picked });
+    setIsSaving(false);
+    if (!result.ok || !result.plan) return setError(result.message || 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
+    setIsMarking(false);
+    onChanged(result.plan);
+  };
+
+  if (isMarking) {
+    const all = freeDayChoices(plan);
+    const days = isAllDays ? all : all.slice(0, 14);
+    return (
+      <div className="space-y-3">
+        <p className="text-[13px] font-semibold text-slate-700">ติ๊กทุกวันที่คุณว่าง</p>
+        <div className="grid grid-cols-7 gap-1.5" role="group" aria-label="วันที่ว่าง">
+          {days.map((day) => {
+            const on = picked.includes(day);
+            const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+            // The first of a month names the month, so the row says where it turns over
+            const top = day.endsWith('-01') ? THAI_MONTHS_SHORT[Number(day.slice(5, 7)) - 1] : THAI_DAYS[weekday];
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggle(day)}
+                aria-pressed={on}
+                aria-label={`${THAI_DAYS[weekday]} ${Number(day.slice(8))}`}
+                className={`h-12 rounded-xl flex flex-col items-center justify-center text-[11px] leading-tight cursor-pointer transition-colors ${on ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                <span>{top}</span>
+                <span className="text-sm font-bold">{Number(day.slice(8))}</span>
+              </button>
+            );
+          })}
+        </div>
+        {!isAllDays && all.length > 14 && (
+          <button type="button" onClick={() => setIsAllDays(true)} className="text-[13px] font-medium text-slate-600 hover:text-slate-900 underline underline-offset-4 cursor-pointer">
+            ดูวันถัดไป
+          </button>
+        )}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={save} disabled={isSaving} className="h-10 px-5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
+            {isSaving ? 'กำลังบันทึก…' : 'บันทึกวันว่าง'}
+          </button>
+          <button type="button" onClick={() => { setPicked(plan.myFreeDays); setIsMarking(false); }} className="h-10 px-3 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
+            ยกเลิก
+          </button>
+        </div>
+        {error && <p role="alert" className="text-[13px] font-medium text-rose-600">{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-slate-50 px-4 py-3 space-y-2.5">
+      {best ? (
+        <div className="flex items-center gap-3">
+          <p className="flex-1 min-w-0 text-sm text-slate-700">
+            <span className="font-semibold text-slate-900">{best.label}</span> ว่าง {best.people.length} จาก {total} คน
+          </p>
+          <button type="button" onClick={() => onSetDay(best.day)} disabled={isBusy} className="shrink-0 h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-[13px] font-bold text-white disabled:opacity-60 cursor-pointer">
+            นัดเลย
+          </button>
+        </div>
+      ) : (
+        <p className="text-sm font-semibold text-slate-900">วันไหนว่างกันบ้าง?</p>
+      )}
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setIsMarking(true)} className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-white hover:bg-slate-100 text-[13px] font-semibold text-slate-800 cursor-pointer">
+          <CalendarDays className="w-4 h-4" aria-hidden="true" />
+          {plan.myFreeDays.length ? `วันที่ฉันว่าง (${plan.myFreeDays.length})` : 'ติ๊กวันที่ฉันว่าง'}
+        </button>
+        <button type="button" onClick={onPickOwn} className="h-9 px-3 rounded-full text-[13px] font-medium text-slate-600 hover:bg-white cursor-pointer">
+          เลือกวันเอง
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const verb = (plan: PlanView) => (plan.kind === 'quest' ? `ทำชาเลนจ์ ${plan.title}` : `ไป${plan.title}`);
 
 /** LINE's ready-made message: the plan and a link back to it */
@@ -50,7 +159,7 @@ function People({ plan, max = 4 }: { plan: PlanView; max?: number }) {
 }
 
 function statusLine(plan: PlanView): string {
-  if (plan.isInvited) return `${plan.host.name}ชวนคุณ · รอคุณตอบ`;
+  if (plan.isInvited) return `${plan.host.name} ชวนคุณ · รอคุณตอบ`;
   const count = `${plan.people.length} คน`;
   const when = plan.isPast ? (plan.wentByMe ? 'ไปมาแล้ว' : `นัดไว้ ${plan.dateLabel}`) : plan.dateLabel ?? 'ยังไม่ได้นัดวัน';
   return [count, when, plan.invitedCount ? `รอตอบ ${plan.invitedCount}` : ''].filter(Boolean).join(' · ');
@@ -120,6 +229,8 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite }: { plan: Pla
         </div>
       )}
 
+      {inSheet && !plan.date && !isPicking && <FreeDays plan={plan} onChanged={onChanged} onSetDay={(d) => void save(d)} onPickOwn={() => setIsPicking(true)} isBusy={isBusy} />}
+
       {onOpenChat && (
         <div className="grid gap-2">
           <button type="button" onClick={() => openLineShare(lineText(plan))} className="h-11 rounded-full bg-[#06C755] hover:bg-[#05B34C] text-sm font-bold text-white inline-flex items-center justify-center gap-2 cursor-pointer">
@@ -136,7 +247,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite }: { plan: Pla
         <div className="flex flex-wrap items-center gap-2">
           <label htmlFor={`plan-day-${plan.id}`} className="sr-only">วันที่ไปกัน</label>
           <input id={`plan-day-${plan.id}`} type="date" min={plan.dateMin ?? todayInBangkok()} max={plan.dateMax} value={day} onChange={(e) => setDay(e.target.value)} className="h-10 px-3 rounded-xl border border-slate-200 text-sm text-slate-900" />
-          <button type="button" onClick={() => day && save(day)} disabled={!day || isBusy} className="h-10 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-sm font-bold text-white disabled:opacity-50 cursor-pointer">
+          <button type="button" onClick={() => day && save(day)} disabled={!day || isBusy} className="h-10 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white disabled:opacity-50 cursor-pointer">
             บันทึกวันนัด
           </button>
           <button type="button" onClick={() => setIsPicking(false)} className="h-10 px-3 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
@@ -145,10 +256,12 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite }: { plan: Pla
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setIsPicking(true)} className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer">
-            <CalendarDays className="w-4 h-4" aria-hidden="true" />
-            {plan.date ? 'เปลี่ยนวัน' : 'เลือกวันที่ไปกัน'}
-          </button>
+          {(plan.date || !inSheet) && (
+            <button type="button" onClick={() => setIsPicking(true)} className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer">
+              <CalendarDays className="w-4 h-4" aria-hidden="true" />
+              {plan.date ? 'เปลี่ยนวัน' : 'เลือกวันที่ไปกัน'}
+            </button>
+          )}
           {onInvite && plan.spotsLeft > 0 && (
             <button type="button" onClick={onInvite} className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer">
               <UserPlus className="w-4 h-4" aria-hidden="true" />
@@ -187,9 +300,10 @@ function InvitedCard({ plan, onAnswered, onGone }: { plan: PlanView; onAnswered:
     if (!result.ok) return setError(result.message || 'ตอบไม่สำเร็จ ลองอีกครั้งนะ');
     onAnswered();
   };
+  // "ไม่สะดวก" tells the host (in the bell, not a push), so they are not left waiting
   const no = async () => {
     setIsBusy(true);
-    const result = await patchPlan(plan.id, { action: 'leave' });
+    const result = await send('/api/invites/answer', 'POST', { planId: plan.id, answer: 'no' });
     setIsBusy(false);
     if (!result.ok) return setError(result.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ');
     onGone();
@@ -199,7 +313,7 @@ function InvitedCard({ plan, onAnswered, onGone }: { plan: PlanView; onAnswered:
       <div className="flex items-center gap-3">
         <People plan={plan} />
         <p className="min-w-0 flex-1 text-sm font-semibold text-slate-900">
-          {plan.host.name}ชวนคุณ{verb(plan)}
+          {plan.host.name} ชวนคุณ{verb(plan)}
           {plan.people.length > 1 ? ` · ไปกันแล้ว ${plan.people.length} คน` : ''}
         </p>
       </div>
@@ -212,7 +326,7 @@ function InvitedCard({ plan, onAnswered, onGone }: { plan: PlanView; onAnswered:
         <button type="button" onClick={no} disabled={isBusy} className="h-11 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 cursor-pointer disabled:opacity-60">
           ไม่สะดวก
         </button>
-        <button type="button" onClick={yes} disabled={isBusy} className="h-11 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-sm font-bold text-white cursor-pointer disabled:opacity-60">
+        <button type="button" onClick={yes} disabled={isBusy} className="h-11 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white cursor-pointer disabled:opacity-60">
           ไปกัน
         </button>
       </div>
@@ -277,7 +391,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
             <People plan={plan} max={3} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900 truncate">{verb(plan)}</p>
-              <p className={`text-[13px] truncate ${plan.isInvited ? 'font-semibold text-[#E11D48]' : 'text-slate-600'}`}>{statusLine(plan)}</p>
+              <p className={`text-[13px] truncate ${plan.isInvited ? 'font-semibold text-[#2563EB]' : 'text-slate-600'}`}>{statusLine(plan)}</p>
             </div>
             {plan.isPast && !plan.wentByMe && plan.kind !== 'quest' && !plan.isInvited ? (
               <Link href={plan.postHref} className="shrink-0 h-9 px-3.5 inline-flex items-center rounded-full bg-slate-900 hover:bg-slate-800 text-[13px] font-bold text-white">

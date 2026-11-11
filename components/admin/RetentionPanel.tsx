@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Repeat } from 'lucide-react';
+import { Repeat, Send } from 'lucide-react';
 import type { RetentionWeek } from '@/lib/members/activeDays';
+import type { InviteFunnel } from '@/lib/social/inviteFunnel';
 
 /**
  * Do new members come back (owner 2026-11-11)? One row per sign-up week: how many signed up, then the share who came
@@ -37,15 +38,21 @@ function Share({ part, of }: { part: number; of: number }) {
 
 export function RetentionPanel() {
   const [weeks, setWeeks] = useState<RetentionWeek[] | null>(null);
+  const [invites, setInvites] = useState<InviteFunnel | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     void fetch('/api/admin/retention', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((json) => (json?.success ? setWeeks(json.weeks) : setFailed(true)))
+      .then((json) => {
+        if (!json?.success) return setFailed(true);
+        setWeeks(json.weeks);
+        setInvites(json.invites ?? null);
+      })
       .catch(() => setFailed(true));
   }, []);
 
   return (
+    <>
     <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="retention-title">
       <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
         <Repeat size={16} className="text-slate-500" aria-hidden="true" />
@@ -84,6 +91,44 @@ export function RetentionPanel() {
           </table>
         </div>
       )}
+    </section>
+    {invites && <InviteSteps funnel={invites} />}
+    </>
+  );
+}
+
+/**
+ * "ชวนไป" step by step (owner 2026-11-12): each line with its share of the step it follows, so the drop-off shows.
+ * Opens are counted from 12 พ.ย. 2026.
+ */
+function InviteSteps({ funnel }: { funnel: InviteFunnel }) {
+  const steps: { label: string; value: number; of?: number }[] = [
+    { label: 'แผนที่เกิดจากการกดชวนไป', value: funnel.plans },
+    { label: 'ลิงก์ที่ส่งออกไป (LINE, แอปอื่น)', value: funnel.links },
+    { label: 'ลิงก์ที่มีคนเปิด', value: funnel.linksOpened, of: funnel.links },
+    { label: 'เพื่อนตอบไปกัน', value: funnel.yes },
+    { label: 'ในนั้นสมัครใหม่เพราะคำชวน', value: funnel.yesNewMembers, of: funnel.yes },
+    { label: 'ตอบรอบนี้ไม่สะดวก', value: funnel.declines },
+    { label: 'แผนที่ได้วันนัด', value: funnel.dated, of: funnel.plans },
+    { label: 'แผนที่ไปด้วยกันจริง (2 คนขึ้นไป)', value: funnel.wentTogether, of: funnel.plans },
+    { label: 'แผนที่ปิดเพราะเงียบ 30 วัน', value: funnel.closedQuiet },
+  ];
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="invite-steps-title">
+      <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+        <Send size={16} className="text-slate-500" aria-hidden="true" />
+        <h2 id="invite-steps-title" className="text-sm font-bold text-slate-900">ชวนไป ทีละขั้น</h2>
+        <span className="ml-auto text-[11px] text-slate-500">{funnel.days} วันล่าสุด · นับการเปิดลิงก์ตั้งแต่ 12 พ.ย. 2026</span>
+      </div>
+      <dl className="divide-y divide-slate-100 text-sm tabular-nums">
+        {steps.map((step) => (
+          <div key={step.label} className="flex items-baseline gap-3 px-4 py-2.5">
+            <dt className="flex-1 text-slate-700">{step.label}</dt>
+            <dd className="font-semibold text-slate-900">{step.value.toLocaleString()}</dd>
+            <dd className="w-16 text-right">{step.of ? <span className="text-xs font-semibold text-slate-500">{Math.round((step.value / step.of) * 100)}%</span> : null}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

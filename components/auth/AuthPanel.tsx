@@ -230,7 +230,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
     if (!isEmail(email) || !password) return;
     void run(async () => {
       const member = await session.login(email.trim(), password);
-      onAuthenticated(member, { isNew: !member.onboarded });
+      onAuthenticated(member, { isNew: !member.onboarded && !member.trust.pledged });
     });
   };
 

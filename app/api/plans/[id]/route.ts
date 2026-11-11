@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
-import { leavePlan, setPlanDate } from '@/lib/social/friendPlans';
+import { leavePlan, setFreeDays, setPlanDate } from '@/lib/social/friendPlans';
 import { isRateLimited } from '@/lib/rateLimit';
 
 /**
  * PATCH { date: 'YYYY-MM-DD' | null } → { plan } sets or clears the day (from the plan's chat);
+ * PATCH { freeDays: ['YYYY-MM-DD'] } → { plan } replaces the days the member is free ("วันไหนว่าง");
  * PATCH { action: 'leave' } → { success, result: 'cancelled' | 'left' }: the host calls the plan off for everyone, a
  * friend leaves it (or turns an invitation down). Only people in the plan.
  */
@@ -16,10 +17,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (await isRateLimited(`plan-edit:${member.id}`, 30, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'เปลี่ยนบ่อยเกินไป ลองใหม่อีกสักครู่นะ' }, { status: 429 });
   const { id } = await params;
   try {
-    const body = (await request.json().catch(() => ({}))) as { date?: unknown; action?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { date?: unknown; action?: unknown; freeDays?: unknown };
     if (body.action === 'leave' || body.action === 'cancel') {
       return NextResponse.json({ success: true, result: await leavePlan(member, id) });
     }
+    if ('freeDays' in body) return NextResponse.json({ success: true, plan: await setFreeDays(member, id, body.freeDays) });
     if (!('date' in body)) return NextResponse.json({ success: false, message: 'Invalid request' }, { status: 400 });
     return NextResponse.json({ success: true, plan: await setPlanDate(member, id, body.date) });
   } catch (error) {

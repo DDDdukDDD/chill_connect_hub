@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const link = await linkOf(code);
   const info = link ? await inviteInfo(null, link.token) : null;
   if (!link || !info) return { ...PRIVATE_PAGE, title: 'คำชวน' };
-  const going = info.goingCount > 1 ? `ไปกันแล้ว ${info.goingCount} คน · ` : '';
+  const going = [info.dateLabel, info.goingCount > 1 ? `ไปกันแล้ว ${info.goingCount} คน` : ''].filter(Boolean).map((part) => `${part} · `).join('');
   return {
     ...pageMetadata({
       title: `${info.host.name} ชวนคุณไป${info.kind === 'tee' ? `ตี้ ${info.title}` : info.title}`,

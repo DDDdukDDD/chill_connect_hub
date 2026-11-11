@@ -3,8 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Send } from 'lucide-react';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { InviteInfo } from '@/lib/social/friendPlans';
 
@@ -16,7 +14,7 @@ const InviteSignupSheet = dynamic(() => import('./InviteSignupSheet').then((m) =
  * section (owner 2026-11-11). A plan shows who is going and answers "ไปกัน" in one tap, which joins the group plan
  * and opens its chat in My Hub. A ตี้ invitation hands over to the page's own sign-up (`onJoinTee`).
  * The address is tidied so a reload does not ask again, but the invitation waits in this tab until it is answered.
- * A guest's "ไปกัน" opens InviteSignupSheet; sign-up carries the invitation in its return address (`&answer=1`), so it
+ * "ไปกัน" keeps the reader on the page (the line becomes "คุณไปกับ … แล้ว · เปิดแผน"). A guest's "ไปกัน" opens InviteSignupSheet; sign-up carries the invitation in its return address (`&answer=1`), so it
  * survives a switch of browser, and back here the answer is sent by itself (owner 2026-11-11).
  */
 export function InviteBanner({
@@ -33,11 +31,11 @@ export function InviteBanner({
   onJoinTee?: () => void;
   className?: string;
 }) {
-  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   // Back from sign-up with ?answer=1: answer "ไปกัน" once the invitation is read
   const autoAnswer = useRef(false);
   const key = typeof window === 'undefined' ? '' : `chillwaa:invite:${window.location.pathname}`;
@@ -45,6 +43,8 @@ export function InviteBanner({
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     let asked = query.get('invite');
+    // Arrived through the link just now (not a reload or a sign-in later): counted once as an open
+    const isArrival = Boolean(asked) && query.get('answer') !== '1';
     if (query.get('answer') === '1') autoAnswer.current = true;
     const storeKey = `chillwaa:invite:${window.location.pathname}`;
     if (asked) {
@@ -62,7 +62,7 @@ export function InviteBanner({
     }
     if (!asked) return;
     let active = true;
-    fetch(`/api/invites?token=${encodeURIComponent(asked)}`, { cache: 'no-store' })
+    fetch(`/api/invites?token=${encodeURIComponent(asked)}${isArrival ? '&open=1' : ''}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((json) => {
         if (!active) return;
@@ -96,9 +96,18 @@ export function InviteBanner({
       .catch(() => ({ ok: false, json: null }));
     setIsBusy(false);
     if (!result.ok || !result.json?.planId) return onMessage(result.json?.message || 'ตอบไม่สำเร็จ ลองอีกครั้งนะ');
+    // Stay on the page (owner 2026-11-12): they came to look at the place; the line turns into "คุณไปกับ … แล้ว · เปิดแผน"
+    setInfo({ ...inv, isIn: true, planId: result.json.planId, goingCount: inv.isIn ? inv.goingCount : inv.goingCount + 1 });
+    onMessage('ไปกัน! นัดวันกับเพื่อนๆ ได้ในแผน');
+  };
+
+  // "ไม่สะดวก" (owner 2026-11-12): a member's no reaches the host, gently; a guest's "ไว้ก่อน" only hides the line
+  const decline = (inv: InviteInfo, tok: string) => {
+    // A guest's "ไว้ก่อน" only hides the line for now; the invitation is kept, so opening the page again asks again
+    if (!(isLoggedIn && inv.kind === 'plan')) return setIsHidden(true);
     forget();
-    onMessage('ไปกัน! เปิดแชตนัดวันกับเพื่อนๆ ได้เลย');
-    router.push(`/myhub?plan=${encodeURIComponent(result.json.planId)}`);
+    void fetch('/api/invites/answer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tok, answer: 'no' }) }).catch(() => undefined);
+    onMessage(`บอก ${inv.host.name} แล้วว่ารอบนี้ไม่สะดวก`);
   };
 
   const isOwn = Boolean(info && myId && info.host.id === myId);
@@ -112,39 +121,36 @@ export function InviteBanner({
   }, [info, token, isLoggedIn, isOwn]);
 
   // Opening one's own invitation asks nothing
-  if (!info || !token || isOwn) return null;
+  if (!info || !token || isOwn || isHidden) return null;
 
   // Where sign-up comes back to: a ตี้ to its own join (?join=1), a plan to this page answering by itself
   const signupReturn = () =>
     info.kind === 'tee' ? `${window.location.pathname}?join=1` : `${window.location.pathname}?invite=${encodeURIComponent(token)}&answer=1`;
 
 
-  const others = info.goingCount - 1;
-  const line =
-    info.kind === 'tee'
-      ? `${info.host.name} ชวนคุณมาตี้นี้ด้วยกัน`
-      : `${info.host.name} ชวนคุณไป${info.title}${others > 0 ? ` · ไปกันแล้ว ${info.goingCount} คน` : ''}`;
+  // The page already names the place: the line says who asked, the second line who is going (design pass 2026-11-12)
+  const title = info.isIn ? `คุณไปกับ ${info.host.name} แล้ว` : info.kind === 'tee' ? `${info.host.name} ชวนคุณมาตี้นี้ด้วยกัน` : `${info.host.name} ชวนคุณไปด้วยกัน`;
+  const sub = [info.dateLabel, info.goingCount > 1 ? `ไปกันแล้ว ${info.goingCount} คน` : ''].filter(Boolean).join(' · ');
 
   return (
     <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-blue-50 px-4 py-3 ${className}`}>
-      {info.going.length > 1 ? (
-        <span className="flex -space-x-2 shrink-0" aria-hidden="true">
-          {info.going.slice(0, 3).map((p) => (
-            <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-8 h-8 text-xs ring-2 ring-blue-50" />
-          ))}
-        </span>
-      ) : (
-        <Send className="w-5 h-5 text-[#2563EB] -rotate-12 shrink-0" aria-hidden="true" />
-      )}
-      <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">{line} ไปกันไหม?</p>
+      <span className="flex -space-x-2 shrink-0" aria-hidden="true">
+        {info.going.slice(0, 3).map((p) => (
+          <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-9 h-9 text-xs ring-2 ring-blue-50" />
+        ))}
+      </span>
+      <div className="flex-1 min-w-[10rem]">
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        {sub && <p className="text-[13px] text-slate-500">{sub}</p>}
+      </div>
       {info.isIn && info.planId ? (
         <Link href={`/myhub?plan=${encodeURIComponent(info.planId)}`} onClick={forget} className="h-9 px-4 inline-flex items-center rounded-full bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50">
-          คุณตอบไปกันแล้ว · เปิดแผน
+          เปิดแผน
         </Link>
       ) : (
         <div className="flex items-center gap-2">
-          <button type="button" onClick={forget} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
-            ไว้ก่อน
+          <button type="button" onClick={() => decline(info, token)} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+            {isLoggedIn && info.kind === 'plan' ? 'ไม่สะดวก' : 'ไว้ก่อน'}
           </button>
           <button type="button" onClick={() => void answer(info, token)} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
             {info.kind === 'tee' ? 'ลงทะเบียนไปด้วย' : 'ไปกัน'}

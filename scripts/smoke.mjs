@@ -120,6 +120,12 @@ async function run() {
   const viaLink = await C.call('/api/invites/answer', 'POST', { token });
   check('C answers through the link into the same plan', viaLink.planId === sent.planId, viaLink.message);
   const tomorrow = new Date(Date.now() + 7 * 3600e3 + 864e5).toISOString().slice(0, 10);
+  const dayAfter = new Date(Date.now() + 7 * 3600e3 + 2 * 864e5).toISOString().slice(0, 10);
+  await B.call(`/api/plans/${sent.planId}`, 'PATCH', { freeDays: [tomorrow, dayAfter] });
+  const free = await C.call(`/api/plans/${sent.planId}`, 'PATCH', { freeDays: [tomorrow] });
+  check('free days show the day most can make', free.plan?.freeDays?.[0]?.day === tomorrow && free.plan.freeDays[0].people.length === 2 && free.plan.myFreeDays?.length === 1, free.message ?? JSON.stringify(free.plan?.freeDays ?? null).slice(0, 80));
+  const tooFar = await C.call(`/api/plans/${sent.planId}`, 'PATCH', { freeDays: ['2099-01-01'] });
+  check('a free day out of range is refused', tooFar.status === 400 || tooFar.status === 422 || tooFar.success === false, String(tooFar.status));
   const dated = await B.call(`/api/plans/${sent.planId}`, 'PATCH', { date: tomorrow });
   check('the day is set', dated.plan?.date === tomorrow && dated.plan.people.length === 3, dated.message ?? String(dated.plan?.people?.length));
   const chat = await C.call(`/api/chat/${encodeURIComponent(`plan~${sent.planId}`)}`);
@@ -130,8 +136,16 @@ async function run() {
   check('A cannot answer their own link', own.status === 404, String(own.status));
 
   console.log('\n"ชวนไป" in every section');
-  const spotPlan = await A.call('/api/invites', 'POST', { type: 'spot', id: spots[1]?.id ?? spot.id, to: [B.id] });
+  const saturday = (() => { const d = new Date(Date.now() + 7 * 3600e3); d.setUTCDate(d.getUTCDate() + ((6 - d.getUTCDay() + 7) % 7)); return d.toISOString().slice(0, 10); })();
+  const spotPlan = await A.call('/api/invites', 'POST', { type: 'spot', id: spots[1]?.id ?? spot.id, to: [B.id], day: saturday });
   check('a place invitation makes its own plan', Boolean(spotPlan.planId) && spotPlan.planId !== sent.planId, spotPlan.message);
+  const spotToken = decodeURIComponent(String(spotPlan.link).split('invite=')[1] ?? '');
+  const spotInfo = await B.call(`/api/invites?token=${encodeURIComponent(spotToken)}`);
+  check('a day picked when inviting is on the plan and the invitation', Boolean(spotPlan.dateLabel) && spotInfo.invite?.dateLabel === spotPlan.dateLabel, `${spotPlan.dateLabel} / ${spotInfo.invite?.dateLabel}`);
+  const no = await B.call('/api/invites/answer', 'POST', { planId: spotPlan.planId, answer: 'no' });
+  const told = ((await A.call('/api/notifications')).items ?? []).some((n) => n.type === 'invite_no');
+  const stillIn = ((await B.call('/api/plans')).plans ?? []).some((p) => p.id === spotPlan.planId);
+  check('"ไม่สะดวก" leaves the plan and tells the host', no.success === true && told && !stillIn, no.message ?? `told ${told} stillIn ${stillIn}`);
   const tee = (await A.call('/api/events?type=community&status=recruiting&limit=1')).events?.[0];
   if (tee) {
     const teeSent = await A.call('/api/invites', 'POST', { type: 'community', id: tee.id, to: [B.id] });
@@ -147,7 +161,7 @@ async function run() {
     check('ทำด้วยกัน joins the challenge', Boolean(together.planId) && joined, together.message ?? `joined ${joined}`);
   }
   const plans = (await B.call('/api/plans')).plans ?? [];
-  check('My Hub lists the plans', plans.length >= 2, String(plans.length));
+  check('My Hub lists the plans', plans.length >= (quest ? 2 : 1), String(plans.length));
 
   console.log('\nAdmin');
   const password = read('.env.development.local', 'ADMIN_PASSWORD');
@@ -156,6 +170,7 @@ async function run() {
     await admin('/api/auth/admin', 'POST', { password });
     const retention = await admin('/api/admin/retention');
     check('retention numbers load', retention.success === true && Array.isArray(retention.weeks), retention.error);
+    check('ชวนไป numbers load', (retention.invites?.plans ?? 0) >= 2 && (retention.invites?.yes ?? 0) >= 2 && (retention.invites?.declines ?? 0) >= 1, JSON.stringify(retention.invites ?? null).slice(0, 100));
   } else {
     console.log('  (skipped: no ADMIN_PASSWORD in .env.development.local)');
   }

@@ -11,12 +11,14 @@ const OPEN_PATHS = ['/onboarding', '/login', '/legal', '/verify-email', '/reset-
  * Members who left onboarding part way (e.g. the browser's back button after social sign-in) are signed in but
  * have no answers yet. Those answers matter (owner 2026-10-31), so any other page sends them back to finish,
  * then onboarding returns them to the page they opened. Renders nothing.
+ * A member who accepted the pledge but not the questions came in through a friend's invitation (owner 2026-11-12):
+ * they are not sent back; My Hub asks them softly instead (components/myhub/FinishProfileNudge.tsx).
  */
 export function OnboardingResume() {
   const session = useMemberSession({ background: true });
   const pathname = usePathname();
   const router = useRouter();
-  const needsOnboarding = session.isLoaded && Boolean(session.member) && !session.member?.onboarded;
+  const needsOnboarding = session.isLoaded && Boolean(session.member) && !session.member?.onboarded && !session.member?.trust.pledged;
 
   useEffect(() => {
     if (!needsOnboarding || OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return;

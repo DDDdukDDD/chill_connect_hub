@@ -49,8 +49,9 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       await applySignupChecks(member);
       await attachInviter(member, readCookie(request, INVITE_COOKIE));
     }
-    // New members, and members who left onboarding part way, finish it first, then continue to where they were heading
-    const response = redirect(created || !member.onboardedAt
+    // New members, and members who left onboarding part way, finish it first, then continue to where they were heading.
+    // Someone who came in through an invitation accepted the pledge only; My Hub asks them the rest softly (2026-11-12)
+    const response = redirect(created || (!member.onboardedAt && !member.pledgeAcceptedAt)
       ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
       : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`);
     setMemberSessionCookie(response, member);

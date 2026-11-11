@@ -32,12 +32,16 @@ export interface FriendPlan {
   remindedAt?: string;
   followedUpAt?: string;
   createdAt: string;
+  /** Last change to the plan (people, day); a plan with no day that stays quiet closes (runPlanReminders) */
+  updatedAt?: string;
+  /** The days each person marked free, by member id ("YYYY-MM-DD", sorted) */
+  freeDays?: Record<string, string[]>;
   /** Everyone in the plan, the host included (state 'going') */
   members: PlanMember[];
 }
 
 export type NewPlan = Pick<FriendPlan, 'hostId' | 'targetType' | 'targetId' | 'momentId' | 'title' | 'image'>;
-export type PlanChange = Partial<Pick<FriendPlan, 'status' | 'remindedAt' | 'followedUpAt'>> & { date?: string | null };
+export type PlanChange = Partial<Pick<FriendPlan, 'status' | 'remindedAt' | 'followedUpAt'>> & { date?: string | null; closedIdle?: boolean };
 
 interface FriendPlanStore {
   create(plan: NewPlan): Promise<FriendPlan>;
@@ -54,6 +58,12 @@ interface FriendPlanStore {
   update(id: string, change: PlanChange): Promise<void>;
   /** Plans with a date from `from` to `to` (Thai dates), for the reminders */
   dated(from: string, to: string): Promise<FriendPlan[]>;
+  /** Open plans with no day, unchanged since `before` (ISO time) */
+  quietUndated(before: string): Promise<FriendPlan[]>;
+  /** Replaces the days this member is free */
+  setFreeDays(planId: string, memberId: string, days: string[]): Promise<void>;
+  /** Counts a "รอบนี้ไม่สะดวก" */
+  noteDecline(planId: string): Promise<void>;
   removeBy(memberId: string): Promise<void>;
 }
 
@@ -92,7 +102,7 @@ function jsonPlans(): FriendPlanStore {
             if (!held) members.push({ memberId: id, state, joinedAt: at });
             else if (state === 'going') held.state = 'going';
           }
-          return { ...p, members };
+          return { ...p, members, updatedAt: at };
         })
       );
     },
@@ -100,14 +110,31 @@ function jsonPlans(): FriendPlanStore {
       await store.update((items) => items.map((p) => (p.id === planId ? { ...p, members: p.members.map((m) => (m.memberId === memberId ? { ...m, wentAt: at } : m)) } : p)));
     },
     async removeMember(planId, memberId) {
-      await store.update((items) => items.map((p) => (p.id === planId ? { ...p, members: p.members.filter((m) => m.memberId !== memberId) } : p)));
+      await store.update((items) =>
+        items.map((p) => {
+          if (p.id !== planId) return p;
+          const freeDays = { ...(p.freeDays ?? {}) };
+          delete freeDays[memberId];
+          return { ...p, members: p.members.filter((m) => m.memberId !== memberId), freeDays };
+        })
+      );
     },
     async update(id, change) {
-      const { date, ...rest } = change;
-      await store.update((items) => items.map((p) => (p.id === id ? { ...p, ...rest, ...(date !== undefined ? { date: date ?? undefined } : {}) } : p)));
+      const { date, closedIdle, ...rest } = change;
+      void closedIdle;
+      await store.update((items) => items.map((p) => (p.id === id ? { ...p, ...rest, ...(date !== undefined ? { date: date ?? undefined } : {}), updatedAt: now() } : p)));
     },
     async dated(from, to) {
       return store.read().filter((p) => p.status === 'set' && p.date && p.date >= from && p.date <= to);
+    },
+    async quietUndated(before) {
+      return store.read().filter((p) => p.status === 'planning' && !p.date && (p.updatedAt ?? p.createdAt) < before);
+    },
+    async setFreeDays(planId, memberId, days) {
+      await store.update((items) => items.map((p) => (p.id === planId ? { ...p, freeDays: { ...(p.freeDays ?? {}), [memberId]: [...days].sort() } } : p)));
+    },
+    async noteDecline() {
+      // Counted for the admin numbers, which need the database
     },
     async removeBy(memberId) {
       await store.update((items) => items.filter((p) => p.hostId !== memberId).map((p) => ({ ...p, members: p.members.filter((m) => m.memberId !== memberId) })));
@@ -121,7 +148,9 @@ function pgPlans(): FriendPlanStore {
   const select = (db: Sql) => db`
     select p.*, p.plan_date::text as day, mo.slug as moment, h.legacy_id as host,
       coalesce((select json_agg(json_build_object('memberId', m2.legacy_id, 'state', pm.state, 'wentAt', pm.went_at, 'joinedAt', pm.created_at) order by pm.created_at)
-        from app.friend_plan_members pm join app.members m2 on m2.id = pm.member_id where pm.plan_id = p.id), '[]'::json) as people
+        from app.friend_plan_members pm join app.members m2 on m2.id = pm.member_id where pm.plan_id = p.id), '[]'::json) as people,
+      coalesce((select json_object_agg(m3.legacy_id, x.days) from (select pd.member_id, json_agg(pd.day::text order by pd.day) as days
+        from app.friend_plan_days pd where pd.plan_id = p.id group by pd.member_id) x join app.members m3 on m3.id = x.member_id), '{}'::json) as free_days
     from app.friend_plans p
     join app.members h on h.id = p.host_id
     left join app.moments mo on mo.id = p.moment_id`;
@@ -138,6 +167,8 @@ function pgPlans(): FriendPlanStore {
     remindedAt: iso(r.reminded_at),
     followedUpAt: iso(r.followed_up_at),
     createdAt: iso(r.created_at)!,
+    updatedAt: iso(r.updated_at),
+    freeDays: (r.free_days as Record<string, string[]>) ?? {},
     members: (r.people as { memberId: string; state: PlanMemberState; wentAt?: string | null; joinedAt: string }[]).map((m) => ({
       memberId: m.memberId,
       state: m.state,
@@ -194,6 +225,7 @@ function pgPlans(): FriendPlanStore {
     async removeMember(planId, memberId) {
       const db = sql();
       await db`delete from app.friend_plan_members where plan_id = ${planId} and member_id = ${memberRow(db, memberId)}`;
+      await db`delete from app.friend_plan_days where plan_id = ${planId} and member_id = ${memberRow(db, memberId)}`;
     },
     async update(id, change) {
       const db = sql();
@@ -202,12 +234,30 @@ function pgPlans(): FriendPlanStore {
       if (change.status) set.status = change.status;
       if ('remindedAt' in change) set.reminded_at = change.remindedAt ?? null;
       if ('followedUpAt' in change) set.followed_up_at = change.followedUpAt ?? null;
+      if (change.closedIdle) set.closed_idle_at = new Date().toISOString();
       await db`update app.friend_plans set ${db(set)} where id = ${id}`;
     },
     async dated(from, to) {
       const db = sql();
       const rows = await db`${select(db)} where p.status = 'set' and p.plan_date between ${from}::date and ${to}::date`;
       return rows.map(toPlan);
+    },
+    async quietUndated(before) {
+      const db = sql();
+      const rows = await db`${select(db)} where p.status = 'planning' and p.plan_date is null and p.updated_at < ${before} limit 200`;
+      return rows.map(toPlan);
+    },
+    async setFreeDays(planId, memberId, days) {
+      const db = sql();
+      await db.begin(async (tx) => {
+        await tx`delete from app.friend_plan_days where plan_id = ${planId} and member_id = ${memberRow(tx, memberId)}`;
+        if (days.length) await tx`insert into app.friend_plan_days (plan_id, member_id, day) select ${planId}, m.id, d::date from app.members m, unnest(${days}::text[]) as d where m.legacy_id = ${memberId}`;
+        await tx`update app.friend_plans set updated_at = now() where id = ${planId}`;
+      });
+    },
+    async noteDecline(planId) {
+      const db = sql();
+      await db`update app.friend_plans set declines = declines + 1 where id = ${planId}`;
     },
     async removeBy(memberId) {
       const db = sql();

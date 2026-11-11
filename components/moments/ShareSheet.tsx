@@ -27,7 +27,7 @@ export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMess
     action();
   };
   return (
-    <DialogShell onClose={onClose} title="แชร์โมเมนต์" size="sm" focusField={false}>
+    <DialogShell onClose={onClose} title={canInvite ? 'ชวนไป' : 'แชร์โมเมนต์'} size="sm" focusField={false}>
       <ul className="-mx-2 -mt-1">
         {canInvite && (
           <li>
@@ -37,7 +37,7 @@ export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMess
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-bold text-slate-900">ชวนเพื่อนไปด้วยกัน</span>
-                <span className="block text-xs font-medium text-slate-500">ส่งให้เพื่อนที่ติดตามกัน ถามว่าไปกันไหม</span>
+                <span className="block text-xs font-medium text-slate-500">เลือกเพื่อนที่อยู่ใน Chillwaa</span>
               </span>
             </button>
           </li>
@@ -49,8 +49,8 @@ export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMess
                 <MessageCircle className="w-5 h-5" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-bold text-slate-900">ชวนไปกันทาง LINE</span>
-                <span className="block text-xs font-medium text-slate-500">เพื่อนยังไม่มีบัญชีก็ได้ กดไปกันแล้วเกิดแผนกับคุณเลย</span>
+                <span className="block text-sm font-bold text-slate-900">ชวนทาง LINE</span>
+                <span className="block text-xs font-medium text-slate-500">ส่งให้เพื่อนในแชต LINE</span>
               </span>
             </button>
           </li>
