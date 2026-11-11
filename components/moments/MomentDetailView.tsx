@@ -284,7 +284,10 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       if (!result.ok) {
         setMoment(apply(undo[action]));
         showToast(result.message);
+        return;
       }
+      // The post's place or อีเวนต์ is saved to My Hub too (owner 2026-11-12)
+      if (action === 'save' && moment.targetTitle && (moment.targetType === 'spot' || moment.targetType === 'fair')) showToast(`เก็บ ${moment.targetTitle} ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย`);
     });
   };
 

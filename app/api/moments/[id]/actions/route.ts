@@ -4,11 +4,13 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
+import { setSaved as savePlace } from '@/lib/members/activity';
 import { notify, removeNotifications } from '@/lib/social/notifications';
 
 /**
  * Member actions on a moment:
- * { action: 'like' | 'unlike' | 'save' | 'unsave' }
+ * { action: 'like' | 'unlike' | 'save' | 'unsave' } (saving a post at a place or an อีเวนต์ also saves that place or
+ *   อีเวนต์ to My Hub's "ที่บันทึก", where ชวนไป is one tap away; unsaving the post leaves it, owner 2026-11-12)
  * { action: 'comment', text, parentId? } · { action: 'delete_comment', commentId } (the commenter or the post's author; its replies go with it)
  * { action: 'like_comment' | 'unlike_comment', commentId }
  * { action: 'report', reason } · { action: 'untag' } (the member takes themselves off the post)
@@ -35,6 +37,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       case 'save':
       case 'unsave':
         moment = await setSaved(member, id, body.action === 'save');
+        if (body.action === 'save' && moment.targetId && (moment.targetType === 'spot' || moment.targetType === 'fair')) {
+          await savePlace(member, moment.targetType === 'spot' ? 'spot' : 'event', moment.targetId, true).catch(() => null);
+        }
         break;
       case 'comment':
         if (await isRateLimited(`moment-comment:${member.id}`, 30, 10 * 60 * 1000)) {

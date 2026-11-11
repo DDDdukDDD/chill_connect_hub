@@ -730,7 +730,11 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         if (!result.ok) {
           setMoments((list) => apply(list, undo[action]));
           showToast(result.message);
+          return;
         }
+        // The post's place or อีเวนต์ is saved to My Hub too (owner 2026-11-12): say so once, so they know where to find it
+        const saved = action === 'save' ? moments.find((m) => m.id === id) : undefined;
+        if (saved?.targetTitle && (saved.targetType === 'spot' || saved.targetType === 'fair')) showToast(`เก็บ ${saved.targetTitle} ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย`);
       });
     },
     onComment: async (id, text, parentId, mentions = []) => {

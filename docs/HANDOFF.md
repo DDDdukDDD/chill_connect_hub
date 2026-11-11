@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-352 · Saving a post saves its place; ชวนไป from My Hub saved list (owner 2026-11-12)
+- Saving (bookmark) a post at a place or an อีเวนต์ also saves that place or อีเวนต์ to the member (app/api/moments/[id]/actions), with one toast: เก็บ … ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย. Unsaving the post leaves the place saved (it may have been saved on its own).
+- My Hub ที่บันทึก: each ตี้, อีเวนต์ (not ended) and place has a ชวนไป button (paper plane) beside the bookmark, opening the usual ชวนไป sheet. npm run smoke 28 checks.
+
 ### BE-351 · API audit round 2 (2026-11-12)
 - **Scan of all 97 routes** for same-origin checks, session or admin checks, rate limits and cron secrets. Writes without isSameOrigin are admin routes (admin cookie is SameSite=strict), the admin login/logout, the Apple callback (a cross-site POST by design) and member logout; the member cookie is SameSite=lax, so a cross-site POST carries no session. Login, password reset, email confirm and phone OTP all have attempt limits.
 - **Added limits** (429 with a friendly message): creating a ตี้/อีเวนต์ 10 a day, moving a ตี้ 30 an hour (`/api/events`), suggesting a place 10 a day (`/api/spots`), proposing a challenge 10 a day (`/api/quests`), reports 30 an hour (`/api/reports`), host applications 5 a day.
