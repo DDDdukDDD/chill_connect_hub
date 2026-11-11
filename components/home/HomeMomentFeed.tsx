@@ -1113,6 +1113,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           onInvite={() => setInviting(sharing)}
           onLine={() => void inviteViaLine({ type: 'moment', id: sharing.id }, sharing.targetTitle || sharing.location || '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => handlers.onMenu(sharing, 'share')}
+          invite={{ target: { type: 'moment', id: sharing.id }, place: sharing.targetTitle || sharing.location || '' }}
+          onMessage={showToast}
           onClose={() => setSharing(null)}
         />
       )}

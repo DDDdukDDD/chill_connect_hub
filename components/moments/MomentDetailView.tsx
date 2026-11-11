@@ -797,6 +797,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           onInvite={() => setInviting(true)}
           onLine={() => void inviteViaLine({ type: 'moment', id: moment.id }, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => void share()}
+          invite={{ target: { type: 'moment', id: moment.id }, place: place ?? '' }}
+          onMessage={showToast}
           onClose={() => setSharing(false)}
         />
       )}

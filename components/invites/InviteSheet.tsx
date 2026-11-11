@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, MessageCircle, Search } from 'lucide-react';
+import { Check, Loader2, MessageCircle, Search, Share2 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { TagFriend } from '@/components/moments/FriendTagPicker';
 import { openLineShare } from '@/components/moments/lineInvite';
+import { APPS_INVITE_HINT, appsInviteCopied, useAppsInvite } from './useAppsInvite';
 
 /** Friends one plan can hold besides the one who asks (lib/social/socialRules.ts INVITE_MAX_FRIENDS) */
 export const MAX_INVITES = 15;
@@ -33,8 +34,9 @@ export async function sendInvites(target: InviteTarget, to: string[] = []): Prom
  * The words LINE opens with (owner 2026-11-11): the invitation on its own line, then the short link on the next, so the
  * chat reads like a friend asking and LINE's preview card (the /i/<code> page) carries the picture.
  */
-export const inviteLineText = (place: string, link: string, isTee = false) =>
-  `${place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม? กดดูแล้วตอบได้เลย` : `ไป${place}กันไหม? กดดูแล้วตอบได้เลย`) : 'ไปด้วยกันไหม? กดดูแล้วตอบได้เลย'}
+export const inviteWords = (place: string, isTee = false) =>
+  place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม? กดดูแล้วตอบได้เลย` : `ไป${place}กันไหม? กดดูแล้วตอบได้เลย`) : 'ไปด้วยกันไหม? กดดูแล้วตอบได้เลย';
+export const inviteLineText = (place: string, link: string, isTee = false) => `${inviteWords(place, isTee)}
 ${window.location.origin}${link}`;
 
 /**
@@ -78,6 +80,8 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
     onDone(picked.length === 1 ? 'ส่งคำชวนให้เพื่อนแล้ว' : `ส่งคำชวนให้เพื่อน ${picked.length} คนแล้ว`);
   };
 
+  const apps = useAppsInvite(target, place, (how) => (how === 'copied' ? onDone(appsInviteCopied) : onClose()), setError);
+
   const viaLine = async () => {
     setError('');
     const result = await sendInvites(target);
@@ -94,6 +98,15 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-slate-900">ชวนทาง LINE</span>
           <span className="block text-[13px] text-slate-500">ส่งลิงก์ให้เพื่อนที่ยังไม่ได้อยู่ใน Chillwaa</span>
+        </span>
+      </button>
+      <button type="button" onClick={() => void apps.go()} disabled={apps.busy} className="w-full flex items-center gap-3 py-2 mb-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer">
+        <span className="w-10 h-10 shrink-0 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center" aria-hidden="true">
+          {apps.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-slate-900">{apps.isReady ? 'คำชวนพร้อมแล้ว แตะอีกครั้งเพื่อส่ง' : 'ชวนผ่านแอปอื่น'}</span>
+          <span className="block text-[13px] text-slate-500">{APPS_INVITE_HINT}</span>
         </span>
       </button>
 
