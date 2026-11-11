@@ -31,7 +31,7 @@ async function shareNow(ready: Ready): Promise<AppsInviteDone | 'cancelled' | 'b
   }
 }
 
-export function useAppsInvite(target: InviteTarget, place: string, onDone: (how: AppsInviteDone) => void, onError: (message: string) => void) {
+export function useAppsInvite(target: InviteTarget, place: string, onDone: (how: AppsInviteDone) => void, onError: (message: string) => void, day?: string) {
   const [ready, setReady] = useState<Ready | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -46,10 +46,10 @@ export function useAppsInvite(target: InviteTarget, place: string, onDone: (how:
     if (busy) return;
     if (ready) return settle(await shareNow(ready), ready);
     setBusy(true);
-    const result = await sendInvites(target);
+    const result = await sendInvites(target, [], day);
     setBusy(false);
     if (!result.ok || !result.link) return onError(result.message || 'ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ');
-    const invite = { text: inviteWords(place, target.type === 'community'), url: `${window.location.origin}${result.link}` };
+    const invite = { text: inviteWords(place, target.type === 'community', result.dateLabel), url: `${window.location.origin}${result.link}` };
     settle(await shareNow(invite), invite);
   };
 

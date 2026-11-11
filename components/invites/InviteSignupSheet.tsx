@@ -24,6 +24,9 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
   const available = PROVIDERS.filter((p) => session.providers[p.id]);
   const line = available.find((p) => p.id === 'line');
   const others = available.filter((p) => p.id !== 'line');
+  // No social sign-in turned on (or not known yet): email sign-up becomes the main button, never a dead end
+  const emailFirst = session.isLoaded && available.length === 0;
+  const emailHref = `/login?mode=signup&returnTo=${encodeURIComponent(returnTo)}`;
   const start = (provider: (typeof PROVIDERS)[number]['id']) => {
     setBusy(true);
     session.loginWith(provider, returnTo, true);
@@ -44,9 +47,10 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
             <span className="w-14 h-14 rounded-full bg-slate-100 ring-4 ring-white flex items-center justify-center text-sm font-bold text-slate-700">+{info.goingCount - 3}</span>
           )}
         </span>
-        <h2 id="invite-signup-title" className="text-xl font-bold text-slate-900">{info.host.name} รอคำตอบคุณอยู่</h2>
+        <h2 id="invite-signup-title" className="text-lg sm:text-xl font-bold text-slate-900">{info.host.name} รอคำตอบคุณอยู่</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">
           {isTee ? `ชวนไปตี้ ${info.title}` : `ไปกันที่ ${info.title}`}
+          {info.dateLabel && ` · ${info.dateLabel}`}
           {info.goingCount > 1 && ` · ไปกันแล้ว ${info.goingCount} คน`}
         </p>
       </div>
@@ -63,6 +67,12 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
         </ul>
       </div>
 
+      {!session.isLoaded && <div className="h-12 rounded-full bg-slate-100 animate-pulse" aria-hidden="true" />}
+      {emailFirst && (
+        <Link href={emailHref} data-autofocus className="w-full h-12 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-base flex items-center justify-center">
+          สมัครฟรี
+        </Link>
+      )}
       {line && (
         <button
           type="button"
@@ -100,8 +110,12 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
         <button type="button" onClick={() => setTerms({ open: true, tab: 'privacy' })} className={linkButton}>นโยบายความเป็นส่วนตัว</button>
       </p>
       <p className="mt-4 pt-4 border-t border-slate-100 text-center text-sm font-medium text-slate-600">
-        <Link href={`/login?mode=signup&returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-slate-700 hover:underline">สมัครด้วยอีเมล</Link>
-        {' · '}
+        {!emailFirst && (
+          <>
+            <Link href={emailHref} className="font-bold text-slate-700 hover:underline">สมัครด้วยอีเมล</Link>
+            {' · '}
+          </>
+        )}
         มีบัญชีแล้ว? <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="font-bold text-[#2563EB] hover:underline">เข้าสู่ระบบ</Link>
       </p>
       <TermsPrivacyModal isOpen={terms.open} onClose={() => setTerms((t) => ({ ...t, open: false }))} initialTab={terms.tab} />

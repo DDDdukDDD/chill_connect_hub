@@ -352,7 +352,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                 type="button"
                 onClick={() => toggleFavorite(spot.id)}
                 aria-pressed={isFavorite}
-                className={isFavorite ? heroButton.done : heroButton.primary}
+                className={`${isFavorite ? heroButton.done : heroButton.primary} max-sm:px-4`}
               >
                 {isFavorite ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
                 {isFavorite ? 'บันทึกแล้ว' : 'บันทึกที่นี่'}
@@ -368,7 +368,8 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                 {/* Icon only on phones, so ชวนไป and แชร์ stay on the row (owner 2026-11-11) */}
                 <span className="max-sm:sr-only">นำทาง</span>
               </a>
-              <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={heroButton.quiet} />
+              {/* Tighter on phones so the four buttons fit one row at 360px with ชวนไป still named (2026-11-12) */}
+              <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3`} />
               <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
                 <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>

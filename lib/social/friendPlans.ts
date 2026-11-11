@@ -12,7 +12,7 @@ import { friendPlanStore, type FriendPlan, type PlanTargetType } from './friendP
 import { planToken, readInviteToken, teeToken } from './inviteLinks';
 import { inviteLinkStore } from './inviteLinkStore';
 import { inviteCodeOf } from './friends';
-import { notifyInvite, notifyInviteYes, notifyPlan } from './notifications';
+import { notifyInvite, notifyInviteNo, notifyInviteYes, notifyPlan } from './notifications';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
 import { INVITE_MAX_FRIENDS, PLAN_TOGETHER_POINTS } from './socialRules';
@@ -37,6 +37,11 @@ export const PLAN_MAX_GUESTS = INVITE_MAX_FRIENDS;
 const MAX_DAYS_AHEAD = 365;
 /** The "how did it go" question waits at most this many days after the date */
 const FOLLOW_UP_DAYS = 7;
+/** A plan with no day that nobody touches for this long closes by itself (owner 2026-11-12) */
+export const PLAN_QUIET_DAYS = 30;
+/** "วันไหนว่าง": days ahead one can mark, and at most how many */
+export const FREE_DAYS_AHEAD = 30;
+const MAX_FREE_DAYS = 14;
 
 export type InviteTargetType = 'spot' | 'fair' | 'community' | 'quest' | 'moment';
 const VISIT_TYPES = new Set<PlanTargetType>(['spot', 'community', 'fair']);
@@ -144,7 +149,7 @@ async function hostPlanFor(member: Member, target: InviteTarget): Promise<Friend
  * Sends "ชวนไป": friends picked in the app get a notice, and the link is returned for LINE. Both open the same page
  * with the same signed invitation. Returns how many were newly asked; `share` is the short link for LINE.
  */
-export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string }> {
+export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown; day?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string; dateLabel?: string }> {
   const target = await targetOf(input.type, input.id);
   const sharesOff = (target as InviteTarget & { sharesOff?: string }).sharesOff;
   if (sharesOff && sharesOff !== member.id) throw new MemberAuthError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
@@ -160,7 +165,12 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
     return { invited: chosen.length, link, share: await shareLink(member, target.path, token) };
   }
 
-  const plan = await hostPlanFor(member, target);
+  let plan = await hostPlanFor(member, target);
+  // A day picked when inviting ("เสาร์นี้", owner 2026-11-12) sets the plan's day, unless it already has one
+  if (typeof input.day === 'string' && input.day && !plan.date && plan.targetType !== 'quest') {
+    await friendPlanStore.update(plan.id, { date: await checkPlanDay(plan, input.day), status: 'set' });
+    plan = (await friendPlanStore.byId(plan.id))!;
+  }
   const inPlan = new Set(plan.members.map((m) => m.memberId));
   const room = PLAN_MAX_GUESTS - (plan.members.length - 1);
   const fresh = friends.filter((f) => !inPlan.has(f.id));
@@ -169,7 +179,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const token = planToken(plan.id);
   const link = withToken(target.path, token);
   await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id };
+  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: shortLabelOf(plan.date) } : {}) };
 }
 
 export interface InviteInfo {
@@ -178,6 +188,8 @@ export interface InviteInfo {
   title: string;
   /** The place's picture, for the link preview in LINE */
   image?: string;
+  /** The plan's day when it has one ("ส. 15 พ.ย.") */
+  dateLabel?: string;
   /** Who said "ไปกัน" so far, the host first (at most 5 shown) */
   going: { id: string; name: string; avatar: string }[];
   goingCount: number;
@@ -214,6 +226,7 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
     host: person(host),
     title: plan.title,
     image: plan.image,
+    ...(plan.date && plan.date >= bangkokDay() ? { dateLabel: shortLabelOf(plan.date) } : {}),
     going: people.slice(0, 5).flatMap((m) => (shown.get(m.memberId)?.status === 'active' ? [person(shown.get(m.memberId)!)] : [])),
     goingCount: people.length,
     isIn: Boolean(reader && memberOf(plan, reader.id)?.state === 'going'),
@@ -247,6 +260,26 @@ export async function answerInvite(member: Member, answer: { token?: unknown; pl
   await notifyInviteYes(host.id, member, { place: plan.title, path: planPath(plan), momentId: plan.momentId });
   await tellChat(member, plan, plan.targetType === 'quest' ? 'ทำด้วยกันนะ!' : 'ไปด้วยนะ!');
   return (await friendPlanStore.byId(plan.id))!;
+}
+
+/**
+ * "รอบนี้ไม่สะดวก" (owner 2026-11-12): the host is not left waiting. An invitation in the app is turned down (the
+ * member leaves the plan); through a link, the host is only told. Someone already going leaves with "ออกจากแผน"
+ * instead. A ตี้ link asks nothing back.
+ */
+export async function declineInvite(member: Member, answer: { token?: unknown; planId?: unknown }): Promise<void> {
+  const read = answer.token !== undefined ? readInviteToken(answer.token) : null;
+  if (read?.kind === 'tee') return;
+  const planId = read?.kind === 'plan' ? read.planId : typeof answer.planId === 'string' ? answer.planId : '';
+  const plan = planId ? await friendPlanStore.byId(planId) : null;
+  const held = plan ? memberOf(plan, member.id) : undefined;
+  if (!plan || plan.status === 'cancelled' || plan.hostId === member.id || (!read && held?.state !== 'invited')) throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
+  if (held?.state === 'going') return;
+  const host = await activeHost(plan.hostId, member);
+  if (!host) throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
+  if (held) await friendPlanStore.removeMember(plan.id, member.id);
+  await friendPlanStore.noteDecline(plan.id);
+  await notifyInviteNo(host.id, member, { place: plan.title, path: planPath(plan), momentId: plan.momentId });
 }
 
 export interface PlanPerson {
@@ -285,6 +318,10 @@ export interface PlanView {
   /** For "ชวนเพิ่ม": what the plan is for */
   invite: { type: InviteTargetType; id: string };
   spotsLeft: number;
+  /** "วันไหนว่าง": days someone marked, most people first, then the earliest; only days still ahead */
+  freeDays: { day: string; label: string; people: string[] }[];
+  /** The days the reader marked */
+  myFreeDays: string[];
 }
 
 /** An อีเวนต์'s days as Thai dates, for the date picker */
@@ -335,6 +372,7 @@ async function viewsOf(member: Member, plans: FriendPlan[]): Promise<PlanView[]>
       postHref: postHref(plan, friend),
       invite: plan.targetType === 'general' || !plan.targetId ? { type: 'moment', id: plan.momentId ?? '' } : { type: plan.targetType, id: plan.targetId },
       spotsLeft: Math.max(0, PLAN_MAX_GUESTS - (plan.members.length - 1)),
+      ...freeDaysView(plan, member.id, new Set(shown.map((p) => p.id)), today),
     });
   }
   return views;
@@ -353,6 +391,51 @@ async function myPlan(member: Member, id: string): Promise<FriendPlan> {
   return plan;
 }
 
+/** Who is free which day, counting only people still going (and shown) */
+function freeDaysView(plan: FriendPlan, readerId: string, shownIds: Set<string>, today: string): Pick<PlanView, 'freeDays' | 'myFreeDays'> {
+  const byDay = new Map<string, string[]>();
+  for (const [memberId, days] of Object.entries(plan.freeDays ?? {})) {
+    if (!shownIds.has(memberId)) continue;
+    for (const day of days) if (day >= today) byDay.set(day, [...(byDay.get(day) ?? []), memberId]);
+  }
+  const freeDays = [...byDay.entries()]
+    .map(([day, people]) => ({ day, label: shortLabelOf(day), people }))
+    .sort((a, b) => b.people.length - a.people.length || a.day.localeCompare(b.day));
+  return { freeDays, myFreeDays: (plan.freeDays?.[readerId] ?? []).filter((d) => d >= today) };
+}
+
+/**
+ * "วันไหนว่าง" (owner 2026-11-12): each person going marks the days they are free (up to MAX_FREE_DAYS, within
+ * FREE_DAYS_AHEAD days or the อีเวนต์'s days); the plan shows the day most can make, and anyone sets it in one tap.
+ * Marking days the first time says so in the chat, so the others know to mark theirs.
+ */
+export async function setFreeDays(member: Member, id: string, input: unknown): Promise<PlanView> {
+  const plan = await myPlan(member, id);
+  const today = bangkokDay();
+  const range = await fairRange(plan);
+  const last = [addDays(today, FREE_DAYS_AHEAD - 1), range.max].filter((d): d is string => Boolean(d)).sort()[0];
+  const days = [...new Set(Array.isArray(input) ? input.filter((d): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d))) : [])].sort();
+  if (days.length > MAX_FREE_DAYS) throw new MemberAuthError(`เลือกได้ไม่เกิน ${MAX_FREE_DAYS} วันนะ`);
+  if (days.some((d) => d < today || d > last || (range.min && d < range.min))) throw new MemberAuthError('เลือกวันที่อยู่ในช่วงที่ไปได้นะ');
+  const isFirst = !(plan.freeDays?.[member.id]?.length);
+  await friendPlanStore.setFreeDays(plan.id, member.id, days);
+  if (isFirst && days.length) await tellChat(member, plan, 'ติ๊กวันที่ว่างไว้แล้ว ใครว่างวันไหนติ๊กด้วยนะ');
+  const [view] = await viewsOf(member, [(await friendPlanStore.byId(plan.id))!]);
+  if (!view) throw new MemberAuthError('ไม่พบแผนนี้แล้ว', 404);
+  return view;
+}
+
+/** A day a plan can take: today up to a year ahead (Bangkok), inside an อีเวนต์'s days */
+async function checkPlanDay(plan: FriendPlan, date: unknown): Promise<string> {
+  const today = bangkokDay();
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) throw new MemberAuthError('เลือกวันอีกทีนะ');
+  if (date < today) throw new MemberAuthError('เลือกวันนี้หรือวันหลังจากนี้นะ');
+  if (date > addDays(today, MAX_DAYS_AHEAD)) throw new MemberAuthError('นัดล่วงหน้าได้ไม่เกิน 1 ปี');
+  const range = await fairRange(plan);
+  if ((range.min && date < range.min) || (range.max && date > range.max)) throw new MemberAuthError('วันนั้นอยู่นอกช่วงงาน เลือกวันอื่นนะ');
+  return date;
+}
+
 /** Sets or clears the day, from the chat (owner 2026-11-10: the date is agreed in the chat) */
 export async function setPlanDate(member: Member, id: string, date: unknown): Promise<PlanView> {
   const plan = await myPlan(member, id);
@@ -360,14 +443,9 @@ export async function setPlanDate(member: Member, id: string, date: unknown): Pr
     await friendPlanStore.update(plan.id, { date: null, status: 'planning', remindedAt: undefined, followedUpAt: undefined });
     await tellChat(member, plan, `ขอเลื่อนวันไป${plan.title}ก่อน ค่อยนัดกันใหม่นะ`);
   } else {
-    const today = bangkokDay();
-    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) throw new MemberAuthError('เลือกวันอีกทีนะ');
-    if (date < today) throw new MemberAuthError('เลือกวันนี้หรือวันหลังจากนี้นะ');
-    if (date > addDays(today, MAX_DAYS_AHEAD)) throw new MemberAuthError('นัดล่วงหน้าได้ไม่เกิน 1 ปี');
-    const range = await fairRange(plan);
-    if ((range.min && date < range.min) || (range.max && date > range.max)) throw new MemberAuthError('เลือกวันที่อยู่ในช่วงงานนะ');
-    await friendPlanStore.update(plan.id, { date, status: 'set', remindedAt: undefined, followedUpAt: undefined });
-    await tellChat(member, plan, `นัดไป${plan.title} ${shortLabelOf(date)} นะ`);
+    const day = await checkPlanDay(plan, date);
+    await friendPlanStore.update(plan.id, { date: day, status: 'set', remindedAt: undefined, followedUpAt: undefined });
+    await tellChat(member, plan, `นัดไป${plan.title} ${shortLabelOf(day)} นะ`);
   }
   const [view] = await viewsOf(member, [(await friendPlanStore.byId(plan.id))!]);
   if (!view) throw new MemberAuthError('ไม่พบแผนนี้แล้ว', 404);
@@ -437,7 +515,7 @@ export async function planPoints(memberId: string, visits: Visit[], placeExists:
  * The hourly job (app/api/cron/hourly): the day before, everyone going is reminded; the day after (up to a week),
  * whoever has not posted there yet is asked how it went, with the posting form one tap away. Each happens once per date.
  */
-export async function runPlanReminders(): Promise<{ reminded: number; followedUp: number }> {
+export async function runPlanReminders(): Promise<{ reminded: number; followedUp: number; closedQuiet: number }> {
   const today = bangkokDay();
   const tomorrow = addDays(today, 1);
   const plans = await friendPlanStore.dated(addDays(today, -FOLLOW_UP_DAYS), tomorrow);
@@ -465,7 +543,10 @@ export async function runPlanReminders(): Promise<{ reminded: number; followedUp
       followedUp += 1;
     }
   }
-  return { reminded, followedUp };
+  // Plans with no day that nobody has touched for a month close by themselves, so My Hub does not fill with them
+  const quiet = await friendPlanStore.quietUndated(new Date(Date.now() - PLAN_QUIET_DAYS * 86_400_000).toISOString());
+  for (const plan of quiet) await friendPlanStore.update(plan.id, { status: 'cancelled', closedIdle: true });
+  return { reminded, followedUp, closedQuiet: quiet.length };
 }
 
 export const removePlansBy = (memberId: string) => friendPlanStore.removeBy(memberId);

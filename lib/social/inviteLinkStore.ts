@@ -24,6 +24,8 @@ interface InviteLinkStore {
   /** The code for this invitation, made on first use */
   codeFor(token: string, path: string): Promise<string>;
   byCode(code: string): Promise<InviteLink | null>;
+  /** Counts one visit through a shared link (admin numbers; nothing without a database) */
+  noteOpen(token: string): Promise<void>;
 }
 
 function jsonLinks(): InviteLinkStore {
@@ -46,6 +48,7 @@ function jsonLinks(): InviteLinkStore {
     async byCode(code) {
       return store.read().find((l) => l.code === code) ?? null;
     },
+    async noteOpen() {},
   };
 }
 
@@ -70,6 +73,10 @@ function pgLinks(): InviteLinkStore {
       const db = sql();
       const rows = await db<InviteLink[]>`select code, token, path from app.invite_links where code = ${code}`;
       return rows[0] ?? null;
+    },
+    async noteOpen(token) {
+      const db = sql();
+      await db`update app.invite_links set opens = opens + 1, first_opened_at = coalesce(first_opened_at, now()) where token = ${token}`;
     },
   };
 }

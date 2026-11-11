@@ -21,6 +21,7 @@ import { ETicketModal } from '@/components/ETicketModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { FriendPlans } from '@/components/myhub/FriendPlans';
+import { FinishProfileNudge } from '@/components/myhub/FinishProfileNudge';
 import { TipHostModal } from '@/components/TipHostModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ChallengeQuest, EventItem } from '@/data/mockData';
@@ -2191,6 +2192,7 @@ function MyHubContent() {
                 </div>
                 <div id="my-schedule" className={`${hubMainMode === 'calendar' ? 'order-3' : 'order-2'} lg:order-none min-w-0 space-y-6 scroll-mt-24`}>
               {/* "ไปกัน" plans with friends sit above whatever the column shows (owner 2026-11-10); nothing when there are none */}
+              <FinishProfileNudge />
               <FriendPlans onCount={(n) => setHasFriendPlans(n > 0)} />
               {hubMainMode === 'calendar' ? (
                 renderMasterCalendarView()
