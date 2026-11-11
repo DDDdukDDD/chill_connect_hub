@@ -28,7 +28,7 @@ import { useClamped } from '@/components/moments/useClamped';
 import type { HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { ShareSheet } from '@/components/moments/ShareSheet';
-import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
+import { InviteSheet } from '@/components/invites/InviteSheet';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
 import { HOME_FEED_LOAD_AHEAD_PX } from '@/lib/social/socialRules';
@@ -1120,15 +1120,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           canInvite
           canCard={Boolean(sharing.images[0])}
           onInvite={() => setInviting(sharing)}
-          onLine={() => void inviteViaLine(sharing.id, sharing.targetTitle || sharing.location || '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
+          onLine={() => void inviteViaLine({ type: 'moment', id: sharing.id }, sharing.targetTitle || sharing.location || '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => handlers.onMenu(sharing, 'share')}
           onCard={() => handlers.onMenu(sharing, 'card')}
           onClose={() => setSharing(null)}
         />
       )}
       {inviting && (
-        <InviteFriendsDialog
-          momentId={inviting.id}
+        <InviteSheet
+          target={{ type: 'moment', id: inviting.id }}
           place={inviting.targetTitle || inviting.location}
           onClose={() => setInviting(null)}
           onDone={(message) => {

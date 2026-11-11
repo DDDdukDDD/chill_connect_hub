@@ -2,29 +2,39 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getSessionSecret } from '../members/session';
 
 /**
- * "ส่งทาง LINE" (owner 2026-11-10): a member sends a post to friends outside Chillwaa as a link that asks "ไปกันไหม".
- * The link carries `<inviterId>.<signature>` for this post, so only a link the member really made can start a plan
- * with them; someone who edits the id gets nothing. Anyone holding the link may answer, each making their own plan.
+ * The signed part of every "ชวนไป" link (owner 2026-11-10, groups 2026-11-11), from the bell and from LINE alike:
+ * - `p.<planId>.<sig>`: an invitation into a group plan (a place, an อีเวนต์, a challenge, a post);
+ * - `t.<eventId>~<inviterId>.<sig>`: a ตี้ invitation, which only says who asked (the friend signs up as usual).
+ * Only a link the server made carries a right signature; someone who edits an id gets nothing.
  */
 
-const sign = (secret: string, momentId: string, inviterId: string) => createHmac('sha256', secret).update(`invite-link:${momentId}:${inviterId}`).digest('base64url').slice(0, 22);
+export type InviteToken = { kind: 'plan'; planId: string } | { kind: 'tee'; eventId: string; inviterId: string };
 
-export function inviteToken(momentId: string, inviterId: string): string {
+const sign = (secret: string, body: string) => createHmac('sha256', secret).update(`invite:${body}`).digest('base64url').slice(0, 22);
+
+function seal(body: string): string {
   const secret = getSessionSecret();
   if (!secret) throw new Error('AUTH_SECRET is not set');
-  return `${inviterId}.${sign(secret, momentId, inviterId)}`;
+  return `${body}.${sign(secret, body)}`;
 }
 
-/** The inviter a link names, when its signature is right for this post; null otherwise */
-export function inviterFromToken(momentId: string, token: string): string | null {
+export const planToken = (planId: string) => seal(`p.${planId}`);
+export const teeToken = (eventId: string, inviterId: string) => seal(`t.${eventId}~${inviterId}`);
+
+/** What a link names, when its signature is right; null otherwise */
+export function readInviteToken(token: unknown): InviteToken | null {
   const secret = getSessionSecret();
+  if (!secret || typeof token !== 'string' || token.length > 300) return null;
   const dot = token.lastIndexOf('.');
-  if (!secret || dot <= 0) return null;
-  const inviterId = token.slice(0, dot);
+  if (dot <= 2) return null;
+  const body = token.slice(0, dot);
   const given = Buffer.from(token.slice(dot + 1));
-  const expected = Buffer.from(sign(secret, momentId, inviterId));
-  return given.length === expected.length && timingSafeEqual(given, expected) ? inviterId : null;
+  const expected = Buffer.from(sign(secret, body));
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
+  if (body.startsWith('p.')) return { kind: 'plan', planId: body.slice(2) };
+  if (body.startsWith('t.')) {
+    const [eventId, inviterId] = body.slice(2).split('~');
+    return eventId && inviterId ? { kind: 'tee', eventId, inviterId } : null;
+  }
+  return null;
 }
-
-/** A link token (has a signature) rather than a plain member id from an in-app invitation */
-export const isInviteToken = (value: string) => value.includes('.');

@@ -9,6 +9,8 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
+import { InvitePill } from '@/components/invites/InvitePill';
+import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { OrganizerGateDialog } from '@/components/auth/OrganizerGateDialog';
@@ -105,7 +107,7 @@ export default function FairDetailPage({
 
   const [activeNavTab, setActiveNavTab] = useState('explore');
   const [openedAt] = useState(() => Date.now());
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const { member } = useMemberSession();
   const organizerGate = member?.trust?.organizerNeeds;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -555,6 +557,8 @@ export default function FairDetailPage({
         </Link>
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
+        {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
+        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ'); setIsRequireMembershipOpen(true); }} onMessage={showToast} />
         <DetailHero
           pillar="fair"
           image={galleryImages[0] || eventData.image}
@@ -585,6 +589,7 @@ export default function FairDetailPage({
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
+              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-4`} />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}

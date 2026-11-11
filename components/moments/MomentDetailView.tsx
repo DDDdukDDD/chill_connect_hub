@@ -15,7 +15,8 @@ import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { AchievementLine } from '@/components/moments/AchievementLine';
 import { ShareSheet } from '@/components/moments/ShareSheet';
-import { InviteFriendsDialog } from '@/components/moments/InviteFriendsDialog';
+import { InviteSheet } from '@/components/invites/InviteSheet';
+import { InviteBanner } from '@/components/invites/InviteBanner';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentFeed';
 import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/MomentsChrome';
@@ -352,56 +353,6 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   // The share button opens the send sheet (invite friends, the link, the card), like the feed
   const [sharing, setSharing] = useState(false);
   const [inviting, setInviting] = useState(false);
-  /*
-    ?invite= from a "ไปกันไหม" notice (a friend's id) or a LINE link (`<id>.<signature>`, lib/social/inviteLinks.ts).
-    The address is tidied so a reload does not ask again, but the invitation waits in this tab's storage until it is
-    answered: a guest signs up (or in) first, through onboarding and back here (owner 2026-11-10).
-  */
-  const inviteKey = `chillwaa:invite:${moment.id}`;
-  const [inviter, setInviter] = useState<string | null>(null);
-  const [inviterName, setInviterName] = useState('');
-  useEffect(() => {
-    let asked = new URLSearchParams(window.location.search).get('invite');
-    if (asked) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('invite');
-      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
-      try {
-        sessionStorage.setItem(inviteKey, asked);
-      } catch {}
-    } else {
-      try {
-        asked = sessionStorage.getItem(inviteKey);
-      } catch {}
-    }
-    const inviterId = asked?.split('.')[0];
-    // Opening one's own link asks nothing
-    if (!asked || !inviterId || inviterId === myId) return;
-    setInviter(asked);
-    void fetch(`/api/members/${encodeURIComponent(inviterId)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => setInviterName(json?.profile?.displayName ?? ''))
-      .catch(() => null);
-  }, [inviteKey, myId]);
-  const forgetInvite = () => {
-    setInviter(null);
-    try {
-      sessionStorage.removeItem(inviteKey);
-    } catch {}
-  };
-  const answerInvite = async () => {
-    if (!inviter) return;
-    if (!isLoggedIn) return requireLogin('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อน');
-    setIsBusy(true);
-    const result = await call(`${url}/actions`, 'POST', { action: 'invite_yes', inviter });
-    setIsBusy(false);
-    forgetInvite();
-    if (!result.ok) return showToast(result.message);
-    showToast('บอกเพื่อนแล้วว่าไปกัน เปิดแชตนัดวันกันเลย');
-    // The answer made a plan for the two: its chat (in My Hub) is where the day is set (owner 2026-11-10)
-    if (result.planId) router.push(`/myhub?plan=${encodeURIComponent(result.planId)}`);
-  };
-
   const removeMyTag = async () => {
     const result = await call(`${url}/actions`, 'POST', { action: 'untag' });
     if (!result.ok) return showToast(result.message);
@@ -438,21 +389,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
         {backLabel}
       </Link>
 
-      {/* Opened from a friend's "ไปกันไหม": answer in one tap (owner 2026-11-10) */}
-      {inviter && (
-        <div role="status" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[#FFF1F2] px-4 py-3">
-          <Send className="w-5 h-5 text-[#E11D48] -rotate-12 shrink-0" aria-hidden="true" />
-          <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">{inviterName || 'เพื่อน'}ชวนคุณไป{place ? ` ${place}` : 'ที่นี่'}ด้วยกัน ไปกันไหม?</p>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={forgetInvite} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
-              ไว้ก่อน
-            </button>
-            <button type="button" onClick={answerInvite} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
-              ไปกัน
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Opened from a friend's "ชวนไป": answer in one tap (owner 2026-11-10) */}
+      <InviteBanner className="mt-3" isLoggedIn={isLoggedIn} myId={myId} onRequireLogin={() => requireLogin('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ')} onMessage={showToast} />
 
       <article className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 items-start">
         {/* A clip fills the screen with everything on it, like a Reel; the place and the comments follow */}
@@ -867,15 +805,15 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           canInvite={isLoggedIn}
           canCard={mayCard}
           onInvite={() => setInviting(true)}
-          onLine={() => void inviteViaLine(moment.id, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
+          onLine={() => void inviteViaLine({ type: 'moment', id: moment.id }, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => void share()}
           onCard={makeCard}
           onClose={() => setSharing(false)}
         />
       )}
       {inviting && (
-        <InviteFriendsDialog
-          momentId={moment.id}
+        <InviteSheet
+          target={{ type: 'moment', id: moment.id }}
           place={place}
           onClose={() => setInviting(false)}
           onDone={(message) => {

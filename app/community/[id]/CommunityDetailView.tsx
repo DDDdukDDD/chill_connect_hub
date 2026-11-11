@@ -12,6 +12,8 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
+import { InvitePill } from '@/components/invites/InvitePill';
+import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { EventAttendees } from '@/components/EventAttendees';
@@ -104,7 +106,7 @@ export default function CommunityDetailPage({
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('events');
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const hostCheckMember = useMemberSession().member;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -542,6 +544,11 @@ export default function CommunityDetailPage({
           ตี้ทั้งหมด
         </Link>
 
+        {/* Opened from a friend's "ชวนไป": a ตี้ hands over to its own sign-up (owner 2026-11-11) */}
+        {!isJoined && !isHost && !isEnded && (
+          <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้'); setIsRequireMembershipOpen(true); }} onMessage={showToast} onJoinTee={handleJoinEvent} />
+        )}
+
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
         <DetailHero
           pillar="community"
@@ -626,6 +633,7 @@ export default function CommunityDetailPage({
                   ลงทะเบียนเข้าร่วม
                 </button>
               )}
+              {!isEnded && <InvitePill target={{ type: 'community', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนมาตี้นี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={onShare} aria-label={shareLabel} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied && !isTripMember ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}

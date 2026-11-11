@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
-import { inviteTargets, visibleMoment, addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
-import { notify, notifyInvite, notifyInviteYes, removeNotifications, wasInvited } from '@/lib/social/notifications';
-import { planPath, startPlan } from '@/lib/social/friendPlans';
-import { inviteToken, inviterFromToken, isInviteToken } from '@/lib/social/inviteLinks';
-import { memberRepository } from '@/lib/members';
-import { setFollowing } from '@/lib/members/safety';
-import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
+import { notify, removeNotifications } from '@/lib/social/notifications';
 
 /**
  * Member actions on a moment:
@@ -17,7 +12,7 @@ import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
  * { action: 'comment', text, parentId? } · { action: 'delete_comment', commentId } (the commenter or the post's author; its replies go with it)
  * { action: 'like_comment' | 'unlike_comment', commentId }
  * { action: 'report', reason } · { action: 'untag' } (the member takes themselves off the post)
- * { action: 'invite', to: [memberId] } ("ไปกันไหม": friends only, up to 10) · { action: 'invite_yes', inviter } (answers a real invitation)
+ * ("ชวนไป" moved to /api/invites, 2026-11-11)
  * Returns the updated feed item (for report: also { autoHidden }).
  */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -30,8 +25,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   try {
     let moment;
     let autoHidden = false;
-    let planId: string | undefined;
-    let inviteLink: string | undefined;
     switch (body.action) {
       case 'like':
       case 'unlike':
@@ -91,44 +84,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         autoHidden = result.autoHidden;
         break;
       }
-      case 'invite': {
-        if (await isRateLimited(`moment-invite:${member.id}`, INVITE_SENDS_PER_HOUR, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
-        const { moment: post, friends } = await inviteTargets(member, id, body.to);
-        await Promise.all(friends.map((friend) => notifyInvite(friend.id, member, post.id, post.targetTitle || post.location)));
-        moment = post;
-        break;
-      }
-      case 'invite_link': {
-        // "ส่งทาง LINE" (owner 2026-11-10): a signed link that asks friends outside Chillwaa "ไปกันไหม"
-        moment = await visibleMoment(id);
-        if (moment.sharesOff && moment.authorId !== member.id) return NextResponse.json({ success: false, message: 'เจ้าของโพสต์ปิดการแชร์ไว้' }, { status: 403 });
-        inviteLink = `/moments/${encodeURIComponent(moment.id)}?invite=${encodeURIComponent(inviteToken(moment.id, member.id))}`;
-        break;
-      }
-      case 'invite_yes': {
-        const asked = typeof body.inviter === 'string' ? body.inviter : '';
-        moment = await visibleMoment(id);
-        // From a LINE link: the signature names the inviter; from the bell: a real invitation notice must exist
-        const fromLink = isInviteToken(asked);
-        const inviter = fromLink ? inviterFromToken(moment.id, asked) ?? '' : asked;
-        if (!inviter || inviter === member.id || (!fromLink && !(await wasInvited(member.id, inviter, moment.id)))) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
-        if (fromLink) {
-          if (await isRateLimited(`invite-link-yes:${member.id}`, 20, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ตอบบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
-          const person = await memberRepository.findById(inviter);
-          if (!person || person.status !== 'active' || person.blockedIds?.includes(member.id) || member.blockedIds?.includes(inviter)) return NextResponse.json({ success: false, message: 'ไม่พบคำชวนนี้แล้ว' }, { status: 404 });
-          // Whoever came through a friend's link follows them, so the friend's posts are in their feed from the start
-          if (!member.followingIds?.includes(inviter)) await setFollowing(member, inviter, true).catch(() => null);
-        }
-        // The answer makes a plan for the two (owner 2026-11-10); the one who asked is led to its chat
-        const plan = await startPlan(member, inviter, moment);
-        planId = plan.id;
-        await notifyInviteYes(inviter, member, moment.id, moment.targetTitle || moment.location, planPath(plan));
-        break;
-      }
       default:
         return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });
     }
-    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }), ...(planId && { planId }), ...(inviteLink && { inviteLink }) });
+    return NextResponse.json({ success: true, moment: toFeedItem(moment, member, await loadPeople([moment])), ...(body.action === 'report' && { autoHidden }) });
   } catch (error) {
     if (error instanceof MomentError || error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     return NextResponse.json({ success: false, message: 'ทำรายการไม่สำเร็จ' }, { status: 400 });
