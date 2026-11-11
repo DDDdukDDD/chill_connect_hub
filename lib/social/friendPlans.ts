@@ -392,9 +392,18 @@ export async function notePlanVisit(member: Member, moment: Pick<Moment, 'target
  * The "ไปกับเพื่อน" bonus for progress (lib/social/questProgress.ts): each plan where the member and at least one other
  * person have been, counted when the member's own visit there is proven (not a photo still waiting for staff) and the
  * place still exists.
+ * A failed read counts 0 (logged): every XP total runs through here, so a missing table (plan migration not yet run on
+ * live) must not take the rewards, challenges and Home down with it.
  */
 export async function planPoints(memberId: string, visits: Visit[], placeExists: (visit: Visit) => boolean): Promise<number> {
-  const plans = (await friendPlanStore.ofMember(memberId)).filter((p) => p.targetId && memberOf(p, memberId)?.wentAt && going(p).some((m) => m.memberId !== memberId && m.wentAt));
+  let all: Awaited<ReturnType<typeof friendPlanStore.ofMember>>;
+  try {
+    all = await friendPlanStore.ofMember(memberId);
+  } catch (error) {
+    console.error('planPoints: friend plans could not be read, counting 0', error);
+    return 0;
+  }
+  const plans = all.filter((p) => p.targetId && memberOf(p, memberId)?.wentAt && going(p).some((m) => m.memberId !== memberId && m.wentAt));
   if (plans.length === 0) return 0;
   return plans.reduce((sum, plan) => {
     const visit = visits.find((v) => v.targetType === plan.targetType && v.targetId === plan.targetId);

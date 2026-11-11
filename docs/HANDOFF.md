@@ -35,6 +35,10 @@ Item template:
 - `GET /api/achievements`: new kind `doing`, the reader's own circle (blue ring, "ทำอยู่") for the newest open challenge they joined and have not finished, when they have nothing achieved yet.
 - `db/seed-starter-quests.mjs` has 3 more starters (ร้านประจำที่อยากบอกต่อ, ทริปที่ยังคิดถึง, ช่วงเวลาดีๆ กับเพื่อน). Created on dev; live gets all 5 with the same one run. `npm run smoke` now 18 checks.
 
+### BE-344 · Signed-in pages survive a failed XP count (owner 2026-11-11)
+- **What changed:** after main got BE-337..343, signed-in members on live saw "ไม่พบชาเลนจ์นี้" on every challenge page and a Home without its picks: `progressOf` reads `app.friend_plans` (0043), which live most likely does not have yet, so `/api/quests/[id]` and `/api/rewards` answered 500. Now `planPoints` counts 0 (and logs) when plans cannot be read; `useMyRewards` ends loading on a refused answer too; the challenge page says "not found" only on a 404 and otherwise keeps the server-built page.
+- **What to do about it:** still run `npm run db:migrate` on live (0043, 0044) and the starter-quest seed (LAUNCH_CHECKLIST); the "ไปกัน" plans and the retention numbers need the tables.
+
 ### BE-343 · Places in Chiang Mai, Phuket and Chonburi (owner 2026-11-11)
 - **What changed:** the OpenStreetMap importer (`lib/scrapers/osmWikidata.ts`) now also asks for Buddhist temples, beaches, islands, waterfalls, peaks and national parks, in two smaller Overpass queries with a longer wait (one big query timed out), and uses the Thai Wikipedia title before an English name. Imported on **dev only**: Chiang Mai +26, Phuket +10, Chonburi +10, with "why go" texts for 43 in `db/content/cities-osm-2026-11-11-vibes.json` and 3 drafts. `scripts/import-osm-places.cjs` replaces the temporary import script (dev by default, `--live` for live).
 - **What to do about it:** owner looks at /spots on localhost:3000; when OK, run the import with `--live` per province, then apply the vibes file on live (LAUNCH_CHECKLIST).
