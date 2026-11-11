@@ -11,6 +11,7 @@ import { sendChatMessage } from './chat';
 import { friendPlanStore, type FriendPlan, type PlanTargetType } from './friendPlanStore';
 import { planToken, readInviteToken, teeToken } from './inviteLinks';
 import { inviteLinkStore } from './inviteLinkStore';
+import { inviteCodeOf } from './friends';
 import { notifyInvite, notifyInviteYes, notifyPlan } from './notifications';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
@@ -117,10 +118,15 @@ async function targetOf(type: unknown, id: unknown): Promise<InviteTarget> {
 
 const withToken = (path: string, token: string) => `${path}${path.includes('?') ? '&' : '?'}invite=${encodeURIComponent(token)}`;
 
-/** The short link for LINE ("/i/<code>", owner 2026-11-11); the long one when the code could not be made */
-async function shareLink(path: string, token: string): Promise<string> {
+/**
+ * The short link for LINE and other apps ("/i/<code>", owner 2026-11-11); the long one when the code could not be made.
+ * It opens the page with the host's friend code (?ref=), so a friend who signs up through it counts as invited by the
+ * host, as with "ตั๋วเพื่อนซี้" links (lib/social/friends.ts, campaign friend stats).
+ */
+async function shareLink(member: Member, path: string, token: string): Promise<string> {
   try {
-    return `/i/${await inviteLinkStore.codeFor(token, path)}`;
+    const ref = await inviteCodeOf(member);
+    return `/i/${await inviteLinkStore.codeFor(token, `${path}${path.includes('?') ? '&' : '?'}ref=${ref}`)}`;
   } catch (error) {
     console.error('invite: short link failed, sharing the long one', error);
     return withToken(path, token);
@@ -151,7 +157,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
     const link = withToken(target.path, token);
     const chosen = friends.slice(0, PLAN_MAX_GUESTS);
     await Promise.all(chosen.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-    return { invited: chosen.length, link, share: await shareLink(target.path, token) };
+    return { invited: chosen.length, link, share: await shareLink(member, target.path, token) };
   }
 
   const plan = await hostPlanFor(member, target);
@@ -163,7 +169,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const token = planToken(plan.id);
   const link = withToken(target.path, token);
   await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-  return { invited: fresh.length, link, share: await shareLink(target.path, token), planId: plan.id };
+  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id };
 }
 
 export interface InviteInfo {

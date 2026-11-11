@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-348 · ชวนไป counts for friend campaigns; "ชวนเพื่อนไปด้วยไหม" after joining (owner 2026-11-11)
+- **Friend campaigns:** the short link now opens the page with the host's friend code (`?ref=`, `inviteCodeOf`), so a friend who signs up through a ชวนไป link is `invitedBy` the host, the same as a "ตั๋วเพื่อนซี้" link (campaign `invited` stats). Codes made before this have no ref.
+- **Nudge:** `components/invites/InviteNudge.tsx`, one blue line under the header with the ชวนไป button and a close: on a ตี้ right after joining, on an อีเวนต์ right after saving it. Not stored; once per action.
+
 ### BE-347 · Short LINE invitations and a sign-up that leads with the friend (owner 2026-11-11)
 - **Short links:** LINE gets `www.chillwaa.com/i/<code>` (7 letters) under a one-line invitation, not the long signed link that looked like spam. Migration **0046** `app.invite_links` (code → token + page), `lib/social/inviteLinkStore.ts`; `POST /api/invites` adds `share`. `app/i/[code]` gives LINE a card ("<name> ชวนคุณไป<place>", the place's picture) and sends a person on with a client redirect (a server redirect would make LINE show the plain page's card). If 0046 is missing the long link is shared, nothing breaks.
 - **Sign-up from an invitation:** a guest's "ไปกัน" opens `components/invites/InviteSignupSheet.tsx`: who is waiting, what happens right after, one-tap LINE (Google/Facebook below, email and log-in links). The return address carries the invitation (`?invite=<token>&answer=1`), so it survives a switch of browser, and the banner answers "ไปกัน" by itself when they are back, then opens the plan in My Hub. A ตี้ invitation returns to the ตี้'s own join (`?join=1`).

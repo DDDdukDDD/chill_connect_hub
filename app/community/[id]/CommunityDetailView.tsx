@@ -14,6 +14,7 @@ import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { InvitePill } from '@/components/invites/InvitePill';
 import { InviteBanner } from '@/components/invites/InviteBanner';
+import { InviteNudge } from '@/components/invites/InviteNudge';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { EventAttendees } from '@/components/EventAttendees';
@@ -106,6 +107,8 @@ export default function CommunityDetailPage({
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
 
   const [activeNavTab, setActiveNavTab] = useState('events');
+  // Just joined: ask once whether a friend comes too (owner 2026-11-11)
+  const [justJoined, setJustJoined] = useState(false);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const hostCheckMember = useMemberSession().member;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -301,6 +304,7 @@ export default function CommunityDetailPage({
     setIsConfirmJoinModalOpen(false);
     showToast(`ยินดีด้วย! คุณลงทะเบียนเข้าร่วม "${cleanText(eventData.title)}" สำเร็จแล้ว 🎉`);
     setIsETicketOpen(true);
+    setJustJoined(true);
   };
 
   const handleConfirmCancel = async () => {
@@ -654,6 +658,10 @@ export default function CommunityDetailPage({
             </>
           }
         />
+
+        {justJoined && isJoined && !isEnded && (
+          <InviteNudge className="mt-4" target={{ type: 'community', id: eventData.id }} place={eventData.title} text="ไปกับเพื่อนสนุกกว่า ชวนใครไปด้วยไหม?" onMessage={showToast} onClose={() => setJustJoined(false)} />
+        )}
 
         {/* Other dates of a recurring ตี้ and the place it meets at, the date list, and the day-of and after panels:
             each only when it applies (empty wrapper hides) */}
