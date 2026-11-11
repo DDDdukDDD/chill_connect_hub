@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { hasAdminCredentials } from '@/lib/adminApiAuth';
 import { joinEvent, nightlifeAgeBlock } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { isRateLimited } from '@/lib/rateLimit';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardOrganizer } from '@/lib/members/submissions';
 import { BANNED_KEYWORDS, editTee } from '@/lib/social/editTee';
@@ -171,6 +172,7 @@ export async function POST(req: Request) {
     if (body.action === 'edit_tee') {
       const host = await getSessionMember(req);
       if (!host) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      if (await isRateLimited(`tee-edit:${host.id}`, 30, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'แก้บ่อยเกินไป ลองใหม่อีกสักครู่นะ' }, { status: 429 });
       if (typeof body.eventId !== 'string' || !body.eventId || !body.edit || typeof body.edit !== 'object') {
         return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' }, { status: 400 });
       }
@@ -231,6 +233,8 @@ export async function POST(req: Request) {
     const member = isAdmin ? null : await getSessionMember(req);
     if (!isAdmin) {
       if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+      // A member can put at most 10 ตี้/อีเวนต์ a day into review (API audit round 2, 2026-11-12)
+      if (await isRateLimited(`event-create:${member.id}`, 10, 24 * 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'สร้างได้วันละ 10 รายการ ลองใหม่พรุ่งนี้นะ' }, { status: 429 });
       try {
         guardOrganizer(member);
       } catch (error) {

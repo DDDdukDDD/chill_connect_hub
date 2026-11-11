@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { isRateLimited } from '@/lib/rateLimit';
 import { proposeQuest, questsProposedBy } from '@/lib/members/submissions';
 import { joinCounts } from '@/lib/social/questJoins';
 
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
   try {
     const member = await getSessionMember(request);
     if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
+    if (await isRateLimited(`member-quest:${member.id}`, 10, 24 * 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'เสนอชาเลนจ์ได้วันละ 10 รายการ ลองใหม่พรุ่งนี้นะ' }, { status: 429 });
     const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') return NextResponse.json({ success: false, message: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
     const quest = await proposeQuest(member, body as Record<string, unknown>);

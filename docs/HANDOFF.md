@@ -20,6 +20,11 @@ Item template:
 
 ---
 
+### BE-351 · API audit round 2 (2026-11-12)
+- **Scan of all 97 routes** for same-origin checks, session or admin checks, rate limits and cron secrets. Writes without isSameOrigin are admin routes (admin cookie is SameSite=strict), the admin login/logout, the Apple callback (a cross-site POST by design) and member logout; the member cookie is SameSite=lax, so a cross-site POST carries no session. Login, password reset, email confirm and phone OTP all have attempt limits.
+- **Added limits** (429 with a friendly message): creating a ตี้/อีเวนต์ 10 a day, moving a ตี้ 30 an hour (`/api/events`), suggesting a place 10 a day (`/api/spots`), proposing a challenge 10 a day (`/api/quests`), reports 30 an hour (`/api/reports`), host applications 5 a day.
+- **Leak scan:** 18 GET endpoints (member profile, followers, friends, feed, lists, invitations, plans, chat, notifications, rewards) called as a guest and as another member: no email, phone, birth year, block lists, provider ids or invite codes in any answer. Plan chats open only to people going.
+
 ### BE-350 · Phone action bar on places and อีเวนต์; page walk at 360px and desktop (owner 2026-11-12)
 - **Action bar:** /spots/[id] and /events/[id] now get the bar that rises over the phone menu once the header buttons scroll away, like ตี้ and ชาเลนจ์ (`components/detail/PhoneActionBar.tsx` through MobileNav `actionBar`): name or dates, open / ongoing status, ชวนไป (icon) and the main button (บันทึกที่นี่ / บันทึกงานนี้). `InvitePill` takes `iconOnly`.
 - **Walk:** every main page as guest and member at 360px (top and scrolled) and 1280px, headless Chrome on dev: no horizontal scroll, no text under 11px, one h1 each, no console errors (one hydration warning on /events/[id] did not come back on a second run). Fixed: the header buttons on /challenges/[id] and /events/[id] wrapped to a second row at 360px (share icon-only, ชวนไป icon-only on อีเวนต์, tighter padding). Three smoke accounts left from a run on 2026-11-11 were deleted from dev.
