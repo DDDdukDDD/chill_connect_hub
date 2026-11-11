@@ -23,15 +23,19 @@ export async function sendInvites(target: InviteTarget, to: string[] = []): Prom
   try {
     const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to }) });
     const json = await res.json().catch(() => null);
-    return { ok: res.ok && json?.success !== false, message: json?.message, invited: json?.invited, link: json?.link };
+    return { ok: res.ok && json?.success !== false, message: json?.message, invited: json?.invited, link: json?.share || json?.link };
   } catch {
     return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };
   }
 }
 
-/** The words LINE opens with: where, and the invitation link */
+/**
+ * The words LINE opens with (owner 2026-11-11): the invitation on its own line, then the short link on the next, so the
+ * chat reads like a friend asking and LINE's preview card (the /i/<code> page) carries the picture.
+ */
 export const inviteLineText = (place: string, link: string, isTee = false) =>
-  `${place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม?` : `ไป${place}กันไหม?`) : 'ไปด้วยกันไหม?'} ${window.location.origin}${link}`;
+  `${place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม? กดดูแล้วตอบได้เลย` : `ไป${place}กันไหม? กดดูแล้วตอบได้เลย`) : 'ไปด้วยกันไหม? กดดูแล้วตอบได้เลย'}
+${window.location.origin}${link}`;
 
 /**
  * "ชวนไป" (owner 2026-11-10; every section and up to 15 friends, 2026-11-11). Friends who follow each other are listed

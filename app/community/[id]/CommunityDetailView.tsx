@@ -546,7 +546,7 @@ export default function CommunityDetailPage({
 
         {/* Opened from a friend's "ชวนไป": a ตี้ hands over to its own sign-up (owner 2026-11-11) */}
         {!isJoined && !isHost && !isEnded && (
-          <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อลงทะเบียนเข้าร่วมตี้'); setIsRequireMembershipOpen(true); }} onMessage={showToast} onJoinTee={handleJoinEvent} />
+          <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} onJoinTee={handleJoinEvent} />
         )}
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}

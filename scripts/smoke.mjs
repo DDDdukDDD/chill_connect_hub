@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import postgres from 'postgres';
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.SMOKE_BASE || 'http://localhost:3000';
 const read = (file, key) => {
   try {
     return fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').match(new RegExp(`^${key}=(.*)$`, 'm'))?.[1].trim().replace(/^"|"$/g, '');
@@ -114,6 +114,8 @@ async function run() {
   check('B answers ไปกัน from My Hub', yes.planId === sent.planId, yes.message);
   const token = decodeURIComponent(String(sent.link).split('invite=')[1] ?? '');
   const banner = await C.call(`/api/invites?token=${encodeURIComponent(token)}`);
+  const short = await fetch(BASE + String(sent.share)).then(async (r) => ({ status: r.status, html: await r.text() })).catch(() => ({ status: 0, html: '' }));
+  check('the LINE link is short and its card names the invitation', /^[A-Za-z0-9]{7}$/.test(String(sent.share).replace('/i/', '')) && String(sent.share).startsWith('/i/') && short.status === 200 && /og:title" content="[^"]*ชวนคุณไป/.test(short.html) && short.html.includes(encodeURIComponent(token)), `${sent.share} ${short.status}`);
   check('the invited page knows who is going', banner.invite?.kind === 'plan' && banner.invite.goingCount === 2, JSON.stringify(banner.invite ?? null).slice(0, 80));
   const viaLink = await C.call('/api/invites/answer', 'POST', { token });
   check('C answers through the link into the same plan', viaLink.planId === sent.planId, viaLink.message);

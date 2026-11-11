@@ -558,7 +558,7 @@ export default function FairDetailPage({
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
         {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
-        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ'); setIsRequireMembershipOpen(true); }} onMessage={showToast} />
+        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} />
         <DetailHero
           pillar="fair"
           image={galleryImages[0] || eventData.image}

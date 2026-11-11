@@ -381,7 +381,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       </Link>
 
       {/* Opened from a friend's "ชวนไป": answer in one tap (owner 2026-11-10) */}
-      <InviteBanner className="mt-3" isLoggedIn={isLoggedIn} myId={myId} onRequireLogin={() => requireLogin('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ')} onMessage={showToast} />
+      <InviteBanner className="mt-3" isLoggedIn={isLoggedIn} myId={myId} onMessage={showToast} />
 
       <article className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 items-start">
         {/* A clip fills the screen with everything on it, like a Reel; the place and the comments follow */}
