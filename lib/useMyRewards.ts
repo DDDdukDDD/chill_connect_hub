@@ -81,7 +81,9 @@ export function useMyRewards(isLoggedIn: boolean) {
   const refresh = useCallback(async () => {
     try {
       const data: RewardsAnswer = await fetch('/api/rewards', { cache: 'no-store' }).then((res) => res.json());
+      // A refused answer (500, signed out) still ends the loading, so pages waiting on isLoaded do not stay empty
       if (data.success) setState(toState(data));
+      else setState((prev) => ({ ...prev, isLoaded: true }));
     } catch {
       setState((prev) => ({ ...prev, isLoaded: true }));
     }

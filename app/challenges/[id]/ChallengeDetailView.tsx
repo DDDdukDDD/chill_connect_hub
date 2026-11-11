@@ -68,17 +68,19 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const load = useCallback(async () => {
     if (!questId) return;
     try {
-      const data = await fetch(`/api/quests/${encodeURIComponent(questId)}`, { cache: 'no-store' }).then((res) => res.json());
+      const res = await fetch(`/api/quests/${encodeURIComponent(questId)}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => null);
       if (data?.success) {
         setDetail(data);
         setLoadState('ready');
-      } else {
+      } else if (res.status === 404 || !initialDetail) {
+        // Only a real 404 says the challenge is gone; other errors keep the page the server already built
         setLoadState('missing');
       }
     } catch {
-      setLoadState('missing');
+      if (!initialDetail) setLoadState('missing');
     }
-  }, [questId]);
+  }, [questId, initialDetail]);
 
   // The signed-in member's part of the answer changes with the session
   useEffect(() => {
