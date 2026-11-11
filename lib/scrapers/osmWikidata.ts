@@ -19,7 +19,7 @@ const OVERPASS_ENDPOINTS = [
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const SOURCE_NAME = 'OpenStreetMap · Wikipedia';
 const WIKIDATA_BATCH = 25;
-const OVERPASS_TIMEOUT_MS = 120_000; // Bangkok-size area queries take 10-110 s
+const OVERPASS_TIMEOUT_MS = 180_000; // Bangkok-size area queries take 10-110 s; the nature group for a big province about 100 s (2026-11-11)
 
 interface OsmElement {
   type: 'node' | 'way' | 'relation';
@@ -63,6 +63,13 @@ function classify(tags: Record<string, string>, title: string): { category: Life
     }
   }
   if (tags.leisure === 'park' || tags.leisure === 'garden') return { category: 'park', label: 'สวนสาธารณะ' };
+  // What the big destinations are known for beyond city sights (owner 2026-11-11: Chiang Mai, Phuket, Pattaya)
+  if (tags.amenity === 'place_of_worship' && tags.religion === 'buddhist') return { category: 'temple', label: 'วัด & ศาสนสถาน' };
+  if (tags.natural === 'beach') return { category: 'beach', label: 'ชายหาด' };
+  if (tags.place === 'island' || tags.place === 'islet') return { category: 'beach', label: 'เกาะ' };
+  if (tags.waterway === 'waterfall' || tags.natural === 'waterfall') return { category: 'nature', label: 'น้ำตก' };
+  if (tags.natural === 'peak') return { category: 'viewpoint', label: 'ยอดดอย & ภูเขา' };
+  if (tags.boundary === 'national_park' || tags.leisure === 'nature_reserve') return { category: 'nature', label: 'อุทยาน & ธรรมชาติ' };
   return null;
 }
 
@@ -118,14 +125,33 @@ const claimString = (entity: WikidataEntity, property: string) => {
 };
 const commonsFileUrl = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replace(/ /g, '_'))}?width=1200`;
 
-async function queryOverpass(context: SiteAdapterContext, isoCode: string): Promise<OsmElement[]> {
-  const query = `[out:json][timeout:110];
+/**
+ * What to ask OpenStreetMap for, in two smaller queries (owner 2026-11-11): a single query with temples, beaches and
+ * nature as well timed out on the free servers. A group that fails is skipped; the run fails only when both do.
+ */
+const OVERPASS_GROUPS = [
+  [
+    'nwr(area.p)["wikidata"]["name"]["shop"="mall"];',
+    'nwr(area.p)["wikidata"]["name"]["tourism"~"^(museum|gallery|attraction|viewpoint|zoo|aquarium|theme_park)$"];',
+    'nwr(area.p)["wikidata"]["name"]["leisure"~"^(park|garden)$"];',
+    'nwr(area.p)["wikidata"]["name"]["amenity"="marketplace"];',
+  ],
+  // What the big destinations are known for beyond city sights: temples, beaches, islands, waterfalls, peaks, parks
+  [
+    'nwr(area.p)["wikidata"]["name"]["amenity"="place_of_worship"]["religion"="buddhist"];',
+    'nwr(area.p)["wikidata"]["name"]["natural"~"^(beach|peak|waterfall)$"];',
+    'nwr(area.p)["wikidata"]["name"]["waterway"="waterfall"];',
+    'nwr(area.p)["wikidata"]["name"]["place"~"^(island|islet)$"];',
+    'nwr(area.p)["wikidata"]["name"]["boundary"="national_park"];',
+    'nwr(area.p)["wikidata"]["name"]["leisure"="nature_reserve"];',
+  ],
+];
+
+async function queryOverpassGroup(context: SiteAdapterContext, isoCode: string, selectors: string[]): Promise<OsmElement[]> {
+  const query = `[out:json][timeout:170];
 area["ISO3166-2"="${isoCode}"]->.p;
 (
-  nwr(area.p)["wikidata"]["name"]["shop"="mall"];
-  nwr(area.p)["wikidata"]["name"]["tourism"~"^(museum|gallery|attraction|viewpoint|zoo|aquarium|theme_park)$"];
-  nwr(area.p)["wikidata"]["name"]["leisure"~"^(park|garden)$"];
-  nwr(area.p)["wikidata"]["name"]["amenity"="marketplace"];
+  ${selectors.join('\n  ')}
 );
 out center tags;`;
   let lastError: unknown;
@@ -139,6 +165,22 @@ out center tags;`;
     }
   }
   throw new Error(`Overpass query failed: ${lastError instanceof Error ? lastError.message : 'unknown error'}`);
+}
+
+async function queryOverpass(context: SiteAdapterContext, isoCode: string): Promise<OsmElement[]> {
+  const found: OsmElement[] = [];
+  let failures = 0;
+  let lastError: unknown;
+  for (const group of OVERPASS_GROUPS) {
+    try {
+      found.push(...(await queryOverpassGroup(context, isoCode, group)));
+    } catch (error) {
+      failures += 1;
+      lastError = error;
+    }
+  }
+  if (failures === OVERPASS_GROUPS.length) throw lastError;
+  return found;
 }
 
 /** `allSites` keeps every Wikipedia sitelink, so the number of languages can rank how known a place is */
@@ -224,7 +266,7 @@ export const osmWikidataAdapter: SiteSpotAdapter = {
       const longitude = element.lon ?? element.center?.lon ?? NaN;
       if (!isThaiCoordinate(latitude, longitude)) continue;
 
-      const title = (tags['name:th'] || entity.labels?.th?.value || tags.name || '').trim();
+      const title = (tags['name:th'] || entity.labels?.th?.value || entity.sitelinks?.thwiki?.title || tags.name || '').trim(); // the Thai Wikipedia title before an English name (2026-11-11)
       const osmNames = [tags.name, tags['name:th'], tags['name:en']].filter(Boolean) as string[];
       const wikiNames = [entity.labels?.th?.value, entity.labels?.en?.value, entity.sitelinks?.thwiki?.title, entity.sitelinks?.enwiki?.title].filter(Boolean) as string[];
       if (!namesMatch(osmNames, wikiNames)) continue;

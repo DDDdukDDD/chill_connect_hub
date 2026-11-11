@@ -20,6 +20,22 @@ Item template:
 
 ---
 
+### BE-343 · Places in Chiang Mai, Phuket and Chonburi (owner 2026-11-11)
+- **What changed:** the OpenStreetMap importer (`lib/scrapers/osmWikidata.ts`) now also asks for Buddhist temples, beaches, islands, waterfalls, peaks and national parks, in two smaller Overpass queries with a longer wait (one big query timed out), and uses the Thai Wikipedia title before an English name. Imported on **dev only**: Chiang Mai +26, Phuket +10, Chonburi +10, with "why go" texts for 43 in `db/content/cities-osm-2026-11-11-vibes.json` and 3 drafts. `scripts/import-osm-places.cjs` replaces the temporary import script (dev by default, `--live` for live).
+- **What to do about it:** owner looks at /spots on localhost:3000; when OK, run the import with `--live` per province, then apply the vibes file on live (LAUNCH_CHECKLIST).
+
+### BE-342 · `npm run smoke`: the main flows in one command (owner 2026-11-11)
+- **What changed:** `scripts/smoke.mjs` walks the API on the local dev server: sign-up, life map marks, posting, starter challenges and their XP, "ไปกัน" from the bell and from a LINE link (forged and own links refused), plans, chat, admin retention. 17 checks; it deletes its accounts at the end and refuses to run when the dev database address is the live one.
+- **What to do about it:** run `npm run smoke` (with `npm run dev` running) before pushing a round that touches posting, challenges, plans or chat.
+
+### BE-341 · Retention in /admin: do new members come back (owner 2026-11-11)
+- **What changed:** /admin home opens with **สมาชิกใหม่กลับมาไหม**: per sign-up week, the share who came back the next day and within 7 days, posted or made a "ไปกัน" plan within 7 days, and finished a starter challenge (`GET /api/admin/retention`). Comeback days come from new `app.member_days` (migration **0044**), one row per member per Bangkok day, written once a day per server when a signed-in session is read (`lib/members/activeDays.ts`, called in `getSessionMember`). Counting began 2026-11-11.
+- **What to do about it:** run 0044 on live before this reaches main.
+
+### BE-340 · Onboarding wow: "เคยไปที่ไหนมาแล้วบ้าง?", life map reveal, starter challenges (owner 2026-11-11)
+- **What changed:** after the onboarding answers and before the summary (`components/onboarding/LifeMapIntro.tsx`): (1) the 24 best-known places with photos in the member's own province, tapped in seconds and saved as marked visits (`POST /api/visits { action: 'mark_many' }`, no XP); (2) the reveal: the number, photo stamps, top 3 สาย, "ยังมีอีก N ที่รอคุณอยู่", and a typographic 9:16 card for a Story; (3) **ภารกิจแรกของคุณ**: the two starter challenges from the owner's table, joined for them. Starter challenges use the new rule `posts: { withPlace? }` (counts own published posts since joining, no location proof, finishes once; challenge page shows "โพสต์โมเมนต์" instead of places). `/onboarding?preview=1&step=lifemap` opens this part to review its design. Walked on dev at phone width.
+- **What to do about it:** on live, run `BASE_URL=https://www.chillwaa.com ADMIN_PASSWORD=… node db/seed-starter-quests.mjs` once (creates both challenges; running again skips them). Note: the dev server's file watcher missed several edits today; restart `npm run dev` if a change does not show.
+
 ### BE-339 · "ไปกัน" through LINE: invite links, plan sheet, /moments place line (owner 2026-11-11)
 - **What changed:** owner: Thai friends talk in LINE, keep our chat too. (1) The share sheet's **ชวนไปกันทาง LINE** makes a signed link (`invite_link`, `lib/social/inviteLinks.ts`) and opens LINE with "ไป…กันไหม?". Anyone opening it, guest or member, sees "<name> ชวนคุณไป… ไปกันไหม?"; a guest signs up first and the invitation waits in session storage until answered. "ไปกัน" through a link makes the plan with the sender and follows them. Forged tokens, bare ids without a notice and one's own link answer 404 (walked on dev, 8 checks). (2) In My Hub a plan opens a **plan sheet**: **คุยต่อใน LINE** (ready-made message with the plan link), **แชตใน Chillwaa**, the day picker and cancel; the in-app chat keeps the plan card on top. (3) `/moments` grid cards show their place as the feed's slim line.
 

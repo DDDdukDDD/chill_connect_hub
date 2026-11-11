@@ -163,6 +163,17 @@ export function describeQuestRule(rule: QuestRule | undefined, evidence: Evidenc
   const eligible = rule.newMemberDays
     ? `สมาชิกใหม่ นับเฉพาะการไปภายใน ${rule.newMemberDays} วันแรกหลังสมัคร`
     : undefined;
+  // A starter challenge (owner 2026-11-11): one post from the phone, counted at once
+  if (rule.posts) {
+    return {
+      unit: 'โพสต์',
+      scope: rule.posts.withPlace ? 'โมเมนต์ที่ใส่ชื่อสถานที่' : 'โมเมนต์จากรูปในเครื่อง',
+      proof: 'โพสต์แล้วนับทันที ไม่ต้องอยู่ที่นั่นตอนโพสต์',
+      onceEach: 'ทำสำเร็จได้ครั้งเดียว',
+      goStep: rule.posts.withPlace ? 'โพสต์ร้านหรือมุมโปรดของคุณ แล้วใส่ชื่อสถานที่ ให้ครบ {n} โพสต์' : 'เลือกรูปที่ทำให้คุณยิ้มได้ แล้วโพสต์ ให้ครบ {n} โพสต์',
+      eligible,
+    };
+  }
   if (rule.asHost) {
     return {
       unit: 'ตี้',
