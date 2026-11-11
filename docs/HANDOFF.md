@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-353 · Places in Krabi, Chiang Rai, Ayutthaya, Kanchanaburi and Prachuap (dev, 2026-11-12)
+- **What changed:** OpenStreetMap + Wikipedia import (scripts/import-osm-places.cjs, 30 per province) on the **dev** database: Krabi 11, Chiang Rai 28, Ayutthaya 24 (second try; Overpass timed out the first), Kanchanaburi 6, Prachuap Khiri Khan 11. db/content/cities-osm-2026-11-12-vibes.json: "why go" texts for 54 (feel first, one practical tip, only facts I am sure of) and 25 set to draft: small temples with too little to say, and three national parks whose land is mostly in another province (Hat Chao Mai: Trang; Phu Sang, Mae Puem: Phayao; Kaeng Krachan: Phetchaburi).
+- **What to do about it:** owner looks at /spots on localhost:3000; when OK, the live steps are in LAUNCH_CHECKLIST.
+
 ### BE-352 · Saving a post saves its place; ชวนไป from My Hub saved list (owner 2026-11-12)
 - Saving (bookmark) a post at a place or an อีเวนต์ also saves that place or อีเวนต์ to the member (app/api/moments/[id]/actions), with one toast: เก็บ … ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย. Unsaving the post leaves the place saved (it may have been saved on its own).
 - My Hub ที่บันทึก: each ตี้, อีเวนต์ (not ended) and place has a ชวนไป button (paper plane) beside the bookmark, opening the usual ชวนไป sheet. npm run smoke 28 checks.
