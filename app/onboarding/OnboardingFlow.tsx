@@ -44,7 +44,7 @@ import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
-import { LifeMapIntro } from '@/components/onboarding/LifeMapIntro';
+import { LifeMapIntro, type Starter } from '@/components/onboarding/LifeMapIntro';
 import { FIRST_STEP_KEY, FollowRow, flavourFromGoals, isSocialOnly, type FirstStep } from '@/components/home/onboardingFirstStep';
 
 /**
@@ -421,6 +421,10 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   // The first "wow" (owner 2026-11-11): places already been, the reveal and the first missions, once, between the
   // answers and the summary (components/onboarding/LifeMapIntro.tsx). A member coming back to edit skips it
   const [lifeMapDone, setLifeMapDone] = useState(Boolean(saved));
+  // The starter challenges taken on "ภารกิจแรกของคุณ", listed on the summary (owner 2026-11-11)
+  const [missions, setMissions] = useState<Starter[]>([]);
+  // The answers save while the life map shows (owner 2026-11-11: "ถัดไป" waited 2-3 s); the summary's button waits for it
+  const saving = useRef<Promise<void> | null>(null);
   // /onboarding?preview=1&step=lifemap opens that part straight away, to look at its design (saves nothing)
   useEffect(() => {
     if (preview && new URLSearchParams(window.location.search).get('step') === 'lifemap') setDone(true);
@@ -676,12 +680,19 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   }, [done, step, communityInterests]);
 
   /** Saves the answers and opens the summary. The pledge is accepted there, with its button (owner 2026-10-22). */
-  const finish = async () => {
+  const finish = () => {
     if (isFinishing) return;
-    setIsFinishing(true);
+    setError('');
     // The summary's picks need only the answers on screen: look them up while the answers save, not after
-    const picksLoading = loadPicks();
-    try {
+    void loadPicks();
+    // The next screen opens at once and the answers save behind it; a failure shows on the summary's button
+    saving.current = saveAnswers();
+    saving.current.catch(() => undefined);
+    setDone(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveAnswers = async () => {
       if (!preview) {
         const changes: { displayName?: string; avatarUrl?: string } = {};
         const name = displayName.trim();
@@ -706,14 +717,6 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
           /* storage unavailable */
         }
       }
-      setDone(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      void picksLoading;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
-    } finally {
-      setIsFinishing(false);
-    }
   };
 
   /**
@@ -725,6 +728,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     setIsFinishing(true);
     setError('');
     try {
+      // The answers from the last question, saving since then; a failure stops here with its message
+      if (saving.current) {
+        await saving.current;
+        saving.current = null;
+      }
       if (!preview && !alreadyPledged) {
         if (!session.member) throw new Error('เข้าสู่ระบบก่อน แล้วลองอีกครั้งนะ');
         await memberActions.acceptPledge();
@@ -1122,8 +1130,10 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
               <section className="cch-rise flex-1 flex flex-col">
                 <LifeMapIntro
                   province={province || 'กรุงเทพฯ'}
+                  vibes={inferredSpots}
                   preview={preview}
-                  onDone={() => {
+                  onDone={(taken) => {
+                    setMissions(taken);
                     setLifeMapDone(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
@@ -1162,6 +1172,29 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     ))}
                     {pickedSai.length > 4 && <span className="px-1 py-1 text-xs font-semibold text-slate-500">+{pickedSai.length - 4}</span>}
                   </p>
+                )}
+
+                {/* The missions taken on "ภารกิจแรกของคุณ", all of them, as quiet rows (owner 2026-11-11) */}
+                {missions.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5">ภารกิจของคุณ</h2>
+                    <ul className="divide-y divide-slate-100">
+                      {missions.map((quest) => (
+                        <li key={quest.id}>
+                          <Link href={`/challenges/${encodeURIComponent(quest.id)}`} onClick={(e) => openFromSummary(e, `/challenges/${encodeURIComponent(quest.id)}`, quest.title)} className="flex items-center gap-3 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer">
+                            {quest.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- the challenge cover, a local file
+                              <img src={quest.image} alt="" className="w-10 h-10 shrink-0 rounded-lg object-cover bg-slate-100" />
+                            ) : (
+                              <span className="w-10 h-10 shrink-0 rounded-lg bg-slate-100" aria-hidden="true" />
+                            )}
+                            <span className="min-w-0 flex-1 text-sm font-semibold text-slate-900 truncate">{quest.title}</span>
+                            <span className="shrink-0 text-[13px] font-semibold text-[#B45309] tabular-nums">+{quest.rewardPoints ?? 0} XP</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
 
                 {/* The first step: one card that fits the answers, with why. Moments-only members: people to follow */}
@@ -1338,7 +1371,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
 
                       <div className="grid grid-cols-1 gap-5">
                       <div className="space-y-1.5">
-                        <label htmlFor="onb-birth-year" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">เกิดปีไหน {Boolean(birthYear) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
+                        <label htmlFor="onb-birth-year" className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">เกิดปีไหน <span className="font-semibold text-slate-500">(ไม่แสดงให้เพื่อนเห็น)</span> {Boolean(birthYear) && <Check className="w-4 h-4 text-emerald-600 stroke-[3]" aria-label="กรอกแล้ว" />}</label>
                         <select id="onb-birth-year" value={birthYear} onChange={(e) => { setBirthYear(e.target.value); setBirthYearMissing(false); setError(''); }} aria-invalid={birthYearMissing || undefined} aria-describedby={birthYearMissing ? 'onb-birth-year-error' : undefined} className={`${inputClass} aria-[invalid=true]:border-rose-400 ${birthYear ? '' : 'text-slate-500'}`}>
                           <option value="" disabled>เลือกปีเกิด (พ.ศ.)</option>
                           {birthYears.map((y) => (

@@ -99,7 +99,8 @@ const pgChatStore: ChatStore = {
   async append(message, keep) {
     await sql().begin(async (tx) => {
       const createdAt = toDate(message.createdAt) as Date;
-      const kind = message.roomId.startsWith('pair~') ? 'direct' : message.roomId.startsWith('grp_') ? 'fair_group' : 'event';
+      // A 'ไปกัน' plan room (plan~) is tied to no event or fair group, like a pair room
+      const kind = message.roomId.startsWith('pair~') || message.roomId.startsWith('plan~') ? 'direct' : message.roomId.startsWith('grp_') ? 'fair_group' : 'event';
       const [event] = kind === 'event' ? await tx`select id from app.events where slug = ${message.roomId}` : [];
       const [room] = await tx`
         insert into app.chat_rooms (legacy_id, kind, event_id, last_message_at)

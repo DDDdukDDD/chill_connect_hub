@@ -20,11 +20,18 @@ const KEEP_PER_ROOM = 500;
 const PAGE = 100;
 
 async function roomOf(member: Member, roomId: string): Promise<{ title: string; members: number }> {
-  // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts), or who share a "ไปกัน" plan
+  // A "ไปกัน" group plan (room id = plan~<planId>, lib/social/friendPlans.ts): everyone going, the host included
+  if (roomId.startsWith('plan~')) {
+    const plan = await friendPlanStore.byId(roomId.slice(5));
+    const going = plan && plan.status !== 'cancelled' ? plan.members.filter((m) => m.state === 'going') : [];
+    if (!plan || !going.some((m) => m.memberId === member.id)) throw new MemberAuthError('แชตนี้สำหรับคนที่ตอบว่าไปกันเท่านั้น', 403);
+    return { title: plan.title, members: going.length };
+  }
+  // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts)
   const pair = pairMembersOf(roomId);
   if (pair) {
     const otherId = pair[0] === member.id ? pair[1] : pair[1] === member.id ? pair[0] : null;
-    if (!otherId || !((await isMutual(member.id, otherId)) || (await friendPlanStore.between(member.id, otherId)))) throw new MemberAuthError('แชตนี้เปิดเมื่อมีแผนไปกันหรือเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
+    if (!otherId || !(await isMutual(member.id, otherId))) throw new MemberAuthError('แชตนี้เปิดเมื่อเลือกอยากเจอกันอีกทั้งสองฝ่าย', 403);
     const other = await memberRepository.findById(otherId);
     if (!other || other.status !== 'active' || other.blockedIds?.includes(member.id) || member.blockedIds?.includes(otherId)) throw new MemberAuthError('ห้องแชตนี้ปิดแล้ว', 403);
     return { title: tidyDisplayName(other.displayName).trim() || other.displayName, members: 2 };

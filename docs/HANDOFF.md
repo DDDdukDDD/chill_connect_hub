@@ -20,6 +20,21 @@ Item template:
 
 ---
 
+### BE-346 · "ชวนไป" in every section, as group plans (owner 2026-11-11)
+- The "ชวนไป" pill is on ที่เที่ยว, อีเวนต์, ตี้ and ชาเลนจ์ pages too (`components/invites/InvitePill.tsx`), with one sheet everywhere (`InviteSheet.tsx`): pick several friends (up to 15) or send a LINE link. Every page opened from an invitation shows `InviteBanner.tsx` (who asked, who is going, "ไปกัน").
+- Group plans replace pair plans: migration **0045** drops 0043's `app.friend_plans` (test data only) and makes `friend_plans` + `friend_plan_members`. One plan per host and target while its day is ahead; one group chat `plan~<planId>` (stored as a `direct` chat room). A ตี้ makes no plan: its link only names who asked and the banner hands over to the ตี้'s own sign-up (owner).
+- New API `/api/invites` (send, read a token) and `/api/invites/answer` (token or planId). The moment actions `invite` / `invite_yes` / `invite_link` are gone; `PATCH /api/plans/{id}` takes `{ action: 'leave' }` (host = call off, others = leave). Pair rooms open only for a mutual "อยากเจออีก" again.
+- My Hub "แผนไปกันกับเพื่อน": avatars of everyone going, invitations to answer ("ตอบคำชวน"), "ชวนเพิ่ม", the event's days only for an อีเวนต์ plan, "ทำด้วยกัน" joins the challenge. XP: +40 once per plan when the member and at least one other person posted there.
+- `INVITE_MAX_FRIENDS` 10 → 15. Retention "ไปกัน" column counts members in a plan with someone else going. `npm run smoke` now 21 checks.
+
+### BE-345 · Onboarding round 2: choose missions, faster next, places in your สาย (owner 2026-11-11)
+- "เกิดปีไหน (ไม่แสดงให้เพื่อนเห็น)" on "บอกเราเกี่ยวกับคุณ".
+- The last question's "ถัดไป" no longer waits for the save: the life map opens at once and the answers (and photo) save behind it. The summary's button waits for that save and shows its error if it failed.
+- Life map: own province first, then up to 8 famous places elsewhere in the member's place สาย (inferred from the answers). The reveal counts both. The IG Story card is gone from onboarding (sign-up keeps its focus); the places are saved as visits.
+- "ภารกิจแรกของคุณ" lists up to 5 starter challenges; the member ticks the ones to take (at least one suggested, "ไว้ก่อน" skips). Only those are joined, and the summary lists them under "ภารกิจของคุณ".
+- `GET /api/achievements`: new kind `doing`, the reader's own circle (blue ring, "ทำอยู่") for the newest open challenge they joined and have not finished, when they have nothing achieved yet.
+- `db/seed-starter-quests.mjs` has 3 more starters (ร้านประจำที่อยากบอกต่อ, ทริปที่ยังคิดถึง, ช่วงเวลาดีๆ กับเพื่อน). Created on dev; live gets all 5 with the same one run. `npm run smoke` now 18 checks.
+
 ### BE-344 · Signed-in pages survive a failed XP count (owner 2026-11-11)
 - **What changed:** after main got BE-337..343, signed-in members on live saw "ไม่พบชาเลนจ์นี้" on every challenge page and a Home without its picks: `progressOf` reads `app.friend_plans` (0043), which live most likely does not have yet, so `/api/quests/[id]` and `/api/rewards` answered 500. Now `planPoints` counts 0 (and logs) when plans cannot be read; `useMyRewards` ends loading on a refused answer too; the challenge page says "not found" only on a 404 and otherwise keeps the server-built page.
 - **What to do about it:** still run `npm run db:migrate` on live (0043, 0044) and the starter-quest seed (LAUNCH_CHECKLIST); the "ไปกัน" plans and the retention numbers need the tables.

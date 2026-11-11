@@ -13,6 +13,7 @@ const MEMORY_KEY = 'achievements-row';
 /**
  * "เพื่อนๆ กำลังออกไปใช้ชีวิต" above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
  * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
+ * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
  * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
  */
 export function AchievementsRow({ initial, onOpenMoment }: { initial?: AchievementItem[]; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
@@ -43,16 +44,17 @@ export function AchievementsRow({ initial, onOpenMoment }: { initial?: Achieveme
       <ul className="mt-2 flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {items.map((item) => {
           const done = item.kind === 'finish';
+          const doing = item.kind === 'doing';
           const name = item.isMe ? 'คุณ' : item.person.name;
           return (
             <li key={item.id} className="shrink-0 w-[72px]">
               <Link
                 href={item.href}
                 onClick={() => item.momentId && onOpenMoment?.(item.momentId)}
-                aria-label={`${name} ${done ? 'พิชิตชาเลนจ์' : 'กำลังพิชิตชาเลนจ์'} ${item.quest.title}${done ? '' : ` ${item.current}/${item.total}`} · ${item.timeAgo}`}
+                aria-label={doing ? `คุณกำลังทำชาเลนจ์ ${item.quest.title}` : `${name} ${done ? 'พิชิตชาเลนจ์' : 'กำลังพิชิตชาเลนจ์'} ${item.quest.title}${done ? '' : ` ${item.current}/${item.total}`} · ${item.timeAgo}`}
                 className="group flex flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
-                <span className={`relative rounded-full p-[3px] ${done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]'}`}>
+                <span className={`relative rounded-full p-[3px] ${done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]'}`}>
                   <span className="block rounded-full bg-white p-[2px]">
                     {item.person.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
@@ -62,10 +64,10 @@ export function AchievementsRow({ initial, onOpenMoment }: { initial?: Achieveme
                     )}
                   </span>
                   <span
-                    className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : 'bg-[#7C3AED] text-white'}`}
+                    className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
                     aria-hidden="true"
                   >
-                    {done ? <Trophy className="w-3 h-3" /> : `${item.current}/${item.total}`}
+                    {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
                   </span>
                 </span>
                 <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">

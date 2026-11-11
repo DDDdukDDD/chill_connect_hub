@@ -7,8 +7,8 @@
 export const ACHIEVEMENTS_WINDOW_DAYS = 14;
 export const ACHIEVEMENTS_ROW_MAX = 15;
 
-/** "ไปกันไหม": friends one send can invite, and sends per member per hour */
-export const INVITE_MAX_FRIENDS = 10;
+/** "ชวนไป": friends one plan can hold besides the host (owner 2026-11-11: up to 15), and sends per member per hour */
+export const INVITE_MAX_FRIENDS = 15;
 export const INVITE_SENDS_PER_HOUR = 30;
 
 /** "เพื่อนจะไปตี้นี้": at most this many friends hear that someone joined a ตี้ */

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
-import { cancelPlan, setPlanDate } from '@/lib/social/friendPlans';
+import { leavePlan, setPlanDate } from '@/lib/social/friendPlans';
 import { isRateLimited } from '@/lib/rateLimit';
 
 /**
  * PATCH { date: 'YYYY-MM-DD' | null } → { plan } sets or clears the day (from the plan's chat);
- * PATCH { action: 'cancel' } → { success } calls the plan off. Only the two in the plan.
+ * PATCH { action: 'leave' } → { success, result: 'cancelled' | 'left' }: the host calls the plan off for everyone, a
+ * friend leaves it (or turns an invitation down). Only people in the plan.
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
@@ -16,9 +17,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   try {
     const body = (await request.json().catch(() => ({}))) as { date?: unknown; action?: unknown };
-    if (body.action === 'cancel') {
-      await cancelPlan(member, id);
-      return NextResponse.json({ success: true });
+    if (body.action === 'leave' || body.action === 'cancel') {
+      return NextResponse.json({ success: true, result: await leavePlan(member, id) });
     }
     if (!('date' in body)) return NextResponse.json({ success: false, message: 'Invalid request' }, { status: 400 });
     return NextResponse.json({ success: true, plan: await setPlanDate(member, id, body.date) });

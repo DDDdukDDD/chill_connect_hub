@@ -59,7 +59,7 @@ export async function retentionByWeek(weeks = 8): Promise<RetentionWeek[]> {
       count(*) filter (where exists (select 1 from app.member_days d where d.member_id = c.id and d.day = c.joined + 1))::int as back1,
       count(*) filter (where exists (select 1 from app.member_days d where d.member_id = c.id and d.day between c.joined + 1 and c.joined + 7))::int as back7,
       count(*) filter (where exists (select 1 from app.moments mo where mo.author_id = c.id and not mo.is_sample and (mo.created_at at time zone 'Asia/Bangkok')::date <= c.joined + 7))::int as posted7,
-      count(*) filter (where exists (select 1 from app.friend_plans p where (p.inviter_id = c.id or p.friend_id = c.id) and (p.created_at at time zone 'Asia/Bangkok')::date <= c.joined + 7))::int as planned7,
+      count(*) filter (where exists (select 1 from app.friend_plan_members pm where pm.member_id = c.id and pm.state = 'going' and (pm.created_at at time zone 'Asia/Bangkok')::date <= c.joined + 7 and (select count(*) from app.friend_plan_members x where x.plan_id = pm.plan_id and x.state = 'going') > 1))::int as planned7,
       count(*) filter (where exists (select 1 from app.quest_participants f join app.quests q on q.id = f.quest_id where f.member_id = c.id and f.finished_at is not null and q.rule ? 'posts'))::int as starter
     from cohort c
     group by c.week

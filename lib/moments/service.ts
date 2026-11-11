@@ -11,7 +11,6 @@ import { FOR_YOU_WEIGHTS, GUEST_READER, rankForYou, type ForYouReader } from './
 import { liveKey, type TargetLive } from './targetLive';
 import { isSpotOpenNow } from '../openHours';
 import { keepMentioned, MAX_COMMENT_MENTIONS, mentionToken, type Mention } from './mentions';
-import { INVITE_MAX_FRIENDS } from '../social/socialRules';
 import {
   AUTO_HIDE_REPORTS, MAX_CAPTION_LENGTH, MAX_COMMENT_LENGTH, MAX_MOMENT_IMAGES, MAX_VIDEO_SECONDS, VIDEO_SECONDS_GRACE, Moment, MomentCategory, MomentComment,
   momentRepository, MomentTargetType,
@@ -384,22 +383,8 @@ export async function taggableFriends(member: Member): Promise<Member[]> {
 }
 
 const MAX_MOMENT_TAGS = 10;
-const MAX_INVITES = INVITE_MAX_FRIENDS;
 
-/**
- * "ไปกันไหม" (owner 2026-11-10): the friends this post may be sent to, out of the ones asked for. Friends only (they
- * follow each other, neither blocks the other), at most 10 at a time; a post closed to sharing goes nowhere but its author's.
- */
-export async function inviteTargets(member: Member, id: string, ids: unknown): Promise<{ moment: Moment; friends: Member[] }> {
-  const moment = await requireVisible(id);
-  if (moment.sharesOff && moment.authorId !== member.id) throw new MomentError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
-  const asked = pickedIds(ids);
-  const friends = (await taggableFriends(member)).filter((friend) => asked.has(friend.id)).slice(0, MAX_INVITES);
-  if (friends.length === 0) throw new MomentError('เลือกเพื่อนที่จะชวนก่อนนะ', 400);
-  return { moment, friends };
-}
-
-/** The post a friend answers "ไปด้วย" on, if it can still be seen */
+/** A post that can still be seen, for "ชวนไป" (lib/social/friendPlans.ts) */
 export const visibleMoment = (id: string): Promise<Moment> => requireVisible(id);
 
 const asMention = (person: Member): Mention => ({ id: person.id, name: tidyDisplayName(person.displayName).trim() || person.displayName });

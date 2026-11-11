@@ -1,8 +1,8 @@
 // Smoke test of the flows members rely on (owner 2026-11-11), against the LOCAL dev server and the DEV database only.
 //   npm run dev        (in another terminal)
 //   npm run smoke
-// Walks through the API: sign-up, posting, starter challenges and XP, "ไปกัน" from the bell and from a LINE link,
-// plans, chat, the onboarding life map, admin retention. Every account it makes is deleted at the end, pass or fail.
+// Walks through the API: sign-up, posting, starter challenges and XP, "ชวนไป" group plans from the app and from a
+// LINE link in every section, chat, the onboarding life map, admin retention. Every account it makes is deleted at the end, pass or fail.
 import fs from 'node:fs';
 import postgres from 'postgres';
 
@@ -84,8 +84,10 @@ async function run() {
   console.log('\nStarter challenges and the life map');
   const quests = (await A.call('/api/quests?limit=100')).quests ?? [];
   const starters = quests.filter((q) => q.rule?.posts);
-  check('two starter challenges exist', starters.length === 2, `${starters.length} found; run node db/seed-starter-quests.mjs`);
+  check('five starter challenges exist', starters.length >= 5, `${starters.length} found; run node db/seed-starter-quests.mjs`);
   for (const q of starters) await A.call('/api/quests/join', 'POST', { questId: q.id, action: 'join' });
+  const row = (await A.call('/api/achievements')).items ?? [];
+  check('home row shows the challenge A took on', row.some((i) => i.isMe && i.kind === 'doing'), JSON.stringify(row[0] ?? null).slice(0, 80));
   const spots = (await A.call('/api/spots?province=%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E%E0%B8%AF&limit=5&hasImageOnly=true')).spots ?? [];
   const marked = await A.call('/api/visits', 'POST', { action: 'mark_many', targetIds: spots.slice(0, 3).map((s) => s.id) });
   check('life map marks places at once', marked.marked === Math.min(3, spots.length), JSON.stringify(marked).slice(0, 80));
@@ -98,34 +100,52 @@ async function run() {
   check('a moment at a place posts', post.status === 201, post.message);
   const rewards = await A.call('/api/rewards');
   const finished = (rewards.quests ?? []).filter((q) => starters.some((s) => s.id === q.questId) && q.completed);
-  check('one post finishes both starter challenges', finished.length === 2, `${finished.length}/2`);
-  check('starter XP counts', (rewards.points?.fromQuests ?? 0) >= 180, `fromQuests ${rewards.points?.fromQuests}`);
+  check('one post at a place finishes every starter challenge taken', finished.length === starters.length, `${finished.length}/${starters.length}`);
+  const starterXp = starters.reduce((sum, q) => sum + (q.rewardPoints ?? 0), 0);
+  check('starter XP counts', (rewards.points?.fromQuests ?? 0) >= starterXp, `fromQuests ${rewards.points?.fromQuests} of ${starterXp}`);
 
-  console.log('\n"ไปกัน" from the bell');
+  console.log('\n"ชวนไป" as a group plan');
   const momentId = post.moment.id;
-  const invite = await A.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite', to: [B.id] });
-  check('A invites a friend', invite.status === 200, invite.message);
-  const yes = await B.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite_yes', inviter: A.id });
-  check('B answers ไปกัน and gets a plan', Boolean(yes.planId), yes.message);
+  await C.call(`/api/members/${A.id}/actions`, 'POST', { action: 'follow' });
+  await A.call(`/api/members/${C.id}/actions`, 'POST', { action: 'follow' });
+  const sent = await A.call('/api/invites', 'POST', { type: 'moment', id: momentId, to: [B.id, C.id] });
+  check('A invites two friends at once', sent.invited === 2 && Boolean(sent.planId) && Boolean(sent.link), sent.message ?? JSON.stringify(sent).slice(0, 80));
+  const yes = await B.call('/api/invites/answer', 'POST', { planId: sent.planId });
+  check('B answers ไปกัน from My Hub', yes.planId === sent.planId, yes.message);
+  const token = decodeURIComponent(String(sent.link).split('invite=')[1] ?? '');
+  const banner = await C.call(`/api/invites?token=${encodeURIComponent(token)}`);
+  check('the invited page knows who is going', banner.invite?.kind === 'plan' && banner.invite.goingCount === 2, JSON.stringify(banner.invite ?? null).slice(0, 80));
+  const viaLink = await C.call('/api/invites/answer', 'POST', { token });
+  check('C answers through the link into the same plan', viaLink.planId === sent.planId, viaLink.message);
   const tomorrow = new Date(Date.now() + 7 * 3600e3 + 864e5).toISOString().slice(0, 10);
-  const dated = await B.call(`/api/plans/${yes.planId}`, 'PATCH', { date: tomorrow });
-  check('the day is set', dated.plan?.date === tomorrow, dated.message);
-  const plans = (await A.call('/api/plans')).plans ?? [];
-  const chat = plans[0] ? await A.call(`/api/chat/${encodeURIComponent(plans[0].roomId)}`) : { status: 0 };
-  check('their chat opens with the day in it', chat.status === 200 && (chat.messages ?? []).some((m) => m.text.includes('นัดไป')), String(chat.status));
-  const outsider = await C.call(`/api/plans/${yes.planId}`, 'PATCH', { date: tomorrow });
-  check('someone else cannot change the plan', outsider.status === 404, String(outsider.status));
-
-  console.log('\n"ไปกัน" from a LINE link');
-  const link = await A.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite_link' });
-  check('A gets a signed link', Boolean(link.inviteLink), link.message);
-  const token = decodeURIComponent(String(link.inviteLink).split('invite=')[1] ?? '');
-  const forged = await C.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite_yes', inviter: `${A.id}.AAAAAAAAAAAAAAAAAAAAAA` });
+  const dated = await B.call(`/api/plans/${sent.planId}`, 'PATCH', { date: tomorrow });
+  check('the day is set', dated.plan?.date === tomorrow && dated.plan.people.length === 3, dated.message ?? String(dated.plan?.people?.length));
+  const chat = await C.call(`/api/chat/${encodeURIComponent(`plan~${sent.planId}`)}`);
+  check('one group chat with the day in it', chat.status === 200 && (chat.messages ?? []).some((m) => m.text.includes('นัดไป')), String(chat.status));
+  const forged = await C.call('/api/invites/answer', 'POST', { token: `p.${sent.planId}.AAAAAAAAAAAAAAAAAAAAAA` });
   check('a forged link is refused', forged.status === 404, String(forged.status));
-  const viaLink = await C.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite_yes', inviter: token });
-  check('C answers through the link and gets a plan', Boolean(viaLink.planId), viaLink.message);
-  const own = await A.call(`/api/moments/${momentId}/actions`, 'POST', { action: 'invite_yes', inviter: token });
+  const own = await A.call('/api/invites/answer', 'POST', { token });
   check('A cannot answer their own link', own.status === 404, String(own.status));
+
+  console.log('\n"ชวนไป" in every section');
+  const spotPlan = await A.call('/api/invites', 'POST', { type: 'spot', id: spots[1]?.id ?? spot.id, to: [B.id] });
+  check('a place invitation makes its own plan', Boolean(spotPlan.planId) && spotPlan.planId !== sent.planId, spotPlan.message);
+  const tee = (await A.call('/api/events?type=community&status=recruiting&limit=1')).events?.[0];
+  if (tee) {
+    const teeSent = await A.call('/api/invites', 'POST', { type: 'community', id: tee.id, to: [B.id] });
+    const teeToken = decodeURIComponent(String(teeSent.link).split('invite=')[1] ?? '');
+    const teeInfo = await B.call(`/api/invites?token=${encodeURIComponent(teeToken)}`);
+    check('a ตี้ invitation makes no plan and leads to sign-up', !teeSent.planId && teeInfo.invite?.kind === 'tee', teeSent.message ?? JSON.stringify(teeInfo.invite ?? null).slice(0, 60));
+  }
+  const quest = quests.find((q) => !q.rule?.posts && q.status !== 'ended');
+  if (quest) {
+    const questSent = await A.call('/api/invites', 'POST', { type: 'quest', id: quest.id, to: [B.id] });
+    const together = await B.call('/api/invites/answer', 'POST', { planId: questSent.planId });
+    const joined = ((await B.call('/api/rewards')).quests ?? []).some((q) => q.questId === quest.id && q.joined);
+    check('ทำด้วยกัน joins the challenge', Boolean(together.planId) && joined, together.message ?? `joined ${joined}`);
+  }
+  const plans = (await B.call('/api/plans')).plans ?? [];
+  check('My Hub lists the plans', plans.length >= 2, String(plans.length));
 
   console.log('\nAdmin');
   const password = read('.env.development.local', 'ADMIN_PASSWORD');
@@ -142,7 +162,7 @@ async function run() {
 async function cleanUp() {
   const ids = (await sql`select id from app.members where email like ${`smoke${stamp}%@example.com`}`).map((r) => r.id);
   if (ids.length === 0) return;
-  await sql`delete from app.friend_plans where inviter_id in ${sql(ids)} or friend_id in ${sql(ids)}`;
+  await sql`delete from app.friend_plans where host_id in ${sql(ids)}`;
   await sql`delete from app.moments where author_id in ${sql(ids)}`;
   await sql`delete from app.members where id in ${sql(ids)}`;
   console.log(`\nCleaned up ${ids.length} test accounts`);

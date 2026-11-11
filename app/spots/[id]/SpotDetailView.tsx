@@ -9,6 +9,8 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
+import { InvitePill } from '@/components/invites/InvitePill';
+import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { CreateEventModal, type PlacePick } from '@/components/LazyCreateEventModal';
@@ -95,7 +97,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
   const [teeItinerary, setTeeItinerary] = useState<Array<{ time: string; title: string }> | undefined>(undefined);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const favorites = isLoggedIn ? myActivity.savedSpotIds : [];
 
   // Fullscreen Photo Lightbox Modal State
@@ -322,6 +324,9 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
           ที่เที่ยวทั้งหมด
         </Link>
 
+        {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
+        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ'); setIsRequireMembershipOpen(true); }} onMessage={showToast} />
+
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
         <DetailHero
           pillar="spot"
@@ -356,14 +361,17 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.district, spot.province].filter(Boolean).join(' '))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={heroButton.quiet}
+                aria-label="นำทาง"
+                className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}
               >
                 <Navigation className="w-4 h-4" aria-hidden="true" />
-                นำทาง
+                {/* Icon only on phones, so ชวนไป and แชร์ stay on the row (owner 2026-11-11) */}
+                <span className="max-sm:sr-only">นำทาง</span>
               </a>
-              <button type="button" onClick={handleShare} className={heroButton.quiet}>
+              <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={heroButton.quiet} />
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                {isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}
+                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
             </>
           }

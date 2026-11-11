@@ -11,6 +11,8 @@ import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
 import { EventAttendees } from '@/components/EventAttendees';
+import { InvitePill } from '@/components/invites/InvitePill';
+import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { ChallengeChecklist } from '@/components/detail/ChallengeChecklist';
@@ -41,7 +43,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const params = useParams();
   const questId = decodeURIComponent((params?.id as string) || '');
   const [activeTab, setActiveTab] = useState('challenges');
-  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
+  const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const myRewards = useMyRewards(isLoggedIn);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -489,6 +491,9 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
 
   return chrome(
     <>
+      {/* Opened from a friend's "ชวนไป": doing it together joins the challenge and a group plan (owner 2026-11-11) */}
+      <InviteBanner className="mt-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => setIsRequireMembershipOpen(true)} onMessage={showToast} />
+
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
       <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">
         <div className="relative aspect-[16/10] rounded-3xl overflow-hidden bg-slate-100">
@@ -573,6 +578,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
                 ยกเลิกการทำชาเลนจ์
               </button>
             )}
+            {quest.status !== 'ended' && <InvitePill target={{ type: 'quest', id: quest.id }} place={quest.title} isLoggedIn={isLoggedIn} onRequireLogin={() => setIsRequireMembershipOpen(true)} onMessage={showToast} className={dialogButton.quiet} />}
             <button type="button" onClick={handleShare} className={dialogButton.quiet}>
               {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
               {copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}

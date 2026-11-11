@@ -1,4 +1,4 @@
-// The two starter challenges (owner 2026-11-11): things a new member can do in a minute from the sofa, offered at the
+// The five starter challenges (owner 2026-11-11): things a new member can do in a minute from the sofa, offered at the
 // end of onboarding. They count posts, not visits (QuestRule.posts in data/mockData.ts), and finish once.
 // Created through the admin API like any challenge, so the same script works on dev and on live:
 //   node db/seed-starter-quests.mjs                              (http://localhost:3000, ADMIN_PASSWORD from .env.development.local)
@@ -35,6 +35,52 @@ export const STARTER_QUESTS = [
     iconName: 'Smile',
     image: '/images/onboarding/share-moment.jpg',
     brandReward: { type: 'hub_central', title: 'เหรียญ First Moment', shortTitle: '+80 XP', hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ' },
+    rule: { targetTypes: [], count: 1, posts: {} },
+  },
+  // Three more (owner 2026-11-11: five to choose from at the end of onboarding)
+  {
+    title: 'ร้านประจำที่อยากบอกต่อ',
+    targetGoal: 'แชร์ร้านอร่อยที่ไปบ่อยที่สุด 1 ร้าน',
+    objective: 'ร้านข้าว ร้านก๋วยเตี๋ยว หรือร้านขนมที่คุณกลับไปซ้ำเสมอ แชร์ให้เพื่อนๆ ได้ลองบ้าง',
+    steps: ['เลือกรูปเมนูหรือหน้าร้านจากในเครื่อง', 'ใส่ชื่อร้าน แล้วบอกเมนูที่ต้องสั่ง', 'โพสต์ แล้วรับรางวัลได้ทันที'],
+    verificationMethod: 'นับเมื่อโพสต์โมเมนต์ที่ใส่ชื่อสถานที่ ไม่ต้องอยู่ที่นั่นตอนโพสต์',
+    rewardsText: '+60 XP และเหรียญ Food Hunter',
+    rewardPoints: 60,
+    category: 'food_hunt',
+    badgeLabel: 'Food Hunter',
+    iconName: 'UtensilsCrossed',
+    image: '/images/onboarding/fair-festival.jpg',
+    brandReward: { type: 'hub_central', title: 'เหรียญ Food Hunter', shortTitle: '+60 XP', hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ' },
+    rule: { targetTypes: [], count: 1, posts: { withPlace: true } },
+  },
+  {
+    title: 'ทริปที่ยังคิดถึง',
+    targetGoal: 'โพสต์รูปจากทริปที่ยังคิดถึง 1 รูป',
+    objective: 'ทริปไหนที่ยังนึกถึงอยู่เสมอ ใกล้หรือไกลก็ได้ เล่าให้เพื่อนๆ ฟังหน่อยว่าที่นั่นดียังไง',
+    steps: ['เลือกรูปจากทริปนั้นในเครื่อง', 'ใส่ชื่อสถานที่ แล้วเล่าสั้นๆ', 'โพสต์ แล้วรับรางวัลได้ทันที'],
+    verificationMethod: 'นับเมื่อโพสต์โมเมนต์ที่ใส่ชื่อสถานที่ ไม่ต้องอยู่ที่นั่นตอนโพสต์',
+    rewardsText: '+60 XP และเหรียญ Throwback',
+    rewardPoints: 60,
+    category: 'travel_outdoor',
+    badgeLabel: 'Throwback',
+    iconName: 'Plane',
+    image: '/images/onboarding/browse-moments.jpg',
+    brandReward: { type: 'hub_central', title: 'เหรียญ Throwback', shortTitle: '+60 XP', hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ' },
+    rule: { targetTypes: [], count: 1, posts: { withPlace: true } },
+  },
+  {
+    title: 'ช่วงเวลาดีๆ กับเพื่อน',
+    targetGoal: 'โพสต์รูปที่ได้ออกไปกับเพื่อน 1 รูป',
+    objective: 'วันที่ได้ออกไปกับเพื่อนแล้วสนุกที่สุดเมื่อไม่นานมานี้ แชร์เป็นโมเมนต์แรกกับเพื่อนๆ ที่นี่',
+    steps: ['เลือกรูปที่ได้ออกไปกับเพื่อน', 'แท็กเพื่อนที่อยู่ใน Chillwaa ได้ถ้ามี', 'โพสต์ แล้วรับรางวัลได้ทันที'],
+    verificationMethod: 'นับเมื่อโพสต์โมเมนต์ 1 โพสต์',
+    rewardsText: '+60 XP และเหรียญ Good Company',
+    rewardPoints: 60,
+    category: 'photo_content',
+    badgeLabel: 'Good Company',
+    iconName: 'Users',
+    image: '/images/onboarding/friends-start.jpg',
+    brandReward: { type: 'hub_central', title: 'เหรียญ Good Company', shortTitle: '+60 XP', hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ' },
     rule: { targetTypes: [], count: 1, posts: {} },
   },
 ];

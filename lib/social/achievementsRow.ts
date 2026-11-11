@@ -5,6 +5,8 @@ import { memberRepository, type Member } from '../members';
 import { momentRepository } from '../moments';
 import { thaiTimeAgo } from '../moments/service';
 import { allQuestFinishes } from './questFinishes';
+import { joinsOf } from './questJoins';
+import { questMemberStore } from './stores';
 import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
 
 /**
@@ -12,6 +14,8 @@ import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
  * show who achieved what). Two public facts make it: a finished challenge ("ใครทำอยู่บ้าง" is public on the challenge
  * page) and a post's challenge line ("พิชิตชาเลนจ์ … 2/3", lib/social/achievement.ts). One circle per person:
  * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.
+ * A reader with nothing achieved yet still sees their own circle for the challenge they are on ("doing", owner
+ * 2026-11-11: what I took on in onboarding shows on my home).
  */
 
 const WINDOW_DAYS = ACHIEVEMENTS_WINDOW_DAYS;
@@ -21,7 +25,7 @@ export interface AchievementItem {
   id: string;
   person: { id: string; name: string; avatar?: string };
   isMe: boolean;
-  kind: 'finish' | 'step';
+  kind: 'finish' | 'step' | 'doing';
   quest: { id: string; title: string };
   current?: number;
   total?: number;
@@ -72,6 +76,19 @@ const everyone = () =>
     { ttlMs: 60_000, tags: ['achievements'] }
   );
 
+/** The reader's own "doing" circle: the newest challenge they joined and have not finished, still open */
+async function doingOf(memberId: string): Promise<Raw | null> {
+  const [joins, finishes] = await Promise.all([joinsOf(memberId), questMemberStore.finishes({ memberId })]);
+  const done = new Set(finishes.map((f) => f.questId));
+  for (const join of [...joins].sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))) {
+    if (done.has(join.questId)) continue;
+    const quest = await db.findQuestById(join.questId);
+    if (!quest || quest.status === 'ended') continue;
+    return { id: `d:${join.questId}:${memberId}`, memberId, kind: 'doing', quest: { id: join.questId, title: quest.title }, href: `/challenges/${encodeURIComponent(join.questId)}`, at: join.joinedAt };
+  }
+  return null;
+}
+
 export async function achievementsRow(viewer: Member): Promise<AchievementItem[]> {
   const blocked = new Set(viewer.blockedIds ?? []);
   // One circle per person: a finish beats a step, then the newest
@@ -81,6 +98,10 @@ export async function achievementsRow(viewer: Member): Promise<AchievementItem[]
     const held = best.get(item.memberId);
     const better = !held || (item.kind === 'finish' && held.kind === 'step') || (item.kind === held.kind && item.at > held.at);
     if (better) best.set(item.memberId, item);
+  }
+  if (!best.has(viewer.id)) {
+    const doing = await doingOf(viewer.id).catch(() => null);
+    if (doing) best.set(viewer.id, doing);
   }
   if (best.size === 0) return [];
   const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys()]), memberRepository.followerIds(viewer.id)]);
