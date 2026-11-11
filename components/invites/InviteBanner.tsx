@@ -103,15 +103,15 @@ export function InviteBanner({
       : `${info.host.name}ชวนคุณไป${info.title}${others > 0 ? ` · ไปกันแล้ว ${info.goingCount} คน` : ''}`;
 
   return (
-    <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[#FFF1F2] px-4 py-3 ${className}`}>
+    <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-blue-50 px-4 py-3 ${className}`}>
       {info.going.length > 1 ? (
         <span className="flex -space-x-2 shrink-0" aria-hidden="true">
           {info.going.slice(0, 3).map((p) => (
-            <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-8 h-8 text-xs ring-2 ring-[#FFF1F2]" />
+            <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-8 h-8 text-xs ring-2 ring-blue-50" />
           ))}
         </span>
       ) : (
-        <Send className="w-5 h-5 text-[#E11D48] -rotate-12 shrink-0" aria-hidden="true" />
+        <Send className="w-5 h-5 text-[#2563EB] -rotate-12 shrink-0" aria-hidden="true" />
       )}
       <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">{line} ไปกันไหม?</p>
       {info.isIn && info.planId ? (
@@ -123,7 +123,7 @@ export function InviteBanner({
           <button type="button" onClick={forget} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
             ไว้ก่อน
           </button>
-          <button type="button" onClick={answer} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
+          <button type="button" onClick={answer} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
             {info.kind === 'tee' ? 'ลงทะเบียนไปด้วย' : 'ไปกัน'}
           </button>
         </div>
