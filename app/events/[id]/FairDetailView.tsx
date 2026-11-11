@@ -10,6 +10,7 @@ import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { InvitePill } from '@/components/invites/InvitePill';
+import { InviteNudge } from '@/components/invites/InviteNudge';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -122,6 +123,8 @@ export default function FairDetailPage({
   // Favorites state
   const [isCopied, setIsCopied] = useState(false);
   const [isSavedToCalendar, setIsSavedToCalendar] = useState(false);
+  // Just saved this อีเวนต์: ask once whether a friend comes too (owner 2026-11-11)
+  const [justSaved, setJustSaved] = useState(false);
 
   // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -235,6 +238,7 @@ export default function FairDetailPage({
     void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
       if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
       const isTargetEnded = eventId === eventData?.id ? isEnded : false;
+      if (eventId === eventData?.id) setJustSaved(!wasSaved && !isTargetEnded);
       showToast(wasSaved ? 'ลบออกจากรายการบันทึกแล้ว' : isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกอีเวนต์นี้ใน MyHub เรียบร้อย');
     });
   };
@@ -558,7 +562,7 @@ export default function FairDetailPage({
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
         {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
-        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ'); setIsRequireMembershipOpen(true); }} onMessage={showToast} />
+        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} />
         <DetailHero
           pillar="fair"
           image={galleryImages[0] || eventData.image}
@@ -600,6 +604,10 @@ export default function FairDetailPage({
           // No reminder to promise once the งาน has begun
           note={!isEnded && !isFav ? (isOngoing ? 'บันทึกไว้ กลับมาเปิดดูได้ตลอดช่วงงาน' : 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน') : undefined}
         />
+
+        {justSaved && !isEnded && (
+          <InviteNudge className="mt-4" target={{ type: 'fair', id: eventData.id }} place={eventData.title} text="บันทึกแล้ว ชวนเพื่อนไปด้วยไหม?" onMessage={showToast} onClose={() => setJustSaved(false)} />
+        )}
 
         {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
             right the one thing the header does not say, who runs it, then moments and the challenge it counts toward */}

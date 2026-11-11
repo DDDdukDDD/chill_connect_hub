@@ -46,7 +46,7 @@ function passwordStrength(value: string): { level: 0 | 1 | 2 | 3; label: string 
 
 /* ---------- Small building blocks ---------- */
 
-const PROVIDERS: { id: OAuthProvider; label: string; icon: React.ReactNode }[] = [
+export const PROVIDERS: { id: OAuthProvider; label: string; icon: React.ReactNode }[] = [
   {
     id: 'line',
     label: 'LINE',

@@ -10,6 +10,8 @@ import { setSaved, taggableFriends, visibleMoment } from '../moments/service';
 import { sendChatMessage } from './chat';
 import { friendPlanStore, type FriendPlan, type PlanTargetType } from './friendPlanStore';
 import { planToken, readInviteToken, teeToken } from './inviteLinks';
+import { inviteLinkStore } from './inviteLinkStore';
+import { inviteCodeOf } from './friends';
 import { notifyInvite, notifyInviteYes, notifyPlan } from './notifications';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
@@ -116,6 +118,21 @@ async function targetOf(type: unknown, id: unknown): Promise<InviteTarget> {
 
 const withToken = (path: string, token: string) => `${path}${path.includes('?') ? '&' : '?'}invite=${encodeURIComponent(token)}`;
 
+/**
+ * The short link for LINE and other apps ("/i/<code>", owner 2026-11-11); the long one when the code could not be made.
+ * It opens the page with the host's friend code (?ref=), so a friend who signs up through it counts as invited by the
+ * host, as with "ตั๋วเพื่อนซี้" links (lib/social/friends.ts, campaign friend stats).
+ */
+async function shareLink(member: Member, path: string, token: string): Promise<string> {
+  try {
+    const ref = await inviteCodeOf(member);
+    return `/i/${await inviteLinkStore.codeFor(token, `${path}${path.includes('?') ? '&' : '?'}ref=${ref}`)}`;
+  } catch (error) {
+    console.error('invite: short link failed, sharing the long one', error);
+    return withToken(path, token);
+  }
+}
+
 /** The host's plan for this target that is still ahead (or undated), or a new one */
 async function hostPlanFor(member: Member, target: InviteTarget): Promise<FriendPlan> {
   const today = bangkokDay();
@@ -125,9 +142,9 @@ async function hostPlanFor(member: Member, target: InviteTarget): Promise<Friend
 
 /**
  * Sends "ชวนไป": friends picked in the app get a notice, and the link is returned for LINE. Both open the same page
- * with the same signed invitation. Returns how many were newly asked.
+ * with the same signed invitation. Returns how many were newly asked; `share` is the short link for LINE.
  */
-export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown }): Promise<{ invited: number; link: string; planId?: string }> {
+export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string }> {
   const target = await targetOf(input.type, input.id);
   const sharesOff = (target as InviteTarget & { sharesOff?: string }).sharesOff;
   if (sharesOff && sharesOff !== member.id) throw new MemberAuthError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
@@ -136,10 +153,11 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
 
   // A ตี้: no plan, the notice and the link say who asked; the friend signs up as usual
   if (target.type === 'community' && !target.momentId) {
-    const link = withToken(target.path, teeToken(target.targetId!, member.id));
+    const token = teeToken(target.targetId!, member.id);
+    const link = withToken(target.path, token);
     const chosen = friends.slice(0, PLAN_MAX_GUESTS);
     await Promise.all(chosen.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-    return { invited: chosen.length, link };
+    return { invited: chosen.length, link, share: await shareLink(member, target.path, token) };
   }
 
   const plan = await hostPlanFor(member, target);
@@ -148,15 +166,18 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const fresh = friends.filter((f) => !inPlan.has(f.id));
   if (asked.size && fresh.length > room) throw new MemberAuthError(room > 0 ? `แผนนี้ชวนเพิ่มได้อีก ${room} คน` : `แผนนี้มีเพื่อนครบ ${PLAN_MAX_GUESTS} คนแล้ว`, 409);
   await friendPlanStore.setMembers(plan.id, fresh.map((f) => f.id), 'invited');
-  const link = withToken(target.path, planToken(plan.id));
+  const token = planToken(plan.id);
+  const link = withToken(target.path, token);
   await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-  return { invited: fresh.length, link, planId: plan.id };
+  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id };
 }
 
 export interface InviteInfo {
   kind: 'plan' | 'tee';
   host: { id: string; name: string; avatar: string };
   title: string;
+  /** The place's picture, for the link preview in LINE */
+  image?: string;
   /** Who said "ไปกัน" so far, the host first (at most 5 shown) */
   going: { id: string; name: string; avatar: string }[];
   goingCount: number;
@@ -180,7 +201,7 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
   if (read.kind === 'tee') {
     const [host, event] = await Promise.all([activeHost(read.inviterId, reader), db.findEventById(read.eventId)]);
     if (!host || !event) return null;
-    return { kind: 'tee', host: person(host), title: event.title, going: [person(host)], goingCount: 1, isIn: false };
+    return { kind: 'tee', host: person(host), title: event.title, image: event.image, going: [person(host)], goingCount: 1, isIn: false };
   }
   const plan = await friendPlanStore.byId(read.planId);
   if (!plan || plan.status === 'cancelled') return null;
@@ -192,6 +213,7 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
     kind: 'plan',
     host: person(host),
     title: plan.title,
+    image: plan.image,
     going: people.slice(0, 5).flatMap((m) => (shown.get(m.memberId)?.status === 'active' ? [person(shown.get(m.memberId)!)] : [])),
     goingCount: people.length,
     isIn: Boolean(reader && memberOf(plan, reader.id)?.state === 'going'),

@@ -20,12 +20,24 @@ Item template:
 
 ---
 
+### BE-348 · ชวนไป counts for friend campaigns; "ชวนเพื่อนไปด้วยไหม" after joining (owner 2026-11-11)
+- **Friend campaigns:** the short link now opens the page with the host's friend code (`?ref=`, `inviteCodeOf`), so a friend who signs up through a ชวนไป link is `invitedBy` the host, the same as a "ตั๋วเพื่อนซี้" link (campaign `invited` stats). Codes made before this have no ref.
+- **Nudge:** `components/invites/InviteNudge.tsx`, one blue line under the header with the ชวนไป button and a close: on a ตี้ right after joining, on an อีเวนต์ right after saving it. Not stored; once per action.
+
+### BE-347 · Short LINE invitations and a sign-up that leads with the friend (owner 2026-11-11)
+- **Short links:** LINE gets `www.chillwaa.com/i/<code>` (7 letters) under a one-line invitation, not the long signed link that looked like spam. Migration **0046** `app.invite_links` (code → token + page), `lib/social/inviteLinkStore.ts`; `POST /api/invites` adds `share`. `app/i/[code]` gives LINE a card ("<name> ชวนคุณไป<place>", the place's picture) and sends a person on with a client redirect (a server redirect would make LINE show the plain page's card). If 0046 is missing the long link is shared, nothing breaks.
+- **Sign-up from an invitation:** a guest's "ไปกัน" opens `components/invites/InviteSignupSheet.tsx`: who is waiting, what happens right after, one-tap LINE (Google/Facebook below, email and log-in links). The return address carries the invitation (`?invite=<token>&answer=1`), so it survives a switch of browser, and the banner answers "ไปกัน" by itself when they are back, then opens the plan in My Hub. A ตี้ invitation returns to the ตี้'s own join (`?join=1`).
+- **Onboarding shortcut:** `/onboarding` with such a plan return address shows the pledge only (`app/onboarding/page.tsx`); the questions come at the next sign-in, since `onboardedAt` is still empty. `InviteBanner` lost its `onRequireLogin` prop. `PROVIDERS` is exported from `AuthPanel.tsx`.
+- `npm run smoke` 22 checks (short link + card); `SMOKE_BASE` picks another port. 0046 applied on dev, not live.
+- **"ชวนผ่านแอปอื่น"** (owner 2026-11-11, "Facebook, IG, TikTok หรือแอปไหนก็ได้"): the share sheet's link row (signed in) and a row under LINE in the ชวนไป sheet hand the same invitation (words + `/i/<code>`) to the phone's share sheet; a computer copies it. An iPhone that refuses the share after the link request keeps it ready: "แตะอีกครั้งเพื่อส่ง" (`components/invites/useAppsInvite.ts`). No separate Facebook/IG/TikTok buttons: none of them lets a web page fill a DM.
+
 ### BE-346 · "ชวนไป" in every section, as group plans (owner 2026-11-11)
 - The "ชวนไป" pill is on ที่เที่ยว, อีเวนต์, ตี้ and ชาเลนจ์ pages too (`components/invites/InvitePill.tsx`), with one sheet everywhere (`InviteSheet.tsx`): pick several friends (up to 15) or send a LINE link. Every page opened from an invitation shows `InviteBanner.tsx` (who asked, who is going, "ไปกัน").
 - Group plans replace pair plans: migration **0045** drops 0043's `app.friend_plans` (test data only) and makes `friend_plans` + `friend_plan_members`. One plan per host and target while its day is ahead; one group chat `plan~<planId>` (stored as a `direct` chat room). A ตี้ makes no plan: its link only names who asked and the banner hands over to the ตี้'s own sign-up (owner).
 - New API `/api/invites` (send, read a token) and `/api/invites/answer` (token or planId). The moment actions `invite` / `invite_yes` / `invite_link` are gone; `PATCH /api/plans/{id}` takes `{ action: 'leave' }` (host = call off, others = leave). Pair rooms open only for a mutual "อยากเจออีก" again.
 - My Hub "แผนไปกันกับเพื่อน": avatars of everyone going, invitations to answer ("ตอบคำชวน"), "ชวนเพิ่ม", the event's days only for an อีเวนต์ plan, "ทำด้วยกัน" joins the challenge. XP: +40 once per plan when the member and at least one other person posted there.
 - `INVITE_MAX_FRIENDS` 10 → 15. Retention "ไปกัน" column counts members in a plan with someone else going. `npm run smoke` now 21 checks.
+- Share sheet (owner 2026-11-11): the IG Story card is gone (`components/moments/shareCard.ts` deleted), the sheet is for inviting; the invite icon and the answer banner are blue, not red (red reads as reject).
 
 ### BE-345 · Onboarding round 2: choose missions, faster next, places in your สาย (owner 2026-11-11)
 - "เกิดปีไหน (ไม่แสดงให้เพื่อนเห็น)" on "บอกเราเกี่ยวกับคุณ".

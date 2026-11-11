@@ -341,16 +341,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     );
   };
 
-  // A 9:16 picture for an IG Story or LINE, like Strava (FEED_PLAN step 3.5)
-  const makeCard = () => {
-    showToast('กำลังทำการ์ดแชร์…');
-    void import('@/components/moments/shareCard')
-      .then(({ shareCard }) => shareCard(moment))
-      .then((done) => done !== 'cancelled' && showToast(done === 'saved' ? 'บันทึกการ์ดแชร์ลงเครื่องแล้ว' : 'แชร์การ์ดแล้ว'))
-      .catch(() => showToast('ทำการ์ดแชร์ไม่สำเร็จ ลองอีกครั้งนะ'));
-  };
-  const mayCard = mayShare && Boolean(moment.images[0]);
-  // The share button opens the send sheet (invite friends, the link, the card), like the feed
+  // The share button opens the send sheet (invite friends, LINE, the link), like the feed
   const [sharing, setSharing] = useState(false);
   const [inviting, setInviting] = useState(false);
   const removeMyTag = async () => {
@@ -390,7 +381,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       </Link>
 
       {/* Opened from a friend's "ชวนไป": answer in one tap (owner 2026-11-10) */}
-      <InviteBanner className="mt-3" isLoggedIn={isLoggedIn} myId={myId} onRequireLogin={() => requireLogin('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ')} onMessage={showToast} />
+      <InviteBanner className="mt-3" isLoggedIn={isLoggedIn} myId={myId} onMessage={showToast} />
 
       <article className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 items-start">
         {/* A clip fills the screen with everything on it, like a Reel; the place and the comments follow */}
@@ -803,11 +794,11 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       {sharing && (
         <ShareSheet
           canInvite={isLoggedIn}
-          canCard={mayCard}
           onInvite={() => setInviting(true)}
           onLine={() => void inviteViaLine({ type: 'moment', id: moment.id }, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => void share()}
-          onCard={makeCard}
+          invite={{ target: { type: 'moment', id: moment.id }, place: place ?? '' }}
+          onMessage={showToast}
           onClose={() => setSharing(false)}
         />
       )}

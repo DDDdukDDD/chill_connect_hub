@@ -325,7 +325,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
         </Link>
 
         {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
-        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onRequireLogin={() => { setMembershipActionTitle('เพื่อตอบว่าไปกัน แล้วนัดวันกับเพื่อนๆ'); setIsRequireMembershipOpen(true); }} onMessage={showToast} />
+        <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} />
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
         <DetailHero
