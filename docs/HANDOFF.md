@@ -26,6 +26,7 @@ Item template:
 - New API `/api/invites` (send, read a token) and `/api/invites/answer` (token or planId). The moment actions `invite` / `invite_yes` / `invite_link` are gone; `PATCH /api/plans/{id}` takes `{ action: 'leave' }` (host = call off, others = leave). Pair rooms open only for a mutual "อยากเจออีก" again.
 - My Hub "แผนไปกันกับเพื่อน": avatars of everyone going, invitations to answer ("ตอบคำชวน"), "ชวนเพิ่ม", the event's days only for an อีเวนต์ plan, "ทำด้วยกัน" joins the challenge. XP: +40 once per plan when the member and at least one other person posted there.
 - `INVITE_MAX_FRIENDS` 10 → 15. Retention "ไปกัน" column counts members in a plan with someone else going. `npm run smoke` now 21 checks.
+- Share sheet (owner 2026-11-11): the IG Story card is gone (`components/moments/shareCard.ts` deleted), the sheet is for inviting; the invite icon and the answer banner are blue, not red (red reads as reject).
 
 ### BE-345 · Onboarding round 2: choose missions, faster next, places in your สาย (owner 2026-11-11)
 - "เกิดปีไหน (ไม่แสดงให้เพื่อนเห็น)" on "บอกเราเกี่ยวกับคุณ".

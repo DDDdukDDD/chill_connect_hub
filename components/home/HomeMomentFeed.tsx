@@ -82,7 +82,7 @@ interface PostHandlers {
   /** Shows the comment at once, then the server's copy; false (and the comment gone again) when it could not be sent */
   onComment: (id: string, text: string, parentId?: string, mentions?: Mention[]) => Promise<boolean>;
   onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
-  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share' | 'card' | 'send') => void;
+  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share' | 'send') => void;
   onPhotos: (images: string[], index: number) => void;
   /** A clip is opening on its own page: keep the list and the place in it for the way back */
   onLeaveToClip: (id: string) => void;
@@ -769,16 +769,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, photos: moment.video ? null : moment.images.map((url) => ({ url })), ratio: postRatio(moment.imageRatio), commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
-      // A 9:16 picture for an IG Story or LINE, like Strava (FEED_PLAN step 3.5)
-      // The share button opens the send sheet: invite friends, the link, the card
+      // The share button opens the send sheet: invite friends, LINE, the link
       if (choice === 'send') setSharing(moment);
-      if (choice === 'card') {
-        showToast('กำลังทำการ์ดแชร์…');
-        void import('@/components/moments/shareCard')
-          .then(({ shareCard }) => shareCard(moment))
-          .then((done) => done !== 'cancelled' && showToast(done === 'saved' ? 'บันทึกการ์ดแชร์ลงเครื่องแล้ว' : 'แชร์การ์ดแล้ว'))
-          .catch(() => showToast('ทำการ์ดแชร์ไม่สำเร็จ ลองอีกครั้งนะ'));
-      }
       if (choice === 'copy' || choice === 'share') {
         const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
         // The phone's own share sheet where there is one; otherwise the link is copied
@@ -1118,11 +1110,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       {sharing && (
         <ShareSheet
           canInvite
-          canCard={Boolean(sharing.images[0])}
           onInvite={() => setInviting(sharing)}
           onLine={() => void inviteViaLine({ type: 'moment', id: sharing.id }, sharing.targetTitle || sharing.location || '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => handlers.onMenu(sharing, 'share')}
-          onCard={() => handlers.onMenu(sharing, 'card')}
           onClose={() => setSharing(null)}
         />
       )}

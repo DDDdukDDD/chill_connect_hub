@@ -341,16 +341,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     );
   };
 
-  // A 9:16 picture for an IG Story or LINE, like Strava (FEED_PLAN step 3.5)
-  const makeCard = () => {
-    showToast('กำลังทำการ์ดแชร์…');
-    void import('@/components/moments/shareCard')
-      .then(({ shareCard }) => shareCard(moment))
-      .then((done) => done !== 'cancelled' && showToast(done === 'saved' ? 'บันทึกการ์ดแชร์ลงเครื่องแล้ว' : 'แชร์การ์ดแล้ว'))
-      .catch(() => showToast('ทำการ์ดแชร์ไม่สำเร็จ ลองอีกครั้งนะ'));
-  };
-  const mayCard = mayShare && Boolean(moment.images[0]);
-  // The share button opens the send sheet (invite friends, the link, the card), like the feed
+  // The share button opens the send sheet (invite friends, LINE, the link), like the feed
   const [sharing, setSharing] = useState(false);
   const [inviting, setInviting] = useState(false);
   const removeMyTag = async () => {
@@ -803,11 +794,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       {sharing && (
         <ShareSheet
           canInvite={isLoggedIn}
-          canCard={mayCard}
           onInvite={() => setInviting(true)}
           onLine={() => void inviteViaLine({ type: 'moment', id: moment.id }, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => void share()}
-          onCard={makeCard}
           onClose={() => setSharing(false)}
         />
       )}
