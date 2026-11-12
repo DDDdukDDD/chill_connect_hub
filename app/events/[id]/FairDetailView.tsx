@@ -589,8 +589,16 @@ export default function FairDetailPage({
                 {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
               </button>
               {officialWebsiteUrl && (
-                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={`${heroButton.quiet} max-sm:px-3`}>
-                  {officialLinkLabel}
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" aria-label={officialLinkLabel} className={`${heroButton.quiet} max-sm:px-3`}>
+                  {/* "ดูรายละเอียดงาน" pushed ชวนไป and แชร์ to a second row at 390px: phones say it shorter */}
+                  {officialLinkLabel === 'ดูรายละเอียดงาน' ? (
+                    <>
+                      <span className="sm:hidden" aria-hidden="true">เว็บงาน</span>
+                      <span className="max-sm:hidden" aria-hidden="true">{officialLinkLabel}</span>
+                    </>
+                  ) : (
+                    officialLinkLabel
+                  )}
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}

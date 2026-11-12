@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { Loader2, MessageCircle } from 'lucide-react';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { InviteInfo } from '@/lib/social/friendPlans';
 
@@ -14,7 +15,7 @@ const InviteSignupSheet = dynamic(() => import('./InviteSignupSheet').then((m) =
  * section (owner 2026-11-11). A plan shows who is going and answers "ไปกัน" in one tap, which joins the group plan
  * and opens its chat in My Hub. A ตี้ invitation hands over to the page's own sign-up (`onJoinTee`).
  * The address is tidied so a reload does not ask again, but the invitation waits in this tab until it is answered.
- * "ไปกัน" keeps the reader on the page (the line becomes "คุณไปกับ … แล้ว · เปิดแผน"). A guest's "ไปกัน" opens InviteSignupSheet; sign-up carries the invitation in its return address (`&answer=1`), so it
+ * "ไปกัน" keeps the reader on the page (the line becomes "คุณไปกับ … แล้ว · คุยในแชต", the plan's chat). A guest's "ไปกัน" opens InviteSignupSheet; sign-up carries the invitation in its return address (`&answer=1`), so it
  * survives a switch of browser, and back here the answer is sent by itself (owner 2026-11-11).
  */
 export function InviteBanner({
@@ -96,9 +97,9 @@ export function InviteBanner({
       .catch(() => ({ ok: false, json: null }));
     setIsBusy(false);
     if (!result.ok || !result.json?.planId) return onMessage(result.json?.message || 'ตอบไม่สำเร็จ ลองอีกครั้งนะ');
-    // Stay on the page (owner 2026-11-12): they came to look at the place; the line turns into "คุณไปกับ … แล้ว · เปิดแผน"
+    // Stay on the page (owner 2026-11-12): they came to look at the place; the line turns into "คุณไปกับ … แล้ว · คุยในแชต"
     setInfo({ ...inv, isIn: true, planId: result.json.planId, goingCount: inv.isIn ? inv.goingCount : inv.goingCount + 1 });
-    onMessage('ไปกัน! นัดวันกับเพื่อนๆ ได้ในแผน');
+    onMessage('ไปกัน! คุยนัดวันกันในแชตได้เลย');
   };
 
   // "ไม่สะดวก" (owner 2026-11-12): a member's no reaches the host, gently; a guest's "ไว้ก่อน" only hides the line
@@ -129,30 +130,52 @@ export function InviteBanner({
 
 
   // The page already names the place: the line says who asked, the second line who is going (design pass 2026-11-12)
-  const title = info.isIn ? `คุณไปกับ ${info.host.name} แล้ว` : info.kind === 'tee' ? `${info.host.name} ชวนคุณมาตี้นี้ด้วยกัน` : `${info.host.name} ชวนคุณไปด้วยกัน`;
-  const sub = [info.dateLabel, info.goingCount > 1 ? `ไปกันแล้ว ${info.goingCount} คน` : ''].filter(Boolean).join(' · ');
+  // A post's page shows its photo first and names the place further down, so there the line names it (E2E pass 2026-11-12)
+  const onPost = window.location.pathname.startsWith('/moments/') && info.title && info.title !== 'ที่ในโพสต์นี้';
+  // Warmer, not louder (owner 2026-11-12): the friend's face leads, the day sits in the first line, and whoever already
+  // said yes shows as faces under it. No new colour: rose reads as "no" and is the Moments pillar's.
+  const where = onPost ? `ไป${info.title}` : 'ไปด้วยกัน';
+  const title = info.isIn
+    ? `คุณไปกับ ${info.host.name} แล้ว`
+    : info.kind === 'tee'
+      ? `${info.host.name} ชวนคุณมาตี้นี้ด้วยกัน`
+      : `${info.host.name} ชวน${where}${info.dateLabel ? ` ${info.dateLabel}` : ''}`;
+  const others = info.going.filter((p) => p.id !== info.host.id);
+  const othersCount = Math.max(0, info.goingCount - 1);
+  const when = info.isIn ? info.dateLabel ?? 'ยังไม่ได้นัดวัน' : '';
 
   return (
-    <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-blue-50 px-4 py-3 ${className}`}>
-      <span className="flex -space-x-2 shrink-0" aria-hidden="true">
-        {info.going.slice(0, 3).map((p) => (
-          <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-9 h-9 text-xs ring-2 ring-blue-50" />
-        ))}
-      </span>
+    <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-3 rounded-2xl bg-blue-50 px-4 py-3.5 ${className}`}>
+      <MomentAvatar name={info.host.name} src={info.host.avatar} className="w-12 h-12 text-base ring-2 ring-white shrink-0" />
       <div className="flex-1 min-w-[10rem]">
         <p className="text-sm font-semibold text-slate-900">{title}</p>
-        {sub && <p className="text-[13px] text-slate-500">{sub}</p>}
+        {(othersCount > 0 || when) && (
+          <p className="mt-1 flex items-center gap-2 text-[13px] text-slate-600">
+            {others.length > 0 && (
+              <span className="flex -space-x-1.5 shrink-0" aria-hidden="true">
+                {others.slice(0, 4).map((p) => (
+                  <MomentAvatar key={p.id} name={p.name} src={p.avatar} className="w-6 h-6 text-[11px] ring-2 ring-blue-50" />
+                ))}
+              </span>
+            )}
+            <span>{[when, othersCount > 0 ? `ไปด้วยแล้ว ${othersCount} คน` : ''].filter(Boolean).join(' · ')}</span>
+          </p>
+        )}
       </div>
       {info.isIn && info.planId ? (
-        <Link href={`/myhub?plan=${encodeURIComponent(info.planId)}`} onClick={forget} className="h-9 px-4 inline-flex items-center rounded-full bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50">
-          เปิดแผน
+        // Going: the plan's chat is where the day gets settled (owner 2026-11-12: our chat leads)
+        <Link href={`/myhub?plan=${encodeURIComponent(info.planId)}&chat=1`} onClick={forget} className="h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-white text-sm font-semibold text-slate-800 hover:bg-slate-50 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+          <MessageCircle className="w-4 h-4" aria-hidden="true" />
+          คุยในแชต
         </Link>
       ) : (
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => decline(info, token)} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+          <button type="button" onClick={() => decline(info, token)} className="h-9 px-4 rounded-full bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]">
             {isLoggedIn && info.kind === 'plan' ? 'ไม่สะดวก' : 'ไว้ก่อน'}
           </button>
-          <button type="button" onClick={() => void answer(info, token)} disabled={isBusy} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
+          {/* Dark, not blue: the page under the banner keeps its own one blue button (DESIGN_SYSTEM.md §4) */}
+          <button type="button" onClick={() => void answer(info, token)} disabled={isBusy} className="h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-sm font-bold text-white whitespace-nowrap disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2">
+            {isBusy && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
             {info.kind === 'tee' ? 'ลงทะเบียนไปด้วย' : 'ไปกัน'}
           </button>
         </div>

@@ -19,6 +19,8 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   isMine: boolean;
+  /** A line the site wrote for its author (a plan's day, "ไปด้วยนะ!"): a grey note in the middle, like LINE's */
+  kind?: 'event';
 }
 
 interface GroupChatModalProps {
@@ -35,6 +37,8 @@ interface GroupChatModalProps {
   header?: React.ReactNode;
   /** Words for a room with no messages yet */
   emptyText?: string;
+  /** Typed in the box when the chat opens, for the member to change and send ("เราสะดวก …" after marking free days) */
+  draft?: string;
 }
 
 const POLL_MS = 4000;
@@ -50,13 +54,21 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour:
  * Group chat for the people who joined an event (or a fair meet-up group).
  * Messages live on the server (/api/chat/{roomId}); the list refreshes every few seconds while open.
  */
-export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle, subtitle, header, emptyText }) => {
+export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose, event, roomId, roomTitle, subtitle, header, emptyText, draft }) => {
   const room = roomId || event?.id || '';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [info, setInfo] = useState<{ title: string; members: number } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'denied'>('loading');
   const [notice, setNotice] = useState('');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(draft ?? '');
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  // A draft arrives ready to send: the cursor waits at its end
+  useEffect(() => {
+    if (!draft || state !== 'ready') return;
+    const input = inputRef.current;
+    input?.focus();
+    input?.setSelectionRange(input.value.length, input.value.length);
+  }, [draft, state]);
   const [isSending, setIsSending] = useState(false);
   const [reporting, setReporting] = useState<ChatMessage | null>(null);
   // How far each other person has read (ISO times), for "อ่านแล้ว" under one's own messages
@@ -210,7 +222,16 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
           {state === 'ready' && messages.length === 0 && (
             <p className="text-sm font-medium text-slate-500 text-center py-8">{emptyText ?? 'ยังไม่มีข้อความ ทักทายกันก่อนวันงานได้เลย'}</p>
           )}
-          {messages.map((m) => (
+          {messages.map((m) =>
+            m.kind === 'event' ? (
+              // Not something anyone typed: no bubble, no read mark, nothing to delete or report (BE-359)
+              <p key={m.id} className="flex justify-center">
+                <span className="max-w-[85%] rounded-full bg-slate-100 px-3 py-1.5 text-center text-xs text-slate-600">
+                  <span className="font-semibold text-slate-700">{m.isMine ? 'คุณ' : m.authorName}</span> · {m.text}
+                  <span className="text-slate-500"> · {clock(m.createdAt)}</span>
+                </span>
+              </p>
+            ) : (
             <div key={m.id} className={`flex items-end gap-2 ${m.isMine ? 'flex-row-reverse' : ''}`}>
               {!m.isMine &&
                 (m.authorAvatar ? (
@@ -230,7 +251,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
                 <span className="mt-1 flex items-center gap-2 text-[11px] font-medium text-slate-500">
                   {m.isMine && <ReadMark count={reads.filter((at) => at >= m.createdAt).length} pair={info?.members === 2} />}
                   {clock(m.createdAt)}
-                  {m.isMine && (
+                  {/* Only until someone reads it (owner 2026-11-12); the server refuses after that too */}
+                  {m.isMine && !reads.some((at) => at >= m.createdAt) && (
                     <button type="button" onClick={() => void remove(m.id)} className="inline-flex items-center gap-1 hover:text-rose-600 cursor-pointer" aria-label="ลบข้อความนี้">
                       <Trash2 className="w-3 h-3" aria-hidden="true" />
                       ลบ
@@ -245,7 +267,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
                 </span>
               </div>
             </div>
-          ))}
+            )
+          )}
         </div>
 
         {notice && (
@@ -260,6 +283,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
             <label htmlFor="group-chat-input" className="sr-only">ข้อความ</label>
             <input
               id="group-chat-input"
+              ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               maxLength={500}

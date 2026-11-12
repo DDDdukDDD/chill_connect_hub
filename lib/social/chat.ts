@@ -95,6 +95,7 @@ export async function chatMessages(member: Member, roomId: string, after?: strin
       text: m.text,
       createdAt: m.createdAt,
       isMine: m.authorId === member.id,
+      ...(m.kind === 'event' ? { kind: 'event' as const } : {}),
     };
   });
   // Reading marks the room read up to the newest message shown; a refresh with nothing new writes nothing
@@ -151,7 +152,8 @@ export async function sendChatMessage(member: Member, roomId: string, input: unk
   if (!text) throw new MemberAuthError('พิมพ์ข้อความก่อนนะ');
   await guardMemberText(member, text, 'แชตกลุ่ม');
   const createdAt = new Date().toISOString();
-  const message: ChatMessage = { id: uuidV7(createdAt), roomId, authorId: member.id, text, createdAt };
+  // A line the site writes for the member is a grey note in the chat, not a bubble they typed (BE-359)
+  const message: ChatMessage = { id: uuidV7(createdAt), roomId, authorId: member.id, text, createdAt, ...(options.quiet ? { kind: 'event' as const } : {}) };
   await chatStore.append(message, KEEP_PER_ROOM);
   // The sender has read everything up to their own message
   await chatStore.markRead(roomId, member.id, createdAt);
@@ -206,6 +208,11 @@ function tellChatRoom(sender: Member, message: ChatMessage, push: boolean): void
 export async function deleteChatMessage(member: Member, messageId: string): Promise<void> {
   const found = await chatStore.find(messageId);
   if (!found || found.authorId !== member.id) throw new MemberAuthError('ลบได้เฉพาะข้อความของตัวเอง', 403);
+  // The plan's record of what changed (the day, who joined) stays
+  if (found.kind === 'event') throw new MemberAuthError('ข้อความนี้ลบไม่ได้', 403);
+  // Once someone has read it, it stays (owner 2026-11-12): it cannot be unseen, and a report needs it
+  const reads = await chatStore.readTimes(found.roomId, member.id);
+  if (reads.some((r) => r.at >= found.createdAt)) throw new MemberAuthError('เพื่อนอ่านข้อความนี้แล้ว ลบไม่ได้', 409);
   await chatStore.remove(messageId);
 }
 
@@ -213,6 +220,8 @@ export async function deleteChatMessage(member: Member, messageId: string): Prom
 export async function chatMessageForReport(member: Member, messageId: string): Promise<{ message: ChatMessage; roomTitle: string }> {
   const message = await chatStore.find(messageId);
   if (!message) throw new MemberAuthError('ไม่พบข้อความนี้ อาจถูกลบไปแล้ว', 404);
+  // The site wrote it, not the member: nothing to report
+  if (message.kind === 'event') throw new MemberAuthError('ข้อความนี้รายงานไม่ได้', 400);
   const room = await roomOf(member, message.roomId);
   return { message, roomTitle: room.title };
 }

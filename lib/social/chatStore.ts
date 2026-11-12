@@ -8,6 +8,8 @@ export interface ChatMessage {
   authorId: string;
   text: string;
   createdAt: string;
+  /** 'event': a line the site wrote for the author (a plan's day, "ไปด้วยนะ!"), shown as a grey note (0049) */
+  kind?: 'event';
 }
 
 interface RoomQuery {
@@ -141,6 +143,7 @@ const rowToMessage = (r: Record<string, unknown>): ChatMessage => ({
   authorId: (r.author_legacy as string | null) ?? '',
   text: r.body as string,
   createdAt: (r.created_at as Date).toISOString(),
+  ...(r.kind === 'event' ? { kind: 'event' as const } : {}),
 });
 
 /** Rooms and messages in Postgres (docs/DATABASE_DESIGN.md §4.9). Rooms are found by today's room id (legacy_id) and made on the first message. */
@@ -149,7 +152,7 @@ const pgChatStore: ChatStore = {
     const db = sql();
     const since = toDate(after);
     const rows = await db`
-      select m.id, m.body, m.created_at, r.legacy_id as room_legacy, a.legacy_id as author_legacy
+      select m.id, m.body, m.created_at, m.kind, r.legacy_id as room_legacy, a.legacy_id as author_legacy
       from app.chat_messages m
       join app.chat_rooms r on r.id = m.room_id
       left join app.members a on a.id = m.author_id
@@ -171,8 +174,8 @@ const pgChatStore: ChatStore = {
         on conflict (legacy_id) do update set last_message_at = excluded.last_message_at
         returning id`;
       await tx`
-        insert into app.chat_messages (id, room_id, author_id, body, created_at)
-        values (${message.id}, ${room.id}, (select id from app.members where legacy_id = ${message.authorId}), ${message.text}, ${createdAt})`;
+        insert into app.chat_messages (id, room_id, author_id, body, created_at, kind)
+        values (${message.id}, ${room.id}, (select id from app.members where legacy_id = ${message.authorId}), ${message.text}, ${createdAt}, ${message.kind ?? 'text'})`;
       await tx`
         delete from app.chat_messages where room_id = ${room.id}
           and id < (select id from app.chat_messages where room_id = ${room.id} order by id desc offset ${keep - 1} limit 1)`;
@@ -181,7 +184,7 @@ const pgChatStore: ChatStore = {
   async find(messageId) {
     if (!UUID.test(messageId)) return null;
     const [row] = await sql()`
-      select m.id, m.body, m.created_at, r.legacy_id as room_legacy, a.legacy_id as author_legacy
+      select m.id, m.body, m.created_at, m.kind, r.legacy_id as room_legacy, a.legacy_id as author_legacy
       from app.chat_messages m
       join app.chat_rooms r on r.id = m.room_id
       left join app.members a on a.id = m.author_id
