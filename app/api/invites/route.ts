@@ -3,7 +3,7 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { MomentError } from '@/lib/moments/service';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
-import { inviteInfo, sendInvites } from '@/lib/social/friendPlans';
+import { inviteInfo, plansAt, sendInvites } from '@/lib/social/friendPlans';
 import { INVITE_SENDS_PER_HOUR } from '@/lib/social/socialRules';
 import { inviteLinkStore } from '@/lib/social/inviteLinkStore';
 
@@ -12,6 +12,7 @@ import { inviteLinkStore } from '@/lib/social/inviteLinkStore';
  * POST { type: 'spot' | 'fair' | 'community' | 'quest' | 'moment', id, to?: [memberId], day?: 'YYYY-MM-DD' } → { invited, link, share, planId?, dateLabel? }:
  *   friends picked (people who follow each other, up to 15 in a plan) get a notice; `link` is the same invitation for
  *   LINE. A ตี้ makes no plan: its link only says who asked.
+ * GET ?type=&id= → { plans: [{ id, title, dateLabel?, people }] }: the signed-in reader's plans still ahead there.
  * GET ?token= → { invite: InviteInfo | null }: what the banner on the invited page says. Guests may read it. `&open=1`
  *   (the banner's first read after arriving through a link) counts one open for the admin numbers.
  */
@@ -32,6 +33,12 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
+  // ?type=&id= → { plans }: the reader's plans still ahead for this target ("คุณมีนัดที่นี่แล้ว" in the ชวนไป sheet)
+  if (params.has('type')) {
+    const member = await getSessionMember(request);
+    if (!member) return NextResponse.json({ success: true, plans: [] }, { headers: { 'Cache-Control': 'private, no-store' } });
+    return NextResponse.json({ success: true, plans: await plansAt(member, { type: params.get('type'), id: params.get('id') }) }, { headers: { 'Cache-Control': 'private, no-store' } });
+  }
   const token = params.get('token');
   if (token && params.get('open') === '1') void inviteLinkStore.noteOpen(token).catch(() => undefined);
   const reader = await getSessionMember(request);

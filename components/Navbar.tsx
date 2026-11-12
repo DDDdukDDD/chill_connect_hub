@@ -19,6 +19,7 @@ import { BrandLogo } from './BrandLogo';
 import { BrandWordmark } from './BrandWordmark';
 import { SiteSearch } from './discover/SiteSearch';
 import { NotificationBell } from './NotificationBell';
+import { ChatInbox } from './ChatInbox';
 import { useActivitySync } from '@/lib/useMyActivity';
 import { avatarImage } from '@/lib/optimizedImage';
 
@@ -162,7 +163,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </Link>
             )}
 
-            {/* Notifications (renders only for a signed-in member) */}
+            {/* Chats and notifications (render only for a signed-in member; chats only once there is one) */}
+            {isAuthReady && isLoggedIn && <ChatInbox />}
             {isAuthReady && isLoggedIn && <NotificationBell />}
 
             {/* Desktop User Avatar & Profile Dropdown (Facebook/Google Style) */}

@@ -234,8 +234,11 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
   };
 }
 
-/** A line in the plan's chat, so everyone sees what changed; the plan is saved even when the chat refuses */
-const tellChat = (member: Member, plan: FriendPlan, text: string) => sendChatMessage(member, planRoomId(plan.id), text).catch(() => null);
+/**
+ * A line in the plan's chat, so everyone sees what changed; the plan is saved even when the chat refuses. Unread for
+ * the others but no phone buzz: the change has its own notice where it matters (invite_yes, plan_soon).
+ */
+const tellChat = (member: Member, plan: FriendPlan, text: string) => sendChatMessage(member, planRoomId(plan.id), text, { quiet: true }).catch(() => null);
 
 /**
  * "ไปกัน" on an invitation: the member joins the plan (a challenge is joined too, a post is saved). Someone who came
@@ -383,6 +386,25 @@ export async function plansOf(member: Member): Promise<PlanView[]> {
   const views = await viewsOf(member, await friendPlanStore.ofMember(member.id));
   const rank = (v: PlanView) => (v.isInvited ? 2 : v.date ? 0 : 1);
   return views.sort((a, b) => rank(a) - rank(b) || (a.date && b.date ? a.date.localeCompare(b.date) : 0));
+}
+
+/**
+ * "คุณมีนัดที่นี่แล้ว" (owner 2026-11-12): the member's plans still ahead (or with no day) for what the ชวนไป sheet is
+ * open on, so they can go back to that chat instead of starting over. A post at a place finds plans for the place.
+ * A ตี้ has no plans (its sign-up is the plan).
+ */
+export async function plansAt(member: Member, input: { type?: unknown; id?: unknown }): Promise<{ id: string; title: string; dateLabel?: string; people: number }[]> {
+  const target = await targetOf(input.type, input.id).catch(() => null);
+  if (!target || (target.type === 'community' && !target.momentId)) return [];
+  const today = bangkokDay();
+  const mine = (await friendPlanStore.ofMember(member.id)).filter(
+    (p) =>
+      p.status !== 'cancelled' &&
+      memberOf(p, member.id)?.state === 'going' &&
+      (!p.date || p.date >= today) &&
+      (target.targetId ? p.targetType === target.type && p.targetId === target.targetId : Boolean(target.momentId) && p.momentId === target.momentId)
+  );
+  return (await viewsOf(member, mine)).map((v) => ({ id: v.id, title: v.title, ...(v.dateLabel ? { dateLabel: v.dateLabel } : {}), people: v.people.length }));
 }
 
 async function myPlan(member: Member, id: string): Promise<FriendPlan> {

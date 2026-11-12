@@ -10,11 +10,14 @@ import { MomentAvatar } from '@/components/moments/CommentThread';
 import { openLineShare } from '@/components/moments/lineInvite';
 import { InviteSheet } from '@/components/invites/InviteSheet';
 import type { PlanView } from '@/lib/social/friendPlans';
+import { unreadLabel, useChatInbox } from '@/lib/useChatInbox';
+import { useMemberSession } from '@/lib/useMemberSession';
 
 /**
  * "ไปกัน" group plans in My Hub (owner 2026-11-10; groups 2026-11-11): every plan the member hosts, joined, or was
- * asked to. Tapping one opens the plan: who is going, talk it over in LINE (where Thai friends already talk) or in the
- * group chat, set the day, ask more friends. /myhub?plan=<id> (from the notices) opens the plan straight away.
+ * asked to. Tapping one opens the plan: who is going, talk it over in the group chat (or send it to LINE), set the
+ * day, ask more friends. /myhub?plan=<id> (from the notices) opens the plan straight away, and &chat=1 its chat: the
+ * open chat stays in the address, so coming back from "ดูรายละเอียด" opens it again (owner 2026-11-12).
  * Nothing shows while the member has no plan.
  */
 
@@ -166,10 +169,10 @@ function statusLine(plan: PlanView): string {
 }
 
 /**
- * Where, who, when. In the plan sheet it also leads with LINE and offers the group chat; pinned above the chat's
- * messages it shows the plan alone.
+ * Where, who, when. In the plan sheet it also leads with the group chat (with its new messages) and offers LINE;
+ * pinned above the chat's messages it shows the plan alone.
  */
-function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite }: { plan: PlanView; onChanged: (plan: PlanView) => void; onGone: () => void; onOpenChat?: () => void; onInvite?: () => void }) {
+function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0 }: { plan: PlanView; onChanged: (plan: PlanView) => void; onGone: () => void; onOpenChat?: () => void; onInvite?: () => void; unread?: number }) {
   const inSheet = Boolean(onOpenChat);
   const [isPicking, setIsPicking] = useState(false);
   const [day, setDay] = useState(plan.date ?? '');
@@ -231,14 +234,22 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite }: { plan: Pla
 
       {inSheet && !plan.date && !isPicking && <FreeDays plan={plan} onChanged={onChanged} onSetDay={(d) => void save(d)} onPickOwn={() => setIsPicking(true)} isBusy={isBusy} />}
 
+      {/* Our chat leads (owner 2026-11-12): the plan, the day and new messages stay in one place; LINE is there for whoever prefers it */}
       {onOpenChat && (
         <div className="grid gap-2">
-          <button type="button" onClick={() => openLineShare(lineText(plan))} className="h-11 rounded-full bg-[#06C755] hover:bg-[#05B34C] text-sm font-bold text-white inline-flex items-center justify-center gap-2 cursor-pointer">
+          <button type="button" onClick={onOpenChat} className="h-11 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white inline-flex items-center justify-center gap-2 cursor-pointer">
             <MessageCircle className="w-4 h-4" aria-hidden="true" />
-            คุยต่อใน LINE
+            คุยในแชตกลุ่ม
+            {unread > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-white text-[#1D4ED8] text-[11px] font-bold flex items-center justify-center">
+                <span className="sr-only">ข้อความใหม่ </span>
+                {unreadLabel(unread)}
+              </span>
+            )}
           </button>
-          <button type="button" onClick={onOpenChat} className="h-10 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer">
-            แชตกลุ่มใน Chillwaa
+          <button type="button" onClick={() => openLineShare(lineText(plan))} className="h-10 rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center justify-center gap-2 cursor-pointer">
+            <span className="w-2 h-2 rounded-full bg-[#06C755]" aria-hidden="true" />
+            ส่งแผนไปคุยใน LINE
           </button>
         </div>
       )}
@@ -358,11 +369,39 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
     void load();
   }, [load]);
 
-  // A notice links to /myhub?plan=<id>: open that plan once the plans are in
+  const { member } = useMemberSession();
+  const inbox = useChatInbox(member?.id);
+  const unreadOf = (plan: PlanView) => inbox.rooms.find((r) => r.roomId === plan.roomId)?.unread ?? 0;
+
+  // A notice links to /myhub?plan=<id> (and &chat=1 for its chat): open that plan once the plans are in
   const asked = searchParams.get('plan');
+  const askedChat = searchParams.get('chat') === '1';
   useEffect(() => {
-    if (asked && plans.some((p) => p.id === asked)) setOpenId(asked);
-  }, [asked, plans]);
+    const plan = plans.find((p) => p.id === asked);
+    if (!plan) return;
+    setOpenId(plan.id);
+    // Someone still asked (not answered) answers first; the chat is for people going
+    if (askedChat && !plan.isInvited) setChatId(plan.id);
+  }, [asked, askedChat, plans]);
+
+  // What is open stays in the address, so "back" from a page opened inside the plan or its chat comes back to it
+  const showInAddress = (planId: string | null, withChat = false) => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('plan');
+    url.searchParams.delete('chat');
+    if (planId) url.searchParams.set('plan', planId);
+    if (planId && withChat) url.searchParams.set('chat', '1');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+  const openChat = (planId: string) => {
+    setOpenId(planId);
+    setChatId(planId);
+    showInAddress(planId, true);
+  };
+  const closeChat = () => {
+    setChatId(null);
+    showInAddress(openId);
+  };
 
   const open = plans.find((p) => p.id === openId) ?? null;
   const chat = plans.find((p) => p.id === chatId) ?? null;
@@ -370,7 +409,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   const close = () => {
     setOpenId(null);
     setNote('');
-    if (asked) window.history.replaceState(window.history.state, '', window.location.pathname);
+    showInAddress(null);
   };
   const changed = (next: PlanView) => setPlans((all) => all.map((p) => (p.id === next.id ? next : p)));
   const gone = (id: string) => {
@@ -398,8 +437,21 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
                 โพสต์โมเมนต์
               </Link>
             ) : (
-              <button type="button" onClick={() => setOpenId(plan.id)} className="shrink-0 h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenId(plan.id);
+                  showInAddress(plan.id);
+                }}
+                className="shrink-0 h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer"
+                aria-label={unreadOf(plan) > 0 ? `${plan.isInvited ? 'ตอบคำชวน' : plan.date ? 'ดูแผน' : 'นัดวันกัน'} มีข้อความใหม่ ${unreadOf(plan)} ข้อความ` : undefined}
+              >
                 {plan.isInvited ? 'ตอบคำชวน' : plan.date ? 'ดูแผน' : 'นัดวันกัน'}
+                {unreadOf(plan) > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[11px] font-bold flex items-center justify-center" aria-hidden="true">
+                    {unreadLabel(unreadOf(plan))}
+                  </span>
+                )}
               </button>
             )}
           </li>
@@ -412,13 +464,13 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
               plan={open}
               onAnswered={() => {
                 void load();
-                setChatId(open.id);
+                openChat(open.id);
               }}
               onGone={() => gone(open.id)}
             />
           ) : (
             <>
-              <PlanCard key={`sheet:${open.id}:${open.date ?? ''}`} plan={open} onChanged={changed} onGone={() => gone(open.id)} onOpenChat={() => setChatId(open.id)} onInvite={() => setInviteId(open.id)} />
+              <PlanCard key={`sheet:${open.id}:${open.date ?? ''}`} plan={open} onChanged={changed} onGone={() => gone(open.id)} onOpenChat={() => openChat(open.id)} onInvite={() => setInviteId(open.id)} unread={unreadOf(open)} />
               {note && <p role="status" className="mt-3 text-[13px] font-medium text-emerald-700">{note}</p>}
             </>
           )}
@@ -428,6 +480,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
         <InviteSheet
           target={inviting.invite}
           place={inviting.title}
+          exceptPlanId={inviting.id}
           onClose={() => setInviteId(null)}
           onDone={(message) => {
             setInviteId(null);
@@ -439,7 +492,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
       {chat && (
         <GroupChatModal
           isOpen
-          onClose={() => setChatId(null)}
+          onClose={closeChat}
           event={null}
           roomId={chat.roomId}
           roomTitle={verb(chat)}

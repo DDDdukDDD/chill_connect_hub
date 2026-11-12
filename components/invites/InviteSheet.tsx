@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Check, Loader2, MessageCircle, Search, Share2 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentAvatar } from '@/components/moments/CommentThread';
@@ -56,8 +57,21 @@ function weekendDays(): { sat: string; sun: string } {
  * to pick, several at once; LINE reaches the ones not on Chillwaa yet. Everyone who answers "ไปกัน" lands in one group
  * plan and its chat; a ตี้ invitation leads to the ตี้'s own sign-up instead.
  */
-export function InviteSheet({ target, place, onClose, onDone }: { target: InviteTarget; place: string; onClose: () => void; onDone: (message: string) => void }) {
+export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { target: InviteTarget; place: string; onClose: () => void; onDone: (message: string) => void; exceptPlanId?: string }) {
   const [friends, setFriends] = useState<TagFriend[] | null>(null);
+  // "คุณมีนัดที่นี่แล้ว" (owner 2026-11-12): plans the member is already going on here lead back to their chat
+  const [plans, setPlans] = useState<{ id: string; title: string; dateLabel?: string; people: number }[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/invites?type=${encodeURIComponent(target.type)}&id=${encodeURIComponent(target.id)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => active && Array.isArray(json?.plans) && setPlans(json.plans))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [target.type, target.id]);
+  const planned = plans.filter((p) => p.id !== exceptPlanId);
   const [picked, setPicked] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -108,6 +122,25 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
 
   return (
     <DialogShell onClose={onClose} title="ชวนไป" subtitle={place ? (isTee ? `ชวนเพื่อนมาตี้ ${place}` : `ชวนเพื่อนไป ${place} ด้วยกัน`) : 'ชวนเพื่อนไปด้วยกัน'} size="sm">
+      {planned.length > 0 && (
+        <div className="mb-4 rounded-2xl bg-blue-50 px-3 py-2.5">
+          <p className="text-[13px] font-semibold text-[#1D4ED8]">คุณมีนัดที่นี่แล้ว</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {planned.map((plan) => (
+              <li key={plan.id} className="flex items-center gap-3">
+                <span className="min-w-0 flex-1 text-sm text-slate-800">
+                  <span className="block truncate font-semibold text-slate-900">{plan.dateLabel ? `นัดกัน ${plan.dateLabel}` : 'ยังไม่ได้นัดวัน'}</span>
+                  <span className="block text-[13px] text-slate-600">ไปกัน {plan.people} คน</span>
+                </span>
+                <Link href={`/myhub?plan=${encodeURIComponent(plan.id)}&chat=1`} onClick={onClose} className="shrink-0 h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-[13px] font-bold text-white">
+                  <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                  ไปที่แชตนัด
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {canPickDay && (
         <div className="mb-4" role="radiogroup" aria-label="ไปวันไหน">
           <p className="mb-2 text-[13px] font-semibold text-slate-500">ไปวันไหน</p>

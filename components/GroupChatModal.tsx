@@ -3,9 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
-import { Flag, Send, Trash2, X } from 'lucide-react';
+import { Bell, BellOff, Flag, Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
+import { markInboxRoomRead, refreshChatInbox } from '@/lib/useChatInbox';
+import { useMemberSession } from '@/lib/useMemberSession';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { avatarImage } from '@/lib/optimizedImage';
 
@@ -59,8 +61,18 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
   const [reporting, setReporting] = useState<ChatMessage | null>(null);
   // How far each other person has read (ISO times), for "อ่านแล้ว" under one's own messages
   const [reads, setReads] = useState<string[]>([]);
+  // Phone notifications for this room turned off (the unread count still shows)
+  const [muted, setMuted] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const lastSeen = useRef('');
+  const { member } = useMemberSession();
+  const memberId = member?.id;
+
+  // Reading the room clears its count in the top bar at once; leaving it reads the inbox again
+  useEffect(() => {
+    if (!isOpen || !room) return;
+    return () => void refreshChatInbox(memberId, true);
+  }, [isOpen, room, memberId]);
 
   useEffect(() => {
     if (!isOpen || !room) return;
@@ -88,8 +100,10 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
       setInfo(json.room);
       setState('ready');
       if (Array.isArray(json.reads)) setReads(json.reads);
+      if (typeof json.muted === 'boolean') setMuted(json.muted);
       const fresh: ChatMessage[] = json.messages ?? [];
       if (fresh.length) {
+        markInboxRoomRead(room);
         lastSeen.current = fresh[fresh.length - 1].createdAt;
         setMessages((prev) => [...prev, ...fresh.filter((m) => !prev.some((p) => p.id === m.id))]);
       }
@@ -134,6 +148,17 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
     setMessages((prev) => [...prev, mine]);
   };
 
+  const toggleMute = async () => {
+    const next = !muted;
+    setMuted(next);
+    const res = await fetch(`/api/chat/${encodeURIComponent(room)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ muted: next }) }).catch(() => null);
+    const json = await res?.json().catch(() => null);
+    if (!res?.ok || !json?.success) {
+      setMuted(!next);
+      setNotice(json?.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ');
+    }
+  };
+
   const remove = async (id: string) => {
     const result = await post({ action: 'delete', id });
     if (!result.ok) return setNotice(result.message);
@@ -159,9 +184,24 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
             <h3 id="group-chat-title" className="text-base font-bold text-slate-900 truncate">{title}</h3>
             <p className="text-xs font-medium text-slate-500 truncate">{subtitle ?? (info ? `แชตของคนที่เข้าร่วม · ${info.members} คน` : 'แชตของคนที่เข้าร่วม')}</p>
           </div>
-          <button type="button" onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="ปิด">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="shrink-0 flex items-center gap-1.5">
+            {/* Only once there is talk to be told about: a room has no settings before its first message */}
+            {state === 'ready' && messages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => void toggleMute()}
+                aria-pressed={muted}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                aria-label={muted ? 'เปิดแจ้งเตือนห้องนี้' : 'ปิดแจ้งเตือนห้องนี้'}
+                title={muted ? 'ปิดแจ้งเตือนไว้ กดเพื่อเปิด' : 'ปิดแจ้งเตือนห้องนี้'}
+              >
+                {muted ? <BellOff className="w-4 h-4" aria-hidden="true" /> : <Bell className="w-4 h-4" aria-hidden="true" />}
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" aria-label="ปิด">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </header>
         {header}
 
