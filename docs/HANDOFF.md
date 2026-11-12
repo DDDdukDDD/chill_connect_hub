@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-356 · Sign-in inside LINE, grouped hearts, follow back (2026-11-12)
+- **What changed:** inside LINE/Facebook/Instagram's own browser Google refuses sign-in, so `AuthPanel` and `InviteSignupSheet` hide Google there and show "เข้าด้วย Google ต้องเปิดใน Safari หรือ Chrome", in LINE with a link that adds `openExternalBrowser=1` (`lib/useInAppBrowser.ts`). The bell groups hearts on one moment into one line with `othersCount` and shows ติดตามกลับ on a follow when `followingBack` is false (docs/API.md). Clip overlay buttons use the new icons (`onDark`).
+- **What to do about it:** dev has no social keys; check the LINE hand-off on a preview or live from the LINE app on a real phone.
+
 ### BE-355 · Reaction row icons and the ชวนไป icon (owner 2026-11-12)
 - **What changed:** feed and moment page rows use `components/icons/ActionIcons.tsx` (LikeIcon, CommentIcon, SaveIcon, from the owner's 24 px set): dark outline, empty while off; on = bright fill + smiling face + a short pop (`animate-icon-pop` in globals.css, only when turned on, not on load). ชวนไป everywhere uses `components/icons/InviteIcon.tsx` (two buddies + arrow, wide: give it a width, e.g. `h-[17px] w-[39px]`; `mono` for white over a clip). Clip overlay buttons keep the white line icons. The ชวนไป pill in the row is 32 px high so Thai vowels on the "ถูกใจโดย" line below no longer touch it.
 

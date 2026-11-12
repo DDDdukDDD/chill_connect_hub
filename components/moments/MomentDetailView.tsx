@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Bookmark, ChevronDown, ChevronUp, Flag, Heart, MessageCircle, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
@@ -479,7 +479,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
-                <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+                <LikeIcon active={moment.isLiked} onDark className="w-7 h-7 drop-shadow" />
                 {!canSeeLikers && moment.likesCount.toLocaleString()}
               </button>
               )}
@@ -500,7 +500,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 aria-expanded={isFull ? commentsOpen : undefined}
                 className={railButton}
               >
-                <MessageCircle className="w-7 h-7 drop-shadow" aria-hidden="true" />
+                <CommentIcon onDark className="w-7 h-7 drop-shadow" />
                 {moment.commentsCount.toLocaleString()}
               </button>
               )}
@@ -511,7 +511,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
-                <Bookmark className={`w-7 h-7 drop-shadow ${moment.isSaved ? 'fill-white' : ''}`} aria-hidden="true" />
+                <SaveIcon active={moment.isSaved} onDark className="w-7 h-7 drop-shadow" />
               </button>
               {/* Delete or report stay one step away, so they are not pressed by mistake */}
               <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
