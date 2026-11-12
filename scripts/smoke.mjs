@@ -106,6 +106,9 @@ async function run() {
 
   console.log('\n"ชวนไป" as a group plan');
   const momentId = post.moment.id;
+  await B.call(`/api/moments/${encodeURIComponent(momentId)}/actions`, 'POST', { action: 'save' });
+  const bSaved = await B.call('/api/auth/member/activity');
+  check('saving a post at a place saves the place to My Hub', (bSaved.savedSpotIds ?? []).includes(spot.id), JSON.stringify(bSaved.savedSpotIds ?? null).slice(0, 80));
   await C.call(`/api/members/${A.id}/actions`, 'POST', { action: 'follow' });
   await A.call(`/api/members/${C.id}/actions`, 'POST', { action: 'follow' });
   const sent = await A.call('/api/invites', 'POST', { type: 'moment', id: momentId, to: [B.id, C.id] });

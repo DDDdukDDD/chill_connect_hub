@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Send, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
 import { InvitePill } from './InvitePill';
 import type { InviteTarget } from './InviteSheet';
 
@@ -20,7 +21,7 @@ export function InviteNudge({ target, place, text, onMessage, onClose, className
 }) {
   return (
     <div role="status" className={`flex items-center gap-3 rounded-2xl bg-blue-50 pl-4 pr-2 py-2.5 ${className}`}>
-      <Send className="w-5 h-5 text-[#2563EB] -rotate-12 shrink-0" aria-hidden="true" />
+      <InviteIcon className="h-5 w-[46px] shrink-0" />
       <p className="flex-1 min-w-0 text-sm font-semibold text-slate-900">{text}</p>
       <InvitePill
         target={target}

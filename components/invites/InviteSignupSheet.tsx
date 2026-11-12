@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { DialogShell } from '@/components/auth/DialogShell';
-import { PROVIDERS } from '@/components/auth/AuthPanel';
+import { GoogleInAppNote, PROVIDERS } from '@/components/auth/AuthPanel';
+import { useInAppBrowser } from '@/lib/useInAppBrowser';
 import { TermsPrivacyModal } from '@/components/TermsPrivacyModal';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -21,7 +22,9 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
   const [busy, setBusy] = useState(false);
   const [terms, setTerms] = useState<{ open: boolean; tab: 'terms' | 'privacy' }>({ open: false, tab: 'terms' });
   const isTee = info.kind === 'tee';
-  const available = PROVIDERS.filter((p) => session.providers[p.id]);
+  const { inApp, externalHref } = useInAppBrowser();
+  // Google refuses LINE's own browser, where this sheet usually opens: hidden there, with a way out below
+  const available = PROVIDERS.filter((p) => session.providers[p.id] && !(inApp && p.id === 'google'));
   const line = available.find((p) => p.id === 'line');
   const others = available.filter((p) => p.id !== 'line');
   // No social sign-in turned on (or not known yet): email sign-up becomes the main button, never a dead end
@@ -102,6 +105,7 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
         </div>
       )}
 
+      {inApp && session.providers.google && <GoogleInAppNote externalHref={externalHref} className="mt-3" />}
       <p className="mt-4 text-center text-xs font-medium text-slate-500">ฟรี · ไม่ถึง 1 นาที · ไม่โพสต์อะไรแทนคุณ</p>
       <p className="mt-1 text-center text-xs text-slate-500 leading-relaxed">
         การสมัครถือว่าคุณอายุ 18 ปีขึ้นไป และยอมรับ{' '}

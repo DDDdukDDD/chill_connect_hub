@@ -20,6 +20,34 @@ Item template:
 
 ---
 
+### BE-356 · Sign-in inside LINE, grouped hearts, follow back (2026-11-12)
+- **What changed:** inside LINE/Facebook/Instagram's own browser Google refuses sign-in, so `AuthPanel` and `InviteSignupSheet` hide Google there and show "เข้าด้วย Google ต้องเปิดใน Safari หรือ Chrome", in LINE with a link that adds `openExternalBrowser=1` (`lib/useInAppBrowser.ts`). The bell groups hearts on one moment into one line with `othersCount` and shows ติดตามกลับ on a follow when `followingBack` is false (docs/API.md). Clip overlay buttons use the new icons (`onDark`).
+- **What to do about it:** dev has no social keys; check the LINE hand-off on a preview or live from the LINE app on a real phone.
+
+### BE-355 · Reaction row icons and the ชวนไป icon (owner 2026-11-12)
+- **What changed:** feed and moment page rows use `components/icons/ActionIcons.tsx` (LikeIcon, CommentIcon, SaveIcon, from the owner's 24 px set): dark outline, empty while off; on = bright fill + smiling face + a short pop (`animate-icon-pop` in globals.css, only when turned on, not on load). ชวนไป everywhere uses `components/icons/InviteIcon.tsx` (two buddies + arrow, wide: give it a width, e.g. `h-[17px] w-[39px]`; `mono` for white over a clip). Clip overlay buttons keep the white line icons. The ชวนไป pill in the row is 32 px high so Thai vowels on the "ถูกใจโดย" line below no longer touch it.
+
+### BE-354 · Link previews load place pictures through our domain (2026-11-12)
+- **What changed:** Wikimedia answers 403 to LINE/Facebook crawlers, so ชวนไป links (`/i/<code>`) and place pages showed the site logo in LINE. `pageMetadata` (lib/site.ts) now sends an image on an optimizer host as `/_next/image?...&w=1080` (JPEG for crawlers, ~90 KB instead of ~3 MB). `upload.wikimedia.org` and `thumb.wikimedia.org` joined `OPTIMIZED_REMOTE_IMAGES` (lib/optimizedImage.ts), so place cards with Wikimedia photos are resized too.
+- **What to do about it:** `lib/site.ts` is loaded by next.config.ts: import from it with relative paths only (`@/` breaks the config). LINE caches a card per link; old links may keep the logo, new ones show the place.
+
+### BE-353 · Places in Krabi, Chiang Rai, Ayutthaya, Kanchanaburi and Prachuap (dev, 2026-11-12)
+- **What changed:** OpenStreetMap + Wikipedia import (scripts/import-osm-places.cjs, 30 per province) on the **dev** database: Krabi 11, Chiang Rai 28, Ayutthaya 24 (second try; Overpass timed out the first), Kanchanaburi 6, Prachuap Khiri Khan 11. db/content/cities-osm-2026-11-12-vibes.json: "why go" texts for 54 (feel first, one practical tip, only facts I am sure of) and 25 set to draft: small temples with too little to say, and three national parks whose land is mostly in another province (Hat Chao Mai: Trang; Phu Sang, Mae Puem: Phayao; Kaeng Krachan: Phetchaburi).
+- **What to do about it:** owner looks at /spots on localhost:3000; when OK, the live steps are in LAUNCH_CHECKLIST.
+
+### BE-352 · Saving a post saves its place; ชวนไป from My Hub saved list (owner 2026-11-12)
+- Saving (bookmark) a post at a place or an อีเวนต์ also saves that place or อีเวนต์ to the member (app/api/moments/[id]/actions), with one toast: เก็บ … ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย. Unsaving the post leaves the place saved (it may have been saved on its own).
+- My Hub ที่บันทึก: each ตี้, อีเวนต์ (not ended) and place has a ชวนไป button (paper plane) beside the bookmark, opening the usual ชวนไป sheet. npm run smoke 28 checks.
+
+### BE-351 · API audit round 2 (2026-11-12)
+- **Scan of all 97 routes** for same-origin checks, session or admin checks, rate limits and cron secrets. Writes without isSameOrigin are admin routes (admin cookie is SameSite=strict), the admin login/logout, the Apple callback (a cross-site POST by design) and member logout; the member cookie is SameSite=lax, so a cross-site POST carries no session. Login, password reset, email confirm and phone OTP all have attempt limits.
+- **Added limits** (429 with a friendly message): creating a ตี้/อีเวนต์ 10 a day, moving a ตี้ 30 an hour (`/api/events`), suggesting a place 10 a day (`/api/spots`), proposing a challenge 10 a day (`/api/quests`), reports 30 an hour (`/api/reports`), host applications 5 a day.
+- **Leak scan:** 18 GET endpoints (member profile, followers, friends, feed, lists, invitations, plans, chat, notifications, rewards) called as a guest and as another member: no email, phone, birth year, block lists, provider ids or invite codes in any answer. Plan chats open only to people going.
+
+### BE-350 · Phone action bar on places and อีเวนต์; page walk at 360px and desktop (owner 2026-11-12)
+- **Action bar:** /spots/[id] and /events/[id] now get the bar that rises over the phone menu once the header buttons scroll away, like ตี้ and ชาเลนจ์ (`components/detail/PhoneActionBar.tsx` through MobileNav `actionBar`): name or dates, open / ongoing status, ชวนไป (icon) and the main button (บันทึกที่นี่ / บันทึกงานนี้). `InvitePill` takes `iconOnly`.
+- **Walk:** every main page as guest and member at 360px (top and scrolled) and 1280px, headless Chrome on dev: no horizontal scroll, no text under 11px, one h1 each, no console errors (one hydration warning on /events/[id] did not come back on a second run). Fixed: the header buttons on /challenges/[id] and /events/[id] wrapped to a second row at 360px (share icon-only, ชวนไป icon-only on อีเวนต์, tighter padding). Three smoke accounts left from a run on 2026-11-11 were deleted from dev.
+
 ### BE-349 · ชวนไป made sturdier: numbers, "ไม่สะดวก", quiet plans close, "วันไหนว่าง" (owner 2026-11-12)
 - **Bug fixed (from BE-347):** a member who came in through an invitation (pledge only) was sent back to onboarding by `OnboardingResume` on every page, looping with the pledge screen. Now a pledged member is never forced; the OAuth callback and `AuthPanel` treat them as onboarded enough, and My Hub shows `FinishProfileNudge` ("ตอบ 3 ข้อ", closable for a week).
 - **Numbers:** /admin shows "ชวนไป ทีละขั้น" under retention (`lib/social/inviteFunnel.ts`, 30 days): plans, links sent, links opened, ไปกัน (and new members among them), ไม่สะดวก, dated, went together, closed quiet. Opens count from the banner's first read (`&open=1`).

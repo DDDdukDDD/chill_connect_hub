@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Repeat, Send } from 'lucide-react';
+import { Repeat } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
 import type { RetentionWeek } from '@/lib/members/activeDays';
 import type { InviteFunnel } from '@/lib/social/inviteFunnel';
 
@@ -116,7 +117,7 @@ function InviteSteps({ funnel }: { funnel: InviteFunnel }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="invite-steps-title">
       <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
-        <Send size={16} className="text-slate-500" aria-hidden="true" />
+        <InviteIcon className="h-[17px] w-[39px] shrink-0" />
         <h2 id="invite-steps-title" className="text-sm font-bold text-slate-900">ชวนไป ทีละขั้น</h2>
         <span className="ml-auto text-[11px] text-slate-500">{funnel.days} วันล่าสุด · นับการเปิดลิงก์ตั้งแต่ 12 พ.ย. 2026</span>
       </div>

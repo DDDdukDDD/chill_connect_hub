@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Bookmark, ChevronDown, ChevronUp, Flag, Heart, MessageCircle, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
+import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
@@ -284,7 +286,10 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       if (!result.ok) {
         setMoment(apply(undo[action]));
         showToast(result.message);
+        return;
       }
+      // The post's place or อีเวนต์ is saved to My Hub too (owner 2026-11-12)
+      if (action === 'save' && moment.targetTitle && (moment.targetType === 'spot' || moment.targetType === 'fair')) showToast(`เก็บ ${moment.targetTitle} ไว้ในมายฮับด้วย ชวนเพื่อนไปได้เลย`);
     });
   };
 
@@ -474,7 +479,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               {!moment.likesOff && (
               <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
-                <Heart className={`w-7 h-7 drop-shadow ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+                <LikeIcon active={moment.isLiked} onDark className="w-7 h-7 drop-shadow" />
                 {!canSeeLikers && moment.likesCount.toLocaleString()}
               </button>
               )}
@@ -495,18 +500,18 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 aria-expanded={isFull ? commentsOpen : undefined}
                 className={railButton}
               >
-                <MessageCircle className="w-7 h-7 drop-shadow" aria-hidden="true" />
+                <CommentIcon onDark className="w-7 h-7 drop-shadow" />
                 {moment.commentsCount.toLocaleString()}
               </button>
               )}
               {mayShare && (
               <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={railButton}>
-                <Send className="w-7 h-7 drop-shadow -rotate-12" aria-hidden="true" />
+                <InviteIcon className="h-6 w-[55px] drop-shadow" mono />
                 ชวนไป
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
-                <Bookmark className={`w-7 h-7 drop-shadow ${moment.isSaved ? 'fill-white' : ''}`} aria-hidden="true" />
+                <SaveIcon active={moment.isSaved} onDark className="w-7 h-7 drop-shadow" />
               </button>
               {/* Delete or report stay one step away, so they are not pressed by mistake */}
               <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
@@ -585,7 +590,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                   {/* A photo post has "ชวนไป" in its reaction row; a clip has no row, so it keeps this one */}
                   {mayShare && moment.video && (
                   <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={iconButton}>
-                    <Send className="w-5 h-5 -rotate-12" aria-hidden="true" />
+                    <InviteIcon className="h-[17px] w-[39px] shrink-0" />
                     <span className="sr-only sm:not-sr-only">ชวนไป</span>
                   </button>
                   )}
@@ -638,7 +643,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           <div className="order-first lg:order-none flex flex-wrap items-center gap-1 border-y border-slate-100 py-1.5 -mx-1">
             {!moment.likesOff && (
             <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} className={iconButton}>
-              <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+              <LikeIcon active={moment.isLiked} />
               {!canSeeLikers && moment.likesCount.toLocaleString()}
               <span className="sr-only">ถูกใจ</span>
             </button>
@@ -651,7 +656,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             )}
             {!moment.commentsOff && (
             <button type="button" onClick={() => (isLoggedIn ? commentInput.current?.focus() : requireLogin('เพื่อร่วมคอมเมนต์'))} className={iconButton}>
-              <MessageCircle className="w-5 h-5" aria-hidden="true" />
+              <CommentIcon />
               {moment.commentsCount.toLocaleString()}
               <span className="sr-only">ความคิดเห็น</span>
             </button>
@@ -659,14 +664,14 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             {/* The same row as the feed (design 1, owner 2026-11-10): "ชวนไป" is the one action with a shape */}
             {mayShare && (
             <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
-              <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-slate-100 group-hover:bg-slate-200 text-sm text-slate-800 font-semibold transition-colors">
-                <Send className="w-[18px] h-[18px] -rotate-12" aria-hidden="true" />
+              <span className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-sm text-slate-800 font-semibold transition-colors">
+                <InviteIcon className="h-[17px] w-[39px] shrink-0" />
                 ชวนไป
               </span>
             </button>
             )}
             <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={`${iconButton} ml-auto`}>
-              <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-slate-900 text-slate-900' : ''}`} aria-hidden="true" />
+              <SaveIcon active={moment.isSaved} />
             </button>
           </div>
           )}

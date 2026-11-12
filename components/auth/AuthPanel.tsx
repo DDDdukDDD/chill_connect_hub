@@ -5,6 +5,7 @@ import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, Loader2, Mail, MailCheck, X
 import { TermsPrivacyModal } from '@/components/TermsPrivacyModal';
 import { PhraseText } from './PhraseText';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { useInAppBrowser } from '@/lib/useInAppBrowser';
 import type { OAuthProvider, PublicMember } from '@/lib/members/types';
 
 /**
@@ -88,11 +89,27 @@ export const PROVIDERS: { id: OAuthProvider; label: string; icon: React.ReactNod
   },
 ];
 
+/** Under the sign-in buttons inside LINE/Facebook/Instagram, where Google is hidden: the way to still use it */
+export function GoogleInAppNote({ externalHref, className = '' }: { externalHref: string | null; className?: string }) {
+  return (
+    <p className={`text-center text-xs font-medium text-slate-500 ${className}`}>
+      เข้าด้วย Google ต้องเปิดใน Safari หรือ Chrome
+      {externalHref && (
+        <>
+          {' · '}
+          <a href={externalHref} className="font-bold text-[#2563EB] underline underline-offset-2">เปิดในเบราว์เซอร์</a>
+        </>
+      )}
+    </p>
+  );
+}
+
 function SocialButtons({ verb, available, disabled, onPick }: { verb: string; available: Record<string, boolean>; disabled?: boolean; onPick: (p: OAuthProvider) => void }) {
+  const { inApp, externalHref } = useInAppBrowser();
   return (
     <div className="space-y-3">
       {/* Only the ways that work: a greyed "เร็วๆ นี้" button was clutter on the first screen (owner 2026-10-31) */}
-      {PROVIDERS.filter((p) => available[p.id]).map((p) => {
+      {PROVIDERS.filter((p) => available[p.id] && !(inApp && p.id === 'google')).map((p) => {
         return (
           <button
             key={p.id}
@@ -106,6 +123,7 @@ function SocialButtons({ verb, available, disabled, onPick }: { verb: string; av
           </button>
         );
       })}
+      {inApp && available.google && <GoogleInAppNote externalHref={externalHref} />}
     </div>
   );
 }

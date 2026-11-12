@@ -3,6 +3,7 @@ import { toPublicMember } from '@/lib/members';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { submitHostApplication } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { isRateLimited } from '@/lib/rateLimit';
 
 // My host application (null when none)
 export async function GET(request: Request) {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
+  if (await isRateLimited(`member-host-apply:${member.id}`, 5, 24 * 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ส่งคำขอบ่อยเกินไป ลองใหม่พรุ่งนี้นะ' }, { status: 429 });
   try {
     const updated = await submitHostApplication(member, await request.json().catch(() => null));
     return NextResponse.json({ success: true, application: updated.hostApplication, member: toPublicMember(updated) });

@@ -22,6 +22,8 @@ import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { FriendPlans } from '@/components/myhub/FriendPlans';
 import { FinishProfileNudge } from '@/components/myhub/FinishProfileNudge';
+import { InvitePill } from '@/components/invites/InvitePill';
+import type { InviteTarget } from '@/components/invites/InviteSheet';
 import { TipHostModal } from '@/components/TipHostModal';
 import { SpotBuddyGatheringModal, SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
 import { ChallengeQuest, EventItem } from '@/data/mockData';
@@ -1123,6 +1125,8 @@ function MyHubContent() {
           image: ev.image,
           title: ev.title,
           detail: isEventEnded(ev) ? 'จบแล้ว' : [thaiShortDate(ev.date), ev.time].filter(Boolean).join(' · '),
+          // ชวนไป right from the list (owner 2026-11-12); nothing to invite to once it has ended
+          invite: isEventEnded(ev) ? undefined : ({ type: isFair ? 'fair' : 'community', id: ev.id } as InviteTarget),
           remove: () => removeSaved('event', ev.id, ev.title),
         };
       }),
@@ -1136,6 +1140,7 @@ function MyHubContent() {
         image: resolveSpotImage(spot),
         title: spot.title,
         detail: [spot.district, spot.province].filter(Boolean).join(', '),
+        invite: { type: 'spot', id: spot.id } as InviteTarget,
         remove: () => removeSaved('spot', spot.id, spot.title),
       })),
     ];
@@ -1185,6 +1190,17 @@ function MyHubContent() {
                       <span className="block text-xs font-medium text-slate-500 truncate tabular-nums">{row.detail}</span>
                     </span>
                   </Link>
+                  {row.invite && (
+                    <InvitePill
+                      target={row.invite}
+                      place={row.title}
+                      isLoggedIn
+                      onRequireLogin={() => undefined}
+                      onMessage={showToast}
+                      iconOnly
+                      className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={row.remove}

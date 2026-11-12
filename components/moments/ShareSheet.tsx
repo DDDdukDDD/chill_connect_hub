@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Link2, Loader2, MessageCircle, Send, Share2 } from 'lucide-react';
+import { Link2, Loader2, MessageCircle, Share2 } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
 import { DialogShell } from '@/components/auth/DialogShell';
 import type { InviteTarget } from '@/components/invites/InviteSheet';
 import { APPS_INVITE_HINT, appsInviteCopied, useAppsInvite } from '@/components/invites/useAppsInvite';
@@ -33,7 +34,7 @@ export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMess
           <li>
             <button type="button" onClick={pick(onInvite)} className={row}>
               <span className="w-11 h-11 rounded-full bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0" aria-hidden="true">
-                <Send className="w-5 h-5" />
+                <InviteIcon className="h-4 w-[37px] shrink-0" />
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-bold text-slate-900">ชวนเพื่อนไปด้วยกัน</span>

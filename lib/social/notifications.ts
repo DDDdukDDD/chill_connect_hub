@@ -250,9 +250,37 @@ export async function notificationsFor(member: Member) {
         createdAt: n.createdAt,
         momentImage: n.momentImage,
         read: n.read,
+        ...(n.type === 'follow' && { followingBack: Boolean(member.followingIds?.includes(n.actorId)) }),
       };
     });
-  return { items, unread: items.filter((n) => !n.read).length };
+  const grouped = groupLikes(items);
+  return { items: grouped, unread: grouped.filter((n) => !n.read).length };
+}
+
+/**
+ * Hearts on the same moment become one line, "เอ และอีก 3 คนส่งหัวใจ..." (owner idea 2026-11-02, built 2026-11-12):
+ * the newest person leads, the line is unread while any of them is, and it sits where the newest heart was.
+ */
+function groupLikes<T extends { type: NotificationType; momentId?: string; message: string; read: boolean }>(items: T[]): (T & { othersCount?: number })[] {
+  const lead = new Map<string, T & { othersCount: number }>();
+  const out: (T & { othersCount?: number })[] = [];
+  for (const item of items) {
+    if (item.type !== 'like' || !item.momentId) {
+      out.push(item);
+      continue;
+    }
+    const first = lead.get(item.momentId);
+    if (!first) {
+      const copy = { ...item, othersCount: 0 };
+      lead.set(item.momentId, copy);
+      out.push(copy);
+      continue;
+    }
+    first.othersCount += 1;
+    first.read = first.read && item.read;
+    first.message = `และอีก ${first.othersCount} คน${MESSAGES.like}`;
+  }
+  return out;
 }
 
 export async function markNotificationsRead(memberId: string): Promise<void> {

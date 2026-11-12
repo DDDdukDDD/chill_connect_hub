@@ -25,6 +25,28 @@ interface NotificationItem {
   timeAgo: string;
   createdAt: string;
   read: boolean;
+  /** A follow: whether the member already follows this person back (no button then) */
+  followingBack?: boolean;
+}
+
+/** "ติดตามกลับ" beside a new follower: one tap, no trip to their profile (2026-11-12) */
+function FollowBackButton({ memberId }: { memberId: string }) {
+  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
+  const follow = async () => {
+    setState('busy');
+    try {
+      const res = await fetch(`/api/members/${encodeURIComponent(memberId)}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'follow' }) });
+      setState(res.ok ? 'done' : 'idle');
+    } catch {
+      setState('idle');
+    }
+  };
+  if (state === 'done') return <span className="shrink-0 h-8 px-3 inline-flex items-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">ติดตามแล้ว</span>;
+  return (
+    <button type="button" onClick={follow} disabled={state === 'busy'} className="shrink-0 h-8 px-3 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-xs font-bold text-white cursor-pointer">
+      ติดตามกลับ
+    </button>
+  );
 }
 
 const REFRESH_MS = 60_000;
@@ -177,8 +199,8 @@ export function NotificationBell() {
                     {section.items.map((n) => {
                       const isNew = newIds.has(n.id);
                       return (
-                        <li key={n.id}>
-                          <Link href={hrefOf(n)} onClick={close} className={`flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
+                        <li key={n.id} className="flex items-center gap-2">
+                          <Link href={hrefOf(n)} onClick={close} className={`flex-1 min-w-0 flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
                             {n.actorAvatar ? (
                               // eslint-disable-next-line @next/next/no-img-element -- member upload
                               <img src={avatarImage(n.actorAvatar)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
@@ -200,6 +222,7 @@ export function NotificationBell() {
                               <img src={optimizedImage(n.momentImage, 256)} alt="" loading="lazy" className="w-11 h-11 rounded-lg object-cover bg-slate-100 shrink-0" />
                             )}
                           </Link>
+                          {n.type === 'follow' && n.followingBack === false && <FollowBackButton memberId={n.actorId} />}
                         </li>
                       );
                     })}
