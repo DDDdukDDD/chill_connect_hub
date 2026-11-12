@@ -3,16 +3,15 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
+import { Camera, Heart, Loader2, MessageCircle, Play, X } from 'lucide-react';
 import type { FeedItem } from '@/lib/moments/service';
 import { nameInitial } from '@/lib/displayName';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { call } from '@/components/home/HomeMomentFeed';
-import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTargetHref, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
+import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
 import { avatarImage } from '@/lib/optimizedImage';
-import { targetLiveText } from '@/components/moments/targetLiveText';
 import { hashtagHref } from '@/lib/moments/hashtags';
 
 const PAGE_SIZE = 24;
@@ -45,8 +44,11 @@ interface MomentShowcaseProps {
   initialCursor?: string;
   initialChip: Chip;
   place: ShowcasePlace | null;
-  /** How many moments each tab holds (counted on the server); left out on one place's moments */
-  counts?: Record<Chip, number>;
+  /**
+   * A member cookie was there when the server built the page: a member comes back often, so the page opens on a
+   * slim title row instead of the welcome band (owner 2026-11-12, like Facebook signed in)
+   */
+  signedIn?: boolean;
   /** How many moments the place or tag holds in all (its page says so under the title) */
   total?: number;
   /** A row of tags: the week's trends on /moments, or the tags used alongside this one on a tag page */
@@ -66,94 +68,123 @@ function WhenSignedIn({ isLoggedIn, run }: { isLoggedIn: boolean; run: () => voi
   return null;
 }
 
-/** One frame for every photo so the rows line up: 3:4 on phones and iPads (like Lemon8), square on computers (like the Home post) */
-const frameClass = 'relative block aspect-[3/4] lg:aspect-square rounded-xl lg:rounded-2xl overflow-hidden bg-slate-100';
+/** Up to the first comma, bracket or " - ": "สวนเบญจกิตติ, พระราม 9" → "สวนเบญจกิตติ"; drops a sample's "[ตัวอย่าง]" */
+const shortPlaceName = (text?: string) => (text ?? '').replace(/^\[[^\]]*\]\s*/, '').split(/,|\(|（| - /)[0].trim();
+
+/**
+ * The label on a card's photo says where, short enough to read whole (owner 2026-11-12: long names were cut
+ * to "…"). A place uses its own name; a ตี้, อีเวนต์ or challenge uses where it happened, not its long title.
+ */
+function photoPlaceLabel(moment: FeedItem): string {
+  const title = shortPlaceName(moment.targetTitle);
+  const where = shortPlaceName(moment.location);
+  // A place's own name, unless it is too long to read whole on a phone tile (about 20 Thai letters): then its area
+  if (moment.targetType === 'spot') return title.length > PHOTO_LABEL_FITS && where ? where : title || where;
+  return where || title;
+}
+const PHOTO_LABEL_FITS = 20;
+
+/**
+ * When it was posted, short enough for a card's last line (lib/moments/service.ts thaiTimeAgo writes it long):
+ * "10 ชั่วโมงที่แล้ว" → "10 ชม.", "5 ต.ค. 2569" → "5 ต.ค.". Recent posts show the site is lived in (owner 2026-11-12).
+ */
+const shortTimeAgo = (text: string) =>
+  text
+    .replace('เมื่อสักครู่นี้', 'เมื่อกี้')
+    .replace('นาทีที่แล้ว', 'นาที')
+    .replace('ชั่วโมงที่แล้ว', 'ชม.')
+    .replace('วันที่แล้ว', 'วัน')
+    .replace(/\s\d{4}$/, '');
+/** Widths the image optimizer allows (Next defaults) that cover a card from a phone at 1x to a computer at 2x */
+const CARD_WIDTHS = [384, 640, 828];
+
+/** One frame for every photo so the rows line up: 3:4 everywhere, like Lemon8 */
+const frameClass = 'relative block aspect-[3/4] rounded-xl lg:rounded-2xl overflow-hidden bg-slate-100';
 const focusRing = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2';
 /** A label on a photo the way the landing page labels its collage */
 const STICKER = 'absolute z-10 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs lg:text-sm font-semibold text-slate-900 shadow-md';
 
 function Avatar({ name, src }: { name: string; src?: string }) {
+  const box = 'w-5 h-5 lg:w-6 lg:h-6 text-[10px] lg:text-[11px]';
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={avatarImage(src)} alt="" className="w-6 h-6 lg:w-9 lg:h-9 rounded-full object-cover bg-slate-100 shrink-0" />
+    <img src={avatarImage(src)} alt="" className={`${box} rounded-full object-cover bg-slate-100 shrink-0`} />
   ) : (
-    <span className="w-6 h-6 lg:w-9 lg:h-9 rounded-full bg-slate-200 text-[11px] lg:text-xs font-bold text-slate-700 flex items-center justify-center shrink-0">{nameInitial(name)}</span>
+    <span className={`${box} rounded-full bg-slate-200 font-bold text-slate-700 flex items-center justify-center shrink-0`}>{nameInitial(name)}</span>
   );
 }
 
-/** A moment the way the Home feed shows a post, in a smaller size: who, the photo, the words, where it was, and the reactions */
-function MomentCard({ moment, onLike }: { moment: FeedItem; onLike?: (moment: FeedItem) => void }) {
+/**
+ * One card on every screen, like Lemon8 (owner 2026-11-12): the photo with where it was on it, the words, then who
+ * and the reactions on one line pinned to the bottom so a row lines up.
+ */
+function MomentCard({ moment, onLike, first }: { moment: FeedItem; onLike?: (moment: FeedItem) => void; first?: boolean }) {
   const title = momentTitle(moment.caption);
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
-  const live = targetLiveText(moment.live);
-  const targetHref = momentTargetHref(moment.targetType, moment.targetId);
   const place = moment.targetTitle || moment.location;
   const href = `/moments/${encodeURIComponent(moment.id)}${moment.video ? '?full=1' : ''}`;
+  const likeIcon = <Heart className={`w-3.5 h-3.5 lg:w-4 lg:h-4 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />;
+  const likes = moment.likesOff ? null : onLike ? (
+    // Liked straight from the grid; the padding gives a finger-sized target without moving the row
+    <button
+      type="button"
+      onClick={() => onLike(moment)}
+      aria-pressed={moment.isLiked}
+      aria-label={`${moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} (${moment.likesCount.toLocaleString()})`}
+      className={`-m-2 p-2 inline-flex items-center gap-1 rounded-full cursor-pointer active:scale-90 transition-transform ${moment.isLiked ? 'text-rose-600' : 'hover:text-rose-600'} ${focusRing}`}
+    >
+      {likeIcon}
+      {moment.likesCount.toLocaleString()}
+    </button>
+  ) : (
+    <span className="inline-flex items-center gap-1">
+      {likeIcon}
+      {moment.likesCount.toLocaleString()}
+      <span className="sr-only">ถูกใจ</span>
+    </span>
+  );
   return (
     <article className="min-w-0 flex flex-col">
-      <div className="flex items-center gap-2 lg:gap-2.5 min-w-0 mb-2 lg:mb-3">
-        <Avatar name={moment.userName} src={moment.userAvatar} />
-        <div className="min-w-0">
-          <p className="text-xs lg:text-sm font-bold text-slate-900 truncate">{moment.userName}</p>
-          <p className="hidden lg:block text-xs font-medium text-slate-500 truncate">
-            {moment.timeAgo}
-            {place && ` · ${place}`}
-          </p>
-        </div>
-      </div>
-
       <Link href={href} className={`group block rounded-xl lg:rounded-2xl ${focusRing}`}>
-        <span className="relative block">
-          {/* Pointing at a photo only dims it a touch; the card stays still (owner 2026-11-07) */}
-          <span className={`${frameClass} transition-[filter] duration-200 group-hover:brightness-95`}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
-            <img src={momentImageSrc(moment.images[0], 828)} alt={title || `โมเมนต์จาก ${place || moment.userName}`} loading="lazy" className="w-full h-full object-cover" />
-            {moment.video?.previewUrl && <ClipPlayer url={moment.video.url} preview={moment.video.previewUrl} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
-            {moment.video && (
-              <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
-                <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-                <span className="sr-only">คลิปวิดีโอ</span>
-              </span>
-            )}
-            {moment.images.length > 1 && (
-              <span className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
-                1/{moment.images.length}
-                <span className="sr-only"> รูป</span>
-              </span>
-            )}
-          </span>
+        {/* Pointing at a photo only dims it a touch; the card stays still (owner 2026-11-07) */}
+        <span className={`${frameClass} transition-[filter] duration-200 group-hover:brightness-95`}>
+          {/* The width the screen needs (a phone tile is ~185 px wide, 384 covers it at 2x), and the first row at once: it is what a visitor sees first */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
+          <img
+            src={momentImageSrc(moment.images[0], 828)}
+            srcSet={CARD_WIDTHS.map((w) => `${momentImageSrc(moment.images[0], w)} ${w}w`).join(', ')}
+            sizes="(min-width: 1024px) 23vw, 48vw"
+            alt={title || `โมเมนต์จาก ${place || moment.userName}`}
+            loading={first ? 'eager' : 'lazy'}
+            fetchPriority={first ? 'high' : undefined}
+            className="w-full h-full object-cover"
+          />
+          {moment.video?.previewUrl && <ClipPlayer url={moment.video.url} preview={moment.video.previewUrl} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
+          {moment.video && (
+            <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+              <span className="sr-only">คลิปวิดีโอ</span>
+            </span>
+          )}
+          {moment.images.length > 1 && (
+            <span className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
+              1/{moment.images.length}
+              <span className="sr-only"> รูป</span>
+            </span>
+          )}
+          {/*
+            Where it was, as a white label on the photo. Part of the photo, not a link of its own: a tap anywhere on
+            the photo opens the moment (owner 2026-11-12: the label caught taps meant for the post). The way on to the
+            place, ตี้ or อีเวนต์ is on the moment's page.
+          */}
+          {place && (
+            <span className="absolute left-1.5 bottom-1.5 lg:left-2.5 lg:bottom-2.5 max-w-[calc(100%-12px)] lg:max-w-[calc(100%-20px)] inline-flex items-center gap-1 rounded-full bg-white/95 pl-1.5 pr-2 py-0.5 lg:pl-2 lg:pr-2.5 lg:py-1 text-[11px] lg:text-xs font-semibold text-slate-900 shadow-sm">
+              {target ? <target.Icon className={`w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 ${target.icon}`} aria-hidden="true" /> : <MOMENT_TARGETS.spot.Icon className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 text-slate-500" aria-hidden="true" />}
+              <span className="min-w-0 truncate">{photoPlaceLabel(moment)}</span>
+            </span>
+          )}
         </span>
       </Link>
-
-      {/* Reactions right under the photo, so every card in a row has them at the same height (owner 2026-11-10) */}
-      <div className="mt-2 lg:mt-3 px-0.5 flex items-center gap-3 lg:gap-4 text-xs lg:text-sm font-medium text-slate-600 tabular-nums">
-        {moment.likesOff ? null : onLike ? (
-          // Liked straight from the grid; the padding gives a finger-sized target without moving the row
-          <button
-            type="button"
-            onClick={() => onLike(moment)}
-            aria-pressed={moment.isLiked}
-            aria-label={`${moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} (${moment.likesCount.toLocaleString()})`}
-            className={`-m-2 p-2 inline-flex items-center gap-1 rounded-full cursor-pointer active:scale-90 transition-transform ${moment.isLiked ? 'text-rose-600' : 'hover:text-rose-600'} ${focusRing}`}
-          >
-            <Heart className={`w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
-            {moment.likesCount.toLocaleString()}
-          </button>
-        ) : (
-          <span className="inline-flex items-center gap-1">
-            <Heart className={`w-3.5 h-3.5 lg:w-4.5 lg:h-4.5 ${moment.isLiked ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
-            {moment.likesCount.toLocaleString()}
-            <span className="sr-only">ถูกใจ</span>
-          </span>
-        )}
-        {!moment.commentsOff && (
-        <span className="inline-flex items-center gap-1">
-          <MessageCircle className="w-3.5 h-3.5 lg:w-4.5 lg:h-4.5" aria-hidden="true" />
-          {moment.commentsCount.toLocaleString()}
-          <span className="sr-only">ความคิดเห็น</span>
-        </span>
-        )}
-      </div>
 
       {/* The title links to the post too; the photo link already names it, so this one stays out of the tab order */}
       {title && (
@@ -162,26 +193,29 @@ function MomentCard({ moment, onLike }: { moment: FeedItem; onLike?: (moment: Fe
         </Link>
       )}
 
-      {/*
-        Where it was: the feed's slim line (owner 2026-11-10), straight to that place, meetup, fair or challenge.
-        Narrow phone tiles keep the place only; wider screens add what it still offers and the next step.
-      */}
-      {target && targetHref ? (
-        <Link href={targetHref} className={`group mt-2 px-0.5 flex items-center gap-1.5 min-w-0 text-[11px] lg:text-[13px] font-semibold ${focusRing}`}>
-          <target.Icon className={`w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
-          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{place}</span>
-          {live && <span className={`hidden lg:inline shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
-          <span className={`hidden lg:inline-flex shrink-0 items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
-        </Link>
-      ) : (
-        place && (
-          <p className="mt-2 px-0.5 flex items-center gap-1 text-[11px] lg:text-xs font-medium text-slate-500 min-w-0">
-            <MOMENT_TARGETS.spot.Icon className="w-3 h-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">{place}</span>
-          </p>
-        )
-      )}
-
+      <div className="mt-auto pt-1.5 lg:pt-2 px-0.5 flex items-center justify-between gap-2 min-w-0 text-xs lg:text-[13px] font-medium text-slate-600 tabular-nums">
+        <span className="min-w-0 flex items-center gap-1.5">
+          <Avatar name={moment.userName} src={moment.userAvatar} />
+          <span className="truncate">{moment.userName}</span>
+          {/* A phone row with a comment count has no room left: the name comes before the time there */}
+          {moment.timeAgo && (
+            <span className={`shrink-0 text-slate-400 whitespace-nowrap ${!moment.commentsOff && moment.commentsCount > 0 ? 'hidden sm:inline' : ''}`}>
+              · {shortTimeAgo(moment.timeAgo)}
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 flex items-center gap-2.5 lg:gap-3">
+          {likes}
+          {/* Talk under a post draws people in (owner 2026-11-12); "0" would only say nobody is talking, so none is shown */}
+          {!moment.commentsOff && moment.commentsCount > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <MessageCircle className="w-3.5 h-3.5 lg:w-4 lg:h-4" aria-hidden="true" />
+              {moment.commentsCount.toLocaleString()}
+              <span className="sr-only">ความคิดเห็น</span>
+            </span>
+          )}
+        </span>
+      </div>
     </article>
   );
 }
@@ -204,13 +238,13 @@ function TagRow({ kind, tags }: NonNullable<MomentShowcaseProps['tags']>) {
   );
 }
 
-/** Rows that line up: two across on phones and iPads, three on computers */
+/** Rows that line up: two across on phones and iPads, four on computers (like Lemon8) */
 export function MomentGrid({ items, onLike }: { items: FeedItem[]; onLike?: (moment: FeedItem) => void }) {
   if (items.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-7 sm:gap-x-4 lg:gap-x-8 lg:gap-y-12">
-      {items.map((moment) => (
-        <MomentCard key={moment.id} moment={moment} onLike={onLike} />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 lg:gap-x-6 lg:gap-y-8">
+      {items.map((moment, i) => (
+        <MomentCard key={moment.id} moment={moment} onLike={onLike} first={i < 4} />
       ))}
     </div>
   );
@@ -231,7 +265,7 @@ function Collage() {
   const { a, b, c } = COLLAGE;
   const print = 'w-full h-full object-cover shadow-lg border-4 border-white';
   return (
-    <div className="relative h-[120px] sm:h-[200px] md:h-[240px] lg:h-[270px] w-full max-w-[240px] sm:max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
+    <div className="relative h-[120px] sm:h-[200px] md:h-[200px] lg:h-[220px] w-full max-w-[240px] sm:max-w-[320px] md:max-w-[440px] mx-auto" aria-hidden="true">
       <figure className="absolute left-[2%] top-[8%] w-[44%] h-[78%]">
         {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
         <img src={momentImageSrc(a.image)} alt="" className={`${print} -rotate-6 rounded-[1.5rem] lg:rounded-[1.75rem]`} />
@@ -281,7 +315,7 @@ const listUrl = (chip: Chip, place: ShowcasePlace | null, page: number, cursor?:
  * /moments: a playful header (the landing page's cream band, tilted prints and stickers) over a full-width grid
  * of moment posts. Posting happens on Home; a card opens the moment's own page.
  */
-export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, initialChip, place, counts, total, tags }: MomentShowcaseProps) {
+export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, initialChip, place, signedIn, total, tags }: MomentShowcaseProps) {
   const [chip, setChip] = useState<Chip>(initialChip);
   const [moments, setMoments] = useState(initialMoments);
   const [page, setPage] = useState(1);
@@ -400,16 +434,46 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
 
   return (
     <MomentsChrome>
-      {({ isLoggedIn, requireLogin, showToast }) => (
+      {({ isLoggedIn, requireLogin, showToast }) => {
+        const share = (size: 'md' | 'sm') => (
+          <Link
+            href="/?share=new"
+            onClick={(e) => {
+              if (!isLoggedIn) {
+                e.preventDefault();
+                requireLogin('เพื่อแชร์โมเมนต์ของคุณ');
+              }
+            }}
+            className={`inline-flex items-center justify-center gap-2 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white font-semibold shadow-sm whitespace-nowrap transition-colors ${size === 'sm' ? 'h-10 px-4 text-sm' : 'h-11 sm:h-12 px-7 text-base'}`}
+          >
+            <Camera className={size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'} aria-hidden="true" />
+            {size === 'sm' ? 'แชร์โมเมนต์' : 'แชร์โมเมนต์ของคุณ'}
+          </Link>
+        );
+        // The page to browse opens on the moments: members get one title row; visitors a low welcome band whose
+        // prints show on computers only (the full pitch is the landing page's job). A place or tag keeps its band.
+        const slim = !placeName && (signedIn || isLoggedIn);
+        return (
         <main className="flex-1 pb-28 xl:pb-16">
           <WhenSignedIn isLoggedIn={isLoggedIn} run={refreshHearts} />
-          {/* Header band: the landing page's cream with soft circles, tilted prints on one side and the words on the other */}
+          {slim ? (
+            <section className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-7 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-[20px] sm:text-[28px] leading-tight font-bold text-slate-900 tracking-tight">
+                  <span style={{ color: ROSE }}>โมเมนต์จริง</span>จากเพื่อนๆ
+                </h1>
+                {/* What the page is for, under the title, so a wide row is not just a title and a button (a phone's row is full already) */}
+                <p className="hidden sm:block mt-1 text-sm font-medium text-slate-500">มาร่วมแบ่งปันโมเมนต์ความสุขให้เพื่อนๆ กัน</p>
+              </div>
+              {share('sm')}
+            </section>
+          ) : (
           <section className="relative overflow-hidden bg-[#FFF8F1]">
             <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-[#FFE4E8]" aria-hidden="true" />
             <div className="pointer-events-none absolute -bottom-40 -right-28 w-80 h-80 rounded-full bg-[#E3EDFF]" aria-hidden="true" />
-            <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-5 sm:pt-5 sm:pb-8 md:py-10 grid md:grid-cols-[1.05fr_1fr] gap-4 sm:gap-6 md:gap-10 items-center">
+            <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8 grid md:grid-cols-[1.05fr_1fr] gap-4 sm:gap-6 md:gap-10 items-center md:py-7">
               <div className="text-center md:text-left order-2 md:order-1">
-                <h1 className="text-[24px] leading-[1.3] sm:text-[34px] lg:text-[42px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
+                <h1 className="text-[24px] leading-[1.3] sm:text-[32px] lg:text-[38px] lg:leading-[1.22] font-bold text-slate-900 tracking-tight">
                   {placeName ? (
                     <>
                       {place?.tag ? 'โมเมนต์ในแท็ก' : 'โมเมนต์จาก'}
@@ -429,19 +493,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                   เห็นที่ไหนน่าไป <span className="whitespace-nowrap">แตะดูแล้วไปต่อได้เลย</span>
                 </p>
                 <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center md:justify-start gap-3">
-                  <Link
-                    href="/?share=new"
-                    onClick={(e) => {
-                      if (!isLoggedIn) {
-                        e.preventDefault();
-                        requireLogin('เพื่อแชร์โมเมนต์ของคุณ');
-                      }
-                    }}
-                    className="inline-flex items-center justify-center gap-2 h-11 sm:h-12 px-7 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white text-base font-semibold shadow-sm whitespace-nowrap transition-colors"
-                  >
-                    <Camera className="w-5 h-5" aria-hidden="true" />
-                    แชร์โมเมนต์ของคุณ
-                  </Link>
+                  {share('md')}
                   {placeName && (
                     <Link href="/moments" className="inline-flex items-center gap-1.5 h-12 px-5 rounded-full bg-white text-sm font-bold text-slate-700 shadow-sm hover:text-slate-900">
                       <X className="w-4 h-4" aria-hidden="true" />
@@ -450,16 +502,17 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                   )}
                 </div>
               </div>
-              {/* A tag or place page on a phone starts with its name and posts: the prints are the /moments welcome, not worth a screen half there */}
-              <div className={`order-1 md:order-2 ${placeName ? 'hidden md:block' : ''}`}>
+              {/* Phones start with the words and the posts: the prints are a welcome, not worth half a phone screen */}
+              <div className="hidden md:block order-1 md:order-2">
                 <Collage />
               </div>
             </div>
           </section>
+          )}
 
           <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
             {!placeName && (
-              <nav aria-label="ประเภทโมเมนต์" className="mt-3 sm:mt-7 flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0">
+              <nav aria-label="ประเภทโมเมนต์" className={`${slim ? 'mt-2 sm:mt-4' : 'mt-3 sm:mt-7'} flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0`}>
                 {TABS.map((tab) => {
                   const isHere = tab.chip === chip;
                   return (
@@ -484,7 +537,6 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
                       />
                       <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} aria-hidden="true" />
                       <span>{tab.label}</span>
-                      {counts && <span className="text-xs sm:text-[13px] font-medium text-slate-500 tabular-nums">{counts[tab.chip].toLocaleString()}</span>}
                     </a>
                   );
                 })}
@@ -516,7 +568,8 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
             {!hasMore && moments.length > PAGE_SIZE && <p className="py-8 text-center text-[13px] font-medium text-slate-500">ดูครบทุกโมเมนต์แล้ว</p>}
           </div>
         </main>
-      )}
+        );
+      }}
     </MomentsChrome>
   );
 }

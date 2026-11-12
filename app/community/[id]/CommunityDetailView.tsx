@@ -994,6 +994,7 @@ export default function CommunityDetailPage({
       />
 
       <RequireMembershipModal
+        photo={galleryImages[0] || eventData.image}
         isOpen={isRequireMembershipOpen}
         returnTo={pendingAction === 'join' ? joinReturnPath : undefined}
         onClose={() => {

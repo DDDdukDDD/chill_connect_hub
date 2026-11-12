@@ -15,7 +15,7 @@ import { inviteCodeOf } from './friends';
 import { notifyInvite, notifyInviteNo, notifyInviteYes, notifyPlan } from './notifications';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
-import { INVITE_MAX_FRIENDS, PLAN_TOGETHER_POINTS } from './socialRules';
+import { INVITE_MAX_FRIENDS, PLAN_TOGETHER_POINTS, POST_PLACE_FALLBACK } from './socialRules';
 import { shortLabelOf } from './recurring';
 import type { Visit } from './visits';
 
@@ -113,7 +113,7 @@ async function targetOf(type: unknown, id: unknown): Promise<InviteTarget> {
       type: placeType,
       targetId: placeType === 'general' ? undefined : moment.targetId,
       momentId: moment.id,
-      title: (moment.targetTitle || moment.location || 'ที่ในโพสต์นี้').slice(0, 200),
+      title: (moment.targetTitle || moment.location || POST_PLACE_FALLBACK).slice(0, 200),
       image: moment.images[0],
       path: `/moments/${encodeURIComponent(moment.id)}`,
       refs: { momentId: moment.id },

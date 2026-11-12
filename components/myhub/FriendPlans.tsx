@@ -11,6 +11,7 @@ import { openLineShare } from '@/components/moments/lineInvite';
 import { InviteSheet } from '@/components/invites/InviteSheet';
 import type { PlanView } from '@/lib/social/friendPlans';
 import { unreadLabel, useChatInbox } from '@/lib/useChatInbox';
+import { planChatTitle } from '@/lib/social/socialRules';
 import { useMemberSession } from '@/lib/useMemberSession';
 
 /**
@@ -547,12 +548,17 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   // A notice links to /myhub?plan=<id> (and &chat=1 for its chat): open that plan once the plans are in
   const asked = searchParams.get('plan');
   const askedChat = searchParams.get('chat') === '1';
+  // A chat opened straight from a link (the แชต list, a phone notification) closes back to where the member was, not
+  // onto the plan sheet: the plan card above the chat already says what the plan is (owner 2026-11-12)
+  const chatOnlyRef = useRef(false);
   useEffect(() => {
     const plan = plans.find((p) => p.id === asked);
     if (!plan) return;
-    setOpenId(plan.id);
     // Someone still asked (not answered) answers first; the chat is for people going
-    if (askedChat && !plan.isInvited) setChatId(plan.id);
+    if (askedChat && !plan.isInvited) {
+      chatOnlyRef.current = true;
+      setChatId(plan.id);
+    } else setOpenId(plan.id);
   }, [asked, askedChat, plans]);
 
   // What is open stays in the address, so "back" from a page opened inside the plan or its chat comes back to it
@@ -567,6 +573,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   // Words typed in the chat's box when it opens ("เราสะดวก …" after marking free days), sent only if the member does
   const [chatDraft, setChatDraft] = useState('');
   const openChat = (planId: string, draft = '') => {
+    chatOnlyRef.current = false;
     setChatDraft(draft);
     setOpenId(planId);
     setChatId(planId);
@@ -575,6 +582,11 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   const closeChat = () => {
     setChatId(null);
     setChatDraft('');
+    if (chatOnlyRef.current) {
+      chatOnlyRef.current = false;
+      setOpenId(null);
+      return showInAddress(null);
+    }
     showInAddress(openId);
   };
 
@@ -670,7 +682,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
           onClose={closeChat}
           event={null}
           roomId={chat.roomId}
-          roomTitle={verb(chat)}
+          roomTitle={planChatTitle({ isQuest: chat.kind === 'quest', title: chat.title })}
           subtitle={`ไปกัน ${chat.people.length} คน`}
           emptyText="ยังไม่มีข้อความ ทักกันแล้วเลือกวันที่ไปกันได้เลย"
           draft={chatDraft || undefined}

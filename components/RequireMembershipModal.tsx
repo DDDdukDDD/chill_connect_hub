@@ -1,92 +1,74 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, Bookmark, Camera, Users } from 'lucide-react';
-import { DialogShell, dialogButton } from './auth/DialogShell';
-import { PhraseText } from './auth/PhraseText';
+import { DialogShell } from './auth/DialogShell';
+import { QuickSignup } from './auth/QuickSignup';
+import { optimizedImage } from '@/lib/optimizedImage';
 
 interface RequireMembershipModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenLogin: () => void;
-  /** Opens the sign-up form in place; without it the button goes to /login?mode=signup */
+  /** Opens the sign-up form in place; without it email sign-up goes to /login?mode=signup */
   onOpenSignup?: () => void;
-  /** Completes "สมัครสมาชิก …", e.g. "เพื่อเข้าร่วมกิจกรรม" */
+  /**
+   * What the visitor tried, e.g. "เพื่อเข้าร่วมกิจกรรม". Kept for the callers, not shown: the popup says one thing
+   * everywhere (owner 2026-11-12: one plain message, the same each time)
+   */
   actionTitle?: string;
   /** Where sign-up comes back to (default: this page), e.g. "/community/<id>?join=1" to finish the join */
   returnTo?: string;
+  /** The picture of what the visitor is looking at (a place, ตี้, อีเวนต์, challenge): it leads the three photos */
+  photo?: string;
 }
 
-// What an account unlocks today (only things that work)
-const PERKS = [
-  { icon: Users, title: 'เข้าร่วมตี้ และชาเลนจ์', desc: 'จองที่ในตี้ และรับภารกิจสะสม XP' },
-  { icon: Camera, title: 'แชร์โมเมนต์ของคุณ', desc: 'โพสต์รูป กดไลก์ และคอมเมนต์โมเมนต์ของเพื่อน' },
-  { icon: Bookmark, title: 'เก็บสิ่งที่ชอบ ไว้ดูทีหลัง', desc: 'บันทึกตี้ ที่เที่ยว และโมเมนต์ที่ถูกใจ' },
-];
+/** Fun moments of people out together, our own files (the /moments collage's): shown when there is no photo of their own */
+const FUN_PHOTOS = ['/images/onboarding/friends-start.jpg', '/images/onboarding/challenge-cheer.jpg', '/images/onboarding/fair-festival.jpg'];
 
-/** Shown when a visitor tries something that needs an account */
-export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({
-  isOpen,
-  onClose,
-  onOpenLogin,
-  onOpenSignup,
-  actionTitle = 'เพื่อดำเนินการต่อ',
-  returnTo,
-}) => {
+/** Three photos as tilted prints over the button (owner 2026-11-12): what the visitor is into, and people out having fun */
+function Prints({ photo }: { photo?: string }) {
+  const photos = photo ? [photo, FUN_PHOTOS[1], FUN_PHOTOS[2]] : FUN_PHOTOS;
+  const tilt = ['-rotate-6 translate-y-1', 'z-10 -translate-y-1', 'rotate-6 translate-y-1'];
+  return (
+    <div className="flex justify-center pb-6" aria-hidden="true">
+      {photos.map((src, i) => (
+        <span key={src} className={`relative ${i ? '-ml-3' : ''} w-[84px] h-[104px] rounded-2xl overflow-hidden border-4 border-white bg-slate-100 shadow-md ${tilt[i]}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- local and remote photos */}
+          <img src={optimizedImage(src, 256)} alt="" className="w-full h-full object-cover" />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Shown when a visitor tries something that needs an account. One plain promise that speaks to why people come
+ * (wanting to go out, nobody to go with), then sign-up right here in one tap, LINE first (owner 2026-11-12).
+ */
+export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({ isOpen, onClose, onOpenLogin, onOpenSignup, returnTo, photo }) => {
   const pathname = usePathname();
   if (!isOpen) return null;
-  const signupHref = `/login?mode=signup&returnTo=${encodeURIComponent(returnTo || pathname || '/')}`;
 
   return (
-    <DialogShell onClose={onClose} title={`สมัครสมาชิก ${actionTitle}`} subtitle="สมัครฟรีง่ายๆ ไม่มีค่าใช้จ่าย">
-      <ul className="space-y-2.5 mb-6">
-        {PERKS.map((perk) => {
-          const Icon = perk.icon;
-          return (
-            <li key={perk.title} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-200">
-              <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5" aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-bold text-slate-900 leading-snug"><PhraseText text={perk.title} /></span>
-                <span className="block text-xs font-medium text-slate-500 mt-0.5"><PhraseText text={perk.desc} /></span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      <Link
-        href={signupHref}
-        data-autofocus
-        onClick={(e) => {
-          onClose();
-          if (onOpenSignup) {
-            e.preventDefault();
-            onOpenSignup();
-          }
-        }}
-        className={`${dialogButton.primary} w-full`}
-      >
-        สมัครเลย
-        <ArrowRight className="w-4 h-4" aria-hidden="true" />
-      </Link>
-
-      <p className="pt-5 mt-6 border-t border-slate-100 text-center text-sm text-slate-600 font-medium">
-        มีบัญชีอยู่แล้ว?{' '}
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            onOpenLogin();
-          }}
-          className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap"
-        >
-          เข้าสู่ระบบ
-        </button>
-      </p>
+    <DialogShell onClose={onClose} size="sm" focusField={false} labelledBy="join-us-title">
+      {/* Two lines of its own: as one line the close button covered its end on a 360 px phone */}
+      <div className="text-center pb-6">
+        <h2 id="join-us-title" className="px-8 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-snug">
+          Chillwaa
+          <br />
+          โซเชียลคนชอบออกไปใช้ชีวิต
+        </h2>
+        <p className="mt-2 text-sm font-medium text-slate-500">มาร่วมสนุก ให้ทุกการใช้ชีวิตมีความหมายไปกับเรา</p>
+      </div>
+      <Prints photo={photo} />
+      <div>
+        <QuickSignup
+          returnTo={returnTo || pathname || '/'}
+          onEmail={onOpenSignup ? () => { onClose(); onOpenSignup(); } : undefined}
+          onLogin={() => { onClose(); onOpenLogin(); }}
+        />
+      </div>
     </DialogShell>
   );
 };

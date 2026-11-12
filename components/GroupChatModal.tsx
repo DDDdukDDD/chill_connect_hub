@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
 import { Bell, BellOff, Flag, Send, Trash2, X } from 'lucide-react';
@@ -179,7 +180,9 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
 
   const title = roomTitle || info?.title || event?.title || 'แชตกลุ่ม';
 
-  return (
+  // Through a portal: a parent with backdrop-filter (the top bar, where the แชต list opens this) would otherwise hold
+  // the fixed window inside its own box, pushing it off the screen with no way to close it (owner 2026-11-12)
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-5 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
         ref={panelRef}
@@ -301,6 +304,7 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
             targetTitle={`ข้อความของ ${reporting.authorName}: "${reporting.text.length > 80 ? `${reporting.text.slice(0, 80)}…` : reporting.text}"`} />
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

@@ -19,3 +19,12 @@ export const HOME_FEED_LOAD_AHEAD_PX = 1800;
 
 /** "ไปกับเพื่อน" (owner 2026-11-10): XP each person earns when both went to a "ไปกัน" plan's place (lib/social/friendPlans.ts) */
 export const PLAN_TOGETHER_POINTS = 40;
+
+/** A plan made from a post that names no place is called this (lib/social/friendPlans.ts) */
+export const POST_PLACE_FALLBACK = 'ที่ในโพสต์นี้';
+/**
+ * A plan's chat title, the same in the chat list, the chat's header and the phone notification: "ไป<place>" or
+ * "ทำชาเลนจ์ <name>". A post with no place would read "ไปที่ในโพสต์นี้", so that one is just "แผนไปกัน".
+ */
+export const planChatTitle = (plan: { isQuest: boolean; title: string }) =>
+  plan.isQuest ? `ทำชาเลนจ์ ${plan.title}` : plan.title === POST_PLACE_FALLBACK ? 'แผนไปกัน' : `ไป${plan.title}`;
