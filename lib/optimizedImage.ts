@@ -16,6 +16,10 @@ export const OPTIMIZED_REMOTE_IMAGES = [
   { hostname: 'www.impact.co.th', pathname: '/**' },
   { hostname: 'images.prismic.io', pathname: '/qsncc/**' },
   { hostname: 'cms-visit.bangkok.go.th', pathname: '/**' },
+  // Places imported from OpenStreetMap/Wikidata: Wikimedia refuses link-preview crawlers (LINE, Facebook: 403), so
+  // share cards must load these through our own domain, and the originals run to 3840 px / ~3 MB
+  { hostname: 'upload.wikimedia.org', pathname: '/**' },
+  { hostname: 'thumb.wikimedia.org', pathname: '/**' },
 ] as const;
 
 export function isOptimizedRemote(src: string): boolean {

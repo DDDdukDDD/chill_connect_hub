@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { isOptimizedRemote } from './optimizedImage';
 
 /** The public address of the site. Set NEXT_PUBLIC_SITE_URL to override it (preview deploys). */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chillwaa.com').replace(/\/$/, '');
@@ -33,6 +34,9 @@ export function pageMetadata({ title, description, path, image, type = 'website'
   image?: string;
   type?: 'website' | 'article';
 }): Metadata {
+  // Link previews (LINE, Facebook) load the picture from our own domain at 1080 px: some hosts refuse their crawlers
+  // (Wikimedia answers 403) and originals can be several MB. The optimizer keeps JPEG/PNG for crawlers that accept */*.
+  const shareImage = image && isOptimizedRemote(image) ? `/_next/image?url=${encodeURIComponent(image)}&w=1080&q=75` : image || DEFAULT_SHARE_IMAGE;
   // The full title is set here: a layout in between (e.g. /community) would otherwise drop the root template
   return {
     title: { absolute: `${title} | ${SITE_NAME}` },
@@ -45,9 +49,9 @@ export function pageMetadata({ title, description, path, image, type = 'website'
       siteName: SITE_NAME,
       locale: 'th_TH',
       type,
-      images: [image || DEFAULT_SHARE_IMAGE],
+      images: [shareImage],
     },
-    twitter: { card: 'summary_large_image', title: `${title} | ${SITE_NAME}`, description, images: [image || DEFAULT_SHARE_IMAGE] },
+    twitter: { card: 'summary_large_image', title: `${title} | ${SITE_NAME}`, description, images: [shareImage] },
   };
 }
 
