@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Flag, MoreHorizontal, Send, Share2, Trash2, UserMinus, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
@@ -24,7 +24,7 @@ import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentF
 import { MomentsChrome, type MomentsChromeContext } from '@/components/moments/MomentsChrome';
 import { useClamped } from './useClamped';
 
-import { MOMENT_TARGETS, isMomentTarget, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
+import { MOMENT_TARGETS, isMomentTarget, momentHasPlace, momentTargetHref, momentTitle } from '@/components/moments/momentTargets';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
 import { clipsAfter, markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
@@ -504,7 +504,13 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 {moment.commentsCount.toLocaleString()}
               </button>
               )}
-              {mayShare && (
+              {mayShare && !momentHasPlace(moment) && (
+              <button type="button" onClick={() => void share()} aria-label="แชร์" className={railButton}>
+                <Share2 className="w-7 h-7 drop-shadow" aria-hidden="true" />
+                แชร์
+              </button>
+              )}
+              {mayShare && momentHasPlace(moment) && (
               <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={railButton}>
                 {/* 46 px wide, inside the rail's 48 px like the other icons: at 55 px it widened the column and pushed it
                     against the screen's edge (owner's phone, 2026-11-12) */}
@@ -590,12 +596,17 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                     </button>
                   )}
                   {/* A photo post has "ชวนไป" in its reaction row; a clip has no row, so it keeps this one */}
-                  {mayShare && moment.video && (
+                  {mayShare && moment.video && (momentHasPlace(moment) ? (
                   <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={iconButton}>
                     <InviteIcon className="h-[17px] w-[39px] shrink-0" />
                     <span className="sr-only sm:not-sr-only">ชวนไป</span>
                   </button>
-                  )}
+                  ) : (
+                  <button type="button" onClick={() => void share()} aria-label="แชร์" className={iconButton}>
+                    <Share2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">แชร์</span>
+                  </button>
+                  ))}
                   {moment.isMine ? (
                     <button type="button" onClick={() => setConfirmDelete(true)} className={`${iconButton} text-slate-500`}>
                       <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -664,14 +675,22 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             </button>
             )}
             {/* The same row as the feed (design 1, owner 2026-11-10): "ชวนไป" is the one action with a shape */}
-            {mayShare && (
+            {mayShare && (momentHasPlace(moment) ? (
             <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
               <span className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-sm text-slate-800 font-semibold transition-colors">
                 <InviteIcon className="h-[17px] w-[39px] shrink-0" />
                 ชวนไป
               </span>
             </button>
-            )}
+            ) : (
+            // Nowhere to go with this post: share it, no invitation (momentHasPlace)
+            <button type="button" onClick={() => void share()} aria-label="แชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
+              <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-sm text-slate-800 font-semibold transition-colors">
+                <Share2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                แชร์
+              </span>
+            </button>
+            ))}
             <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={`${iconButton} ml-auto`}>
               <SaveIcon active={moment.isSaved} />
             </button>
@@ -802,6 +821,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
         <ShareSheet
           canInvite={isLoggedIn}
           onInvite={() => setInviting(true)}
+          onNeedLogin={() => requireLogin('เพื่อชวนเพื่อนไปด้วยกัน')}
           onLine={() => void inviteViaLine({ type: 'moment', id: moment.id }, place ?? '').then((ok) => !ok && showToast('ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ'))}
           onLink={() => void share()}
           invite={{ target: { type: 'moment', id: moment.id }, place: place ?? '' }}

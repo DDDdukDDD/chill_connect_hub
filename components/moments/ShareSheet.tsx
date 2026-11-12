@@ -12,8 +12,13 @@ import { APPS_INVITE_HINT, appsInviteCopied, useAppsInvite } from '@/components/
  * reason Chillwaa exists), then "ส่งทาง LINE" for friends who may not be here yet, then the link through the phone's
  * share sheet. The 9:16 Story card was dropped (owner 2026-11-11): this sheet is for inviting, not showing off.
  */
-export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMessage, onClose }: {
+export function ShareSheet({ canInvite, invite, onInvite, onNeedLogin, onLine, onLink, onMessage, onClose }: {
   canInvite: boolean;
+  /**
+   * A visitor tapped ชวนไป: the sheet still says ชวนไป and offers inviting, which asks them to sign up first (a plan and
+   * its chat need an account), next to the plain link they can share right away (owner 2026-11-12)
+   */
+  onNeedLogin?: () => void;
   /** What "ชวนผ่านแอปอื่น" invites to; without it (or for a guest) the row shares the plain link */
   invite?: { target: InviteTarget; place: string };
   onInvite: () => void;
@@ -28,8 +33,21 @@ export function ShareSheet({ canInvite, invite, onInvite, onLine, onLink, onMess
     action();
   };
   return (
-    <DialogShell onClose={onClose} title={canInvite ? 'ชวนไป' : 'แชร์โมเมนต์'} size="sm" focusField={false}>
+    <DialogShell onClose={onClose} title={canInvite || onNeedLogin ? 'ชวนไป' : 'แชร์โมเมนต์'} size="sm" focusField={false}>
       <ul className="-mx-2 -mt-1">
+        {!canInvite && onNeedLogin && (
+          <li>
+            <button type="button" onClick={pick(onNeedLogin)} className={row}>
+              <span className="w-11 h-11 rounded-full bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0" aria-hidden="true">
+                <InviteIcon className="h-4 w-[37px] shrink-0" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-slate-900">ชวนเพื่อนไปด้วยกัน</span>
+                <span className="block text-xs font-medium text-slate-500">สมัครแป๊บเดียว แล้วนัดวันกับเพื่อนในแชตกลุ่ม</span>
+              </span>
+            </button>
+          </li>
+        )}
         {canInvite && (
           <li>
             <button type="button" onClick={pick(onInvite)} className={row}>

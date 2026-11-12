@@ -28,6 +28,12 @@ export function momentImageSrc(src: string, width = 640): string {
   return optimizedImage(src, width);
 }
 
+/**
+ * "ชวนไป" belongs on a post that names somewhere to go: a place, ตี้, อีเวนต์, challenge or at least a location. A song,
+ * a clip or a thought with nowhere attached gets a plain "แชร์" instead (owner 2026-11-12).
+ */
+export const momentHasPlace = (moment: { targetTitle?: string; location?: string }) => Boolean((moment.targetTitle || moment.location || '').trim());
+
 /** The card title: the caption's first line (the rest is on the moment's own page) */
 export function momentTitle(caption: string): string {
   return (caption.split('\n').find((line) => line.trim()) ?? '').trim();

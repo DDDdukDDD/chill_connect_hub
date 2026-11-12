@@ -5,7 +5,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
@@ -16,7 +16,7 @@ import { CaptionText } from '@/components/moments/CaptionText';
 import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { MomentComposer, CountedQuestNotice, PostOptionFields, type CountedQuest, type MomentComposerInitial, type PostOptions } from '@/components/moments/MomentComposer';
 import { liveHref } from '@/components/home/LiveActivity';
-import { MOMENT_TARGETS } from '@/components/moments/momentTargets';
+import { MOMENT_TARGETS, momentHasPlace } from '@/components/moments/momentTargets';
 import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
@@ -279,14 +279,22 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
-        {mayShare && (
+        {mayShare && (momentHasPlace(moment) ? (
         <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
           <span className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
             <InviteIcon className="h-[17px] w-[39px] shrink-0" />
             ชวนไป
           </span>
         </button>
-        )}
+        ) : (
+        // Nowhere to go with this post: share it, no invitation (momentHasPlace)
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
+          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
+            <Share2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+            แชร์
+          </span>
+        </button>
+        ))}
         <button
           type="button"
           onClick={() => handlers.onToggle(moment.id, moment.isSaved ? 'unsave' : 'save')}
