@@ -5,6 +5,13 @@ import { InvitePill } from '@/components/invites/InvitePill';
 import type { InviteTarget } from '@/components/invites/InviteSheet';
 
 /**
+ * "ชวนไป" in a phone bar (places, อีเวนต์, ตี้): a pill, not a circle, since the paper-plane icon is wide and a 40 px
+ * circle crowds it (placement pass 2026-11-12). Same border as the bar's round buttons beside it.
+ */
+export const PHONE_BAR_INVITE =
+  'h-10 px-3 rounded-full border border-slate-200 bg-white inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]';
+
+/**
  * The bar that rises above the phone menu once the header's buttons scroll away (MobileNav `actionBar`), for places
  * and อีเวนต์ (owner 2026-11-12, like ตี้ and ชาเลนจ์): what and when on the left, then "ชวนไป" and the page's one
  * main button, so neither is ever more than a thumb away.
@@ -27,7 +34,7 @@ export function PhoneActionBar({ title, status, invite, primary }: {
         <InvitePill
           {...invite}
           iconOnly
-          className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95 text-slate-700"
+          className={PHONE_BAR_INVITE}
         />
       )}
       <button

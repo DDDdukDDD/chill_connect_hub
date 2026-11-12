@@ -13,6 +13,7 @@ import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { CancelTicketModal } from '@/components/CancelTicketModal';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { InvitePill } from '@/components/invites/InvitePill';
+import { PHONE_BAR_INVITE } from '@/components/detail/PhoneActionBar';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { InviteNudge } from '@/components/invites/InviteNudge';
 import { useAuth } from '@/lib/useAuth';
@@ -637,7 +638,7 @@ export default function CommunityDetailPage({
                   ลงทะเบียนเข้าร่วม
                 </button>
               )}
-              {!isEnded && <InvitePill target={{ type: 'community', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนมาตี้นี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`} iconOnlyOnPhone />}
+              {!isEnded && <InvitePill target={{ type: 'community', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนมาตี้นี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3.5`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={onShare} aria-label={shareLabel} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied && !isTripMember ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
@@ -1253,22 +1254,28 @@ export default function CommunityDetailPage({
                 : `เหลืออีก ${Math.max(eventData.maxParticipants - eventData.participantsCount, 0)} ที่`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleFavorite(eventData.id)}
-            aria-label={isFav ? 'เอาออกจากที่บันทึก' : 'บันทึกตี้'}
-            className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 cursor-pointer active:scale-95 ${isFav ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-200'}`}
-          >
-            <Heart className={`w-4 h-4 ${isFav ? 'fill-[#F26430] text-[#F26430]' : 'text-slate-600'}`} />
-          </button>
-          <button
-            type="button"
-            onClick={onShare}
-            aria-label={isTripMember ? 'ส่งรายละเอียดให้คนใกล้ตัว' : 'แชร์ตี้'}
-            className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
-          >
-            {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}
-          </button>
+          {/* The bar keeps what and when, ชวนไป and the one main button, as on places and อีเวนต์ (owner 2026-11-12); the
+              heart stays in the header, so the time is never cut. A trip member keeps "send to someone close" here */}
+          {!isEnded && !isTripMember ? (
+            <InvitePill
+              target={{ type: 'community', id: eventData.id }}
+              place={eventData.title}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนมาตี้นี้ด้วยกัน'); setIsRequireMembershipOpen(true); }}
+              onMessage={showToast}
+              iconOnly
+              className={PHONE_BAR_INVITE}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={onShare}
+              aria-label={isTripMember ? 'ส่งรายละเอียดให้คนใกล้ตัว' : 'แชร์ตี้'}
+              className="w-10 h-10 rounded-full border border-slate-200 bg-white flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+            >
+              {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-600" />}
+            </button>
+          )}
           {isEnded || (isStarted && !isJoined) ? (
             <button type="button" disabled className="px-4 py-2.5 rounded-full bg-slate-100 text-slate-500 text-xs sm:text-sm font-bold shrink-0 cursor-not-allowed">
               {isCancelled ? 'ยกเลิกแล้ว' : isEnded ? 'สิ้นสุดแล้ว' : 'ปิดรับแล้ว'}

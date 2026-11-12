@@ -1198,7 +1198,8 @@ function MyHubContent() {
                       onRequireLogin={() => undefined}
                       onMessage={showToast}
                       iconOnly
-                      className="shrink-0 w-11 h-11 rounded-full inline-flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
+                      // A soft pill like the feed's, so the wide icon reads as a button next to the bookmark (placement pass 2026-11-12)
+                      className="shrink-0 h-9 px-2.5 rounded-full inline-flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
                     />
                   )}
                   <button

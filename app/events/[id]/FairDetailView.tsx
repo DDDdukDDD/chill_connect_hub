@@ -589,12 +589,20 @@ export default function FairDetailPage({
                 {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
               </button>
               {officialWebsiteUrl && (
-                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" className={`${heroButton.quiet} max-sm:px-3`}>
-                  {officialLinkLabel}
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" aria-label={officialLinkLabel} className={`${heroButton.quiet} max-sm:px-3`}>
+                  {/* "ดูรายละเอียดงาน" pushed ชวนไป and แชร์ to a second row at 390px: phones say it shorter */}
+                  {officialLinkLabel === 'ดูรายละเอียดงาน' ? (
+                    <>
+                      <span className="sm:hidden" aria-hidden="true">เว็บงาน</span>
+                      <span className="max-sm:hidden" aria-hidden="true">{officialLinkLabel}</span>
+                    </>
+                  ) : (
+                    officialLinkLabel
+                  )}
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
-              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`} iconOnlyOnPhone />}
+              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3.5`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Check, Loader2, MessageCircle, Search, Share2 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentAvatar } from '@/components/moments/CommentThread';
@@ -56,8 +57,25 @@ function weekendDays(): { sat: string; sun: string } {
  * to pick, several at once; LINE reaches the ones not on Chillwaa yet. Everyone who answers "ไปกัน" lands in one group
  * plan and its chat; a ตี้ invitation leads to the ตี้'s own sign-up instead.
  */
-export function InviteSheet({ target, place, onClose, onDone }: { target: InviteTarget; place: string; onClose: () => void; onDone: (message: string) => void }) {
+export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { target: InviteTarget; place: string; onClose: () => void; onDone: (message: string) => void; exceptPlanId?: string }) {
   const [friends, setFriends] = useState<TagFriend[] | null>(null);
+  // "คุณมีนัดที่นี่แล้ว" (owner 2026-11-12): plans the member is already going on here lead back to their chat
+  const [plans, setPlans] = useState<{ id: string; title: string; dateLabel?: string; people: number; inPlan?: string[] }[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/invites?type=${encodeURIComponent(target.type)}&id=${encodeURIComponent(target.id)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => active && Array.isArray(json?.plans) && setPlans(json.plans))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [target.type, target.id]);
+  const planned = plans.filter((p) => p.id !== exceptPlanId);
+  // Friends already asked to (or going on) the member's own plan here: asking again would do nothing
+  const alreadyIn = useMemo(() => new Set(plans.flatMap((p) => p.inPlan ?? [])), [plans]);
+  // Invitations join one's own plan here; when it already has a day, a day picked now would be ignored
+  const ownHasDay = plans.some((p) => p.inPlan && p.dateLabel);
   const [picked, setPicked] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -108,7 +126,27 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
 
   return (
     <DialogShell onClose={onClose} title="ชวนไป" subtitle={place ? (isTee ? `ชวนเพื่อนมาตี้ ${place}` : `ชวนเพื่อนไป ${place} ด้วยกัน`) : 'ชวนเพื่อนไปด้วยกัน'} size="sm">
-      {canPickDay && (
+      {planned.length > 0 && (
+        <div className="mb-4 rounded-2xl bg-blue-50 px-3 py-2.5">
+          <p className="text-[13px] font-semibold text-[#1D4ED8]">คุณมีนัดที่นี่แล้ว</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {planned.map((plan) => (
+              <li key={plan.id} className="flex items-center gap-3">
+                <span className="min-w-0 flex-1 text-sm text-slate-800">
+                  <span className="block truncate font-semibold text-slate-900">{plan.dateLabel ? `นัดกัน ${plan.dateLabel}` : 'ยังไม่ได้นัดวัน'}</span>
+                  <span className="block text-[13px] text-slate-600">ไปกัน {plan.people} คน</span>
+                </span>
+                {/* White, not blue: inviting stays the sheet's one primary button */}
+                <Link href={`/myhub?plan=${encodeURIComponent(plan.id)}&chat=1`} onClick={onClose} className="shrink-0 h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-white hover:bg-slate-50 text-[13px] font-bold text-[#1D4ED8] whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                  <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                  ไปที่แชตนัด
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {canPickDay && !ownHasDay && (
         <div className="mb-4" role="radiogroup" aria-label="ไปวันไหน">
           <p className="mb-2 text-[13px] font-semibold text-slate-500">ไปวันไหน</p>
           <div className="flex flex-wrap gap-2">
@@ -134,34 +172,16 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
           </div>
         </div>
       )}
-      <button type="button" onClick={viaLine} className="w-full flex items-center gap-3 py-2 mb-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer">
-        <span className="w-10 h-10 shrink-0 rounded-full bg-[#06C755] text-white flex items-center justify-center" aria-hidden="true">
-          <MessageCircle className="w-5 h-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-slate-900">ชวนทาง LINE</span>
-          <span className="block text-[13px] text-slate-500">ส่งให้เพื่อนในแชต LINE</span>
-        </span>
-      </button>
-      <button type="button" onClick={() => void apps.go()} disabled={apps.busy} className="w-full flex items-center gap-3 py-2 mb-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer">
-        <span className="w-10 h-10 shrink-0 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center" aria-hidden="true">
-          {apps.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-slate-900">{apps.isReady ? 'คำชวนพร้อมแล้ว แตะอีกครั้งเพื่อส่ง' : 'ชวนผ่านแอปอื่น'}</span>
-          <span className="block text-[13px] text-slate-500">{APPS_INVITE_HINT}</span>
-        </span>
-      </button>
-
+      {/* Friends on Chillwaa first (owner 2026-11-12: our chat leads); LINE and other apps for everyone else, below */}
       {friends === null ? (
         <div className="py-8 flex justify-center" role="status" aria-label="กำลังโหลดรายชื่อเพื่อน">
           <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin" />
         </div>
       ) : friends.length === 0 ? (
-        <p className="py-4 text-center text-sm font-medium text-slate-600">เพื่อนที่ติดตามกันทั้งสองฝ่ายจะขึ้นที่นี่ ให้ชวนได้ในแอป</p>
+        <p className="py-3 text-sm text-slate-600">เพื่อนที่ติดตามกันทั้งสองฝ่ายจะขึ้นที่นี่ ให้ชวนได้ในแอป</p>
       ) : (
         <>
-          <p className="mt-1 mb-2 text-[13px] font-semibold text-slate-500">เพื่อนใน Chillwaa · เลือกได้สูงสุด {MAX_INVITES} คน</p>
+          <p className="mb-2 text-[13px] font-semibold text-slate-500">เพื่อนใน Chillwaa · เลือกได้สูงสุด {MAX_INVITES} คน</p>
           {friends.length > 6 && (
             <label className="relative block mb-3">
               <span className="sr-only">ค้นหาเพื่อน</span>
@@ -177,6 +197,7 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
           <ul className="max-h-[45dvh] overflow-y-auto -mx-2 mb-4" aria-label="เพื่อนที่ชวนได้">
             {shown.map((friend) => {
               const isPicked = picked.includes(friend.id);
+              const isIn = alreadyIn.has(friend.id);
               const isFull = !isPicked && picked.length >= MAX_INVITES;
               return (
                 <li key={friend.id}>
@@ -184,14 +205,18 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
                     type="button"
                     onClick={() => toggle(friend.id)}
                     aria-pressed={isPicked}
-                    disabled={isFull}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={isFull || isIn}
+                    className={`w-full flex items-center gap-3 px-2 py-2 rounded-2xl text-left cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${isIn ? '' : 'hover:bg-slate-50 disabled:opacity-40'}`}
                   >
                     <MomentAvatar name={friend.name} src={friend.avatar} className="w-10 h-10 text-sm" />
                     <span className="flex-1 min-w-0 truncate text-sm font-semibold text-slate-900">{friend.name}</span>
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPicked ? 'bg-slate-900 text-white' : 'border-2 border-slate-300'}`} aria-hidden="true">
-                      {isPicked && <Check className="w-4 h-4" />}
-                    </span>
+                    {isIn ? (
+                      <span className="shrink-0 text-xs text-slate-500">ชวนแล้ว</span>
+                    ) : (
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPicked ? 'bg-slate-900 text-white' : 'border-2 border-slate-300'}`} aria-hidden="true">
+                        {isPicked && <Check className="w-4 h-4" />}
+                      </span>
+                    )}
                   </button>
                 </li>
               );
@@ -202,7 +227,29 @@ export function InviteSheet({ target, place, onClose, onDone }: { target: Invite
           </button>
         </>
       )}
-      {error && <p className="mt-3 text-sm font-medium text-rose-600" role="alert">{error}</p>}
+
+      <div className={friends && friends.length > 0 ? 'mt-5 pt-4 border-t border-slate-100' : 'mt-1'}>
+        <p className="mb-1 text-[13px] font-semibold text-slate-500">เพื่อนที่ยังไม่อยู่ใน Chillwaa</p>
+        <button type="button" onClick={viaLine} className="w-full flex items-center gap-3 py-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+          <span className="w-10 h-10 shrink-0 rounded-full bg-[#06C755] text-white flex items-center justify-center" aria-hidden="true">
+            <MessageCircle className="w-5 h-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-slate-900">ชวนทาง LINE</span>
+            <span className="block text-[13px] text-slate-500">ส่งให้เพื่อนในแชต LINE</span>
+          </span>
+        </button>
+        <button type="button" onClick={() => void apps.go()} disabled={apps.busy} className="w-full flex items-center gap-3 py-2 rounded-2xl hover:bg-slate-50 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+          <span className="w-10 h-10 shrink-0 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center" aria-hidden="true">
+            {apps.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-slate-900">{apps.isReady ? 'คำชวนพร้อมแล้ว แตะอีกครั้งเพื่อส่ง' : 'ชวนผ่านแอปอื่น'}</span>
+            <span className="block text-[13px] text-slate-500">{APPS_INVITE_HINT}</span>
+          </span>
+        </button>
+      </div>
+      {error &&<p className="mt-3 text-sm font-medium text-rose-600" role="alert">{error}</p>}
     </DialogShell>
   );
 }

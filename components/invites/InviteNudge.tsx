@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import { InviteIcon } from '@/components/icons/InviteIcon';
+import { PhraseText } from '@/components/auth/PhraseText';
 import { InvitePill } from './InvitePill';
 import type { InviteTarget } from './InviteSheet';
 
@@ -20,9 +20,10 @@ export function InviteNudge({ target, place, text, onMessage, onClose, className
   className?: string;
 }) {
   return (
+    // One paper plane only: the button carries it, a second one in front said the same thing twice (placement pass 2026-11-12)
     <div role="status" className={`flex items-center gap-3 rounded-2xl bg-blue-50 pl-4 pr-2 py-2.5 ${className}`}>
-      <InviteIcon className="h-5 w-[46px] shrink-0" />
-      <p className="flex-1 min-w-0 text-sm font-semibold text-slate-900">{text}</p>
+      {/* Lines wrap only between phrases ("บันทึกแล้ว" / "ชวนเพื่อนไปด้วยไหม?"), never inside a word */}
+      <p className="flex-1 min-w-0 text-sm font-semibold text-slate-900"><PhraseText text={text} /></p>
       <InvitePill
         target={target}
         place={place}
