@@ -132,7 +132,7 @@ async function run() {
   const dated = await B.call(`/api/plans/${sent.planId}`, 'PATCH', { date: tomorrow });
   check('the day is set', dated.plan?.date === tomorrow && dated.plan.people.length === 3, dated.message ?? String(dated.plan?.people?.length));
   const chat = await C.call(`/api/chat/${encodeURIComponent(`plan~${sent.planId}`)}`);
-  check('one group chat with the day in it', chat.status === 200 && (chat.messages ?? []).some((m) => m.text.includes('นัดไป')), String(chat.status));
+  check('one group chat with the day in it', chat.status === 200 && (chat.messages ?? []).some((m) => m.text.startsWith('นัดกัน') && m.kind === 'event'), String(chat.status));
   const forged = await C.call('/api/invites/answer', 'POST', { token: `p.${sent.planId}.AAAAAAAAAAAAAAAAAAAAAA` });
   check('a forged link is refused', forged.status === 404, String(forged.status));
   const own = await A.call('/api/invites/answer', 'POST', { token });

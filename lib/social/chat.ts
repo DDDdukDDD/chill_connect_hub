@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { isEventEnded } from '../dateUtils';
 import { uuidV7 } from '../db/postgres/rows.mjs';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
@@ -11,6 +12,7 @@ import { friendPlanStore } from './friendPlanStore';
 import { guardMemberText } from './textRules';
 import { afterResponse, pushConfigured, sendPush } from './push';
 import { pushStore } from './pushStore';
+import { planChatTitle } from './socialRules';
 
 /**
  * Group chat of an event (room id = event id) or of a fair meet-up group (room id = grp_…), and the two-person
@@ -22,7 +24,7 @@ const KEEP_PER_ROOM = 500;
 const PAGE = 100;
 
 /** A "ไปกัน" plan's chat reads as what they are going to do */
-const planTitle = (plan: { targetType: string; title: string }) => (plan.targetType === 'quest' ? `ทำชาเลนจ์ ${plan.title}` : `ไป${plan.title}`);
+const planTitle = (plan: { targetType: string; title: string }) => planChatTitle({ isQuest: plan.targetType === 'quest', title: plan.title });
 
 /**
  * Where a notice about a room leads. A plan's chat opens over its plan in My Hub; any other room opens where the
@@ -51,7 +53,7 @@ export async function roomPeople(roomId: string): Promise<{ title: string; membe
   return { title: event.title, memberIds: [...ids], isPair: false };
 }
 
-async function roomOf(member: Member, roomId: string): Promise<{ title: string; members: number }> {
+async function roomOf(member: Member, roomId: string): Promise<{ title: string; members: number; ended?: boolean }> {
   // A "ไปกัน" group plan (room id = plan~<planId>, lib/social/friendPlans.ts): everyone going, the host included
   if (roomId.startsWith('plan~')) {
     const plan = await friendPlanStore.byId(roomId.slice(5));
@@ -77,7 +79,7 @@ async function roomOf(member: Member, roomId: string): Promise<{ title: string; 
   if (!event) throw new MemberAuthError('ไม่พบห้องแชต', 404);
   const isHost = (event as { createdByMemberId?: string }).createdByMemberId === member.id;
   if (!isHost && !(await db.getParticipant(roomId, member.id))) throw new MemberAuthError('แชตนี้สำหรับคนที่เข้าร่วมตี้เท่านั้น', 403);
-  return { title: event.title, members: (await db.listParticipants(roomId)).length };
+  return { title: event.title, members: (await db.listParticipants(roomId)).length, ended: isEventEnded(event) };
 }
 
 export async function chatMessages(member: Member, roomId: string, after?: string) {
@@ -116,16 +118,19 @@ export async function muteChat(member: Member, roomId: string, muted: boolean): 
 
 const INBOX_DAYS = 60;
 const INBOX_ROOMS = 20;
+const ENDED_ROOM_QUIET_DAYS = 7;
 
 /**
  * "แชต" in the top bar: the member's rooms with talk in the last 60 days, newest first, each with what is unread
- * and the last line. A room they can no longer read (left the ตี้, plan called off) is left out.
+ * and the last line. A room they can no longer read (left the ตี้, plan called off) is left out, and so is a
+ * ตี้/อีเวนต์ that is over once nobody has written for 7 days (owner 2026-11-12); its chat still opens from its page.
  */
 export async function chatInbox(member: Member) {
   const since = new Date(Date.now() - INBOX_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const quietSince = new Date(Date.now() - ENDED_ROOM_QUIET_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const found = await chatStore.roomsOf(member.id, { withoutAuthors: member.blockedIds ?? [], since, limit: INBOX_ROOMS });
   const checked = await Promise.all(found.map((r) => roomOf(member, r.roomId).then((room) => ({ ...r, room }), () => null)));
-  const rooms = checked.filter((r) => r !== null);
+  const rooms = checked.filter((r) => r !== null).filter((r) => !(r.room.ended && r.lastAt < quietSince));
   const authors = await memberRepository.findByIds(rooms.map((r) => r.lastAuthorId).filter(Boolean));
   const items = rooms.map((r) => {
     const author = authors.get(r.lastAuthorId);

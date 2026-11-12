@@ -15,7 +15,9 @@ export async function GET(request: Request, context: Context) {
     return NextResponse.json({ success: true, ...(await chatMessages(member, (await context.params).roomId, after)) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
-    return NextResponse.json({ success: false, message: 'ทำรายการไม่สำเร็จ' }, { status: 400 });
+    // Not the member's doing (e.g. a migration not yet run): say so plainly and leave the cause in the server log
+    console.error('[chat] could not read room', error);
+    return NextResponse.json({ success: false, message: 'เปิดแชตไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะ' }, { status: 500 });
   }
 }
 

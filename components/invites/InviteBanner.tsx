@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Loader2, MessageCircle } from 'lucide-react';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { InviteInfo } from '@/lib/social/friendPlans';
+import { POST_PLACE_FALLBACK } from '@/lib/social/socialRules';
 
 // Only a guest who taps "ไปกัน" needs it (it brings the sign-up buttons)
 const InviteSignupSheet = dynamic(() => import('./InviteSignupSheet').then((m) => m.InviteSignupSheet), { ssr: false });
@@ -131,7 +132,7 @@ export function InviteBanner({
 
   // The page already names the place: the line says who asked, the second line who is going (design pass 2026-11-12)
   // A post's page shows its photo first and names the place further down, so there the line names it (E2E pass 2026-11-12)
-  const onPost = window.location.pathname.startsWith('/moments/') && info.title && info.title !== 'ที่ในโพสต์นี้';
+  const onPost = window.location.pathname.startsWith('/moments/') && info.title && info.title !== POST_PLACE_FALLBACK;
   // Warmer, not louder (owner 2026-11-12): the friend's face leads, the day sits in the first line, and whoever already
   // said yes shows as faces under it. No new colour: rose reads as "no" and is the Moments pillar's.
   const where = onPost ? `ไป${info.title}` : 'ไปด้วยกัน';
