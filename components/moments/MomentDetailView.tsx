@@ -506,7 +506,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               )}
               {mayShare && (
               <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className={railButton}>
-                <InviteIcon className="h-6 w-[55px] drop-shadow" mono />
+                {/* 46 px wide, inside the rail's 48 px like the other icons: at 55 px it widened the column and pushed it
+                    against the screen's edge (owner's phone, 2026-11-12) */}
+                <InviteIcon className="h-5 w-[46px] drop-shadow" mono />
                 ชวนไป
               </button>
               )}

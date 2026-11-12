@@ -602,7 +602,7 @@ export default function FairDetailPage({
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
-              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`} iconOnlyOnPhone />}
+              {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3.5`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
               <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
