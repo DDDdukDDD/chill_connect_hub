@@ -116,6 +116,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       </main>
       {bottomBar ?? <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />}
       <RequireMembershipModal
+        photo={quest?.image || quest?.badgeCoverImg}
         isOpen={isRequireMembershipOpen}
         onClose={() => setIsRequireMembershipOpen(false)}
         onOpenLogin={() => {

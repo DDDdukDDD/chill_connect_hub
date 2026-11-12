@@ -926,6 +926,7 @@ export default function FairDetailPage({
 
       {/* Modals */}
       <RequireMembershipModal
+        photo={galleryImages[0] || eventData.image}
         isOpen={isRequireMembershipOpen}
         onClose={() => {
           setIsRequireMembershipOpen(false);

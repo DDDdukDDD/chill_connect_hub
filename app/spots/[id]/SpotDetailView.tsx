@@ -196,7 +196,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
 
   const toggleFavorite = (spotId: string) => {
     if (!isLoggedIn) {
-      setMembershipActionTitle('เพื่อบันทึกสถานที่ลงในสมุดบันทึกการเดินทาง (Travel Scrapbook)');
+      setMembershipActionTitle('เพื่อบันทึกที่ที่ไปมาแล้ว');
       setIsRequireMembershipOpen(true);
       return;
     }
@@ -633,6 +633,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
         }}
       />
       <RequireMembershipModal
+        photo={galleryImages[0] || resolveSpotImage(spot)}
         isOpen={isRequireMembershipOpen}
         onClose={() => setIsRequireMembershipOpen(false)}
         onOpenLogin={() => {

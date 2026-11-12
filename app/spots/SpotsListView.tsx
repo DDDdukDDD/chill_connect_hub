@@ -327,7 +327,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
                 type="button"
                 onClick={() => {
                   if (!isLoggedIn) {
-                    setMembershipActionTitle('เพื่อดูสถานที่ที่บันทึกไว้ใน Bucket List');
+                    setMembershipActionTitle('เพื่อดูที่ที่อยากไป');
                     setIsRequireMembershipOpen(true);
                     return;
                   }
