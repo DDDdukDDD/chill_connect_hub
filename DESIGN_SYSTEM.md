@@ -97,7 +97,7 @@ Always pair the color with an icon and text. Never show a state by color alone.
 | Danger | `bg-rose-600 hover:bg-rose-700 text-white` | Only the final confirmation of something that cannot be undone (delete account). Logging out is not a danger action |
 | Disabled | `bg-slate-200 text-slate-400 cursor-not-allowed` | Any level when unavailable |
 
-- One primary button per screen or dialog. **Exception (owner, 2026-11-05):** the round search button in the top bar is blue on every page and does not count, since it belongs to the bar and not to the screen.
+- One primary button per screen or dialog. **Exception (owner, 2026-11-05):** the round search button in the top bar is blue on every page and does not count, since it belongs to the bar and not to the screen. **Exception (owner, 2026-11-12):** the "แชร์โมเมนต์" button at the top of /moments stays rose (`#E11D48`), in the welcome band and in the members' title row; it is the Moments pillar's own call, so do not switch it to slate.
 - Shape: `rounded-full` for standalone buttons, `rounded-2xl` inside dense toolbars.
 - A button label stays on one line (`whitespace-nowrap`). If it does not fit at 360px, shorten the label.
 - A button that starts a request shows a spinner and a "กำลัง…" label, and is disabled until the request ends.

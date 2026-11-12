@@ -1,6 +1,8 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { MEMBER_SESSION_COOKIE } from '@/lib/members/session';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
-import { countMomentsByType, listMoments, trendingHashtags } from '@/lib/moments/service';
+import { listMoments, trendingHashtags } from '@/lib/moments/service';
 import { hashtagHref } from '@/lib/moments/hashtags';
 import { jsonLdHtml, momentCollectionJsonLd } from '@/lib/structuredData';
 import { MomentShowcase, type ShowcasePlace } from '@/components/moments/MomentShowcase';
@@ -38,7 +40,7 @@ export default async function MomentsPage({ searchParams }: Props) {
   const chip = !place && isMomentTarget(type) ? type : 'all';
 
   await ensureSampleMembers(); // development sample accounts for the sample posts
-  const [list, counts, trending] = await Promise.all([
+  const [list, trending, jar] = await Promise.all([
     listMoments(null, {
       // ทั้งหมด is popular mixed with new (the grid's next pages ask for the same)
       tab: !place && chip === 'all' ? 'mix' : undefined,
@@ -47,9 +49,9 @@ export default async function MomentsPage({ searchParams }: Props) {
       location: place && !place.targetId ? place.location : undefined,
       limit: 24,
     }),
-    // A count beside each tab, and the week's tags (not on one place's moments, which has no tabs)
-    place ? undefined : countMomentsByType(),
+    // The week's tags (not on one place's moments)
     place ? undefined : trendingHashtags(),
+    cookies(),
   ]);
   const moments = list.moments.filter((moment) => moment.images[0]);
 
@@ -70,7 +72,7 @@ export default async function MomentsPage({ searchParams }: Props) {
         initialCursor={list.pagination.nextCursor}
         initialChip={chip}
         place={place}
-        counts={counts}
+        signedIn={jar.has(MEMBER_SESSION_COOKIE)}
         tags={trending?.tags.length ? trending : undefined}
       />
     </>
