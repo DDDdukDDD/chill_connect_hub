@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-355 · Reaction row icons and the ชวนไป icon (owner 2026-11-12)
+- **What changed:** feed and moment page rows use `components/icons/ActionIcons.tsx` (LikeIcon, CommentIcon, SaveIcon, from the owner's 24 px set): dark outline, empty while off; on = bright fill + smiling face + a short pop (`animate-icon-pop` in globals.css, only when turned on, not on load). ชวนไป everywhere uses `components/icons/InviteIcon.tsx` (two buddies + arrow, wide: give it a width, e.g. `h-[17px] w-[39px]`; `mono` for white over a clip). Clip overlay buttons keep the white line icons. The ชวนไป pill in the row is 32 px high so Thai vowels on the "ถูกใจโดย" line below no longer touch it.
+
+### BE-354 · Link previews load place pictures through our domain (2026-11-12)
+- **What changed:** Wikimedia answers 403 to LINE/Facebook crawlers, so ชวนไป links (`/i/<code>`) and place pages showed the site logo in LINE. `pageMetadata` (lib/site.ts) now sends an image on an optimizer host as `/_next/image?...&w=1080` (JPEG for crawlers, ~90 KB instead of ~3 MB). `upload.wikimedia.org` and `thumb.wikimedia.org` joined `OPTIMIZED_REMOTE_IMAGES` (lib/optimizedImage.ts), so place cards with Wikimedia photos are resized too.
+- **What to do about it:** `lib/site.ts` is loaded by next.config.ts: import from it with relative paths only (`@/` breaks the config). LINE caches a card per link; old links may keep the logo, new ones show the place.
+
 ### BE-353 · Places in Krabi, Chiang Rai, Ayutthaya, Kanchanaburi and Prachuap (dev, 2026-11-12)
 - **What changed:** OpenStreetMap + Wikipedia import (scripts/import-osm-places.cjs, 30 per province) on the **dev** database: Krabi 11, Chiang Rai 28, Ayutthaya 24 (second try; Overpass timed out the first), Kanchanaburi 6, Prachuap Khiri Khan 11. db/content/cities-osm-2026-11-12-vibes.json: "why go" texts for 54 (feel first, one practical tip, only facts I am sure of) and 25 set to draft: small temples with too little to say, and three national parks whose land is mostly in another province (Hat Chao Mai: Trang; Phu Sang, Mae Puem: Phayao; Kaeng Krachan: Phetchaburi).
 - **What to do about it:** owner looks at /spots on localhost:3000; when OK, the live steps are in LAUNCH_CHECKLIST.

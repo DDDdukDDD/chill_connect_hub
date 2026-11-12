@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
 import { InviteSheet, type InviteTarget } from '@/components/invites/InviteSheet';
 
 /**
@@ -33,7 +33,7 @@ export function InvitePill({
   return (
     <>
       <button type="button" onClick={() => (isLoggedIn ? setIsOpen(true) : onRequireLogin())} aria-label="ชวนเพื่อนไป" className={className}>
-        <Send className="w-4 h-4 -rotate-12" aria-hidden="true" />
+        <InviteIcon className="h-[17px] w-[39px] shrink-0" />
         <span className={iconOnly ? 'sr-only' : iconOnlyOnPhone ? 'max-sm:sr-only' : undefined}>ชวนไป</span>
       </button>
       {isOpen && (

@@ -5,7 +5,9 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Heart, Image as ImageIcon, Link2, MessageCircle, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
+import { InviteIcon } from '@/components/icons/InviteIcon';
+import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -261,7 +263,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
-          <Heart className={`w-5 h-5 ${moment.isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
+          <LikeIcon active={moment.isLiked} />
           {moment.likesCount > 0 && !friendLike && <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>}
         </button>
         )}
@@ -273,14 +275,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label="ความคิดเห็น"
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
-          <MessageCircle className="w-5 h-5" aria-hidden="true" />
+          <CommentIcon />
           {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
         {mayShare && (
         <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
-          <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-            <Send className="w-[18px] h-[18px] -rotate-12" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
+            <InviteIcon className="h-[17px] w-[39px] shrink-0" />
             ชวนไป
           </span>
         </button>
@@ -292,7 +294,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'}
           className={`inline-flex items-center justify-center min-h-11 min-w-11 ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
         >
-          <Bookmark className={`w-5 h-5 ${moment.isSaved ? 'fill-current' : ''}`} aria-hidden="true" />
+          <SaveIcon active={moment.isSaved} />
         </button>
       </div>
 
