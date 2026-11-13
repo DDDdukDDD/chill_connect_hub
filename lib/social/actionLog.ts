@@ -149,9 +149,19 @@ export interface Bringer {
   joins: number;
   saves: number;
   inviteYes: number;
+  /** Viewer-days of their posts in the range (app.moment_daily_views, migration 0053) */
+  views: number;
+  /** Their posts that someone saw in the range */
+  postsSeen: number;
 }
 
-/** The members who brought the most different people in the last `days` days (admin) */
+/** "Since this many days" as a Bangkok date, for app.moment_daily_views */
+const BKK_TODAY = "(now() at time zone 'Asia/Bangkok')::date";
+
+/**
+ * The members who brought the most different people in the last `days` days, and the members whose posts were seen the
+ * most (admin). Each list is cut at `limit`, then merged, so a creator with reach but nobody brought yet still shows.
+ */
 export async function topBringers(days: number, limit = 20): Promise<Bringer[]> {
   try {
     if (!USE_POSTGRES) {
@@ -161,12 +171,12 @@ export async function topBringers(days: number, limit = 20): Promise<Bringer[]> 
       const people = await memberRepository.findByIds([...by.keys()]);
       const count = (rows: LogRow[], action?: TracedAction) => new Set(rows.filter((r) => !action || r.action === action).map((r) => r.memberId)).size;
       return [...by.entries()]
-        .map(([id, rows]) => ({ memberId: id, name: people.get(id)?.displayName ?? '', avatar: people.get(id)?.avatarUrl ?? '', people: count(rows), visits: count(rows, 'visit'), joins: count(rows, 'join'), saves: count(rows, 'save'), inviteYes: count(rows, 'invite_yes') }))
+        .map(([id, rows]) => ({ memberId: id, name: people.get(id)?.displayName ?? '', avatar: people.get(id)?.avatarUrl ?? '', people: count(rows), visits: count(rows, 'visit'), joins: count(rows, 'join'), saves: count(rows, 'save'), inviteYes: count(rows, 'invite_yes'), views: 0, postsSeen: 0 }))
         .sort((a, b) => b.people - a.people)
         .slice(0, limit);
     }
     const db = sql();
-    const rows = await db`
+    const brought = await db`
       select c.legacy_id, coalesce(c.display_name, '') as name, coalesce(c.avatar_url, '') as avatar,
         count(distinct l.member_id)::int as people,
         count(distinct l.member_id) filter (where l.action = 'visit')::int as visits,
@@ -176,7 +186,71 @@ export async function topBringers(days: number, limit = 20): Promise<Bringer[]> 
       from app.action_log l join app.members c on c.id = l.credited_id
       where l.created_at > now() - make_interval(days => ${days})
       group by c.id order by people desc, visits desc limit ${limit}`;
-    return rows.map((r) => ({ memberId: r.legacy_id, name: r.name, avatar: r.avatar, people: r.people, visits: r.visits, joins: r.joins, saves: r.saves, inviteYes: r.invite_yes }));
+    const out = new Map<string, Bringer>(
+      brought.map((r) => [r.legacy_id, { memberId: r.legacy_id, name: r.name, avatar: r.avatar, people: r.people, visits: r.visits, joins: r.joins, saves: r.saves, inviteYes: r.invite_yes, views: 0, postsSeen: 0 }]),
+    );
+    try {
+      const ids = [...out.keys()];
+      const since = db`${db.unsafe(BKK_TODAY)} - ${days}::int`;
+      const byAuthor = (where: ReturnType<typeof db>, cap: number) => db`
+        select c.legacy_id, coalesce(c.display_name, '') as name, coalesce(c.avatar_url, '') as avatar,
+          sum(v.viewers)::int as views, count(distinct v.moment_id)::int as posts
+        from app.moment_daily_views v join app.moments m on m.id = v.moment_id join app.members c on c.id = m.author_id
+        where v.day > ${since} and ${where}
+        group by c.id order by views desc limit ${cap}`;
+      // The most seen authors, and the view counts of the members already listed for what they brought
+      const seen = [...(await byAuthor(db`true`, limit)), ...(ids.length ? await byAuthor(db`c.legacy_id in ${db(ids)}`, ids.length) : [])];
+      for (const r of seen) {
+        const row = out.get(r.legacy_id) ?? { memberId: r.legacy_id, name: r.name, avatar: r.avatar, people: 0, visits: 0, joins: 0, saves: 0, inviteYes: 0, views: 0, postsSeen: 0 };
+        out.set(r.legacy_id, { ...row, views: r.views, postsSeen: r.posts });
+      }
+    } catch {
+      // 42P01: migration 0053 not run yet, so no view counts
+    }
+    return [...out.values()].sort((a, b) => b.people - a.people || b.views - a.views);
+  } catch {
+    return [];
+  }
+}
+
+export interface CreatorPost {
+  /** The post's id as the site uses it (/moments/[id]) */
+  id: string;
+  caption: string;
+  createdAt: string;
+  status: string;
+  views: number;
+  people: number;
+  visits: number;
+}
+
+/** One member's posts that were seen or brought someone in the last `days` days (admin, under a row of topBringers) */
+export async function creatorPosts(memberId: string, days: number, limit = 30): Promise<CreatorPost[]> {
+  if (!USE_POSTGRES) return [];
+  const db = sql();
+  const brought = (views: boolean) => db`
+    select m.slug, left(m.caption, 120) as caption, m.created_at, m.status,
+      ${views ? db`coalesce((select sum(v.viewers) from app.moment_daily_views v where v.moment_id = m.id and v.day > ${db.unsafe(BKK_TODAY)} - ${days}::int), 0)::int` : db`0`} as views,
+      coalesce(b.people, 0)::int as people, coalesce(b.visits, 0)::int as visits
+    from app.moments m
+    left join (
+      select source_ref, count(distinct member_id) as people, count(distinct member_id) filter (where action = 'visit') as visits
+      from app.action_log where source_type = 'moment' and credited_id is not null and created_at > now() - make_interval(days => ${days})
+      group by source_ref
+    ) b on b.source_ref = m.slug
+    where m.author_id = (select id from app.members where legacy_id = ${memberId}) and m.status <> 'removed'
+    order by people desc, views desc, m.created_at desc limit ${limit}`;
+  try {
+    let rows;
+    try {
+      rows = await brought(true);
+    } catch (error) {
+      if ((error as { code?: string }).code !== '42P01') throw error;
+      rows = await brought(false);
+    }
+    return rows
+      .filter((r) => r.views > 0 || r.people > 0)
+      .map((r) => ({ id: String(r.slug), caption: r.caption ?? '', createdAt: new Date(r.created_at).toISOString(), status: r.status, views: r.views, people: r.people, visits: r.visits }));
   } catch {
     return [];
   }

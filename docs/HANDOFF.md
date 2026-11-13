@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-374 · Admin: creators by people brought and by views, with their posts (owner 2026-11-13)
+- **What changed:** the dashboard panel is now "ใครพาเพื่อนออกไป และมีคนเห็นมากที่สุด": a คนเห็น column (viewer-days in the range), members with reach but nobody brought yet are listed too, and tapping a name opens that member's posts with "พาไป" and "เห็น" per post, plus a link to the profile. `topBringers` merges both top lists; new `creatorPosts` in `lib/social/actionLog.ts`; `GET /api/admin/bringers` takes `&member=` (docs/API.md). Checked on dev in headless Chrome.
+- **What to do about it:** nothing beyond 0052 + 0053 on live (BE-372/373).
+
 ### BE-373 · Daily views per post, kept for good (traceability step 3)
 - **What changed:** new `app.moment_daily_views` (migration **0053**): different signed-in members who had a post on screen, per Bangkok day, never cleared (`moment_seen` keeps only the latest sighting for 30 days, so a creator's reach was being lost). `markSeen` in `lib/moments/pgMomentRepository.ts` adds to it in the same statement that notes the sighting: a member counts once per post per day, the author never; without 0053 it falls back to the old insert. 0053 also fills in what `moment_seen` still holds. New repository method `viewsOf(id)` → `{ total, week }`; `GET /api/moments/[id]/impact` adds `views`, and the author's box on /moments/[id] shows "เพื่อนๆ เห็นโพสต์นี้ N ครั้ง · 7 วันนี้ M" (also when the post has brought nobody yet). Guests are not counted (the browser sends sightings only when signed in). Tested on dev through the API: repeat view the same day and the author's own view add nothing; test count removed.
 - **What to do about it:** live needs 0053 (with 0052) before this reaches main (`npm run db:migrate`); without it views are not counted and nothing breaks.
