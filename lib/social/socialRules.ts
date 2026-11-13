@@ -24,7 +24,18 @@ export const PLAN_TOGETHER_POINTS = 40;
 export const POST_PLACE_FALLBACK = 'ที่ในโพสต์นี้';
 /**
  * A plan's chat title, the same in the chat list, the chat's header and the phone notification: "ไป<place>" or
- * "ทำชาเลนจ์ <name>". A post with no place would read "ไปที่ในโพสต์นี้", so that one is just "แผนไปกัน".
+ * "ทำชาเลนจ์ <name>". A post with no place would read "ไปที่ในโพสต์นี้" in every such room, so that one is named
+ * after the other people going, as the reader sees them (owner 2026-11-13): "ไปกับ ต้น, มิว และอีก 2 คน".
+ * "แผนไปกัน" only while nobody else is in it. `others`: the names of everyone going but the reader.
  */
-export const planChatTitle = (plan: { isQuest: boolean; title: string }) =>
-  plan.isQuest ? `ทำชาเลนจ์ ${plan.title}` : plan.title === POST_PLACE_FALLBACK ? 'แผนไปกัน' : `ไป${plan.title}`;
+export const planChatTitle = (plan: { isQuest: boolean; title: string; others?: string[] }) => {
+  if (plan.isQuest) return `ทำชาเลนจ์ ${plan.title}`;
+  if (plan.title !== POST_PLACE_FALLBACK) return `ไป${plan.title}`;
+  const others = plan.others ?? [];
+  if (others.length === 0) return 'แผนไปกัน';
+  const named = others.slice(0, 2).join(', ');
+  return others.length > 2 ? `ไปกับ ${named} และอีก ${others.length - 2} คน` : `ไปกับ ${named}`;
+};
+
+/** Whether a plan's chat title depends on who reads it (planChatTitle's `others`) */
+export const planTitleNamesPeople = (plan: { isQuest: boolean; title: string }) => !plan.isQuest && plan.title === POST_PLACE_FALLBACK;

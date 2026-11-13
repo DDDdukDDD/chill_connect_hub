@@ -57,9 +57,10 @@ export const RequireMembershipModal: React.FC<RequireMembershipModalProps> = ({ 
         <h2 id="join-us-title" className="px-8 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-snug">
           Chillwaa
           <br />
-          โซเชียลคนชอบออกไปใช้ชีวิต
+          {/* The second half kept whole: on a phone the line broke as "…ใช้ชีวิตมี / ความหมาย" */}
+          โซเชียลที่ทำให้<span className="inline-block">ทุกการใช้ชีวิตมีความหมาย</span>
         </h2>
-        <p className="mt-2 text-sm font-medium text-slate-500">มาร่วมสนุก ให้ทุกการใช้ชีวิตมีความหมายไปกับเรา</p>
+        <p className="mt-2 text-sm font-medium text-slate-500">มาร่วมสนุก ออกไปใช้ชีวิตไปกับเรา</p>
       </div>
       <Prints photo={photo} />
       <div>
