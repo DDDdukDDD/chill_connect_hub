@@ -12,7 +12,7 @@ import { friendPlanStore } from './friendPlanStore';
 import { guardMemberText } from './textRules';
 import { afterResponse, pushConfigured, sendPush } from './push';
 import { pushStore } from './pushStore';
-import { planChatTitle } from './socialRules';
+import { planChatTitle, planTitleNamesPeople } from './socialRules';
 
 /**
  * Group chat of an event (room id = event id) or of a fair meet-up group (room id = grp_…), and the two-person
@@ -23,8 +23,24 @@ export const MAX_CHAT_LENGTH = 500;
 const KEEP_PER_ROOM = 500;
 const PAGE = 100;
 
-/** A "ไปกัน" plan's chat reads as what they are going to do */
-const planTitle = (plan: { targetType: string; title: string }) => planChatTitle({ isQuest: plan.targetType === 'quest', title: plan.title });
+type PlanLike = { targetType: string; title: string; members: { memberId: string; state: string }[] };
+
+/**
+ * A "ไปกัน" plan's chat reads as what they are going to do, as `readerId` sees it: a plan from a post with no place
+ * is named after the others going (lib/social/socialRules.ts planChatTitle), leaving out people either side blocked.
+ * `people`: the going members already loaded, when the caller has them.
+ */
+async function planTitle(plan: PlanLike, reader: { id: string; blockedIds?: string[] }, people?: Map<string, Member>): Promise<string> {
+  const base = { isQuest: plan.targetType === 'quest', title: plan.title };
+  if (!planTitleNamesPeople(base)) return planChatTitle(base);
+  const ids = plan.members.filter((m) => m.state === 'going' && m.memberId !== reader.id).map((m) => m.memberId);
+  const found = people ?? (await memberRepository.findByIds(ids));
+  const others = ids.flatMap((id) => {
+    const p = found.get(id);
+    return p && p.status === 'active' && !reader.blockedIds?.includes(id) && !p.blockedIds?.includes(reader.id) ? [tidyDisplayName(p.displayName).trim() || p.displayName] : [];
+  });
+  return planChatTitle({ ...base, others });
+}
 
 /**
  * Where a notice about a room leads. A plan's chat opens over its plan in My Hub; any other room opens where the
@@ -32,12 +48,20 @@ const planTitle = (plan: { targetType: string; title: string }) => planChatTitle
  */
 export const chatHref = (roomId: string) => (roomId.startsWith('plan~') ? `/myhub?plan=${encodeURIComponent(roomId.slice(5))}&chat=1` : `/myhub?chat=${encodeURIComponent(roomId)}`);
 
-/** Everyone who can read a room, for its notices; null when the room is gone */
-export async function roomPeople(roomId: string): Promise<{ title: string; memberIds: string[]; isPair: boolean } | null> {
+/**
+ * Everyone who can read a room, for its notices; null when the room is gone. `titleFor`: a title that depends on the
+ * reader (a plan named after its people), used in place of `title`.
+ */
+export async function roomPeople(roomId: string): Promise<{ title: string; memberIds: string[]; isPair: boolean; titleFor?: (reader: Member) => Promise<string> } | null> {
   if (roomId.startsWith('plan~')) {
     const plan = await friendPlanStore.byId(roomId.slice(5));
     if (!plan || plan.status === 'cancelled') return null;
-    return { title: planTitle(plan), memberIds: plan.members.filter((m) => m.state === 'going').map((m) => m.memberId), isPair: false };
+    const memberIds = plan.members.filter((m) => m.state === 'going').map((m) => m.memberId);
+    if (!planTitleNamesPeople({ isQuest: plan.targetType === 'quest', title: plan.title })) {
+      return { title: planChatTitle({ isQuest: plan.targetType === 'quest', title: plan.title }), memberIds, isPair: false };
+    }
+    const people = await memberRepository.findByIds(memberIds);
+    return { title: '', memberIds, isPair: false, titleFor: (reader) => planTitle(plan, reader, people) };
   }
   const pair = pairMembersOf(roomId);
   if (pair) return (await isMutual(pair[0], pair[1])) ? { title: '', memberIds: [...pair], isPair: true } : null;
@@ -59,7 +83,7 @@ async function roomOf(member: Member, roomId: string): Promise<{ title: string; 
     const plan = await friendPlanStore.byId(roomId.slice(5));
     const going = plan && plan.status !== 'cancelled' ? plan.members.filter((m) => m.state === 'going') : [];
     if (!plan || !going.some((m) => m.memberId === member.id)) throw new MemberAuthError('แชตนี้สำหรับคนที่ตอบว่าไปกันเท่านั้น', 403);
-    return { title: planTitle(plan), members: going.length };
+    return { title: await planTitle(plan, member), members: going.length };
   }
   // Two people who picked each other after a ตี้ ("อยากเจออีก", lib/social/meetAgain.ts)
   const pair = pairMembersOf(roomId);
@@ -200,9 +224,12 @@ function tellChatRoom(sender: Member, message: ChatMessage, push: boolean): void
     if (devices.length === 0) return;
     await chatStore.markNotified(message.roomId, [...new Set(devices.map((d) => d.memberId))], message.createdAt);
     const name = tidyDisplayName(sender.displayName).trim() || sender.displayName;
-    await sendPush(devices, () => ({
+    // A plan named after its people reads differently for each person told
+    const titles = new Map<string, string>();
+    if (room.titleFor) for (const id of new Set(devices.map((d) => d.memberId))) titles.set(id, await room.titleFor(people.get(id)!));
+    await sendPush(devices, (device) => ({
       // A two-person room is the other person; a group says which group, then who wrote
-      title: room.isPair ? name : room.title.slice(0, 60),
+      title: room.isPair ? name : (titles.get(device.memberId) ?? room.title).slice(0, 60),
       body: (room.isPair ? message.text : `${name}: ${message.text}`).slice(0, 140),
       url: chatHref(message.roomId),
       tag: `chat:${message.roomId}`,
