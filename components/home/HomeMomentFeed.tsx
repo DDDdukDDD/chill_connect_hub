@@ -5,9 +5,9 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Share2, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
-import { CommentIcon, LikeIcon, SaveIcon } from '@/components/icons/ActionIcons';
+import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
@@ -279,22 +279,17 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
-        {mayShare && (momentHasPlace(moment) ? (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน หรือแชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
-          <span className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-            <InviteIcon className="h-[17px] w-[39px] shrink-0" />
-            ชวนไป
-          </span>
+        {/* Icons only (owner 2026-11-13): แชร์ on every post, then ชวนไป, in its own colours, only on a post with a place to go */}
+        {mayShare && (
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
+          <SendIcon />
         </button>
-        ) : (
-        // Nowhere to go with this post: share it, no invitation (momentHasPlace)
-        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="group inline-flex items-center min-h-11 ml-1 cursor-pointer">
-          <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-slate-100 group-hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-            <Share2 className="w-4 h-4 shrink-0" aria-hidden="true" />
-            แชร์
-          </span>
+        )}
+        {mayShare && momentHasPlace(moment) && (
+        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน" className="inline-flex items-center justify-center min-h-11 min-w-11 px-1 cursor-pointer hover:opacity-80">
+          <InviteIcon className="h-[17px] w-[39px] shrink-0" />
         </button>
-        ))}
+        )}
         <button
           type="button"
           onClick={() => handlers.onToggle(moment.id, moment.isSaved ? 'unsave' : 'save')}
@@ -454,6 +449,8 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
 export interface HomeMomentFeedProps {
   /** The first page of สำหรับคุณ and the achievements row, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
   start?: HomeFeedStart;
+  /** Circles at the front of the top row: the next plan or a ตี้ asking for its moment (MemberLiveHome) */
+  rowLead?: React.ReactNode;
   avatar?: string;
   name: string;
   /** Shown under the "share a moment" box, before the posts, e.g. the live ticker */
@@ -556,7 +553,7 @@ function shareInitial(type: string, id: string, title: string, location: string,
  * Posting, comments, likes, saves, editing, deleting and reporting all happen here; /moments is the
  * photo showcase for browsing (no posting there).
  */
-export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted, start }: HomeMomentFeedProps) {
+export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted, start, rowLead }: HomeMomentFeedProps) {
   // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
   const inserts = sort === 'foryou' ? feedInserts : {};
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
@@ -889,9 +886,13 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
   return (
     <div ref={topRef} className="scroll-mt-24" onClickCapture={rememberPlace}>
-      {/* The title keeps one line: on phones the tabs go under it */}
+      {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. At the very top since
+          2026-11-13 (owner), in place of the next-plan line, which is now its first circle (rowLead) */}
+      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
+
+      {/* The title is for screen readers only (owner 2026-11-13): the tabs already say this is the feed, and the circles sit above */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <h2 className="shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
+        <h2 className="sr-only shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
         {PERSONAL[sort] ? (
           <button
             type="button"
@@ -954,10 +955,6 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         </div>
         )}
       </div>
-
-      {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. Above the posting
-          box (owner 2026-11-10): seeing what friends did comes more often than posting */}
-      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
 
       <div className="mt-3">
         {/* Photos and clips are two ways in (owner 2026-11-02); each button goes straight to the phone's picker */}
