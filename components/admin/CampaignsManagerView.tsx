@@ -84,7 +84,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
       onClose={onClose}
       preview={
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="mb-1 text-[11px] sm:text-xs font-semibold text-slate-500">ตัวอย่างแถบบนหน้าแรก</p>
+          <p className="mb-1 text-[11px] sm:text-xs font-semibold text-slate-500">ตัวอย่างแถบบนหน้าหลัก</p>
           <div className="pointer-events-none">
             <CampaignStrip campaign={preview} onOpen={() => {}} />
           </div>
@@ -113,7 +113,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
         <Field label="พาดหัว:" htmlFor="campaign-headline" wide hint="เช่น แค่ออกไปใช้ชีวิต ก็ลุ้น iPhone Duo ฟรี">
           <input id="campaign-headline" value={form.headline} onChange={(e) => set('headline', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label="บรรทัดรองบนหน้าแรก:" htmlFor="campaign-strip" wide>
+        <Field label="บรรทัดรองบนหน้าหลัก:" htmlFor="campaign-strip" wide>
           <input id="campaign-strip" value={form.stripText} onChange={(e) => set('stripText', e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="คำอธิบายบนหน้าชาเลนจ์:" htmlFor="campaign-text" wide>
@@ -133,12 +133,12 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
             <input type="checkbox" checked={form.published} onChange={(e) => set('published', e.target.checked)} /> เผยแพร่ (ไม่ติ๊ก = ฉบับร่าง)
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าแรกและหน้าชาเลนจ์
+            <input type="checkbox" checked={form.showOnHome} onChange={(e) => set('showOnHome', e.target.checked)} /> แสดงแถบบนหน้าหลักและหน้าชาเลนจ์
           </label>
         </div>
         {form.showOnHome && homeNow.length >= MAX_HOME_CAMPAIGNS && !homeNow.some((c) => c.id === form.id) && (
           <p className="sm:col-span-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
-            หน้าแรกแสดงได้พร้อมกัน {MAX_HOME_CAMPAIGNS} แคมเปญ ตอนนี้เต็มแล้ว แคมเปญที่เริ่มก่อนจะไม่แสดง
+            หน้าหลักแสดงได้พร้อมกัน {MAX_HOME_CAMPAIGNS} แคมเปญ ตอนนี้เต็มแล้ว แคมเปญที่เริ่มก่อนจะไม่แสดง
           </p>
         )}
       </FormSection>
@@ -220,7 +220,7 @@ export function CampaignsManagerView() {
     const res = await fetch('/api/admin/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save', campaign: { ...campaign, showOnHome } }) });
     const json = await res.json();
     if (!json.success) setError(json.error || 'บันทึกไม่สำเร็จ');
-    else setNotice(showOnHome ? `แสดงแถบ ${campaign.name} บนหน้าแรกและหน้าชาเลนจ์แล้ว` : `ซ่อนแถบ ${campaign.name} จากหน้าแรกและหน้าชาเลนจ์แล้ว`);
+    else setNotice(showOnHome ? `แสดงแถบ ${campaign.name} บนหน้าหลักและหน้าชาเลนจ์แล้ว` : `ซ่อนแถบ ${campaign.name} จากหน้าหลักและหน้าชาเลนจ์แล้ว`);
     void load();
   };
 
@@ -238,7 +238,7 @@ export function CampaignsManagerView() {
       <AdminPageHeader
         icon={Megaphone}
         title="แคมเปญ"
-        description="แถบโปรโมทบนหน้าแรก ป้ายบนหน้าชาเลนจ์ ชาเลนจ์และของรางวัลของแต่ละแคมเปญ พร้อมตัวเลขว่าแคมเปญได้ผลแค่ไหน"
+        description="แถบโปรโมทบนหน้าหลัก ป้ายบนหน้าชาเลนจ์ ชาเลนจ์และของรางวัลของแต่ละแคมเปญ พร้อมตัวเลขว่าแคมเปญได้ผลแค่ไหน"
         actions={
           <>
             <button type="button" onClick={() => void load()} className={adminButton.icon} aria-label="โหลดใหม่">
@@ -272,9 +272,9 @@ export function CampaignsManagerView() {
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${phase.tone}`}>{phase.label}</span>
                     {campaign.showOnHome &&
                       (campaign.live && !homeNow.some((c) => c.id === campaign.id) ? (
-                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">ไม่ได้แสดงบนหน้าแรก: เกิน {MAX_HOME_CAMPAIGNS} แคมเปญ</span>
+                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">ไม่ได้แสดงบนหน้าหลัก: เกิน {MAX_HOME_CAMPAIGNS} แคมเปญ</span>
                       ) : (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">{homeNow.some((c) => c.id === campaign.id) ? 'แสดงบนหน้าแรกอยู่' : 'แถบหน้าแรก'}</span>
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">{homeNow.some((c) => c.id === campaign.id) ? 'แสดงบนหน้าหลักอยู่' : 'แถบหน้าหลัก'}</span>
                       ))}
                   </div>
                   <p className="mt-0.5 text-sm text-slate-600">{campaign.headline}</p>

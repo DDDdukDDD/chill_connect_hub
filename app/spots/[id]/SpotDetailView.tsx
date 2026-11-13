@@ -294,7 +294,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
               href="/"
               className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer"
             >
-              <span>กลับสู่หน้าแรก</span>
+              <span>กลับสู่หน้าหลัก</span>
             </Link>
           </div>
         </main>

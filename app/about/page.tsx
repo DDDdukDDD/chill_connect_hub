@@ -271,7 +271,7 @@ export default function AboutPage() {
               </button>
             ) : (
               <Link href="/" className="shrink-0 rounded-full bg-[#F26430] hover:bg-[#E2551F] px-7 py-3 font-bold text-white shadow-sm">
-                ไปหน้าแรก
+                ไปหน้าหลัก
               </Link>
             )}
           </div>

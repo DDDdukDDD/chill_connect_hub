@@ -1201,8 +1201,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                 {socialOnly ? (
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-slate-900">ติดตามเพื่อนสายเดียวกัน</h2>
-                    <p className="mt-1 mb-4 text-sm text-slate-500 font-medium">โมเมนต์ของเขาจะขึ้นในหน้าแรกของคุณ</p>
-                    <FollowRow emptyText="เดี๋ยวจะมีเพื่อนๆ ให้ติดตามในหน้าแรกนะ" />
+                    <p className="mt-1 mb-4 text-sm text-slate-500 font-medium">โมเมนต์ของเขาจะขึ้นในหน้าหลักของคุณ</p>
+                    <FollowRow emptyText="เดี๋ยวจะมีเพื่อนๆ ให้ติดตามในหน้าหลักนะ" />
                   </div>
                 ) : (
                   <div>
@@ -1216,7 +1216,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                     {picks?.[0] && <FirstStepCard item={picks[0]} onOpen={openFromSummary} />}
                     {picks?.length === 0 && (
                       <div className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 text-sm font-semibold text-slate-600">
-                        <PhraseText text="ยังไม่มีรายการที่ตรงพอดี แต่มีอีกเยอะให้ดู ในหน้าแรก" />
+                        <PhraseText text="ยังไม่มีรายการที่ตรงพอดี แต่มีอีกเยอะให้ดู ในหน้าหลัก" />
                       </div>
                     )}
                   </div>

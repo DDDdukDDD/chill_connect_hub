@@ -50,7 +50,7 @@ export function NotFoundScreen() {
           href="/"
           className="inline-flex items-center justify-center min-h-11 px-6 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer"
         >
-          กลับหน้าแรก
+          กลับหน้าหลัก
         </Link>
       </main>
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
