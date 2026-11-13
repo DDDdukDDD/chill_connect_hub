@@ -4,6 +4,7 @@ import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
+import { rebuildCreatorDaily } from '@/lib/social/creatorDaily';
 
 /**
  * Work that must happen at a time, not when someone opens a page. Called every hour by the GitHub Actions schedule
@@ -38,5 +39,7 @@ export async function GET(request: Request) {
   await run('friendPlans', () => runPlanReminders());
   // Once a day: moment files no post points to
   await run('momentOrphans', () => cleanMomentOrphans());
+  // Admin creator numbers: today and yesterday from the action log and post views (docs/TRACEABILITY.md)
+  await run('creatorDaily', () => rebuildCreatorDaily());
   return NextResponse.json({ success: true, results }, { headers: { 'Cache-Control': 'no-store' } });
 }

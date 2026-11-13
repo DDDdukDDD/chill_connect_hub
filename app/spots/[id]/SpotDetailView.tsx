@@ -3,6 +3,7 @@
 import { optimizedImage } from '@/lib/optimizedImage';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -77,6 +78,8 @@ const cleanText = (str?: string): string => {
 /** The page itself: `initialSpot` comes from the server page, so the content is in the HTML search engines read. */
 export default function SpotDetailPage({ initialSpot = null, nearbyPool, stationsText = '' }: { initialSpot?: LifestyleSpotItem | null; nearbyPool?: LifestyleSpotItem[]; /** Nearest BTS/MRT, worked out on the server */ stationsText?: string }) {
   const params = useParams();
+  // Taps on the map, website, tickets or LINE are counted for the place and its sponsor (docs/TRACEABILITY.md)
+  useOutboundTracking('spot', typeof params?.id === 'string' ? params.id : undefined);
   const router = useRouter();
   const rawId = params?.id as string;
   const decodedId = rawId ? decodeURIComponent(rawId) : '';

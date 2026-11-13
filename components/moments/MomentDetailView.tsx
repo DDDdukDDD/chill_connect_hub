@@ -953,6 +953,7 @@ function ImpactLine({ impact }: { impact: PostImpact }) {
     impact.inviteYes > 0 && `ตอบรับคำชวน ${impact.inviteYes.toLocaleString()}`,
     impact.challengeJoin > 0 && `ทำชาเลนจ์ ${impact.challengeJoin.toLocaleString()}`,
     impact.save > 0 && `บันทึกไว้ ${impact.save.toLocaleString()}`,
+    impact.outbound > 0 && `กดไปดูร้าน/จอง ${impact.outbound.toLocaleString()}`,
   ].filter(Boolean);
   return (
     <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-amber-900">
