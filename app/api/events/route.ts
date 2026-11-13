@@ -6,6 +6,7 @@ import { hasAdminCredentials } from '@/lib/adminApiAuth';
 import { joinEvent, nightlifeAgeBlock } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
+import { traceAction } from '@/lib/social/actionLog';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardOrganizer } from '@/lib/members/submissions';
 import { BANNED_KEYWORDS, editTee } from '@/lib/social/editTee';
@@ -165,6 +166,7 @@ export async function POST(req: Request) {
       }
       const joinResult = await joinEvent(joiner, body.eventId);
       const joined = joinResult.status === 'joined' || joinResult.status === 'already_joined';
+      if (joinResult.status === 'joined') await traceAction(joiner, 'join', { type: joinResult.event?.eventType === 'community' ? 'community' : 'fair', ref: body.eventId });
       return NextResponse.json({ success: joined, ...joinResult, updatedEvent: joinResult.event }, { status: joined ? 200 : joinResult.status === 'not_allowed' ? 403 : 409 });
     }
 

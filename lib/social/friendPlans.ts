@@ -18,6 +18,7 @@ import { bangkokDay } from './questPlan';
 import { INVITE_MAX_FRIENDS, PLAN_TOGETHER_POINTS, POST_PLACE_FALLBACK } from './socialRules';
 import { shortLabelOf } from './recurring';
 import type { Visit } from './visits';
+import { traceAction } from './actionLog';
 
 /**
  * "ชวนไป" everywhere, as group plans (owner 2026-11-10; every section and groups 2026-11-11).
@@ -262,6 +263,9 @@ export async function answerInvite(member: Member, answer: { token?: unknown; pl
   await friendPlanStore.setMembers(plan.id, [member.id], 'going');
   if (!held && !member.followingIds?.includes(host.id)) await setFollowing(member, host.id, true).catch(() => null);
   if (plan.momentId) await setSaved(member, plan.momentId, true).catch(() => null);
+  // Credited to the host (docs/TRACEABILITY.md), on the plan's place or challenge so a later visit keeps the credit
+  const traced = plan.targetId && plan.targetType !== 'general' ? { type: plan.targetType === 'quest' ? ('challenge' as const) : plan.targetType, ref: plan.targetId } : { type: 'plan' as const, ref: plan.id };
+  await traceAction(member, 'invite_yes', traced, { type: 'invite', ref: plan.id, creditedId: host.id });
   await notifyInviteYes(host.id, member, { place: plan.title, path: planChatPath(plan), momentId: plan.momentId });
   await tellChat(member, plan, plan.targetType === 'quest' ? 'ทำด้วยกันนะ!' : 'ไปด้วยนะ!');
   return (await friendPlanStore.byId(plan.id))!;

@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-372 · Action log: who brought whom, for revenue and a creator share later (owner 2026-11-13)
+- **What changed:** new [docs/TRACEABILITY.md](TRACEABILITY.md) lists what the system does end to end, what is logged already and what money questions still lack data. Step 1 is built: `app.action_log` (migration **0052**) and `lib/social/actionLog.ts` (`traceAction`, `sourceImpact`, `topBringers`). Joining a ตี้/อีเวนต์, saving a place/อีเวนต์, joining a challenge, marking a visit, posting at a place and saying "ไปกัน" log a row with where the member came from: the cookie `cw_via` (`lib/social/via.ts`, `markVia` on a post's place line in the feed and on /moments/[id], and on ตี้ tiles in someone's profile), else the credit of their earlier row for the same target (a visit after a save keeps the save's credit), else the invitation's host. No self-credit. The author sees "โพสต์นี้พาเพื่อนๆ ออกไปแล้ว N คน" on their own post (`GET /api/moments/[id]/impact`); /admin's dashboard has "ใครพาเพื่อนออกไปได้มากที่สุด" (`GET /api/admin/bringers`). Tested on dev through the API: cookie credit, carried credit, author-only 403; test rows removed.
+- **What to do about it:** live needs 0052 before this reaches main (`npm run db:migrate`); without it nothing is logged and nothing breaks. Privacy policy line added to LAUNCH_CHECKLIST (ขั้น 5). Next steps in TRACEABILITY.md §3: daily views, outbound and sponsored clicks, share links with the sharer.
+
 ### BE-371 · Clips over 15.5 s failed to post with a 500 (live log 2026-11-13)
 - **What changed:** `app.moments.video_duration_s` still had the 15.5 s check from 0015 while the code has allowed 30 s since 2026-11-09 (80a24f5), so `POST /api/moments` with a longer clip broke on `moments_video_duration_s_check`. Migration **0051** sets the check to 30.5 (MAX_VIDEO_SECONDS + grace). No code change.
 - **What to do about it:** nothing: 0051 applied on live and dev 2026-11-13.

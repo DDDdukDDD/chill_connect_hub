@@ -10,6 +10,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { LikersDialog } from '@/components/moments/LikersDialog';
+import { markVia } from '@/lib/social/via';
 import { useMemberSession } from '@/lib/useMemberSession';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton, lockPageScroll } from '@/components/auth/DialogShell';
@@ -28,6 +29,7 @@ import { MOMENT_TARGETS, isMomentTarget, momentHasPlace, momentTargetHref, momen
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
 import { clipsAfter, markReturning, showcaseUrlFor, updateSavedMoment } from '@/components/moments/momentsReturn';
+import type { SourceImpact } from '@/lib/social/actionLog';
 
 const Avatar = MomentAvatar;
 
@@ -108,6 +110,19 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   // Any member can tap the number to see who sent a heart, like IG (owner 2026-11-13)
   const [likersOpen, setLikersOpen] = useState(false);
   const canSeeLikers = Boolean(isLoggedIn && moment.likesCount > 0);
+  // The author sees what the post brought: people who went, joined or saved after coming from it (docs/TRACEABILITY.md)
+  const [impact, setImpact] = useState<SourceImpact | null>(null);
+  useEffect(() => {
+    if (!moment.isMine) return;
+    let alive = true;
+    fetch(`/api/moments/${encodeURIComponent(moment.id)}/impact`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => alive && json?.impact && setImpact(json.impact))
+      .catch(() => null);
+    return () => {
+      alive = false;
+    };
+  }, [moment.id, moment.isMine]);
   const besideClip = isFull && clipRatio <= 0.8 && !commentsOpen;
 
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
@@ -646,7 +661,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           */}
           {place &&
             (targetHref && target ? (
-              <Link href={targetHref} className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold">
+              <Link href={targetHref} onClick={() => markVia(moment.targetType, moment.targetId, 'moment', moment.id)} className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold">
                 <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
                 <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{place}</span>
                 {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
@@ -700,6 +715,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             </button>
           </div>
           )}
+
+          {impact && impact.people > 0 && <ImpactLine impact={impact} />}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
           {!moment.commentsOff && (
@@ -923,4 +940,22 @@ function ReelHost({ initialMoment, openFullScreen = false, context }: DetailProp
     onFullChange: setIsFull,
   };
   return <DetailBody key={current.id} initialMoment={current} openFullScreen={openFullScreen || at > 0} reel={reel} {...context} />;
+}
+
+/** What the author's post brought, in one warm line; only the author sees it, never who those people are */
+function ImpactLine({ impact }: { impact: SourceImpact }) {
+  const parts = [
+    impact.visit > 0 && `ไปถึงจริง ${impact.visit.toLocaleString()}`,
+    impact.join > 0 && `เข้าร่วม ${impact.join.toLocaleString()}`,
+    impact.inviteYes > 0 && `ตอบรับคำชวน ${impact.inviteYes.toLocaleString()}`,
+    impact.challengeJoin > 0 && `ทำชาเลนจ์ ${impact.challengeJoin.toLocaleString()}`,
+    impact.save > 0 && `บันทึกไว้ ${impact.save.toLocaleString()}`,
+  ].filter(Boolean);
+  return (
+    <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-amber-900">
+      <span className="font-bold">โพสต์นี้พาเพื่อนๆ ออกไปแล้ว {impact.people.toLocaleString()} คน</span>
+      {parts.length > 0 && <span className="text-amber-800"> · {parts.join(' · ')}</span>}
+      <span className="block text-xs text-amber-700">เห็นแค่คุณนะ</span>
+    </p>
+  );
 }

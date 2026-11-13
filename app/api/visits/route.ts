@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
+import { traceAction } from '@/lib/social/actionLog';
 import { VISIT_POINTS, progressOf, rewardsForTargets } from '@/lib/social/questProgress';
 import { monthOf } from '@/lib/social/myMonth';
 import { rewardsOf } from '@/lib/social/rewardsLedger';
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
         if (review) await guardPosting(member, 'comment', review);
       }
       await markVisit(member.id, targetType, targetId, rating, review);
+      await traceAction(member, 'visit', { type: targetType, ref: targetId });
       await rewardsOf(member.id);
     } else {
       return NextResponse.json({ success: false, message: 'Unknown action' }, { status: 400 });

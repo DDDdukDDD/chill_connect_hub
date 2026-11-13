@@ -6,6 +6,7 @@ import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { setSaved as savePlace } from '@/lib/members/activity';
 import { notify, removeNotifications } from '@/lib/social/notifications';
+import { traceAction } from '@/lib/social/actionLog';
 
 /**
  * Member actions on a moment:
@@ -43,6 +44,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         moment = await setSaved(member, id, body.action === 'save');
         if (body.action === 'save' && moment.targetId && (moment.targetType === 'spot' || moment.targetType === 'fair')) {
           await savePlace(member, moment.targetType === 'spot' ? 'spot' : 'event', moment.targetId, true).catch(() => null);
+          await traceAction(member, 'save', { type: moment.targetType, ref: moment.targetId }, { type: 'moment', ref: moment.id });
         }
         break;
       case 'comment':

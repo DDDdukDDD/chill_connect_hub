@@ -3,6 +3,7 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { activityOf, forgetCancelled, joinEvent, leaveEvent, markMissed, setSaved } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
+import { traceAction } from '@/lib/social/actionLog';
 
 const EMPTY = { joined: [], hosted: [], cancelled: [], joinedIds: [], savedSpotIds: [], savedEventIds: [], reviewedEventIds: [], fairGroups: [] };
 
@@ -31,6 +32,8 @@ export async function POST(request: Request) {
       }
       const result = await joinEvent(member, eventId, typeof body.date === 'string' ? body.date : undefined);
       const ok = result.status === 'joined' || result.status === 'already_joined';
+      // Credited to the post or profile the member came from (docs/TRACEABILITY.md); the series id is what the link named
+      if (result.status === 'joined') await traceAction(member, 'join', { type: result.event?.eventType === 'community' ? 'community' : 'fair', ref: eventId });
       const status = ok ? 200 : result.status === 'not_found' ? 404 : result.status === 'not_allowed' ? 403 : 409;
       return NextResponse.json({ success: ok, ...result }, { status });
     }
@@ -47,7 +50,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
     if ((body.action === 'save' || body.action === 'unsave') && (body.kind === 'spot' || body.kind === 'event')) {
-      const updated = await setSaved(member, body.kind, typeof body.id === 'string' ? body.id : '', body.action === 'save');
+      const savedId = typeof body.id === 'string' ? body.id : '';
+      const updated = await setSaved(member, body.kind, savedId, body.action === 'save');
+      if (body.action === 'save') await traceAction(member, 'save', { type: body.kind === 'spot' ? 'spot' : 'fair', ref: savedId });
       return NextResponse.json({ success: true, savedSpotIds: updated.savedSpotIds ?? [], savedEventIds: updated.savedEventIds ?? [] });
     }
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });

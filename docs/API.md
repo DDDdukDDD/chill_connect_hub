@@ -418,6 +418,12 @@ All `/api/admin/*` routes require admin access:
 
 Every request is checked against the caller's **role** (matrix in `lib/permissions.ts`, read from the server session, never from the client):
 
+`GET /api/admin/bringers?days=30` (BE-372, `content.view`, days 1..365) → `{ days, bringers: [{ memberId, name, avatar, people, visits, joins, saves, inviteYes }] }`: the 20 members whose posts, profiles and invitations brought the most different people out in that time (`app.action_log`, migration 0052, [TRACEABILITY.md](TRACEABILITY.md)). Counting began 2026-11-13.
+
+`GET /api/moments/[id]/impact` (BE-372, the post's author only: `403` for anyone else, `401` signed out) → `{ impact: { people, join, save, challengeJoin, visit, inviteYes } }`: different people who did each thing after coming from this post. Never says who.
+
+**Action log (BE-372):** `POST /api/auth/member/activity` (`join`, `save`), `POST /api/events` (`join`), `POST /api/quests/join` (`join`), `POST /api/visits` (`mark`), `POST /api/moments` (a post at a place, ตี้ or อีเวนต์ = a visit), `POST /api/moments/[id]/actions` (`save` on a post with a place) and `POST /api/invites/answer` ("ไปกัน") each add a row to `app.action_log` with where the member came from. The source is read from the cookie `cw_via` (JSON list of `[family, targetRef, 'moment'|'profile', sourceRef, unixSeconds]`, at most 8, 7 days, written by `markVia` in `lib/social/via.ts` when a post's place line or a profile's ตี้ tile is tapped), else carried from the member's earlier row for the same target (60 days). Responses do not change; logging never fails a request.
+
 `GET /api/admin/retention` (BE-341, `content.view`) → `{ weeks: [{ week, signups, back1, back7, posted7, planned7, starter }], invites: { days, plans, links, linksOpened, yes, yesNewMembers, declines, dated, wentTogether, closedQuiet } | null }` (invites: "ชวนไป" over 30 days, BE-349; null without a database or before 0047): new members per sign-up week (Monday, Bangkok) for 8 weeks, and how many came back the next day / within 7 days, posted or made a "ไปกัน" plan within 7 days, and finished a starter challenge. Totals only. Comeback days come from `app.member_days` (migration 0044), one row per member per Bangkok day, written on the first signed-in request of the day (`lib/members/activeDays.ts`); counting began 2026-11-11.
 
 | Permission | Owner (เจ้าของ) | Editor (บรรณาธิการเนื้อหา) | Moderator (ผู้ดูแลชุมชน) | Data Ops (ทีมข้อมูล) |

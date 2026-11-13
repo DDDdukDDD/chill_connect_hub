@@ -31,6 +31,7 @@ import type { HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { ShareSheet } from '@/components/moments/ShareSheet';
 import { LikersDialog } from '@/components/moments/LikersDialog';
+import { markVia } from '@/lib/social/via';
 import { InviteSheet } from '@/components/invites/InviteSheet';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
@@ -345,6 +346,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {target && (
         <Link
           href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
+          // What the reader does there is credited to this post (docs/TRACEABILITY.md)
+          onClick={() => markVia(moment.targetType, moment.targetId, 'moment', moment.id)}
           className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
         >
           <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
