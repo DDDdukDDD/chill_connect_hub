@@ -312,7 +312,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: approvalStatus === 'approved'
-        ? 'สร้างกิจกรรมสำเร็จและเผยแพร่บนหน้าแรกเรียบร้อยแล้ว!'
+        ? 'สร้างกิจกรรมสำเร็จและเผยแพร่บนหน้าหลักเรียบร้อยแล้ว!'
         : 'ส่งคำขอสร้างกิจกรรมเรียบร้อยแล้ว! ข้อมูลจะแสดงผลหลังผ่านการตรวจสอบจากทีมงาน',
       event: hostJoin?.updatedEvent ?? savedEvent,
     });

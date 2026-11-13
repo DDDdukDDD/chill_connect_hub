@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LogOut, 
   PlusCircle, 
-  Ticket, 
+  CalendarHeart, 
   ChevronRight,
   Gift,
   Search,
@@ -99,14 +99,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Wide screens: the three public sections sit in the top bar for everyone; below that the floating bottom bar has them (components/MobileNav.tsx).
   // Not below xl: at 1024px they squeeze the search box's word field away.
   const pathname = usePathname() ?? '';
-  // หน้าแรก first for everyone: a member's live feed (owner 2026-10-29), and for a visitor the landing, not only via the logo
+  // หน้าหลัก first for everyone: a member's live feed (owner 2026-10-29), and for a visitor the landing, not only via the logo
   // (owner 2026-11-01). Shown before the session is known too, so the bar does not shift when it loads.
   const topLinks = [
-    { label: 'หน้าแรก', href: '/', match: ['/'] },
+    { label: 'หน้าหลัก', href: '/', match: ['/'] },
     { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
-    // ชาเลนจ์ before โมเมนต์ (owner 2026-11-01)
-    { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
+    // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13)
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
+    { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
   ];
   const isOn = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className={MENU_ROW}
                       >
-                        <Ticket className="w-4 h-4 text-slate-500" aria-hidden="true" />
+                        <CalendarHeart className="w-4 h-4 text-slate-500" aria-hidden="true" />
                         มายฮับ
                       </Link>
                       {/* Creating lives here, not in the top bar, so the bar stays calm; it offers all four kinds */}

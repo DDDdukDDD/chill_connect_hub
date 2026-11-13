@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-367 · Home top: circles first, next plan as a circle, no title (owner 2026-11-13)
+- **What changed:** the achievements row (`AchievementsRow`) now opens the home feed, above the tabs, with no visible label; the "โมเมนต์จากเพื่อนๆ" title is screen-reader only on every screen. The slim line above the feed is gone: its two cases are now the row's first circle (`UpNextCircle` in `MemberLiveHome`, drawn by the new `RowCircle`): a ตี้ just attended (pink ring, "📷 แชร์", opens posting; every screen) or the next plan (event photo, orange ring, short countdown from the new `shortAwayLabel` in `planHelpers`, "นัดถัดไป"; phones only, laptops list plans on the left). Computers get ‹ › buttons when the row overflows; every circle has its meaning in words as `title` and `aria-label` ("ทำชาเลนจ์ … ไปแล้ว 2 จาก 3 ขั้น").
+- **What to do about it:** nothing. The right column's pastel boxes are next (LAUNCH_CHECKLIST).
+
+### BE-366 · Moment actions: แชร์ icon on every post, ชวนไป icon beside it (owner 2026-11-13)
+- **What changed:** under a post (home feed, /moments/[id], clip rail and clip header) the actions are icons only: a paper plane (`SendIcon`, new in `components/icons/ActionIcons.tsx`, same box and line as the heart) shares the link on every post, then the ชวนไป icon (own colours) only on a post with a place. No grey pill, no words. `ShareSheet` invites only again, titled "ชวนไป"; the plain link row shows only when not inviting.
+- **What to do about it:** nothing.
+
+### BE-365 · Menu: หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13)
+- **What changed:** top bar and phone bar read หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (โมเมนต์ back before ชาเลนจ์). "หน้าแรก" became "หน้าหลัก" in every user and admin text. Phone icons: กิจกรรม = Footprints, มายฮับ = CalendarHeart (also in the profile menu).
+- **What to do about it:** nothing.
+
 ### BE-364 · "สมัครก่อนนะ" popup signs up in place (owner 2026-11-12)
 - **What changed:** `RequireMembershipModal` (every page) says one plain thing, the same everywhere: "Chillwaa / โซเชียลคนชอบออกไปใช้ชีวิต" and "มาร่วมสนุก ให้ทุกการใช้ชีวิตมีความหมายไปกับเรา" (owner's words) (`actionTitle` is still accepted but not shown), three tilted photos (the place, ตี้, อีเวนต์ or challenge being looked at first via the new `photo` prop on the four detail pages, then people out having fun; three fun ones elsewhere), then the sign-up buttons right there (LINE large, Google/Facebook side by side, email when none is on), "ฟรี · ไม่ถึง 1 นาที · ไม่โพสต์อะไรแทนคุณ", terms, and เข้าสู่ระบบ. The buttons are one shared piece, `components/auth/QuickSignup.tsx`, used by `InviteSignupSheet` too. Moments' default headline is "เพื่อร่วมสนุกกับเพื่อนๆ"; two long English-mixed ones on places were shortened.
 - **What to do about it:** dev has no social keys, so it shows the blue email button there; check LINE/Google/Facebook on a preview.

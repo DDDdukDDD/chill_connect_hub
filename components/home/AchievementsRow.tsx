@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import type { AchievementItem } from '@/lib/social/achievementsRow';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
@@ -16,7 +16,7 @@ const MEMORY_KEY = 'achievements-row';
  * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
  * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
  */
-export function AchievementsRow({ initial, onOpenMoment }: { initial?: AchievementItem[]; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
+export function AchievementsRow({ initial, onOpenMoment, lead }: { initial?: AchievementItem[]; /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */ lead?: React.ReactNode; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<AchievementItem[]>(() => initial ?? recall<AchievementItem[]>(MEMORY_KEY) ?? []);
   useEffect(() => {
@@ -37,21 +37,56 @@ export function AchievementsRow({ initial, onOpenMoment }: { initial?: Achieveme
       active = false;
     };
   }, [initial]);
-  if (items.length === 0) return null;
+  // Computers have no swipe: ‹ › appear on the side that has more circles (owner 2026-11-13)
+  const listRef = useRef<HTMLUListElement>(null);
+  const [more, setMore] = useState({ left: false, right: false });
+  const measure = useCallback(() => {
+    const list = listRef.current;
+    if (!list) return;
+    setMore({ left: list.scrollLeft > 4, right: list.scrollLeft + list.clientWidth < list.scrollWidth - 4 });
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure, items.length, lead]);
+  const page = (direction: 1 | -1) => listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: 'smooth' });
+  const arrow = 'hidden sm:flex absolute top-[26px] z-10 w-9 h-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-700 hover:bg-slate-50 cursor-pointer';
+
+  if (items.length === 0 && !lead) return null;
+  // At the very top of home (owner 2026-11-13): the circles speak for themselves, so the label is for screen readers only
   return (
-    <section aria-labelledby="achievements-heading" className="mt-4">
-      <h3 id="achievements-heading" className="text-[13px] font-semibold text-slate-500">เพื่อนๆ กำลังออกไปใช้ชีวิต</h3>
-      <ul className="mt-2 flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+    <section aria-labelledby="achievements-heading" className="relative mb-3">
+      <h3 id="achievements-heading" className="sr-only">เพื่อนๆ กำลังออกไปใช้ชีวิต</h3>
+      {more.left && (
+        <button type="button" onClick={() => page(-1)} aria-label="เลื่อนดูก่อนหน้า" className={`${arrow} -left-3`}>
+          <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+        </button>
+      )}
+      {more.right && (
+        <button type="button" onClick={() => page(1)} aria-label="เลื่อนดูต่อ" className={`${arrow} -right-3`}>
+          <ChevronRight className="w-5 h-5" aria-hidden="true" />
+        </button>
+      )}
+      <ul ref={listRef} onScroll={measure} className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        {lead}
         {items.map((item) => {
           const done = item.kind === 'finish';
           const doing = item.kind === 'doing';
           const name = item.isMe ? 'คุณ' : item.person.name;
+          // The badge in words: "2/3" alone says nothing to someone new (owner 2026-11-13)
+          const meaning = doing
+            ? `คุณรับชาเลนจ์ ${item.quest.title} ไว้ ยังไม่ได้โพสต์`
+            : done
+              ? `${name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
+              : `${name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
           return (
             <li key={item.id} className="shrink-0 w-[72px]">
               <Link
                 href={item.href}
                 onClick={() => item.momentId && onOpenMoment?.(item.momentId)}
-                aria-label={doing ? `คุณกำลังทำชาเลนจ์ ${item.quest.title}` : `${name} ${done ? 'พิชิตชาเลนจ์' : 'กำลังพิชิตชาเลนจ์'} ${item.quest.title}${done ? '' : ` ${item.current}/${item.total}`} · ${item.timeAgo}`}
+                aria-label={meaning}
+                title={meaning}
                 className="group flex flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
                 <span className={`relative rounded-full p-[3px] ${done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]'}`}>
@@ -80,5 +115,40 @@ export function AchievementsRow({ initial, onOpenMoment }: { initial?: Achieveme
         })}
       </ul>
     </section>
+  );
+}
+
+/** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment */
+export function RowCircle({ href, onClick, label, image, ring, badge, badgeClass, name, className = '' }: {
+  href?: string;
+  onClick?: () => void;
+  label: string;
+  image: string;
+  /** Tailwind gradient classes for the ring */
+  ring: string;
+  badge: React.ReactNode;
+  badgeClass: string;
+  name: string;
+  className?: string;
+}) {
+  const body = (
+    <>
+      <span className={`relative rounded-full p-[3px] bg-linear-to-tr ${ring}`}>
+        <span className="block rounded-full bg-white p-[2px]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- event covers come from many hosts */}
+          <img src={image} alt="" className="w-14 h-14 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+        </span>
+        <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badgeClass}`} aria-hidden="true">
+          {badge}
+        </span>
+      </span>
+      <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">{name}</span>
+    </>
+  );
+  const look = 'group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]';
+  return (
+    <li className={`shrink-0 w-[72px] ${className}`}>
+      {href ? <Link href={href} aria-label={label} title={label} className={look}>{body}</Link> : <button type="button" onClick={onClick} aria-label={label} title={label} className={look}>{body}</button>}
+    </li>
   );
 }

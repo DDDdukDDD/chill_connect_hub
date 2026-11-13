@@ -16,7 +16,7 @@ export function LoginScreen({ initialView, returnTo, initialError }: { initialVi
   // Back goes where the visitor came from (the ตี้ they were joining), not always to the home page
   const fromDetail = /^\/(community|fairs|spots|challenges)\//.test(returnTo);
   const backHref = fromDetail ? returnTo.replace(/[?&]join=1/, '') : '/';
-  const backLabel = returnTo.startsWith('/community/') ? 'กลับไปที่ตี้' : fromDetail ? 'กลับไปหน้าเดิม' : 'กลับหน้าแรก';
+  const backLabel = returnTo.startsWith('/community/') ? 'กลับไปที่ตี้' : fromDetail ? 'กลับไปหน้าเดิม' : 'กลับหน้าหลัก';
 
   // Already signed in (e.g. opened /login in a second tab): continue
   useEffect(() => {

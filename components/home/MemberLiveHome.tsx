@@ -15,11 +15,12 @@ import { useAuth } from '@/lib/useAuth';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { RowCircle } from '@/components/home/AchievementsRow';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
 import type { FeedCardKind } from '@/lib/homeInterests';
-import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
+import { FALLBACK_IMAGE, Faces, awayLabel, dayLine, dayPart, eventHref, shortAwayLabel, useGoingWith, useMinuteClock } from '@/components/home/planHelpers';
 import type { HomeFeedStart } from '@/lib/homeData';
 
 
@@ -101,7 +102,6 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           <div className="lg:hidden">
             <Greeting {...props} layout="row" />
           </div>
-          <UpNextLine {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />
           <HomeMomentFeed
             view={feedView}
             onViewChange={setFeedView}
@@ -112,6 +112,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
             inserts={feedCards(props, showPicks)}
             tailUpTo={FIRST_SLOTS[FIRST_SLOTS.length - 1]}
             start={props.feedStart}
+            rowLead={<UpNextCircle {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />}
           />
         </main>
 
@@ -201,16 +202,15 @@ function rememberShared(id: string) {
 
 // A ตี้ that ended this long ago or less still asks for its moment
 const SHARE_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
-const LINE = 'mb-5 flex items-center gap-2.5 min-w-0 rounded-2xl bg-[#FFF8F1] border border-[#F3E6D8] px-4 py-2.5 text-[13px]';
 // Test-login ตี้ carry a "[ตัวอย่าง]" tag in the title (as MeetupTile)
 const plainTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
 /**
- * The one slim line above the feed, only when there is something to do next (owner 2026-10-30): a ตี้ they just went
- * to asks for its moment (every screen); otherwise, on phones, the next plan (laptops list the plans beside the feed).
- * Nothing to do, no line: the feed starts right away.
+ * The first circle of the row at the top of home (owner 2026-11-13, was a slim line above the feed): a ตี้ they just went
+ * to asks for its moment (every screen); otherwise, on phones, the next plan with its countdown (laptops list the plans
+ * beside the feed). Nothing to do, no circle: the row starts with friends.
  */
-function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare: (request: Omit<ShareRequest, 'key'>) => void }) {
+function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShare: (request: Omit<ShareRequest, 'key'>) => void }) {
   const now = useMinuteClock(props.now);
   // The home is drawn in the browser only (no server render), so the device's memory can be read at once
   const [storedShared] = useState(readShared);
@@ -222,30 +222,30 @@ function UpNextLine(props: MemberLiveHomeProps & { sharedIds: string[]; onShare:
 
   if (justBack) {
     return (
-      <div className={LINE}>
-        <Camera className="w-4 h-4 shrink-0 text-[#F43F5E]" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-slate-700">
-          ไปมาแล้ว? แชร์โมเมนต์จาก <span className="font-semibold text-slate-900">{plainTitle(justBack.title)}</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
-          className="shrink-0 font-semibold text-[#BE123C] hover:underline underline-offset-4 cursor-pointer whitespace-nowrap"
-        >
-          แชร์เลย ›
-        </button>
-      </div>
+      <RowCircle
+        onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
+        label={`ไปมาแล้ว? แชร์โมเมนต์จาก ${plainTitle(justBack.title)}`}
+        image={justBack.image || FALLBACK_IMAGE}
+        ring="from-[#F43F5E] to-[#FDA4AF]"
+        badge={<><Camera className="w-3 h-3" />แชร์</>}
+        badgeClass="bg-[#F43F5E] text-white"
+        name="ไปมาแล้ว?"
+      />
     );
   }
   const next = props.plans[0];
   if (!next) return null;
   return (
-    <Link href={eventHref(next)} className={`${LINE} lg:hidden group`}>
-      <CalendarDays className="w-4 h-4 shrink-0 text-[#C2410C]" aria-hidden="true" />
-      <span className="shrink-0 font-semibold text-[#C2410C] tabular-nums whitespace-nowrap">{awayLabel(next, now) ?? dayLine(next)}</span>
-      <span className="min-w-0 flex-1 truncate text-slate-800 group-hover:underline underline-offset-4">{plainTitle(next.title)}</span>
-      <span className="shrink-0 text-slate-500" aria-hidden="true">›</span>
-    </Link>
+    <RowCircle
+      href={eventHref(next)}
+      label={`นัดถัดไป ${awayLabel(next, now) ?? dayLine(next)} ${plainTitle(next.title)}`}
+      image={next.image || FALLBACK_IMAGE}
+      ring="from-[#EA580C] to-[#FDBA74]"
+      badge={shortAwayLabel(next, now) ?? dayLine(next)}
+      badgeClass="bg-[#EA580C] text-white"
+      name="นัดถัดไป"
+      className="lg:hidden"
+    />
   );
 }
 

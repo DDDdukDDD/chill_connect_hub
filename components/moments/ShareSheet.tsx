@@ -28,12 +28,13 @@ export function ShareSheet({ canInvite, invite, onInvite, onNeedLogin, onLine, o
   onClose: () => void;
 }) {
   const row = 'w-full flex items-center gap-3.5 px-3 py-3 rounded-2xl hover:bg-slate-50 text-left cursor-pointer';
+  const inviting = canInvite || Boolean(onNeedLogin);
   const pick = (action: () => void) => () => {
     onClose();
     action();
   };
   return (
-    <DialogShell onClose={onClose} title={canInvite || onNeedLogin ? 'ชวนไป' : 'แชร์โมเมนต์'} size="sm" focusField={false}>
+    <DialogShell onClose={onClose} title={inviting ? 'ชวนไป' : 'แชร์โมเมนต์'} size="sm" focusField={false}>
       <ul className="-mx-2 -mt-1">
         {!canInvite && onNeedLogin && (
           <li>
@@ -74,9 +75,9 @@ export function ShareSheet({ canInvite, invite, onInvite, onNeedLogin, onLine, o
             </button>
           </li>
         )}
-        {canInvite && invite ? (
-          <AppsRow invite={invite} row={row} onMessage={onMessage} onClose={onClose} />
-        ) : (
+        {canInvite && invite && <AppsRow invite={invite} row={row} onMessage={onMessage} onClose={onClose} />}
+        {/* Only when not inviting: แชร์ has its own button beside ชวนไป on every post (owner 2026-11-13) */}
+        {!inviting && (
         <li>
           <button type="button" onClick={pick(onLink)} className={row}>
             <span className="w-11 h-11 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0" aria-hidden="true">

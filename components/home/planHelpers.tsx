@@ -52,6 +52,16 @@ export function awayLabel(event: EventItem, now: number) {
   return hours > 0 ? `อีก ${days} วัน ${hours} ชม.` : `อีก ${days} วัน`;
 }
 
+/** The same countdown cut to fit a badge under a 72px circle: "อีก 2 วัน", "อีก 5 ชม.", "อีก 40 น." */
+export function shortAwayLabel(event: EventItem, now: number) {
+  const left = startsAt(event) - now;
+  if (!Number.isFinite(left)) return null;
+  if (left <= 0) return 'เริ่มแล้ว';
+  if (left < 3_600_000) return `อีก ${Math.max(1, Math.floor(left / 60_000))} น.`;
+  if (left < DAY_MS) return `อีก ${Math.floor(left / 3_600_000)} ชม.`;
+  return `อีก ${Math.floor(left / DAY_MS)} วัน`;
+}
+
 /** "บ่ายวันอาทิตย์": the greeting carries the time of day instead of a coloured theme */
 export function dayPart(now: number) {
   const date = new Date(now);

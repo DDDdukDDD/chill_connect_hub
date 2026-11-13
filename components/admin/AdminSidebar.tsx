@@ -174,7 +174,7 @@ export const MODULE_EDIT_PERMISSIONS: Record<AdminModuleId, Array<{ permission: 
   fairs: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   spots: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
   quests: [{ permission: 'content.edit', what: 'สร้าง แก้ไข เผยแพร่ และลบ' }],
-  campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าแรก' }],
+  campaigns: [{ permission: 'content.edit', what: 'สร้าง แก้ไข และเปิดบนหน้าหลัก' }],
   draws: [{ permission: 'content.edit', what: 'สุ่ม ประกาศผล และบันทึกการส่งมอบรางวัล' }],
   rewards: [],
   sponsored: [{ permission: 'content.edit', what: 'เพิ่ม แก้ไข และลบการ์ดสนับสนุน' }],

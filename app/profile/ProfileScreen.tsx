@@ -747,7 +747,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
           <div className={`${card} text-center`}>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ไม่พบโปรไฟล์นี้</h1>
             <p className="text-sm text-slate-500 font-medium mt-2 mb-6"><PhraseText text="สมาชิกคนนี้อาจลบบัญชี หรือถูกระงับการใช้งาน" /></p>
-            <Link href="/" className={dialogButton.quiet}>กลับหน้าแรก</Link>
+            <Link href="/" className={dialogButton.quiet}>กลับหน้าหลัก</Link>
           </div>
         )}
 
