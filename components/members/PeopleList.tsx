@@ -11,6 +11,8 @@ export interface ListedPerson {
   name: string;
   avatar: string;
   isFollowing: boolean;
+  /** The viewer themselves: listed like everyone else, without a follow button */
+  isMe?: boolean;
 }
 
 /** Follows or unfollows; returns an error message to show, or null when it worked */
@@ -40,16 +42,19 @@ export function PeopleList({ people, busyId, onToggle, onNavigate }: { people: L
             )}
             <span className="text-sm font-bold text-slate-900 truncate">{person.name}</span>
           </Link>
+          {!person.isMe && (
           <button
             type="button"
             onClick={() => onToggle(person)}
             disabled={busyId !== null}
             aria-pressed={person.isFollowing}
             aria-label={`${person.isFollowing ? 'เลิกติดตาม' : 'ติดตาม'} ${person.name}`}
-            className={`shrink-0 min-h-11 px-4 rounded-full text-sm font-bold whitespace-nowrap cursor-pointer transition-colors disabled:cursor-default ${person.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'}`}
+            // Slim like IG (owner 2026-11-13): 32 px to the eye, the tap area still 44 px through the ::after
+            className={`relative shrink-0 h-8 px-4 rounded-full text-[13px] font-bold inline-flex items-center justify-center after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] whitespace-nowrap cursor-pointer transition-colors disabled:cursor-default ${person.isFollowing ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#2563EB] hover:bg-[#1D4ED8] text-white'}`}
           >
             {busyId === person.id ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : person.isFollowing ? 'กำลังติดตาม' : 'ติดตาม'}
           </button>
+          )}
         </li>
       ))}
     </ul>

@@ -28,6 +28,7 @@ import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/ico
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
 import { FollowListDialog, type FollowTab } from './FollowListDialog';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
+import { markVia } from '@/lib/social/via';
 
 /**
  * Member profile.
@@ -1059,7 +1060,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         <>
                           <ul className={`${TILE_GRID} pt-2`}>
                             {hostedVisible.slice(0, hostedShown).map((ev) => (
-                              <li key={ev.id}>
+                              // Joining a host's ตี้ from their profile is credited to them (docs/TRACEABILITY.md)
+                              <li key={ev.id} onClickCapture={() => !profile.isMe && markVia(ev.eventType === 'public_venue' ? 'fair' : 'community', ev.id, 'profile', profile.id)}>
                                 {/* A ตี้ still in review has no page yet: no link, and the tile says where it stands */}
                                 {ev.approvalStatus === 'approved' ? (
                                   <MeetupTile event={ev} href={`${ev.eventType === 'public_venue' ? '/events' : '/community'}/${encodeURIComponent(ev.id)}`} />

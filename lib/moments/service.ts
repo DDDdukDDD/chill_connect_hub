@@ -127,6 +127,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     category: moment.category,
     likesCount: moment.likesOff ? 0 : (moment.feedFacts?.likes ?? moment.likedBy.length) + moment.sampleLikes,
     commentsCount: moment.commentsOff ? 0 : (moment.feedFacts?.comments ?? comments.length),
+    sharesCount: moment.sharesOff ? 0 : moment.sharesCount ?? 0,
     commentsOff: Boolean(moment.commentsOff),
     likesOff: Boolean(moment.likesOff),
     sharesOff: Boolean(moment.sharesOff),
@@ -527,6 +528,14 @@ export async function setLike(member: Member, id: string, liked: boolean): Promi
   const moment = await requireVisible(id);
   if (liked && moment.likesOff) throw new MomentError('เจ้าของโพสต์ปิดการกดถูกใจไว้');
   return momentRepository.mutate(id, (m) => ({ ...m, likedBy: toggle(m.likedBy, member.id, liked) }));
+}
+
+/** Counts a share by a member (each member once); anyone may share, only members are counted */
+export async function recordShare(member: Member, id: string): Promise<Moment> {
+  const moment = await requireVisible(id);
+  if (moment.sharesOff) throw new MomentError('เจ้าของโพสต์ปิดการแชร์ไว้');
+  await momentRepository.addShare(id, member.id);
+  return requireVisible(id);
 }
 
 export async function setSaved(member: Member, id: string, saved: boolean): Promise<Moment> {

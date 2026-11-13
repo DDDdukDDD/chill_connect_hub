@@ -56,6 +56,7 @@ function rowToMoment(r: PgRow): Moment {
     targetTitle: orUndefined(r.target_title),
     likedBy: r.liked_by,
     savedBy: r.saved_by,
+    sharesCount: Number(r.share_count ?? 0),
     sampleLikes: r.sample_likes,
     comments: (r.comments as Row[]).map((c) => ({
       id: c.id as string,
@@ -447,13 +448,48 @@ export const pgMomentRepository: MomentRepository = {
   async markSeen(viewerId, slugs) {
     if (slugs.length === 0) return;
     const db = sql();
-    await db`
-      insert into app.moment_seen (member_id, moment_id, seen_at)
-      select x.id, m.id, now() from app.members x join app.moments m on m.slug in ${db(slugs)}
-      where x.legacy_id = ${viewerId}
-      on conflict (member_id, moment_id) do update set seen_at = excluded.seen_at`;
+    try {
+      // The member's first sighting of a post today (Bangkok) also adds one to its daily viewers (migration 0053); the
+      // author's own sightings never count. One statement: every part reads the rows as they were before the upsert.
+      await db`
+        with targets as (
+          select x.id as member_id, m.id as moment_id, m.author_id
+          from app.members x join app.moments m on m.slug in ${db(slugs)} where x.legacy_id = ${viewerId}
+        ), counted as (
+          select t.moment_id from targets t left join app.moment_seen s on s.member_id = t.member_id and s.moment_id = t.moment_id
+          where t.author_id is distinct from t.member_id
+            and (s.seen_at is null or s.seen_at < date_trunc('day', now() at time zone 'Asia/Bangkok') at time zone 'Asia/Bangkok')
+        ), up as (
+          insert into app.moment_seen (member_id, moment_id, seen_at)
+          select member_id, moment_id, now() from targets
+          on conflict (member_id, moment_id) do update set seen_at = excluded.seen_at
+        )
+        insert into app.moment_daily_views (moment_id, day, viewers)
+        select moment_id, (now() at time zone 'Asia/Bangkok')::date, 1 from counted
+        on conflict (moment_id, day) do update set viewers = app.moment_daily_views.viewers + 1`;
+    } catch (error) {
+      // 42P01: migration 0053 not run yet; keep noting the sighting the old way
+      if ((error as { code?: string }).code !== '42P01') throw error;
+      await db`
+        insert into app.moment_seen (member_id, moment_id, seen_at)
+        select x.id, m.id, now() from app.members x join app.moments m on m.slug in ${db(slugs)}
+        where x.legacy_id = ${viewerId}
+        on conflict (member_id, moment_id) do update set seen_at = excluded.seen_at`;
+    }
     // Rows are kept 30 days; about one batch in fifty clears the older ones (the seen_at index makes it quick)
     if (Math.random() < 0.02) await db`delete from app.moment_seen where seen_at < now() - interval '30 days'`;
+  },
+  async viewsOf(slug) {
+    const db = sql();
+    try {
+      const [row] = await db`
+        select coalesce(sum(v.viewers), 0)::int as total,
+          coalesce(sum(v.viewers) filter (where v.day > (now() at time zone 'Asia/Bangkok')::date - 7), 0)::int as week
+        from app.moment_daily_views v join app.moments m on m.id = v.moment_id where m.slug = ${slug}`;
+      return { total: row.total, week: row.week };
+    } catch {
+      return { total: 0, week: 0 };
+    }
   },
   async hashtagUses() {
     const db = sql();
@@ -495,6 +531,20 @@ export const pgMomentRepository: MomentRepository = {
     const db = sql();
     const [row] = await hydrate(db, db`m.slug = ${id}` as unknown as Fragment);
     return row ? rowToMoment(row) : null;
+  },
+  async addShare(id, memberId) {
+    const db = sql();
+    try {
+      await db`
+        with added as (
+          insert into app.moment_shares (moment_id, member_id)
+          select m.id, x.id from app.moments m join app.members x on x.legacy_id = ${memberId} where m.slug = ${id}
+          on conflict do nothing returning moment_id)
+        update app.moments set share_count = share_count + 1 where id in (select moment_id from added)`;
+    } catch (error) {
+      // 42P01: migration 0050 not run yet; the share itself still goes through
+      if ((error as { code?: string }).code !== '42P01') throw error;
+    }
   },
   async create(moment) {
     await sql().begin(async (tx) => {

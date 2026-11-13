@@ -90,6 +90,10 @@ export interface Moment {
   targetTitle?: string;
   likedBy: string[];
   savedBy: string[];
+  /** How many members shared it (each counted once, BE-369); 0 on a database without migration 0050 */
+  sharesCount?: number;
+  /** The no-database mode keeps who shared it on the moment itself */
+  sharedBy?: string[];
   /** Like count carried over from the bundled samples (illustrative); 0 for real posts */
   sampleLikes: number;
   comments: MomentComment[];
@@ -234,6 +238,8 @@ export interface MomentRepository {
   recentAchievements(since: Date, limit: number): Promise<{ momentId: string; authorId: string; achievement: MomentAchievement; createdAt: string }[]>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;
+  /** Viewer-days of a post (one member counts once a day, not the author): in all, and in the last 7 days */
+  viewsOf(id: string): Promise<{ total: number; week: number }>;
   /**
    * The open ตี้ and อีเวนต์ (by slug), open challenges and places among these targets, for the line under a feed
    * post. Places come with their opening hours; the service works out "open now".
@@ -245,6 +251,8 @@ export interface MomentRepository {
   /** Hashtags that appear in the same public posts as `tag`, the most shared first */
   relatedHashtags(tag: string, limit: number): Promise<{ tag: string; posts: number }[]>;
   findById(id: string): Promise<Moment | null>;
+  /** Counts the member's share once (BE-369); quietly nothing on a database without migration 0050 */
+  addShare(id: string, memberId: string): Promise<void>;
   create(moment: Moment): Promise<Moment>;
   /** Applies `change` to the stored moment atomically and returns the result */
   mutate(id: string, change: (moment: Moment) => Moment): Promise<Moment>;

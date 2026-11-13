@@ -5,7 +5,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, Camera, Clock, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
@@ -30,6 +30,8 @@ import { useClamped } from '@/components/moments/useClamped';
 import type { HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { ShareSheet } from '@/components/moments/ShareSheet';
+import { LikersDialog } from '@/components/moments/LikersDialog';
+import { markVia } from '@/lib/social/via';
 import { InviteSheet } from '@/components/invites/InviteSheet';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
@@ -43,19 +45,22 @@ export const REPORT_REASONS = ['ชวนลงทุน ขายของ ห�
 // Where the moment came from, in its pillar's colors, and what the reader can do there
 const TARGETS = MOMENT_TARGETS;
 
-/** The three tabs, plus personal views opened from the shortcuts or the ⋯ next to the tabs (FEED_PLAN step 1: สำหรับคุณ comes first) */
-export type FeedView = 'foryou' | 'all' | 'following' | 'popular' | 'saved' | 'mine';
+/**
+ * Four tabs (owner 2026-11-13: ยอดฮิต out, ล่าสุด and ของฉัน in from the ⋯), plus saved posts behind the bookmark
+ * next to them (FEED_PLAN step 1: สำหรับคุณ comes first)
+ */
+export type FeedView = 'foryou' | 'all' | 'following' | 'saved' | 'mine';
 const TABS: [FeedView, string][] = [
   ['foryou', 'สำหรับคุณ'],
   ['following', 'ติดตาม'],
-  ['popular', 'ยอดฮิต'],
+  ['all', 'ล่าสุด'],
+  ['mine', 'ของฉัน'],
 ];
-const PERSONAL: Partial<Record<FeedView, string>> = { all: 'โมเมนต์ล่าสุด', saved: 'โมเมนต์ที่บันทึก', mine: 'โมเมนต์ของฉัน' };
+const PERSONAL: Partial<Record<FeedView, string>> = { saved: 'โมเมนต์ที่บันทึก' };
 const EMPTY: Record<FeedView, string> = {
   foryou: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   all: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   following: 'ยังไม่ได้ติดตามใครเลย ติดตามเพื่อนที่ชอบออกไปไหนมาไหน แล้วโมเมนต์ของเขาจะมาอยู่ตรงนี้',
-  popular: 'ยังไม่มีโมเมนต์ยอดฮิต',
   saved: 'ยังไม่ได้บันทึกโมเมนต์ไหน กดรูปที่คั่นหนังสือใต้โพสต์ที่ชอบ แล้วจะมาอยู่ตรงนี้',
   mine: 'ยังไม่มีโมเมนต์ของคุณ แชร์โมเมนต์แรกได้จากช่องด้านบน',
 };
@@ -101,6 +106,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [isSending, setIsSending] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showWholeCaption, setShowWholeCaption] = useState(false);
+  // Tapping the number of hearts lists who sent them, with follow buttons, like IG (owner 2026-11-13)
+  const [likersOpen, setLikersOpen] = useState(false);
   // "ติดตาม" sits by the name only for people not followed yet; the post tapped keeps a quiet "กำลังติดตาม" as the answer
   const [justFollowed, setJustFollowed] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -261,10 +268,19 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           onClick={() => handlers.onToggle(moment.id, moment.isLiked ? 'unlike' : 'like')}
           aria-pressed={moment.isLiked}
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
-          className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
+          className={`inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
           <LikeIcon active={moment.isLiked} />
-          {moment.likesCount > 0 && !friendLike && <span className="tabular-nums">{moment.likesCount.toLocaleString()}</span>}
+        </button>
+        )}
+        {!moment.likesOff && moment.likesCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setLikersOpen(true)}
+          aria-label={`ดูคนที่ถูกใจ ${moment.likesCount.toLocaleString()} คน`}
+          className="inline-flex items-center min-h-11 pr-2 -ml-2.5 tabular-nums cursor-pointer hover:text-slate-950"
+        >
+          {moment.likesCount.toLocaleString()}
         </button>
         )}
         {!moment.commentsOff && (
@@ -281,8 +297,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         )}
         {/* Icons only (owner 2026-11-13): แชร์ on every post, then ชวนไป, in its own colours, only on a post with a place to go */}
         {mayShare && (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
+        <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label={moment.sharesCount > 0 ? `แชร์ (แชร์แล้ว ${moment.sharesCount.toLocaleString()} คน)` : 'แชร์'} className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
           <SendIcon />
+          {moment.sharesCount > 0 && <span className="tabular-nums">{moment.sharesCount.toLocaleString()}</span>}
         </button>
         )}
         {mayShare && momentHasPlace(moment) && (
@@ -301,16 +318,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </button>
       </div>
 
-      {/* A friend in the likes says more than a number (social proof, 2026-11-09): only someone the reader follows */}
+      {/* A friend in the likes says more than a number (social proof, 2026-11-09): only someone the reader follows; the whole line opens the list */}
       {friendLike && (
-        <p className="-mt-1 text-[13px] text-slate-600">
-          ถูกใจโดย{" "}
-          <Link href={`/profile?id=${encodeURIComponent(friendLike.id)}`} className="font-semibold text-slate-900 hover:underline underline-offset-4">
-            {friendLike.name}
-          </Link>
+        <button type="button" onClick={() => setLikersOpen(true)} className="-mt-2 -mb-1 min-h-9 self-start text-left text-[13px] text-slate-600 cursor-pointer hover:text-slate-800">
+          ถูกใจโดย <span className="font-semibold text-slate-900">{friendLike.name}</span>
           {moment.likesCount > 1 && <> และอีก <span className="tabular-nums">{(moment.likesCount - 1).toLocaleString()}</span> คน</>}
-        </p>
+        </button>
       )}
+      {likersOpen && <LikersDialog momentId={moment.id} onClose={() => setLikersOpen(false)} />}
 
       {moment.caption && (
         <div>
@@ -331,6 +346,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {target && (
         <Link
           href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
+          // What the reader does there is credited to this post (docs/TRACEABILITY.md)
+          onClick={() => markVia(moment.targetType, moment.targetId, 'moment', moment.id)}
           className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
         >
           <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
@@ -556,7 +573,6 @@ function shareInitial(type: string, id: string, title: string, location: string,
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted, start, rowLead }: HomeMomentFeedProps) {
   // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
   const inserts = sort === 'foryou' ? feedInserts : {};
-  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   // Back on Home, the first page seen last time shows at once while it refreshes
   // The server's first page wins (it is fresh); otherwise the one seen last time shows at once while it refreshes
   const serverFirst = start && sort === 'foryou' ? start : undefined;
@@ -785,15 +801,23 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'copy' || choice === 'share') {
         const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
         // The phone's own share sheet where there is one; otherwise the link is copied
+        // Each member's share counts once (BE-368)
+        const counted = () =>
+          void call(`/api/moments/${encodeURIComponent(moment.id)}/actions`, 'POST', { action: 'share' }).then((result) => {
+            if (result.ok && result.moment) replace(result.moment);
+          });
         const copy = () => {
           if (!navigator.clipboard) return showToast(url);
           navigator.clipboard.writeText(url).then(
-            () => showToast('คัดลอกลิงก์โมเมนต์แล้ว'),
+            () => {
+              showToast('คัดลอกลิงก์โมเมนต์แล้ว');
+              counted();
+            },
             () => showToast(url)
           );
         };
         if (choice === 'share' && navigator.share) {
-          navigator.share({ title: 'โมเมนต์', url }).catch((err: DOMException) => {
+          navigator.share({ title: 'โมเมนต์', url }).then(counted, (err: DOMException) => {
             if (err.name !== 'AbortError') copy();
           });
           return;
@@ -918,40 +942,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
               {label}
             </button>
           ))}
-          {/* Saved and own moments: on wide screens the left column has them as shortcuts too */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsViewMenuOpen((open) => !open)}
-              aria-label="โมเมนต์ล่าสุด ที่บันทึก และของฉัน"
-              aria-expanded={isViewMenuOpen}
-              className="w-8 h-8 rounded-full text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-            {isViewMenuOpen && (
-              <>
-                <button type="button" aria-hidden="true" tabIndex={-1} className="fixed inset-0 z-20 cursor-default" onClick={() => setIsViewMenuOpen(false)} />
-                <ul className="absolute right-0 top-9 z-30 w-48 rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl">
-                  {(['all', 'saved', 'mine'] as const).map((value) => (
-                    <li key={value}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsViewMenuOpen(false);
-                          setSort(value);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                      >
-                        {value === 'all' ? <Clock className="w-4 h-4" aria-hidden="true" /> : value === 'saved' ? <Bookmark className="w-4 h-4" aria-hidden="true" /> : <Camera className="w-4 h-4" aria-hidden="true" />}
-                        {PERSONAL[value]}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
+          {/* Saved posts: one bookmark, the only view left behind the old ⋯ (the left column has it as a shortcut too) */}
+          <button
+            type="button"
+            onClick={() => setSort('saved')}
+            aria-label="โมเมนต์ที่บันทึก"
+            title="โมเมนต์ที่บันทึก"
+            className="w-8 h-8 rounded-full text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
+          >
+            <Bookmark className="w-4 h-4" aria-hidden="true" />
+          </button>
         </div>
         )}
       </div>

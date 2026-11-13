@@ -5,7 +5,7 @@ import { momentLikers } from '@/lib/moments/likers';
 
 type Context = { params: Promise<{ id: string }> };
 
-// Who liked the signed-in member's own moment (lib/moments/likers.ts); 403 for anyone else's
+// Who liked a moment, for any signed-in member (lib/moments/likers.ts); 403 when the author hid the likes
 export async function GET(request: Request, context: Context) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });

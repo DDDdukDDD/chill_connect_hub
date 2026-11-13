@@ -177,9 +177,10 @@ function MomentCard({ moment, onLike, first }: { moment: FeedItem; onLike?: (mom
             the photo opens the moment (owner 2026-11-12: the label caught taps meant for the post). The way on to the
             place, ตี้ or อีเวนต์ is on the moment's page.
           */}
+          {/* See-through glass (owner 2026-11-13): the photo and any words on it still show behind the place */}
           {place && (
-            <span className="absolute left-1.5 bottom-1.5 lg:left-2.5 lg:bottom-2.5 max-w-[calc(100%-12px)] lg:max-w-[calc(100%-20px)] inline-flex items-center gap-1 rounded-full bg-white/95 pl-1.5 pr-2 py-0.5 lg:pl-2 lg:pr-2.5 lg:py-1 text-[11px] lg:text-xs font-semibold text-slate-900 shadow-sm">
-              {target ? <target.Icon className={`w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 ${target.icon}`} aria-hidden="true" /> : <MOMENT_TARGETS.spot.Icon className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 text-slate-500" aria-hidden="true" />}
+            <span className="absolute left-1.5 bottom-1.5 lg:left-2.5 lg:bottom-2.5 max-w-[calc(100%-12px)] lg:max-w-[calc(100%-20px)] inline-flex items-center gap-1 rounded-full bg-black/30 backdrop-blur-[2px] pl-1.5 pr-2 py-0.5 lg:pl-2 lg:pr-2.5 lg:py-1 text-[11px] lg:text-xs font-semibold text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.45)]">
+              {target ? <target.Icon className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 text-white" aria-hidden="true" /> : <MOMENT_TARGETS.spot.Icon className="w-3 h-3 lg:w-3.5 lg:h-3.5 shrink-0 text-white" aria-hidden="true" />}
               <span className="min-w-0 truncate">{photoPlaceLabel(moment)}</span>
             </span>
           )}

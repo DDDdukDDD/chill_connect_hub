@@ -124,6 +124,9 @@ export const jsonMomentRepository: MomentRepository = {
   async findById(id) {
     return load().find((m) => m.id === id) ?? null;
   },
+  async addShare(id, memberId) {
+    await jsonMomentRepository.mutate(id, (m) => (m.sharedBy?.includes(memberId) ? m : { ...m, sharedBy: [...(m.sharedBy ?? []), memberId], sharesCount: (m.sharesCount ?? 0) + 1 }));
+  },
   async create(moment) {
     return mutex.runExclusive(async () => {
       persist([moment, ...load()]);
@@ -261,6 +264,18 @@ export const jsonMomentRepository: MomentRepository = {
     const seen = seenByMember.get(viewerId) ?? new Map<string, number>();
     for (const id of ids) seen.set(id, Date.now());
     seenByMember.set(viewerId, seen);
+  },
+  async viewsOf(id) {
+    // No database: only who has it on screen in this server's memory, latest sighting only
+    let total = 0;
+    let week = 0;
+    for (const seen of seenByMember.values()) {
+      const at = seen.get(id);
+      if (at === undefined) continue;
+      total += 1;
+      if (at > Date.now() - 7 * 86400_000) week += 1;
+    }
+    return { total, week };
   },
   async hashtagUses() {
     const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });

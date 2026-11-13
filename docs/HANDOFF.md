@@ -20,6 +20,30 @@ Item template:
 
 ---
 
+### BE-374 · Admin: creators by people brought and by views, with their posts (owner 2026-11-13)
+- **What changed:** the dashboard panel is now "ใครพาเพื่อนออกไป และมีคนเห็นมากที่สุด": a คนเห็น column (viewer-days in the range), members with reach but nobody brought yet are listed too, and tapping a name opens that member's posts with "พาไป" and "เห็น" per post, plus a link to the profile. `topBringers` merges both top lists; new `creatorPosts` in `lib/social/actionLog.ts`; `GET /api/admin/bringers` takes `&member=` (docs/API.md). Checked on dev in headless Chrome.
+- **What to do about it:** nothing beyond 0052 + 0053 on live (BE-372/373).
+
+### BE-373 · Daily views per post, kept for good (traceability step 3)
+- **What changed:** new `app.moment_daily_views` (migration **0053**): different signed-in members who had a post on screen, per Bangkok day, never cleared (`moment_seen` keeps only the latest sighting for 30 days, so a creator's reach was being lost). `markSeen` in `lib/moments/pgMomentRepository.ts` adds to it in the same statement that notes the sighting: a member counts once per post per day, the author never; without 0053 it falls back to the old insert. 0053 also fills in what `moment_seen` still holds. New repository method `viewsOf(id)` → `{ total, week }`; `GET /api/moments/[id]/impact` adds `views`, and the author's box on /moments/[id] shows "เพื่อนๆ เห็นโพสต์นี้ N ครั้ง · 7 วันนี้ M" (also when the post has brought nobody yet). Guests are not counted (the browser sends sightings only when signed in). Tested on dev through the API: repeat view the same day and the author's own view add nothing; test count removed.
+- **What to do about it:** live needs 0053 (with 0052) before this reaches main (`npm run db:migrate`); without it views are not counted and nothing breaks.
+
+### BE-372 · Action log: who brought whom, for revenue and a creator share later (owner 2026-11-13)
+- **What changed:** new [docs/TRACEABILITY.md](TRACEABILITY.md) lists what the system does end to end, what is logged already and what money questions still lack data. Step 1 is built: `app.action_log` (migration **0052**) and `lib/social/actionLog.ts` (`traceAction`, `sourceImpact`, `topBringers`). Joining a ตี้/อีเวนต์, saving a place/อีเวนต์, joining a challenge, marking a visit, posting at a place and saying "ไปกัน" log a row with where the member came from: the cookie `cw_via` (`lib/social/via.ts`, `markVia` on a post's place line in the feed and on /moments/[id], and on ตี้ tiles in someone's profile), else the credit of their earlier row for the same target (a visit after a save keeps the save's credit), else the invitation's host. No self-credit. The author sees "โพสต์นี้พาเพื่อนๆ ออกไปแล้ว N คน" on their own post (`GET /api/moments/[id]/impact`); /admin's dashboard has "ใครพาเพื่อนออกไปได้มากที่สุด" (`GET /api/admin/bringers`). Tested on dev through the API: cookie credit, carried credit, author-only 403; test rows removed.
+- **What to do about it:** live needs 0052 before this reaches main (`npm run db:migrate`); without it nothing is logged and nothing breaks. Privacy policy line added to LAUNCH_CHECKLIST (ขั้น 5). Next steps in TRACEABILITY.md §3: daily views, outbound and sponsored clicks, share links with the sharer.
+
+### BE-371 · Clips over 15.5 s failed to post with a 500 (live log 2026-11-13)
+- **What changed:** `app.moments.video_duration_s` still had the 15.5 s check from 0015 while the code has allowed 30 s since 2026-11-09 (80a24f5), so `POST /api/moments` with a longer clip broke on `moments_video_duration_s_check`. Migration **0051** sets the check to 30.5 (MAX_VIDEO_SECONDS + grace). No code change.
+- **What to do about it:** nothing: 0051 applied on live and dev 2026-11-13.
+
+### BE-370 · Home feed tabs: สำหรับคุณ · ติดตาม · ล่าสุด · ของฉัน (owner 2026-11-13)
+- **What changed:** ยอดฮิต is gone from the member home tabs; ล่าสุด (`all`) and ของฉัน (`mine`) moved out of the ⋯ menu into the tabs, and the ⋯ became one bookmark button for saved posts (`HomeMomentFeed`, `FeedView` no longer has `popular`). `GET /api/moments?tab=popular` still works; nothing on the home page calls it.
+- **What to do about it:** nothing.
+
+### BE-369 · Moment likes list for everyone, share count, see-through place tag (owner 2026-11-13)
+- **What changed:** the heart count under a post always shows (it used to hide behind "ถูกใจโดย …"). Tapping the number, or the whole "ถูกใจโดย … และอีก N คน" line, opens `LikersDialog` with follow buttons, like IG; `GET /api/moments/[id]/likes` is now open to any signed-in member (403 only when the author hid likes), and the viewer appears with `isMe` and no button (`PeopleList`). Shares are counted: new action `share` on `POST /api/moments/[id]/actions` after the share sheet or a copied link, once per member (table `app.moment_shares` + `moments.share_count`, migration **0050**); `FeedItem.sharesCount` shows next to the paper plane in the feed, on /moments/[id] and on the clip rail. On /moments tiles the place tag is dark glass (`bg-black/30`, white text) so the photo shows through.
+- **What to do about it:** nothing: 0050 applied on live and dev 2026-11-13; counting starts once this reaches main.
+
 ### BE-368 · A plan chat from a post with no place is named after its people (owner 2026-11-13)
 - **What changed:** BE-361 titled every such room "แผนไปกัน", so the แชต list showed rooms that looked alike. `planChatTitle` (`lib/social/socialRules.ts`) now takes `others`, the names of everyone going but the reader, and gives "ไปกับ ต้น, มิว" (more than two: "… และอีก N คน"); "แผนไปกัน" only while nobody else is in the plan. The chat list, the chat header (My Hub and the room API) and the phone notification all use it; a notification's title is worked out per person told, and people blocked either way are left out. Plans with a place stay "ไป<place>".
 - **What to do about it:** nothing.
