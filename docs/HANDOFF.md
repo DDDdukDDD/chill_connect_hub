@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-368 · A plan chat from a post with no place is named after its people (owner 2026-11-13)
+- **What changed:** BE-361 titled every such room "แผนไปกัน", so the แชต list showed rooms that looked alike. `planChatTitle` (`lib/social/socialRules.ts`) now takes `others`, the names of everyone going but the reader, and gives "ไปกับ ต้น, มิว" (more than two: "… และอีก N คน"); "แผนไปกัน" only while nobody else is in the plan. The chat list, the chat header (My Hub and the room API) and the phone notification all use it; a notification's title is worked out per person told, and people blocked either way are left out. Plans with a place stay "ไป<place>".
+- **What to do about it:** nothing.
+
 ### BE-367 · Home top: circles first, next plan as a circle, no title (owner 2026-11-13)
 - **What changed:** the achievements row (`AchievementsRow`) now opens the home feed, above the tabs, with no visible label; the "โมเมนต์จากเพื่อนๆ" title is screen-reader only on every screen. The slim line above the feed is gone: its two cases are now the row's first circle (`UpNextCircle` in `MemberLiveHome`, drawn by the new `RowCircle`): a ตี้ just attended (pink ring, "📷 แชร์", opens posting; every screen) or the next plan (event photo, orange ring, short countdown from the new `shortAwayLabel` in `planHelpers`, "นัดถัดไป"; phones only, laptops list plans on the left). Computers get ‹ › buttons when the row overflows; every circle has its meaning in words as `title` and `aria-label` ("ทำชาเลนจ์ … ไปแล้ว 2 จาก 3 ขั้น").
 - **What to do about it:** nothing. The right column's pastel boxes are next (LAUNCH_CHECKLIST).

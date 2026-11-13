@@ -682,7 +682,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
           onClose={closeChat}
           event={null}
           roomId={chat.roomId}
-          roomTitle={planChatTitle({ isQuest: chat.kind === 'quest', title: chat.title })}
+          roomTitle={planChatTitle({ isQuest: chat.kind === 'quest', title: chat.title, others: chat.people.filter((p) => p.id !== member?.id).map((p) => p.name) })}
           subtitle={`ไปกัน ${chat.people.length} คน`}
           emptyText="ยังไม่มีข้อความ ทักกันแล้วเลือกวันที่ไปกันได้เลย"
           draft={chatDraft || undefined}
