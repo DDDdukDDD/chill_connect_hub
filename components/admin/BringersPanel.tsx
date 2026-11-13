@@ -144,6 +144,8 @@ function Creators({ days }: { days: Range }) {
               <th className="px-3 py-2 font-semibold text-right">ตอบรับคำชวน</th>
               <th className="px-3 py-2 font-semibold text-right">บันทึก</th>
               <th className="px-3 py-2 font-semibold text-right">กดออกไป</th>
+              <th className="px-3 py-2 font-semibold text-right">สมัครตาม</th>
+              <th className="px-3 py-2 font-semibold text-right">เปิดลิงก์แชร์</th>
               {sortHead('views', 'คนเห็น')}
             </tr>
           </thead>
@@ -168,11 +170,13 @@ function Creators({ days }: { days: Range }) {
                   <td className="px-3 py-2 text-right tabular-nums">{r.inviteYes.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.saves.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.outbound.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.signups.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.shareOpens.toLocaleString()}</td>
                   <td className={`px-3 py-2 text-right tabular-nums ${sort === 'views' ? 'font-bold' : ''}`}>{r.views.toLocaleString()}</td>
                 </tr>
                 {openId === r.memberId && (
                   <tr className="bg-slate-50">
-                    <td colSpan={8} className="px-4 py-3">
+                    <td colSpan={10} className="px-4 py-3">
                       <CreatorPosts memberId={r.memberId} days={days} />
                     </td>
                   </tr>

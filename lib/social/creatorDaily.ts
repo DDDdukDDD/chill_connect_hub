@@ -1,7 +1,7 @@
 import { USE_POSTGRES, sql } from '../db/postgres/client';
 
 /**
- * Rebuilds app.creator_daily (migration 0054) for today and yesterday, Bangkok time, from app.action_log and
+ * Rebuilds app.creator_daily (migration 0054, sign-ups and shared-link opens since 0055) for today and yesterday, Bangkok time, from app.action_log and
  * app.moment_daily_views, so /admin reads one small row per creator per day instead of the whole log
  * (docs/TRACEABILITY.md). Run by the hourly job; safe to run twice. The first run, on an empty table, fills the last
  * BACKFILL_DAYS days. Each day is rebuilt in one transaction (delete, then insert), so readers never see half a day.
@@ -40,7 +40,8 @@ export async function rebuildCreatorDaily(): Promise<{ days: number } | { skippe
             count(distinct l.member_id) filter (where l.action = 'save') as saves,
             count(distinct l.member_id) filter (where l.action = 'invite_yes') as invite_yes,
             count(distinct l.member_id) filter (where l.action = 'challenge_join') as challenge_joins,
-            count(distinct l.member_id) filter (where l.action = 'outbound') as outbound
+            count(distinct l.member_id) filter (where l.action = 'outbound') as outbound,
+            count(distinct l.member_id) filter (where l.action = 'signup') as signups
           from app.action_log l, d
           where l.credited_id is not null and l.created_at >= d.from_at and l.created_at < d.from_at + interval '1 day'
           group by l.credited_id
@@ -50,12 +51,22 @@ export async function rebuildCreatorDaily(): Promise<{ days: number } | { skippe
           from app.moment_daily_views v join app.moments m on m.id = v.moment_id, d
           where v.day = d.day and m.author_id is not null
           group by m.author_id
-        )
-        insert into app.creator_daily (day, member_id, people, visits, joins, saves, invite_yes, challenge_joins, outbound, views, posts_seen)
-        select (select day from d), coalesce(b.member_id, s.member_id),
+        ),
+        opened as (
+          select o.sharer_id as member_id, sum(o.opens) as share_opens
+          from app.share_opens_daily o, d where o.day = d.day
+          group by o.sharer_id
+        ),
+        ids as (select member_id from brought union select member_id from seen union select member_id from opened)
+        insert into app.creator_daily (day, member_id, people, visits, joins, saves, invite_yes, challenge_joins, outbound, signups, views, posts_seen, share_opens)
+        select (select day from d), i.member_id,
           coalesce(b.people, 0), coalesce(b.visits, 0), coalesce(b.joins, 0), coalesce(b.saves, 0), coalesce(b.invite_yes, 0),
-          coalesce(b.challenge_joins, 0), coalesce(b.outbound, 0), coalesce(s.views, 0), coalesce(s.posts_seen, 0)
-        from brought b full join seen s on s.member_id = b.member_id`;
+          coalesce(b.challenge_joins, 0), coalesce(b.outbound, 0), coalesce(b.signups, 0), coalesce(s.views, 0), coalesce(s.posts_seen, 0),
+          coalesce(o.share_opens, 0)
+        from ids i
+        left join brought b on b.member_id = i.member_id
+        left join seen s on s.member_id = i.member_id
+        left join opened o on o.member_id = i.member_id`;
     });
   }
   return { days: back + 1 };

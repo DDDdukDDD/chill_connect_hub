@@ -12,6 +12,7 @@ import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { LikersDialog } from '@/components/moments/LikersDialog';
 import { markVia } from '@/lib/social/via';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { SHARE_PARAM, SHARE_REF, shareUrl } from '@/lib/social/shareLink';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton, lockPageScroll } from '@/components/auth/DialogShell';
 import { CaptionText } from '@/components/moments/CaptionText';
@@ -123,6 +124,17 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
       alive = false;
     };
   }, [moment.id, moment.isMine]);
+  // Opened from a shared link (?s=<member>): count the open and remember the sharer for 30 days (docs/TRACEABILITY.md),
+  // then drop ?s= from the address so copying it does not pass the sharer on
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharer = params.get(SHARE_PARAM);
+    if (!sharer || !SHARE_REF.test(sharer) || !window.location.pathname.endsWith(`/${encodeURIComponent(moment.id)}`)) return;
+    fetch(`/api/moments/${encodeURIComponent(moment.id)}/opened`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sharer }), keepalive: true }).catch(() => {});
+    params.delete(SHARE_PARAM);
+    const rest = params.toString();
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
+  }, [moment.id]);
   const besideClip = isFull && clipRatio <= 0.8 && !commentsOpen;
 
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
@@ -356,7 +368,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     });
   };
   const share = async () => {
-    const link = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
+    // The link carries who shared it (docs/TRACEABILITY.md step 5)
+    const link = shareUrl(window.location.origin, moment.id, me?.id);
     if (navigator.share) {
       const outcome = await navigator.share({ title: title || 'โมเมนต์', url: link }).then(() => 'shared', (err: DOMException) => (err.name === 'AbortError' ? 'cancelled' : 'failed'));
       if (outcome === 'shared') countShare();
@@ -954,6 +967,7 @@ function ImpactLine({ impact }: { impact: PostImpact }) {
     impact.challengeJoin > 0 && `ทำชาเลนจ์ ${impact.challengeJoin.toLocaleString()}`,
     impact.save > 0 && `บันทึกไว้ ${impact.save.toLocaleString()}`,
     impact.outbound > 0 && `กดไปดูร้าน/จอง ${impact.outbound.toLocaleString()}`,
+    impact.signup > 0 && `สมัครตามมา ${impact.signup.toLocaleString()}`,
   ].filter(Boolean);
   return (
     <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-amber-900">

@@ -38,6 +38,12 @@ async function markLogin(member: Member, method: LoginMethod): Promise<Member> {
   return memberRepository.update(member.id, { lastLoginAt: new Date().toISOString(), lastLoginMethod: method });
 }
 
+/** A new account that came from someone's shared post link: credited to the sharer and the author (docs/TRACEABILITY.md) */
+async function noteSignupSource(member: Member): Promise<void> {
+  // Loaded here so the members module and the action log do not import each other at start-up
+  await import('../social/actionLog').then((log) => log.traceSignup(member)).catch(() => undefined);
+}
+
 export async function registerWithEmail(input: { displayName?: unknown; email: unknown; password: unknown; consent: unknown; ageConfirmed?: unknown }): Promise<Member> {
   if (input.consent !== true) throw new MemberAuthError('กรุณายอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว');
   if (input.ageConfirmed !== true) throw new MemberAuthError(`กรุณายืนยันว่าคุณอายุ ${MIN_MEMBER_AGE} ปีขึ้นไป`);
@@ -50,7 +56,7 @@ export async function registerWithEmail(input: { displayName?: unknown; email: u
   }
   if (await memberRepository.findByEmail(email)) throw new MemberAuthError('อีเมลนี้มีบัญชีอยู่แล้ว ลองเข้าสู่ระบบแทน', 409);
   const now = new Date().toISOString();
-  return memberRepository.create({
+  const member = await memberRepository.create({
     id: `mem_${randomUUID()}`,
     displayName,
     email,
@@ -65,6 +71,8 @@ export async function registerWithEmail(input: { displayName?: unknown; email: u
     lastLoginAt: now,
     lastLoginMethod: 'email',
   });
+  await noteSignupSource(member);
+  return member;
 }
 
 export async function loginWithEmail(emailInput: unknown, password: unknown): Promise<Member> {
@@ -134,6 +142,7 @@ export async function signInWithOAuth(profile: OAuthProfile, options: { consente
       createdAt: now,
     });
     created = true;
+    await noteSignupSource(member);
   }
 
   member = await refreshMemberStatus(member);

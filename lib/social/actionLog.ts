@@ -3,6 +3,7 @@ import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { momentRepository } from '../moments';
+import { SHARE_COOKIE, parseShare, type ShareNote } from './shareLink';
 import { VIA_COOKIE, VIA_DAYS, parseVia, viaFamily, type ViaFamily } from './via';
 
 /**
@@ -11,8 +12,8 @@ import { VIA_COOKIE, VIA_DAYS, parseVia, viaFamily, type ViaFamily } from './via
  * failure is swallowed, and a database without migration 0052 simply logs nothing.
  */
 
-export type TracedAction = 'join' | 'save' | 'challenge_join' | 'visit' | 'invite_yes' | 'outbound' | 'sponsored_click';
-export type TracedTargetType = 'spot' | 'community' | 'fair' | 'challenge' | 'plan';
+export type TracedAction = 'join' | 'save' | 'challenge_join' | 'visit' | 'invite_yes' | 'outbound' | 'sponsored_click' | 'signup';
+export type TracedTargetType = 'spot' | 'community' | 'fair' | 'challenge' | 'plan' | 'moment';
 export type TraceSourceType = 'moment' | 'profile' | 'invite' | 'share';
 export interface TraceSource {
   type: TraceSourceType;
@@ -37,7 +38,16 @@ interface LogRow {
 /** The no-database mode keeps the log in this server's memory */
 const memoryLog: LogRow[] = [];
 
-const familyOf = (type: TracedTargetType): ViaFamily | null => (type === 'plan' ? null : viaFamily(type));
+const familyOf = (type: TracedTargetType): ViaFamily | null => (type === 'plan' || type === 'moment' ? null : viaFamily(type));
+
+/** The shared link this browser opened in the last 30 days (cookie `cw_share`, POST /api/moments/[id]/opened) */
+async function shareFromCookie(): Promise<ShareNote | null> {
+  try {
+    return parseShare((await cookies()).get(SHARE_COOKIE)?.value);
+  } catch {
+    return null;
+  }
+}
 
 /** The newest remembered tap on a link to this target (cookie `cw_via`, set by lib/social/viaClient.ts) */
 async function viaFromCookie(type: TracedTargetType, ref: string): Promise<TraceSource | null> {
@@ -60,7 +70,7 @@ async function carriedSource(member: Member, type: TracedTargetType, ref: string
   const types = family === 'event' ? ['community', 'fair'] : [type];
   if (!USE_POSTGRES) {
     const since = Date.now() - CARRY_DAYS * 86400_000;
-    const row = memoryLog.find((r) => r.memberId === member.id && r.targetRef === ref && types.includes(r.targetType) && r.source && r.createdAt >= since);
+    const row = memoryLog.find((r) => r.memberId === member.id && r.targetRef === ref && types.includes(r.targetType) && r.source && r.source.type !== 'share' && r.createdAt >= since);
     return row?.source ? { ...row.source, creditedId: row.creditedId } : null;
   }
   const db = sql();
@@ -68,7 +78,7 @@ async function carriedSource(member: Member, type: TracedTargetType, ref: string
     select l.source_type, l.source_ref, c.legacy_id as credited
     from app.action_log l left join app.members c on c.id = l.credited_id
     where l.member_id = (select id from app.members where legacy_id = ${member.id}) and l.target_ref = ${ref}
-      and l.target_type in ${db(types)} and l.source_type is not null and l.created_at > now() - make_interval(days => ${CARRY_DAYS})
+      and l.target_type in ${db(types)} and l.source_type is not null and l.source_type <> 'share' and l.created_at > now() - make_interval(days => ${CARRY_DAYS})
     order by l.created_at asc limit 1`;
   return row ? { type: row.source_type, ref: row.source_ref, ...(row.credited ? { creditedId: row.credited } : {}) } : null;
 }
@@ -81,9 +91,40 @@ async function creditFor(member: Member, source: TraceSource): Promise<string | 
   return credited && credited !== member.id ? credited : undefined;
 }
 
+async function insertRow(
+  member: Member,
+  action: TracedAction,
+  target: { type: TracedTargetType; ref: string },
+  source: TraceSource | null,
+  creditedId: string | undefined,
+  meta?: Record<string, string>,
+): Promise<void> {
+  if (!USE_POSTGRES) {
+    memoryLog.push({ memberId: member.id, action, targetType: target.type, targetRef: target.ref, source: source ?? undefined, creditedId, meta, createdAt: Date.now() });
+    if (memoryLog.length > 5000) memoryLog.shift();
+    return;
+  }
+  const db = sql();
+  await db`
+    insert into app.action_log (member_id, action, target_type, target_ref, source_type, source_ref, credited_id, meta)
+    select m.id, ${action}, ${target.type}, ${target.ref}, ${source?.type ?? null}, ${source?.ref ?? null},
+      (select c.id from app.members c where c.legacy_id = ${creditedId ?? null}), ${meta ? db.json(meta) : null}
+    from app.members m where m.legacy_id = ${member.id}`;
+}
+
+/** The sharer's own row beside the post's row, when the post came to this member through their shared link (step 5) */
+async function sharerRow(member: Member, source: TraceSource | null): Promise<{ source: TraceSource; creditedId: string } | null> {
+  if (source?.type !== 'moment') return null;
+  const note = await shareFromCookie();
+  if (!note || note.moment !== source.ref || note.sharer === member.id) return null;
+  return { source: { type: 'share', ref: note.moment, creditedId: note.sharer }, creditedId: note.sharer };
+}
+
 /**
  * Logs one action. The source is the caller's when it knows it (an invitation, saving a post), else the tapped link
- * remembered in the cookie, else the credit of the member's earlier row for the same target.
+ * remembered in the cookie, else the credit of the member's earlier row for the same target. When that post reached the
+ * member through someone's shared link, a second row credits the sharer (source 'share'); which one is paid is decided
+ * later (docs/TRACEABILITY.md).
  */
 export async function traceAction(
   member: Member,
@@ -96,20 +137,29 @@ export async function traceAction(
     if (!target.ref) return;
     const source = known ?? (await viaFromCookie(target.type, target.ref)) ?? (await carriedSource(member, target.type, target.ref));
     const creditedId = source ? await creditFor(member, source) : undefined;
-    if (!USE_POSTGRES) {
-      memoryLog.push({ memberId: member.id, action, targetType: target.type, targetRef: target.ref, source: source ?? undefined, creditedId, meta, createdAt: Date.now() });
-      if (memoryLog.length > 5000) memoryLog.shift();
-      return;
-    }
-    const db = sql();
-    await db`
-      insert into app.action_log (member_id, action, target_type, target_ref, source_type, source_ref, credited_id, meta)
-      select m.id, ${action}, ${target.type}, ${target.ref}, ${source?.type ?? null}, ${source?.ref ?? null},
-        (select c.id from app.members c where c.legacy_id = ${creditedId ?? null}), ${meta ? db.json(meta) : null}
-      from app.members m where m.legacy_id = ${member.id}`;
+    await insertRow(member, action, target, source, creditedId, meta);
+    const shared = await sharerRow(member, source);
+    if (shared) await insertRow(member, action, target, shared.source, shared.creditedId, meta);
   } catch (error) {
     // 42P01: migration 0052 not run yet
     if ((error as { code?: string }).code !== '42P01') console.warn('[action-log] not logged', action, target.type, error);
+  }
+}
+
+/**
+ * A new member who opened a shared post link in the last 30 days: two `signup` rows on that post, one credited to the
+ * sharer and one to the author. Called right after the account is made (lib/members/accounts.ts); never throws.
+ */
+export async function traceSignup(member: Member): Promise<void> {
+  try {
+    const note = await shareFromCookie();
+    if (!note || note.sharer === member.id) return;
+    const target = { type: 'moment' as const, ref: note.moment };
+    const post: TraceSource = { type: 'moment', ref: note.moment };
+    await insertRow(member, 'signup', target, { type: 'share', ref: note.moment, creditedId: note.sharer }, note.sharer);
+    await insertRow(member, 'signup', target, post, await creditFor(member, post));
+  } catch (error) {
+    if ((error as { code?: string }).code !== '42P01') console.warn('[action-log] signup not logged', error);
   }
 }
 
@@ -123,8 +173,10 @@ export interface SourceImpact {
   inviteYes: number;
   /** Tapped through to the place's map, website, tickets or LINE */
   outbound: number;
+  /** Signed up after opening this post from a shared link */
+  signup: number;
 }
-const EMPTY_IMPACT: SourceImpact = { people: 0, join: 0, save: 0, challengeJoin: 0, visit: 0, inviteYes: 0, outbound: 0 };
+const EMPTY_IMPACT: SourceImpact = { people: 0, join: 0, save: 0, challengeJoin: 0, visit: 0, inviteYes: 0, outbound: 0, signup: 0 };
 
 /** What one post (or profile, or invitation) brought: different people per action */
 export async function sourceImpact(type: TraceSourceType, ref: string): Promise<SourceImpact> {
@@ -132,7 +184,7 @@ export async function sourceImpact(type: TraceSourceType, ref: string): Promise<
     if (!USE_POSTGRES) {
       const rows = memoryLog.filter((r) => r.source?.type === type && r.source.ref === ref && r.creditedId);
       const people = (action?: TracedAction) => new Set(rows.filter((r) => !action || r.action === action).map((r) => r.memberId)).size;
-      return { people: people(), join: people('join'), save: people('save'), challengeJoin: people('challenge_join'), visit: people('visit'), inviteYes: people('invite_yes'), outbound: people('outbound') };
+      return { people: people(), join: people('join'), save: people('save'), challengeJoin: people('challenge_join'), visit: people('visit'), inviteYes: people('invite_yes'), outbound: people('outbound'), signup: people('signup') };
     }
     const db = sql();
     const [row] = await db`
@@ -142,9 +194,10 @@ export async function sourceImpact(type: TraceSourceType, ref: string): Promise<
         count(distinct member_id) filter (where action = 'challenge_join')::int as challenge_join,
         count(distinct member_id) filter (where action = 'visit')::int as visit,
         count(distinct member_id) filter (where action = 'invite_yes')::int as invite_yes,
-        count(distinct member_id) filter (where action = 'outbound')::int as outbound
+        count(distinct member_id) filter (where action = 'outbound')::int as outbound,
+        count(distinct member_id) filter (where action = 'signup')::int as signup
       from app.action_log where source_type = ${type} and source_ref = ${ref} and credited_id is not null`;
-    return { people: row.people, join: row.join, save: row.save, challengeJoin: row.challenge_join, visit: row.visit, inviteYes: row.invite_yes, outbound: row.outbound };
+    return { people: row.people, join: row.join, save: row.save, challengeJoin: row.challenge_join, visit: row.visit, inviteYes: row.invite_yes, outbound: row.outbound, signup: row.signup };
   } catch {
     return EMPTY_IMPACT;
   }
@@ -161,6 +214,10 @@ export interface Bringer {
   saves: number;
   inviteYes: number;
   outbound: number;
+  /** Signed up after their post (as author) or their shared link */
+  signups: number;
+  /** Opens of links they shared */
+  shareOpens: number;
   /** Viewer-days of their posts in the range */
   views: number;
 }
@@ -192,6 +249,8 @@ export async function topBringers(
           saves: count(rows, 'save'),
           inviteYes: count(rows, 'invite_yes'),
           outbound: count(rows, 'outbound'),
+          signups: count(rows, 'signup'),
+          shareOpens: 0,
           views: 0,
         }))
         .sort((a, b) => b.people - a.people)
@@ -203,7 +262,8 @@ export async function topBringers(
       select c.legacy_id, coalesce(c.display_name, '') as name, coalesce(c.avatar_url, '') as avatar, t.*
       from (
         select member_id, sum(people)::int as people, sum(visits)::int as visits, sum(joins)::int as joins, sum(saves)::int as saves,
-          sum(invite_yes)::int as invite_yes, sum(outbound)::int as outbound, sum(views)::int as views
+          sum(invite_yes)::int as invite_yes, sum(outbound)::int as outbound, sum(signups)::int as signups,
+          sum(share_opens)::int as share_opens, sum(views)::int as views
         from app.creator_daily
         where day > (now() at time zone 'Asia/Bangkok')::date - ${days}::int
         group by member_id order by ${order} limit ${limit} offset ${offset}
@@ -219,6 +279,8 @@ export async function topBringers(
       saves: r.saves,
       inviteYes: r.invite_yes,
       outbound: r.outbound,
+      signups: r.signups,
+      shareOpens: r.share_opens,
       views: r.views,
     }));
   } catch {
