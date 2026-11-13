@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-371 · Clips over 15.5 s failed to post with a 500 (live log 2026-11-13)
+- **What changed:** `app.moments.video_duration_s` still had the 15.5 s check from 0015 while the code has allowed 30 s since 2026-11-09 (80a24f5), so `POST /api/moments` with a longer clip broke on `moments_video_duration_s_check`. Migration **0051** sets the check to 30.5 (MAX_VIDEO_SECONDS + grace). No code change.
+- **What to do about it:** live needs 0051 (owner runs `npm run db:migrate`); clips post again as soon as it runs, no deploy needed. Applied on dev.
+
+### BE-370 · Home feed tabs: สำหรับคุณ · ติดตาม · ล่าสุด · ของฉัน (owner 2026-11-13)
+- **What changed:** ยอดฮิต is gone from the member home tabs; ล่าสุด (`all`) and ของฉัน (`mine`) moved out of the ⋯ menu into the tabs, and the ⋯ became one bookmark button for saved posts (`HomeMomentFeed`, `FeedView` no longer has `popular`). `GET /api/moments?tab=popular` still works; nothing on the home page calls it.
+- **What to do about it:** nothing.
+
+### BE-369 · Moment likes list for everyone, share count, see-through place tag (owner 2026-11-13)
+- **What changed:** the heart count under a post always shows (it used to hide behind "ถูกใจโดย …"). Tapping the number, or the whole "ถูกใจโดย … และอีก N คน" line, opens `LikersDialog` with follow buttons, like IG; `GET /api/moments/[id]/likes` is now open to any signed-in member (403 only when the author hid likes), and the viewer appears with `isMe` and no button (`PeopleList`). Shares are counted: new action `share` on `POST /api/moments/[id]/actions` after the share sheet or a copied link, once per member (table `app.moment_shares` + `moments.share_count`, migration **0050**); `FeedItem.sharesCount` shows next to the paper plane in the feed, on /moments/[id] and on the clip rail. On /moments tiles the place tag is dark glass (`bg-black/30`, white text) so the photo shows through.
+- **What to do about it:** live needs migration 0050 (owner runs `npm run db:migrate`); until then shares are not counted and nothing breaks. Applied on dev.
+
 ### BE-367 · Home top: circles first, next plan as a circle, no title (owner 2026-11-13)
 - **What changed:** the achievements row (`AchievementsRow`) now opens the home feed, above the tabs, with no visible label; the "โมเมนต์จากเพื่อนๆ" title is screen-reader only on every screen. The slim line above the feed is gone: its two cases are now the row's first circle (`UpNextCircle` in `MemberLiveHome`, drawn by the new `RowCircle`): a ตี้ just attended (pink ring, "📷 แชร์", opens posting; every screen) or the next plan (event photo, orange ring, short countdown from the new `shortAwayLabel` in `planHelpers`, "นัดถัดไป"; phones only, laptops list plans on the left). Computers get ‹ › buttons when the row overflows; every circle has its meaning in words as `title` and `aria-label` ("ทำชาเลนจ์ … ไปแล้ว 2 จาก 3 ขั้น").
 - **What to do about it:** nothing. The right column's pastel boxes are next (LAUNCH_CHECKLIST).

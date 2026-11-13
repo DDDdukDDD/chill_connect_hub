@@ -105,9 +105,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   const clipRatio = initialMoment.imageRatio ?? 9 / 16;
   /** Full screen only: the comments open over the clip and it keeps playing */
   const [commentsOpen, setCommentsOpen] = useState(false);
-  // The owner can see who sent a heart (owner 2026-11-07); for everyone else the number is just a number
+  // Any member can tap the number to see who sent a heart, like IG (owner 2026-11-13)
   const [likersOpen, setLikersOpen] = useState(false);
-  const canSeeLikers = Boolean(moment.isMine && moment.likesCount > 0);
+  const canSeeLikers = Boolean(isLoggedIn && moment.likesCount > 0);
   const besideClip = isFull && clipRatio <= 0.8 && !commentsOpen;
 
   // Filling the screen with the buttons kept: the browser's own full screen would hand an iPhone to its plain player
@@ -333,15 +333,26 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
     requestAnimationFrame(() => commentInput.current?.focus());
   };
 
+  // A member's share is counted once (BE-368); a visitor can share too, uncounted
+  const countShare = () => {
+    if (!isLoggedIn) return;
+    void call(`${url}/actions`, 'POST', { action: 'share' }).then((result) => {
+      if (result.ok && result.moment) setMoment((m) => ({ ...m, sharesCount: result.moment?.sharesCount ?? m.sharesCount }));
+    });
+  };
   const share = async () => {
     const link = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
     if (navigator.share) {
-      const shared = await navigator.share({ title: title || 'โมเมนต์', url: link }).then(() => true, (err: DOMException) => err.name === 'AbortError');
-      if (shared) return;
+      const outcome = await navigator.share({ title: title || 'โมเมนต์', url: link }).then(() => 'shared', (err: DOMException) => (err.name === 'AbortError' ? 'cancelled' : 'failed'));
+      if (outcome === 'shared') countShare();
+      if (outcome !== 'failed') return;
     }
     if (!navigator.clipboard) return showToast(link);
     navigator.clipboard.writeText(link).then(
-      () => showToast('คัดลอกลิงก์แล้ว'),
+      () => {
+        showToast('คัดลอกลิงก์แล้ว');
+        countShare();
+      },
       () => showToast(link)
     );
   };
@@ -484,7 +495,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               </button>
               )}
               {!moment.likesOff && canSeeLikers && (
-              <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railButton} -mt-2 min-h-8 underline underline-offset-2`}>
+              <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railButton} -mt-2 min-h-8`}>
                 {moment.likesCount.toLocaleString()}
               </button>
               )}
@@ -507,6 +518,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               {mayShare && (
               <button type="button" onClick={() => void share()} aria-label="แชร์" className={railButton}>
                 <SendIcon onDark className="w-7 h-7 drop-shadow" />
+                {moment.sharesCount > 0 && moment.sharesCount.toLocaleString()}
               </button>
               )}
               {mayShare && momentHasPlace(moment) && (
@@ -659,7 +671,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             </button>
             )}
             {!moment.likesOff && canSeeLikers && (
-            <button type="button" onClick={() => setLikersOpen(true)} className={`${iconButton} -ml-2 underline underline-offset-2`}>
+            <button type="button" onClick={() => setLikersOpen(true)} className={`${iconButton} -ml-2`}>
               {moment.likesCount.toLocaleString()}
               <span className="sr-only">ดูคนที่ส่งหัวใจ</span>
             </button>
@@ -673,8 +685,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             )}
             {/* Icons only (owner 2026-11-13): แชร์ on every post, then ชวนไป, in its own colours, only on a post with a place to go */}
             {mayShare && (
-            <button type="button" onClick={() => void share()} aria-label="แชร์" className="inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
+            <button type="button" onClick={() => void share()} aria-label={moment.sharesCount > 0 ? `แชร์ (แชร์แล้ว ${moment.sharesCount} คน)` : 'แชร์'} className={iconButton}>
               <SendIcon />
+              {moment.sharesCount > 0 && moment.sharesCount.toLocaleString()}
             </button>
             )}
             {mayShare && momentHasPlace(moment) && (

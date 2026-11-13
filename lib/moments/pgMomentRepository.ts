@@ -56,6 +56,7 @@ function rowToMoment(r: PgRow): Moment {
     targetTitle: orUndefined(r.target_title),
     likedBy: r.liked_by,
     savedBy: r.saved_by,
+    sharesCount: Number(r.share_count ?? 0),
     sampleLikes: r.sample_likes,
     comments: (r.comments as Row[]).map((c) => ({
       id: c.id as string,
@@ -495,6 +496,20 @@ export const pgMomentRepository: MomentRepository = {
     const db = sql();
     const [row] = await hydrate(db, db`m.slug = ${id}` as unknown as Fragment);
     return row ? rowToMoment(row) : null;
+  },
+  async addShare(id, memberId) {
+    const db = sql();
+    try {
+      await db`
+        with added as (
+          insert into app.moment_shares (moment_id, member_id)
+          select m.id, x.id from app.moments m join app.members x on x.legacy_id = ${memberId} where m.slug = ${id}
+          on conflict do nothing returning moment_id)
+        update app.moments set share_count = share_count + 1 where id in (select moment_id from added)`;
+    } catch (error) {
+      // 42P01: migration 0050 not run yet; the share itself still goes through
+      if ((error as { code?: string }).code !== '42P01') throw error;
+    }
   },
   async create(moment) {
     await sql().begin(async (tx) => {

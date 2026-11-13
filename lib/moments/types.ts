@@ -90,6 +90,10 @@ export interface Moment {
   targetTitle?: string;
   likedBy: string[];
   savedBy: string[];
+  /** How many members shared it (each counted once, BE-369); 0 on a database without migration 0050 */
+  sharesCount?: number;
+  /** The no-database mode keeps who shared it on the moment itself */
+  sharedBy?: string[];
   /** Like count carried over from the bundled samples (illustrative); 0 for real posts */
   sampleLikes: number;
   comments: MomentComment[];
@@ -245,6 +249,8 @@ export interface MomentRepository {
   /** Hashtags that appear in the same public posts as `tag`, the most shared first */
   relatedHashtags(tag: string, limit: number): Promise<{ tag: string; posts: number }[]>;
   findById(id: string): Promise<Moment | null>;
+  /** Counts the member's share once (BE-369); quietly nothing on a database without migration 0050 */
+  addShare(id: string, memberId: string): Promise<void>;
   create(moment: Moment): Promise<Moment>;
   /** Applies `change` to the stored moment atomically and returns the result */
   mutate(id: string, change: (moment: Moment) => Moment): Promise<Moment>;

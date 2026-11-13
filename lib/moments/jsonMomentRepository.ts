@@ -124,6 +124,9 @@ export const jsonMomentRepository: MomentRepository = {
   async findById(id) {
     return load().find((m) => m.id === id) ?? null;
   },
+  async addShare(id, memberId) {
+    await jsonMomentRepository.mutate(id, (m) => (m.sharedBy?.includes(memberId) ? m : { ...m, sharedBy: [...(m.sharedBy ?? []), memberId], sharesCount: (m.sharesCount ?? 0) + 1 }));
+  },
   async create(moment) {
     return mutex.runExclusive(async () => {
       persist([moment, ...load()]);

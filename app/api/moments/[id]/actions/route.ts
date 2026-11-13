@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
+import { addComment, commentMentions, withoutMentions, setCommentLike, deleteComment, loadPeople, MomentError, removeMyTag, recordShare, reportMoment, setLike, setSaved, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
@@ -13,6 +13,7 @@ import { notify, removeNotifications } from '@/lib/social/notifications';
  *   อีเวนต์ to My Hub's "ที่บันทึก", where ชวนไป is one tap away; unsaving the post leaves it, owner 2026-11-12)
  * { action: 'comment', text, parentId? } · { action: 'delete_comment', commentId } (the commenter or the post's author; its replies go with it)
  * { action: 'like_comment' | 'unlike_comment', commentId }
+ * { action: 'share' } (after the share sheet or a copied link; each member counts once, BE-369)
  * { action: 'report', reason } · { action: 'untag' } (the member takes themselves off the post)
  * ("ชวนไป" moved to /api/invites, 2026-11-11)
  * Returns the updated feed item (for report: also { autoHidden }).
@@ -33,6 +34,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         moment = await setLike(member, id, body.action === 'like');
         if (body.action === 'like') await notify(moment.authorId, member, 'like', moment.id);
         else if (moment.authorId) await removeNotifications({ memberId: moment.authorId, actorId: member.id, types: ['like'], momentId: moment.id });
+        break;
+      case 'share':
+        moment = await recordShare(member, id);
         break;
       case 'save':
       case 'unsave':
