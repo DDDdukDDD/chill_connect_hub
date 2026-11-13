@@ -79,3 +79,13 @@ export function SaveIcon({ active, className = 'w-6 h-6', onDark }: { active: bo
     </Frame>
   );
 }
+
+/** แชร์: a paper plane drawn in the same box and line as the heart and bubble, so the row reads as one set (owner 2026-11-13) */
+export function SendIcon({ className = 'w-6 h-6', onDark }: { className?: string; onDark?: boolean }) {
+  return (
+    <Frame className={className} onDark={onDark}>
+      <path d="M40.5 7.5L7.5 19.8L20.8 25.6L27 40.5L40.5 7.5Z" />
+      <path d="M40.5 7.5L20.8 25.6" />
+    </Frame>
+  );
+}
