@@ -7,7 +7,8 @@ type Context = { params: Promise<{ id: string }> };
 
 /**
  * What the signed-in member's own post brought (docs/TRACEABILITY.md): different people who joined, saved, went or said
- * "ไปกัน" after coming from it. Only the author sees it; who those people are is never shown.
+ * "ไปกัน" after coming from it, and how many saw it (viewer-days, migration 0053). Only the author sees it; who those people
+ * are is never shown.
  */
 export async function GET(request: Request, context: Context) {
   const member = await getSessionMember(request);
@@ -16,5 +17,5 @@ export async function GET(request: Request, context: Context) {
   const moment = await momentRepository.findById(id);
   if (!moment || moment.status === 'removed') return NextResponse.json({ success: false, message: 'ไม่พบโมเมนต์' }, { status: 404 });
   if (moment.authorId !== member.id) return NextResponse.json({ success: false, message: 'ดูได้เฉพาะเจ้าของโมเมนต์' }, { status: 403 });
-  return NextResponse.json({ success: true, impact: await sourceImpact('moment', id) }, { headers: { 'Cache-Control': 'private, no-store' } });
+  return NextResponse.json({ success: true, impact: { ...(await sourceImpact('moment', id)), views: await momentRepository.viewsOf(id) } }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

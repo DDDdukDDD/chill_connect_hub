@@ -238,6 +238,8 @@ export interface MomentRepository {
   recentAchievements(since: Date, limit: number): Promise<{ momentId: string; authorId: string; achievement: MomentAchievement; createdAt: string }[]>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;
+  /** Viewer-days of a post (one member counts once a day, not the author): in all, and in the last 7 days */
+  viewsOf(id: string): Promise<{ total: number; week: number }>;
   /**
    * The open ตี้ and อีเวนต์ (by slug), open challenges and places among these targets, for the line under a feed
    * post. Places come with their opening hours; the service works out "open now".

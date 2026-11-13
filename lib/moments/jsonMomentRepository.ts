@@ -265,6 +265,18 @@ export const jsonMomentRepository: MomentRepository = {
     for (const id of ids) seen.set(id, Date.now());
     seenByMember.set(viewerId, seen);
   },
+  async viewsOf(id) {
+    // No database: only who has it on screen in this server's memory, latest sighting only
+    let total = 0;
+    let week = 0;
+    for (const seen of seenByMember.values()) {
+      const at = seen.get(id);
+      if (at === undefined) continue;
+      total += 1;
+      if (at > Date.now() - 7 * 86400_000) week += 1;
+    }
+    return { total, week };
+  },
   async hashtagUses() {
     const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
     return tallyHashtags(items.map((m) => ({ caption: m.caption, createdAt: m.createdAt, author: m.authorId ?? m.authorName })));

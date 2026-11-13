@@ -111,7 +111,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   const [likersOpen, setLikersOpen] = useState(false);
   const canSeeLikers = Boolean(isLoggedIn && moment.likesCount > 0);
   // The author sees what the post brought: people who went, joined or saved after coming from it (docs/TRACEABILITY.md)
-  const [impact, setImpact] = useState<SourceImpact | null>(null);
+  const [impact, setImpact] = useState<PostImpact | null>(null);
   useEffect(() => {
     if (!moment.isMine) return;
     let alive = true;
@@ -716,7 +716,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           </div>
           )}
 
-          {impact && impact.people > 0 && <ImpactLine impact={impact} />}
+          {impact && (impact.people > 0 || impact.views?.total > 0) && <ImpactLine impact={impact} />}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
           {!moment.commentsOff && (
@@ -942,8 +942,11 @@ function ReelHost({ initialMoment, openFullScreen = false, context }: DetailProp
   return <DetailBody key={current.id} initialMoment={current} openFullScreen={openFullScreen || at > 0} reel={reel} {...context} />;
 }
 
+/** GET /api/moments/[id]/impact: what the post brought, and viewer-days (one member once a day, not the author) */
+type PostImpact = SourceImpact & { views: { total: number; week: number } };
+
 /** What the author's post brought, in one warm line; only the author sees it, never who those people are */
-function ImpactLine({ impact }: { impact: SourceImpact }) {
+function ImpactLine({ impact }: { impact: PostImpact }) {
   const parts = [
     impact.visit > 0 && `ไปถึงจริง ${impact.visit.toLocaleString()}`,
     impact.join > 0 && `เข้าร่วม ${impact.join.toLocaleString()}`,
@@ -953,8 +956,18 @@ function ImpactLine({ impact }: { impact: SourceImpact }) {
   ].filter(Boolean);
   return (
     <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-amber-900">
-      <span className="font-bold">โพสต์นี้พาเพื่อนๆ ออกไปแล้ว {impact.people.toLocaleString()} คน</span>
-      {parts.length > 0 && <span className="text-amber-800"> · {parts.join(' · ')}</span>}
+      {impact.people > 0 && (
+        <span className="block">
+          <span className="font-bold">โพสต์นี้พาเพื่อนๆ ออกไปแล้ว {impact.people.toLocaleString()} คน</span>
+          {parts.length > 0 && <span className="text-amber-800"> · {parts.join(' · ')}</span>}
+        </span>
+      )}
+      {impact.views?.total > 0 && (
+        <span className={impact.people > 0 ? 'block text-amber-800' : 'block font-bold'}>
+          เพื่อนๆ เห็นโพสต์นี้ {impact.views.total.toLocaleString()} ครั้ง
+          {impact.views.week > 0 && impact.views.week < impact.views.total && <span className="font-normal"> · 7 วันนี้ {impact.views.week.toLocaleString()}</span>}
+        </span>
+      )}
       <span className="block text-xs text-amber-700">เห็นแค่คุณนะ</span>
     </p>
   );
