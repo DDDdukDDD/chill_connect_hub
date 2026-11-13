@@ -4,6 +4,7 @@ import { optimizedImage } from '@/lib/optimizedImage';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
+import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams, useRouter } from 'next/navigation';
 import { MobileNav } from '@/components/MobileNav';
 import { Navbar } from '@/components/Navbar';
@@ -103,6 +104,8 @@ export default function CommunityDetailPage({
   initialRelated?: EventItem[] | null;
 }) {
   const params = useParams();
+  // Taps on the map, website, tickets or LINE are counted for the place and its sponsor (docs/TRACEABILITY.md)
+  useOutboundTracking('community', typeof params?.id === 'string' ? params.id : undefined);
   const router = useRouter();
   const rawId = params?.id as string;
   const decodedId = rawId ? decodeURIComponent(rawId) : '';

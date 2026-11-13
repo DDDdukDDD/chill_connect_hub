@@ -5,7 +5,19 @@ import { isClosedToJoin, isEventEnded } from '@/lib/dateUtils';
 import { db } from '@/lib/db';
 import { listPublicFairs, listPublicMeetups, listPublicQuests } from '@/lib/publicContent';
 import { SponsoredError, deleteSponsoredSlot, listSponsoredSlots, saveSponsoredSlot } from '@/lib/sponsored/store';
-import { SPONSOR_PILLAR_LABELS, type SponsorPillar } from '@/lib/sponsored/types';
+import { SPONSOR_PILLAR_LABELS, type SponsorPillar, type SponsoredSlot } from '@/lib/sponsored/types';
+import { targetClicks } from '@/lib/social/linkClicks';
+import type { ClickTargetType } from '@/lib/social/linkKinds';
+
+const CLICK_TYPE: Record<SponsorPillar, ClickTargetType> = { community: 'community', events: 'fair', spots: 'spot', challenges: 'challenge' };
+
+/** What a slot got during its run (app.link_clicks_daily, docs/TRACEABILITY.md): card views and taps, and taps out of the item's page */
+async function statsOf(slot: SponsoredSlot) {
+  const counts = await targetClicks(CLICK_TYPE[slot.pillar], slot.itemId, slot.startDate, slot.endDate);
+  let outbound = 0;
+  for (const [kind, n] of Object.entries(counts)) if (!kind.startsWith('sponsored')) outbound += n ?? 0;
+  return { views: counts.sponsored_view ?? 0, clicks: counts.sponsored_click ?? 0, outbound };
+}
 
 type Option = { id: string; title: string; detail?: string };
 
@@ -36,7 +48,10 @@ export async function GET(request: Request) {
   if (denied) return denied;
   try {
     const [community, events, spots, challenges] = await Promise.all([optionsOf('community'), optionsOf('events'), optionsOf('spots'), optionsOf('challenges')]);
-    return NextResponse.json({ success: true, slots: await listSponsoredSlots(), options: { community, events, spots, challenges } });
+    const slots = await listSponsoredSlots();
+    // One small read per slot: the table is keyed by target and day
+    const stats = Object.fromEntries(await Promise.all(slots.map(async (slot) => [slot.id, await statsOf(slot)] as const)));
+    return NextResponse.json({ success: true, slots, stats, options: { community, events, spots, challenges } });
   } catch (error) {
     console.error('Sponsored slots load failed:', error);
     return NextResponse.json({ success: false, error: 'โหลดการ์ดสนับสนุนไม่สำเร็จ' }, { status: 500 });

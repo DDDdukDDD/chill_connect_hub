@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams } from 'next/navigation';
 import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, ChevronDown, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
@@ -41,6 +42,8 @@ const FACT = 'inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text
 /** The page itself: `initialDetail` (the public part) comes from the server page, so the content is in the HTML search engines read. */
 export default function ChallengeDetailPage({ initialDetail = null }: { initialDetail?: QuestDetail | null }) {
   const params = useParams();
+  // Taps on the map, website, tickets or LINE are counted for the place and its sponsor (docs/TRACEABILITY.md)
+  useOutboundTracking('challenge', typeof params?.id === 'string' ? params.id : undefined);
   const questId = decodeURIComponent((params?.id as string) || '');
   const [activeTab, setActiveTab] = useState('challenges');
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();

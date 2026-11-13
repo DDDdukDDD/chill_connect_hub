@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useMemberSession } from '@/lib/useMemberSession';
+import { shareUrl } from '@/lib/social/shareLink';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
@@ -573,6 +575,8 @@ function shareInitial(type: string, id: string, title: string, location: string,
 export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: setSort, inserts: feedInserts = {}, tailUpTo = -1, shareRequest, onPosted, start, rowLead }: HomeMomentFeedProps) {
   // Cards between the posts belong to the first tab only (ล่าสุด until 2026-11-09, now สำหรับคุณ) (owner 2026-11-02): a chosen view shows just what was asked for
   const inserts = sort === 'foryou' ? feedInserts : {};
+  // Shared links carry who shared them (lib/social/shareLink.ts)
+  const myId = useMemberSession().member?.id;
   // Back on Home, the first page seen last time shows at once while it refreshes
   // The server's first page wins (it is fresh); otherwise the one seen last time shows at once while it refreshes
   const serverFirst = start && sort === 'foryou' ? start : undefined;
@@ -799,7 +803,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       // The share button opens the send sheet: invite friends, LINE, the link
       if (choice === 'send') setSharing(moment);
       if (choice === 'copy' || choice === 'share') {
-        const url = `${window.location.origin}/moments/${encodeURIComponent(moment.id)}`;
+        // The link carries who shared it, so a friend who opens it and goes credits the sharer too (docs/TRACEABILITY.md)
+        const url = shareUrl(window.location.origin, moment.id, myId);
         // The phone's own share sheet where there is one; otherwise the link is copied
         // Each member's share counts once (BE-368)
         const counted = () =>

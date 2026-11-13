@@ -10,7 +10,7 @@ import { AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
 import { useAdminSession } from './AdminAuthGate';
 
 type Option = { id: string; title: string; detail?: string };
-type Data = { slots: SponsoredSlot[]; options: Record<SponsorPillar, Option[]> };
+type Data = { slots: SponsoredSlot[]; stats?: Record<string, SlotStatsData>; options: Record<SponsorPillar, Option[]> };
 type Form = Omit<SponsoredSlot, 'createdAt' | 'updatedAt' | 'note'> & { note: string };
 
 const EMPTY: Form = { id: '', pillar: 'community', itemId: '', sponsor: '', note: '', startDate: bangkokToday(), endDate: bangkokToday(), published: false };
@@ -220,6 +220,7 @@ export function SponsoredSlotsView() {
                 <th className="py-2.5 px-4">ผู้สนับสนุน</th>
                 <th className="py-2.5 px-4">ช่วงเวลา</th>
                 <th className="py-2.5 px-4">สถานะ</th>
+                <th className="py-2.5 px-4 text-right" title="ตลอดช่วงเวลาของการ์ด: คนเห็นการ์ด (คนละครั้งต่อวันต่อเครื่อง) · กดการ์ด · กดออกไปเว็บ แผนที่ หรือจองจากหน้ารายการนั้น">เห็น · กด · ออกไป</th>
                 {canEdit && <th className="py-2.5 px-4" />}
               </tr>
             </thead>
@@ -237,6 +238,9 @@ export function SponsoredSlotsView() {
                     </td>
                     <td className="py-2.5 px-4 whitespace-nowrap text-slate-600">{campaignDay(slot.startDate)} – {campaignDay(slot.endDate)}</td>
                     <td className="py-2.5 px-4"><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${phase.tone}`}>{phase.label}</span></td>
+                    <td className="py-2.5 px-4 whitespace-nowrap text-right tabular-nums text-slate-700">
+                      <SlotStats stats={data.stats?.[slot.id]} />
+                    </td>
                     {canEdit && (
                       <td className="py-2.5 px-4">
                         <div className="flex justify-end gap-2">
@@ -266,5 +270,19 @@ export function SponsoredSlotsView() {
         />
       )}
     </div>
+  );
+}
+
+type SlotStatsData = { views: number; clicks: number; outbound: number };
+
+/** Views, taps and the share of views that were tapped; counting began 2026-11-13 */
+function SlotStats({ stats }: { stats?: SlotStatsData }) {
+  if (!stats) return <span className="text-slate-400">–</span>;
+  const rate = stats.views > 0 ? `${((stats.clicks / stats.views) * 100).toFixed(1)}%` : null;
+  return (
+    <>
+      {stats.views.toLocaleString()} · <b className="text-slate-900">{stats.clicks.toLocaleString()}</b> · {stats.outbound.toLocaleString()}
+      {rate && <span className="block text-[11px] text-slate-500">กด {rate} ของคนเห็น</span>}
+    </>
   );
 }

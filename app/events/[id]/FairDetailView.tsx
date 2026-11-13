@@ -3,6 +3,7 @@
 import { optimizedImage } from '@/lib/optimizedImage';
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -103,6 +104,8 @@ export default function FairDetailPage({
   initialRelated?: EventItem[] | null;
 }) {
   const params = useParams();
+  // Taps on the map, website, tickets or LINE are counted for the place and its sponsor (docs/TRACEABILITY.md)
+  useOutboundTracking('fair', typeof params?.id === 'string' ? params.id : undefined);
   const router = useRouter();
   const rawId = params?.id as string;
   const decodedId = rawId ? decodeURIComponent(rawId) : '';
