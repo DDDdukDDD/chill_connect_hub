@@ -16,7 +16,6 @@ import { SponsoredBadge } from '@/components/SponsoredBadge';
 import { withSponsored } from '@/lib/sponsored/types';
 import { ShowMoreButton } from '@/components/discover/ShowMoreButton';
 import { useShownBatches } from '@/lib/useShownBatches';
-import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import type { CampaignView } from '@/lib/campaigns/types';
 import { ChallengeList } from '@/components/ChallengeList';
@@ -163,8 +162,6 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
 
   const showToast = (message: string) => setToast({ message, at: Date.now() });
   const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
-  // Campaigns this visitor has not joined; a joined one lives in My Hub. All of them until the list loads, so the server HTML has them
-  const campaignsToJoin = campaigns.filter((item) => !myCampaigns.mine.some((entry) => entry.campaign.id === item.id));
   // Each new message gets its own full three seconds, even when one comes right after another
   useEffect(() => {
     if (!toast) return;
@@ -261,13 +258,11 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">ชาเลนจ์ชวนออกไปใช้ชีวิต</h1>
             <p className="mt-1 text-sm font-medium text-slate-600">
               ไปให้ครบ แล้วรับ XP กับของรางวัลกลับมา
-              {/* Guests: the rewards are a link in the sentence that promises them */}
-              {!isLoggedIn && (
-                <Link href="/rewards" className="ml-1.5 inline-flex items-center gap-0.5 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
-                  ดูของรางวัล
-                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
-                </Link>
-              )}
+              {/* The rewards are a link in the sentence that promises them, for guests and members alike */}
+              <Link href="/rewards" className="ml-1.5 inline-flex items-center gap-0.5 font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">
+                ดูของรางวัล
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
             </p>
           </div>
           {isLoggedIn && (
@@ -295,7 +290,8 @@ export default function ChallengesDiscoveryPage({ initialQuests, initialQuery = 
           )}
         </header>
 
-        <PromoBoard campaigns={campaignsToJoin} onOpen={myCampaigns.open} onOpenReward={myCampaigns.openReward} redeemedRewardIds={myRewards.redeemedRewardIds} balance={isLoggedIn ? myRewards.balance : undefined} />
+        {/* No campaign/rewards strip here (owner 2026-11-14): campaigns live on home, /rewards and My Hub; this page is for choosing a challenge.
+            ?campaign= links still open the campaign popup (useCampaigns) */}
 
         {/* 2. Choosing, laid out like the ค้นพบ pages: filters on the left, what is mine and how to view on the right,
             then the category tabs right above the list (owner 2026-10-19) */}

@@ -76,7 +76,8 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
   const [openNow, setOpenNow] = useState(searchParams.get('open') === 'now');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   // Filters only the sheet sets; the quick ones show in the row already
-  const sheetCount = (selectedProvince !== 'all' ? 1 : 0) + (selectedDistricts.length > 0 ? 1 : 0);
+  // The province already shows in the search bar, the h1 and the place circles, so only districts count
+  const sheetCount = selectedDistricts.length > 0 ? 1 : 0;
   const [sortBy, setSortBy] = useState<'newest' | 'favorites'>('newest');
   useFiltersInUrl({ q: searchQuery.trim(), category: selectedCategory, province: selectedProvince, district: selectedDistricts.join(','), price: priceFilter, open: openNow ? 'now' : '' });
   const [sortByNearMe, setSortByNearMe] = useState(false);
@@ -314,7 +315,7 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
             />
           }
           summary={
-            (searchQuery || selectedCategory !== 'all' || selectedProvince !== 'all' || selectedDistricts.length > 0 || openNow || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
+            (searchQuery || selectedCategory !== 'all' || selectedDistricts.length > 0 || openNow || priceFilter !== 'all' || sortBy === 'favorites' || sortByNearMe) && (
               <button type="button" onClick={handleResetAll} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
                 ล้างตัวกรองทั้งหมด
               </button>
@@ -355,7 +356,6 @@ function SpotsPageContent({ initial, openedAt: serverOpenedAt, initialCounts, sp
             </button>
             <QuickChip kind="spots" on={openNow} onToggle={() => { setOpenNow(!openNow); setCurrentPage(1); }}>เปิดอยู่ตอนนี้</QuickChip>
             <QuickChip kind="spots" on={priceFilter === 'free'} onToggle={() => { setPriceFilter(priceFilter === 'free' ? 'all' : 'free'); setCurrentPage(1); }}>เข้าฟรี</QuickChip>
-            {selectedProvince !== 'all' && <ActiveChip kind="spots" label={selectedProvince} onClear={() => chooseProvince('all')} />}
             {selectedDistricts.map((name) => <ActiveChip key={name} kind="spots" label={name} onClear={() => toggleDistrict(name)} />)}
           </div>
         </DiscoverHeader>

@@ -1,21 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
-import { Bookmark, CalendarDays, Camera, ChevronDown, Gift, Shuffle, Zap } from 'lucide-react';
-import { MeetupTile } from '@/components/MeetupTile';
-import { FairTile } from '@/components/FairTile';
-import { SpotTile } from '@/components/SpotTile';
-import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
-import { meetupTimes, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
-import { ALL_PROVINCES, discoverHref, eventInProvince } from '@/lib/discoverMatch';
-import { useAuth } from '@/lib/useAuth';
+import { Bookmark, CalendarDays, Camera, Gift, Zap } from 'lucide-react';
+import { avatarImage } from '@/lib/optimizedImage';
+import { meetupTimes, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { RowCircle } from '@/components/home/AchievementsRow';
+import { FollowRow } from '@/components/home/onboardingFirstStep';
+import { FOOTER_LINKS } from '@/components/SiteFooter';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { ChallengeTile, assignReasons } from '@/components/ChallengeTile';
@@ -43,8 +40,6 @@ export interface MemberLiveHomeProps {
   /** Ids among the plans the member hosts, and fairs they only saved */
   hostedIds: string[];
   savedIds: string[];
-  /** Never earned any XP: the greeting tells them how the first comes. False until their rewards load */
-  noXpYet: boolean;
   savedCount: number;
   likedCategories: string[];
   isLoaded: boolean;
@@ -93,9 +88,10 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
     <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7">
       {/* Two columns on laptops (owner 2026-10-29): "ของฉัน" pinned on the left under the logo as in My Hub (owner 2026-10-31), the feed centred in the rest. Where to go next (ตี้,
           ชาเลนจ์, อีเวนต์, ที่เที่ยว) comes as cards between the posts on every screen, as on phones, instead of a third column */}
-      {/* Wide screens add a right column (owner 2026-11-01): the 600px feed left ~290px empty on each side. From xl (1280) since
-          2026-11-09, with narrower side columns there so the feed keeps ~575px; 2xl gets the full widths */}
-      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_300px] 2xl:grid-cols-[300px_minmax(0,1fr)_340px] lg:gap-14 xl:gap-10 2xl:gap-14">
+      {/* No right column (owner 2026-11-14): it only showed on wide screens, and the feed's cards and the circles above it
+          already suggest what to do next on every screen. From xl a third track as wide as the left keeps the feed in the
+          middle; it holds people to follow (PeopleRail) */}
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] 2xl:grid-cols-[300px_minmax(0,1fr)_300px] lg:gap-14 xl:gap-10 2xl:gap-14">
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
               one slim line when there is something to do next. Laptops have both beside the feed */}
@@ -125,21 +121,15 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           <NextUp {...props} />
           {/* Campaigns sit beside the feed, not above it (owner 2026-10-30): you and your plans come first */}
           {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
-            <div className="empty:hidden xl:hidden">
+            <div className="empty:hidden">
               <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
             </div>
           )}
         </aside>
 
-        {/* Wide screens: what to go to next as folded lines (owner 2026-11-01, as on the ตี้ pages), so the feed there is only
-            moments; campaigns are one more line under them */}
-        <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar space-y-3 pb-4">
-          <SideFolds {...props} />
-          {props.campaigns && props.campaignMemberOf && props.onOpenCampaign && (
-            <div className="empty:hidden">
-              <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} layout="side" />
-            </div>
-          )}
+        {/* Wide screens: people to follow and the site links in the third track (owner 2026-11-14) */}
+        <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar pb-4">
+          <PeopleRail />
         </aside>
       </div>
     </div>
@@ -150,19 +140,12 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
  * "สวัสดี Duke" and the XP. This month's counts left for My Hub (owner 2026-11-04: "ของฉัน" already leads there);
  * before anything counts, one line says how the first one comes.
  */
-function Greeting({ name, now, xp, noXpYet, plans, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
-  const nudge = noXpYet && plans.length === 0 && (
-    <p className="mt-1 text-[13px] text-slate-600">
-      ไปตี้แรกกับเพื่อนๆ รับ <span className="font-semibold text-[#7C3AED]">+50 XP</span>
-    </p>
-  );
-
+function Greeting({ name, now, xp, layout }: MemberLiveHomeProps & { layout: 'row' | 'column' }) {
   if (layout === 'row') {
     return (
       <div className="min-w-0">
         {/* Phones and upright iPads start with the feed (owner 2026-11-05); the heading stays for screen readers */}
         <h1 className="sr-only">สวัสดี {name}</h1>
-        {nudge && <div className="mb-4">{nudge}</div>}
       </div>
     );
   }
@@ -171,13 +154,12 @@ function Greeting({ name, now, xp, noXpYet, plans, layout }: MemberLiveHomeProps
       <p className="text-xs text-slate-500">{dayPart(now)}</p>
       {/* One <h1> per page: the phone copy is the h1 */}
       <p role="heading" aria-level={1} className="text-2xl font-bold text-slate-900 tracking-tight truncate">สวัสดี {name}</p>
-      {nudge || (
-        // XP only: the way to the rewards is "ของรางวัล" in ของฉัน below
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
-          <Zap className="w-3.5 h-3.5 text-[#7C3AED] fill-current" aria-hidden="true" />
-          <span className="font-semibold text-[#7C3AED] tabular-nums">{xp.toLocaleString()} XP</span>
-        </p>
-      )}
+      {/* No "ไปตี้แรก… +50 XP" nudge (owner 2026-11-14): it pulled a new member away from the first-step challenges the circles show */}
+      {/* XP only: the way to the rewards is "ของรางวัล" in ของฉัน below */}
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
+        <Zap className="w-3.5 h-3.5 text-[#7C3AED] fill-current" aria-hidden="true" />
+        <span className="font-semibold text-[#7C3AED] tabular-nums">{xp.toLocaleString()} XP</span>
+      </p>
     </div>
   );
 }
@@ -337,6 +319,7 @@ const FIRST_SLOTS = [1, 4, 7, 10];
 const LATER_EVERY = 6;
 const LATER_UNTIL = 70;
 const PHONE_CAMPAIGN_SLOT = FIRST_SLOTS[1];
+const PEOPLE_SLOT = 2;
 // How many items one card shows, and the fewest worth a card
 const TAKE: Record<FeedCardKind, number> = { meetup: 1, challenge: 3, fair: 4, spot: 5 };
 const FEWEST: Record<FeedCardKind, number> = { meetup: 1, challenge: 2, fair: 2, spot: 2 };
@@ -351,6 +334,8 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
       </section>
     );
   }
+  // Different pictures first: two challenges with the same photo side by side look fake (as the ตี้ picks, tester 2026-11-09)
+  const quests = [...props.quests.filter((q, i) => !q.image || props.quests.findIndex((o) => o.image === q.image) === i), ...props.quests].filter((q, i, all) => all.indexOf(q) === i);
   const lists: Record<FeedCardKind, number> = { meetup: props.meetups.length, challenge: props.quests.length, fair: props.fairs.length, spot: props.spots.length };
   const used: Record<FeedCardKind, number> = { meetup: showPicks ? 3 : 0, challenge: 0, fair: 0, spot: 0 };
   const slots = [...FIRST_SLOTS];
@@ -370,13 +355,12 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     used[kind] += TAKE[kind];
     // A second row of the same kind gets its own heading
     const again = from >= TAKE[kind];
-    // Wide screens show these in the right column's folds instead, so nothing appears twice
     cards[at] = (
-      <section className="py-5 border-b border-slate-200 xl:hidden">
+      <section className="py-5 border-b border-slate-200">
         {kind === 'meetup' ? (
           <InvitePost event={props.meetups[from]} reason={props.reasons[props.meetups[from].id]} />
         ) : kind === 'challenge' ? (
-          <QuestsBlock {...props} quests={props.quests.slice(from, from + TAKE.challenge)} heading={again ? 'ชาเลนจ์อื่นที่น่าลอง' : undefined} />
+          <QuestsBlock {...props} quests={quests.slice(from, from + TAKE.challenge)} heading={again ? 'ชาเลนจ์อื่นที่น่าลอง' : undefined} />
         ) : kind === 'fair' ? (
           <FairsBlock {...props} fairs={props.fairs.slice(from, from + TAKE.fair)} layout="tiles" heading={again ? 'อีเวนต์อื่นที่น่าไป' : undefined} />
         ) : (
@@ -385,6 +369,13 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
       </section>
     );
   }
+  // People to follow (owner 2026-11-14: the feed suggests friends too), after the second card's post; it hides itself when nobody is left
+  cards[PEOPLE_SLOT] = (
+    <>
+      {cards[PEOPLE_SLOT]}
+      <PeopleToFollow />
+    </>
+  );
   // Phones have no side column: the campaign comes between the posts, after the first cards, never on top
   if (props.campaigns && props.campaignMemberOf && props.onOpenCampaign) {
     cards[PHONE_CAMPAIGN_SLOT] = (
@@ -397,6 +388,63 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     );
   }
   return cards;
+}
+
+/** "เพื่อนๆ ที่น่าติดตาม": verified members who post, people who like the same สาย first (GET /api/members/suggested) */
+function PeopleToFollow() {
+  // Wide screens list these in the right rail instead, so only one list loads and nothing shows twice
+  const wide = useWideScreen();
+  const [count, setCount] = useState<number | null>(null);
+  if (count === 0 || wide) return null;
+  return (
+    <section className="py-5 border-b border-slate-200" aria-labelledby="home-people-title">
+      <h2 id="home-people-title" className="text-base font-bold text-slate-900 mb-3">เพื่อนๆ ที่น่าติดตาม</h2>
+      <FollowRow onLoaded={setCount} emptyText="" />
+    </section>
+  );
+}
+
+/**
+ * The right rail on wide screens (owner 2026-11-14, as "Suggested for you" on Instagram): people to follow as quiet lines
+ * and the small site links. No tinted boxes: the four pastel folds that stood here left on the same day.
+ */
+function PeopleRail() {
+  const wide = useWideScreen();
+  const [count, setCount] = useState<number | null>(null);
+  if (!wide) return null;
+  return (
+    <div className="space-y-6">
+      {count !== 0 && (
+        <section aria-labelledby="home-rail-people-title">
+          <h2 id="home-rail-people-title" className="text-sm font-semibold text-slate-500 mb-3.5">เพื่อนๆ ที่น่าติดตาม</h2>
+          <FollowRow layout="list" onLoaded={setCount} emptyText="" />
+        </section>
+      )}
+      <nav aria-label="เกี่ยวกับ Chillwaa" className="text-xs text-slate-400 leading-relaxed">
+        {FOOTER_LINKS.map((link, i) => (
+          <React.Fragment key={link.href}>
+            {i > 0 && <span aria-hidden="true"> · </span>}
+            <Link href={link.href} className="hover:text-slate-600 hover:underline">{link.label}</Link>
+          </React.Fragment>
+        ))}
+        <p className="mt-2">© 2026 Chillwaa</p>
+      </nav>
+    </div>
+  );
+}
+
+/** xl and up (1280px), where the rail has room; read at once, since home is drawn in the browser only */
+function useWideScreen() {
+  const query = '(min-width: 1280px)';
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const onChange = () => setWide(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  return wide;
 }
 
 function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
@@ -443,6 +491,8 @@ function InvitePost({ event, reason }: { event: EventItem; reason?: string }) {
   );
 }
 
+const LIKED_CHIPS = 3;
+
 /** Without plans: three open meetups from the สาย the member liked, as a sideways row inside the feed */
 function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
   const liked = COMMUNITY_LIFESTYLE_CATEGORIES.filter((cat) => likedCategories.includes(cat.id));
@@ -458,11 +508,13 @@ function FirstPicks({ meetups, likedCategories, xp }: MemberLiveHomeProps) {
       {liked.length > 0 && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
           เพราะคุณชอบ
-          {liked.map((cat) => (
+          {/* Three at most: a member who liked every สาย got a wall of 20 chips above the picks */}
+          {liked.slice(0, LIKED_CHIPS).map((cat) => (
             <Link key={cat.id} href={`/community?category=${cat.id}`} className="h-6 px-2 inline-flex items-center rounded-full bg-[#FFF4EE] text-[#C2410C] font-semibold hover:opacity-80">
               {cat.name}
             </Link>
           ))}
+          {liked.length > LIKED_CHIPS && <span>และอีก {liked.length - LIKED_CHIPS} สาย</span>}
         </div>
       )}
       <div className="mt-3 flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -607,194 +659,6 @@ function ItemsBlock({ title, href, items, dot, layout }: { title: string; href: 
 function FairsBlock({ fairs, fairWhen, layout, heading = 'เอ็กซ์โป งานวิ่ง คอนเสิร์ต ช่วงนี้' }: MemberLiveHomeProps & { layout: 'rows' | 'tiles'; heading?: string }) {
   const items = fairs.map((fair) => ({ key: fair.id, href: eventHref(fair), image: fair.image, kicker: fairWhen(fair), title: fair.title, sub: fair.location }));
   return <ItemsBlock title={heading} href="/events" items={items} dot="bg-[#2B527A]" layout={layout} />;
-}
-
-/** How many tiles an opened fold holds; its badge says the same number */
-const FOLD_TILES = 6;
-type FoldKey = 'meetup' | 'challenge' | 'fair' | 'spot';
-/** Each pillar's colors (DESIGN_SYSTEM.md): the line's tint, its hover, the count badge and the hook text */
-const FOLD_TONE: Record<FoldKey, { bg: string; hover: string; badge: string; hook: string }> = {
-  meetup: { bg: 'bg-[#FFF4EE]', hover: 'hover:bg-[#FFE8DC]', badge: 'bg-[#F26430]', hook: 'text-[#C2410C]' },
-  challenge: { bg: 'bg-[#F5F3FF]', hover: 'hover:bg-[#EDE9FE]', badge: 'bg-[#7C3AED]', hook: 'text-[#5B21B6]' },
-  fair: { bg: 'bg-[#EEF3F8]', hover: 'hover:bg-[#E1EAF3]', badge: 'bg-[#2B527A]', hook: 'text-[#1F3D5C]' },
-  spot: { bg: 'bg-[#EEF5F0]', hover: 'hover:bg-[#E0EEE4]', badge: 'bg-[#4A7C59]', hook: 'text-[#2D5A3C]' },
-};
-
-/** One folded line: up to three photos with the count on them, the title, one line that sells, and the tiles when opened */
-function Fold({ id, title, hook, images, count, href, isOpen, onToggle, onNext, children }: {
-  id: FoldKey;
-  title: string;
-  hook: string;
-  images: (string | undefined)[];
-  count: number;
-  href: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  /** The next set from the same list; left out when the list fits in one set */
-  onNext?: () => void;
-  children: React.ReactNode;
-}) {
-  const tone = FOLD_TONE[id];
-  return (
-    <section aria-labelledby={`fold-${id}-title`}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-controls={`fold-${id}-tiles`}
-        className={`w-full flex items-center gap-4 rounded-2xl p-3 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] ${tone.bg} ${tone.hover}`}
-      >
-        <span className="relative flex -space-x-3 shrink-0" aria-hidden="true">
-          {images.slice(0, 3).map((image, i) => (
-            <span key={i} className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white bg-slate-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={optimizedImage(image, 96) || FALLBACK_IMAGE} alt="" loading="lazy" className="w-full h-full object-cover" />
-            </span>
-          ))}
-          <span className={`absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full border-2 border-white text-[11px] font-bold text-white flex items-center justify-center tabular-nums ${tone.badge}`}>
-            {count}
-          </span>
-        </span>
-        <span className="flex-1 min-w-0">
-          <span id={`fold-${id}-title`} className="block text-sm font-bold text-slate-900 truncate">
-            {title}
-            <span className="sr-only"> {count} รายการ</span>
-          </span>
-          <span className={`block text-xs font-semibold truncate tabular-nums ${tone.hook}`}>{hook}</span>
-        </span>
-        <ChevronDown className={`w-5 h-5 text-slate-500 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-      </button>
-      {isOpen && (
-        <div id={`fold-${id}-tiles`} className="mt-4 space-y-4">
-          {/* Top padding: the XP and seat stickers sit above the photos */}
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-6 pt-2">{children}</ul>
-          <div className="flex items-center justify-between gap-3">
-            <Link href={href} className={VIEW_ALL}>ดูทั้งหมด</Link>
-            {onNext && (
-              <button type="button" onClick={onNext} className="inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition-colors duration-200">
-                <Shuffle className="w-3.5 h-3.5" aria-hidden="true" />
-                สุ่มชุดใหม่
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
-/**
- * Wide screens' right column (owner 2026-11-01): ตี้ in the member's province, challenges, อีเวนต์ and places as folded
- * lines, closed at first, one open at a time so the column stays short enough to stay pinned. Each opens to the same
- * tiles as the rest of the site. ตี้ come from the member's own province (matched as ค้นพบ does: กรุงเทพฯ and
- * กรุงเทพมหานคร alike), the soonest anywhere when it has none.
- */
-function SideFolds({ meetups, plans, quests, fairs, fairWhen, spots, now, reasons }: MemberLiveHomeProps) {
-  const [open, setOpen] = useState<FoldKey | null>(null);
-  const province = useAuth().member?.province;
-  const today = new Date(now);
-
-  const planIds = new Set(plans.map((plan) => plan.id));
-  const openMeetups = meetups.filter((event) => !planIds.has(event.id));
-  const near = province ? openMeetups.filter((event) => eventInProvince(event, province)) : [];
-  const meetupPool = (near.length > 0 ? near : openMeetups).slice().sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date));
-  // "สุ่มชุดใหม่" steps through each list six at a time and starts over after the last set: every tap shows new ones
-  const [sets, setSets] = useState<Record<FoldKey, number>>({ meetup: 0, challenge: 0, fair: 0, spot: 0 });
-  const setOf = <T,>(key: FoldKey, pool: T[]) => {
-    const count = Math.max(1, Math.ceil(pool.length / FOLD_TILES));
-    const from = (sets[key] % count) * FOLD_TILES;
-    return pool.slice(from, from + FOLD_TILES);
-  };
-  const nextSet = (key: FoldKey, pool: unknown[]) => (pool.length > FOLD_TILES ? () => setSets((current) => ({ ...current, [key]: current[key] + 1 })) : undefined);
-  const shownMeetups = setOf('meetup', meetupPool);
-  const shownQuests = setOf('challenge', quests);
-  const questReasons = assignReasons(shownQuests);
-  const shownFairs = setOf('fair', fairs);
-  const shownSpots = setOf('spot', spots);
-  // The lines speak for the whole list (the soonest, the best XP), whichever set is showing
-  const bestXp = quests.length ? Math.max(...quests.map((quest) => quest.rewardPoints ?? 0)) : 0;
-  const toggle = (key: FoldKey) => setOpen((current) => (current === key ? null : key));
-
-  return (
-    <div className="space-y-3">
-      {shownMeetups.length > 0 && (
-        <Fold
-          id="meetup"
-          title={near.length > 0 ? `ตี้ใน${province}` : 'ตี้ที่น่าไป'}
-          hook={`ใกล้สุด ${dayLine(meetupPool[0])}`}
-          images={shownMeetups.map((event) => event.image)}
-          count={shownMeetups.length}
-          href={discoverHref('meetups', '', near.length > 0 && province ? province : ALL_PROVINCES)}
-          isOpen={open === 'meetup'}
-          onToggle={() => toggle('meetup')}
-          onNext={nextSet('meetup', meetupPool)}
-        >
-          {shownMeetups.map((event) => (
-            <li key={event.id}>
-              <MeetupTile event={event} now={today} reason={reasons[event.id]} />
-            </li>
-          ))}
-        </Fold>
-      )}
-      {shownQuests.length > 0 && (
-        <Fold
-          id="challenge"
-          title="ชาเลนจ์ยอดฮิต"
-          hook={bestXp > 0 ? `ได้สูงสุด +${bestXp.toLocaleString()} XP` : 'ทำแล้วได้เหรียญ'}
-          images={shownQuests.map((quest) => quest.image || quest.badgeCoverImg)}
-          count={shownQuests.length}
-          href="/challenges"
-          isOpen={open === 'challenge'}
-          onToggle={() => toggle('challenge')}
-          onNext={nextSet('challenge', quests)}
-        >
-          {shownQuests.map((quest, i) => (
-            <li key={quest.id}>
-              <ChallengeTile quest={quest} index={i} reason={questReasons.get(quest.id)} />
-            </li>
-          ))}
-        </Fold>
-      )}
-      {shownFairs.length > 0 && (
-        <Fold
-          id="fair"
-          title="อีเวนต์ช่วงนี้"
-          hook={`ใกล้สุด ${fairWhen(fairs[0])}`}
-          images={shownFairs.map((fair) => fair.image)}
-          count={shownFairs.length}
-          href="/events"
-          isOpen={open === 'fair'}
-          onToggle={() => toggle('fair')}
-          onNext={nextSet('fair', fairs)}
-        >
-          {shownFairs.map((fair) => (
-            <li key={fair.id}>
-              <FairTile event={fair} now={today} />
-            </li>
-          ))}
-        </Fold>
-      )}
-      {shownSpots.length > 0 && (
-        <Fold
-          id="spot"
-          title="ที่เที่ยวน่าไป"
-          hook={shownSpots.length > 1 ? `${shownSpots[0].title} และอีก ${shownSpots.length - 1} แห่ง` : shownSpots[0].title}
-          images={shownSpots.map((spot) => spot.image)}
-          count={shownSpots.length}
-          href="/spots"
-          isOpen={open === 'spot'}
-          onToggle={() => toggle('spot')}
-          onNext={nextSet('spot', spots)}
-        >
-          {shownSpots.map((spot) => (
-            <li key={spot.id}>
-              <SpotTile spot={spot} />
-            </li>
-          ))}
-        </Fold>
-      )}
-    </div>
-  );
 }
 
 function SpotsBlock({ spots, layout, heading = 'ที่เที่ยวน่าไป' }: MemberLiveHomeProps & { layout: 'rows' | 'tiles'; heading?: string }) {

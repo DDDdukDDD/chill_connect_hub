@@ -14,8 +14,8 @@ import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
  * show who achieved what). Two public facts make it: a finished challenge ("ใครทำอยู่บ้าง" is public on the challenge
  * page) and a post's challenge line ("พิชิตชาเลนจ์ … 2/3", lib/social/achievement.ts). One circle per person:
  * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.
- * A reader with nothing achieved yet still sees their own circle for the challenge they are on ("doing", owner
- * 2026-11-11: what I took on in onboarding shows on my home).
+ * A reader with nothing achieved yet still sees their own circles for the challenges they are on ("doing", owner
+ * 2026-11-11: what I took on in onboarding shows on my home), up to three (2026-11-14: onboarding joins three first steps).
  */
 
 const WINDOW_DAYS = ACHIEVEMENTS_WINDOW_DAYS;
@@ -26,7 +26,8 @@ export interface AchievementItem {
   person: { id: string; name: string; avatar?: string };
   isMe: boolean;
   kind: 'finish' | 'step' | 'doing';
-  quest: { id: string; title: string };
+  /** Doing circles show the challenge's picture: the reader's own face three times says nothing */
+  quest: { id: string; title: string; image?: string };
   current?: number;
   total?: number;
   /** The post a step circle opens (finishes open the challenge) */
@@ -76,17 +77,20 @@ const everyone = () =>
     { ttlMs: 60_000, tags: ['achievements'] }
   );
 
-/** The reader's own "doing" circle: the newest challenge they joined and have not finished, still open */
-async function doingOf(memberId: string): Promise<Raw | null> {
+/** The reader's own "doing" circles: the newest challenges they joined and have not finished, still open */
+const DOING_MAX = 3;
+async function doingOf(memberId: string): Promise<Raw[]> {
   const [joins, finishes] = await Promise.all([joinsOf(memberId), questMemberStore.finishes({ memberId })]);
   const done = new Set(finishes.map((f) => f.questId));
-  for (const join of [...joins].sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))) {
-    if (done.has(join.questId)) continue;
+  const open = joins.filter((join) => !done.has(join.questId)).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt));
+  const items: Raw[] = [];
+  for (const join of open) {
+    if (items.length >= DOING_MAX) break;
     const quest = await db.findQuestById(join.questId);
     if (!quest || quest.status === 'ended') continue;
-    return { id: `d:${join.questId}:${memberId}`, memberId, kind: 'doing', quest: { id: join.questId, title: quest.title }, href: `/challenges/${encodeURIComponent(join.questId)}`, at: join.joinedAt };
+    items.push({ id: `d:${join.questId}:${memberId}`, memberId, kind: 'doing', quest: { id: join.questId, title: quest.title, image: quest.image }, href: `/challenges/${encodeURIComponent(join.questId)}`, at: join.joinedAt });
   }
-  return null;
+  return items;
 }
 
 export async function achievementsRow(viewer: Member): Promise<AchievementItem[]> {
@@ -99,17 +103,14 @@ export async function achievementsRow(viewer: Member): Promise<AchievementItem[]
     const better = !held || (item.kind === 'finish' && held.kind === 'step') || (item.kind === held.kind && item.at > held.at);
     if (better) best.set(item.memberId, item);
   }
-  if (!best.has(viewer.id)) {
-    const doing = await doingOf(viewer.id).catch(() => null);
-    if (doing) best.set(viewer.id, doing);
-  }
-  if (best.size === 0) return [];
-  const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys()]), memberRepository.followerIds(viewer.id)]);
+  const doing = best.has(viewer.id) ? [] : await doingOf(viewer.id).catch((): Raw[] => []);
+  if (best.size === 0 && doing.length === 0) return [];
+  const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys(), viewer.id]), memberRepository.followerIds(viewer.id)]);
   const following = new Set(viewer.followingIds ?? []);
   const mutual = new Set(followers.filter((id) => following.has(id)));
   const rank = (id: string) => (id === viewer.id ? 0 : mutual.has(id) ? 1 : following.has(id) ? 2 : 3);
   const now = Date.now();
-  return [...best.values()]
+  return [...doing, ...best.values()]
     .flatMap((item): AchievementItem[] => {
       const person = people.get(item.memberId);
       if (!person || person.status !== 'active' || person.blockedIds?.includes(viewer.id)) return [];

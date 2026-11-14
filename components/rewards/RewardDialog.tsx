@@ -52,6 +52,7 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [redeemError, setRedeemError] = useState<{ id: string; message: string; needsIdentity: boolean } | null>(null);
   const celebrateTitleId = useId();
+  const detailTitleId = useId();
   const router = useRouter();
   const userXp = rewards.balance;
   const detailRedeemed = rewards.redeemedRewardIds.includes(item.id);
@@ -141,12 +142,15 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
         </DialogShell>
       ) : (
         <>
-      {/* One dialog per reward: details and conditions, then redeem (asks once to confirm), or the code once redeemed */}
-      
-        <DialogShell onClose={() => onClose()} size="md" title={item.title} subtitle={item.partner}>
+      {/* One dialog per reward: details and conditions scroll, while redeem (asks once to confirm) or the code stays pinned at the bottom */}
+        <DialogShell onClose={() => onClose()} size="md" bare labelledBy={detailTitleId}>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7 pt-5 sm:pt-7 pb-4">
+          <h2 id={detailTitleId} className="pr-12 text-lg sm:text-xl font-bold leading-snug text-slate-900">{item.title}</h2>
+          <p className="pr-12 mt-0.5 text-sm font-medium text-slate-500">{item.partner}</p>
           {item.image && (
+            // A phone turned sideways (416 high) gets a short banner, so the details show without scrolling past the photo
             // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
-            <img src={optimizedImage(item.image, 640)} alt="" className={`mb-4 w-full aspect-[16/9] rounded-2xl bg-amber-50 ${item.drawEntry ? 'object-contain p-3 mix-blend-multiply' : 'object-cover'}`} />
+            <img src={optimizedImage(item.image, 640)} alt="" className={`mt-4 mb-4 w-full aspect-[16/9] [@media(max-height:560px)]:aspect-[4/1] rounded-2xl bg-amber-50 ${item.drawEntry ? 'object-contain p-3 mix-blend-multiply' : 'object-cover'}`} />
           )}
           <p className="text-sm font-medium text-slate-600 leading-relaxed">{item.description}</p>
           <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200 text-sm">
@@ -154,7 +158,7 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
               ['สิทธิ์', amountOf(item)],
               ['ใช้ที่', item.partnerLocation],
               ['ใช้ได้ถึง', item.validUntil],
-              ['ใช้', `${item.costXp} XP`],
+              ['แลกด้วย', `${item.costXp.toLocaleString()} XP`],
             ].map(([label, value]) => (
               <div key={label} className="py-2.5 grid grid-cols-[6rem_1fr] gap-3">
                 <dt className="text-slate-500">{label}</dt>
@@ -169,17 +173,24 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
               ))}
             </ul>
           )}
+          </div>
 
+          <div className="shrink-0 border-t border-slate-100 px-5 sm:px-7 py-4">
           {detailRedeemed ? (
-            <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
-              <span className="font-mono text-lg font-bold text-slate-900 tracking-wider">{codeOf(item)}</span>
-              <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
-                {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
-              </button>
+            // Already mine: what the code is for comes first, so it is never just a string of letters
+            <div className="rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
+              <p className="text-xs font-bold text-slate-500">{item.drawEntry ? 'แลกแล้ว · รหัสสิทธิ์ลุ้นของคุณ' : 'แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน'}</p>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <span className="font-mono text-lg font-bold text-slate-900 tracking-wider break-all">{codeOf(item)}</span>
+                <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="shrink-0 inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
+                  {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
+                  {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                </button>
+              </div>
+              <p className="mt-1 text-xs font-medium text-slate-500">{untilOf(item)}</p>
             </div>
           ) : (
-            <div className="mt-5 space-y-2">
+            <div className="space-y-2">
               {isConfirming && (
                 <p className="text-sm font-medium text-slate-700 tabular-nums">
                   ใช้ {item.costXp} XP จาก {userXp.toLocaleString()} XP เหลือ {(userXp - item.costXp).toLocaleString()} XP แลกเลยไหม
@@ -191,11 +202,30 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
                   {redeemError.needsIdentity && <> <Link href="/profile/settings" className="underline">ไปยืนยันตัวตน</Link></>}
                 </p>
               )}
-              <button type="button" onClick={handleRedeem} disabled={(isLoggedIn && detailShort > 0) || isRedeeming} className={`${dialogButton.primary} w-full`}>
-                {!isLoggedIn ? 'เข้าสู่ระบบเพื่อแลก' : detailShort > 0 ? `ขาดอีก ${detailShort} XP` : isRedeeming ? 'กำลังแลก…' : isConfirming ? 'ยืนยัน แลกเลย' : `แลกด้วย ${item.costXp} XP`}
-              </button>
+              {isLoggedIn && detailShort > 0 ? (
+                // Not enough XP yet: say how far, then the way to get there instead of a dead grey button
+                <>
+                  <p className="text-sm font-medium text-slate-700 tabular-nums">มี {userXp.toLocaleString()} XP ขาดอีก {detailShort.toLocaleString()} XP ก็แลกได้แล้ว</p>
+                  <Link href="/challenges" onClick={() => onClose()} className={`${dialogButton.primary} w-full`}>
+                    หา XP จากชาเลนจ์
+                  </Link>
+                </>
+              ) : (
+                <div className={isConfirming ? 'grid grid-cols-[auto_1fr] gap-2' : ''}>
+                  {/* A way back at the confirm step: closing the whole popup should not be the only "no" */}
+                  {isConfirming && (
+                    <button type="button" onClick={() => setIsConfirming(false)} disabled={isRedeeming} className={dialogButton.quiet}>
+                      ยังก่อน
+                    </button>
+                  )}
+                  <button type="button" onClick={handleRedeem} disabled={isRedeeming} className={`${dialogButton.primary} w-full`}>
+                    {!isLoggedIn ? 'เข้าสู่ระบบเพื่อแลก' : isRedeeming ? 'กำลังแลก…' : isConfirming ? 'ยืนยัน แลกเลย' : `แลกด้วย ${item.costXp} XP`}
+                  </button>
+                </div>
+              )}
             </div>
           )}
+          </div>
         </DialogShell>
         </>
       )}

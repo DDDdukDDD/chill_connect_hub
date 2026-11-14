@@ -168,14 +168,13 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                   <p className="text-sm font-semibold text-slate-800">ไปตี้ แชร์โมเมนต์ หรือทำชาเลนจ์ เพื่อเก็บ XP เพิ่ม</p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setViewTab(viewTab === 'my_vouchers' ? 'catalog' : 'my_vouchers')}
-                className={QUIET_BUTTON}
-              >
-                <Ticket className="w-4 h-4" aria-hidden="true" />
-                {viewTab === 'my_vouchers' ? 'ดูของรางวัลทั้งหมด' : <>คูปองของฉัน <span className="tabular-nums">({redeemedRewardIds.length})</span></>}
-              </button>
+              {/* On my coupons the back link at the top already leads to the catalog */}
+              {viewTab !== 'my_vouchers' && (
+                <button type="button" onClick={() => setViewTab('my_vouchers')} className={QUIET_BUTTON}>
+                  <Ticket className="w-4 h-4" aria-hidden="true" />
+                  คูปองของฉัน <span className="tabular-nums">({redeemedRewardIds.length})</span>
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -209,13 +208,22 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
                     </button>
                   );
                 })}
+                {/* Only what I can afford: a chip at the end of the same row, like the quick filters on the ค้นพบ pages */}
+                {isLoggedIn && (
+                  <>
+                    <span className="w-px h-6 bg-slate-200 shrink-0" aria-hidden="true" />
+                    <button
+                      type="button"
+                      onClick={() => setOnlyAffordable(!onlyAffordable)}
+                      aria-pressed={onlyAffordable}
+                      className={`${CHIP} inline-flex items-center gap-1.5 ${onlyAffordable ? 'bg-blue-50 border border-[#2563EB] text-[#1D4ED8]' : 'border border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                    >
+                      {onlyAffordable && <Check className="w-4 h-4" aria-hidden="true" />}
+                      แลกได้ตอนนี้
+                    </button>
+                  </>
+                )}
               </div>
-              {isLoggedIn && (
-                <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer select-none shrink-0">
-                  <input type="checkbox" checked={onlyAffordable} onChange={(e) => setOnlyAffordable(e.target.checked)} className="w-4 h-4 accent-[#2563EB] cursor-pointer" />
-                  แลกได้ตอนนี้
-                </label>
-              )}
             </div>
 
             {filteredRewards.length === 0 ? (
@@ -297,20 +305,23 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
             {/* How to get more XP, said once and quietly, after the rewards */}
             <section className="mt-14 pt-8 border-t border-slate-200">
               <div className="flex items-end justify-between gap-3">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">ได้ XP จาก</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">ได้ XP จาก</h2>
                 <Link href="/challenges" className="inline-flex items-center gap-0.5 min-h-10 text-sm font-bold text-[#2563EB] hover:underline shrink-0">
                   ดูชาเลนจ์ที่เปิดอยู่
                   <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
               </div>
-              <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+              {/* The XP sits on top of its own line, so on wide screens it never reads as part of the next column */}
+              <ul className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-6">
                 {EARN.map((row) => (
-                  <li key={row.text} className="flex items-center gap-3 text-sm">
+                  <li key={row.text} className="flex items-start gap-3 text-sm">
                     <span className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                       <row.icon className="w-4 h-4 text-slate-800" aria-hidden="true" />
                     </span>
-                    <span className="flex-1 font-medium text-slate-700">{row.text}</span>
-                    <span className="font-bold text-slate-900 tabular-nums">{row.xp}</span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-slate-900 tabular-nums">{row.xp}{/^\+/.test(row.xp) ? ' XP' : ''}</span>
+                      <span className="block font-medium text-slate-600 leading-snug">{row.text}</span>
+                    </span>
                   </li>
                 ))}
               </ul>

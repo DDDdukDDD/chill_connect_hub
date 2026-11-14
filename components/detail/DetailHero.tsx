@@ -133,7 +133,7 @@ export function ItineraryList({ items, meetingPoint }: { items?: { time: string;
   if (rows.length === 0 && !meetingPoint) return null;
   return (
     <section className="space-y-4">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{rows.length === 0 ? 'จุดนัดพบ' : meetingPoint ? 'กำหนดการ & จุดนัดพบ' : 'กำหนดการ'}</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{rows.length === 0 ? 'จุดนัดพบ' : meetingPoint ? 'กำหนดการ & จุดนัดพบ' : 'กำหนดการ'}</h2>
       {/* Where first, as its own line, then when: a timeline with a dot per step */}
       {meetingPoint && (
         <div className="flex items-center gap-3">
@@ -171,7 +171,7 @@ export function DetailTable({ title, rows }: { title: string; rows: { label: str
   if (shown.length === 0) return null;
   return (
     <section className="space-y-3">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{title}</h2>
       <dl className="divide-y divide-slate-200 border-y border-slate-200">
         {shown.map((row) => (
           <div key={row.label} className="grid grid-cols-[7rem_1fr] sm:grid-cols-[10rem_1fr] gap-3 py-3">

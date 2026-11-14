@@ -9,7 +9,7 @@ import {
 } from './trust';
 import {
   PROFILE_FIELD_KEYS, PROFILE_HIDDEN_BY_DEFAULT, PROFILE_TEXT_FIELDS,
-  type HostApplication, type Member, type MemberProfile, type ProfileFieldKey, type RiskFlag,
+  toPublicMember, type HostApplication, type Member, type MemberProfile, type ProfileFieldKey, type RiskFlag,
 } from './types';
 
 /**
@@ -360,7 +360,8 @@ export async function suggestedMembers(viewer: Member | null, limit = 5) {
     const trust = trustOf(member);
     picks.push({
       id,
-      displayName: tidyDisplayName(member.displayName).trim() || member.displayName,
+      // Sample accounts lose their "(Kee_Explorer)" handle, as everywhere else (toPublicMember, TR-003)
+      displayName: toPublicMember(member).displayName,
       avatarUrl: member.avatarUrl,
       momentCount: entry.count,
       trusted: trust.level === 'trusted',

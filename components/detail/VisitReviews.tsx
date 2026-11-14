@@ -68,7 +68,7 @@ export function VisitReviews({ targetType, targetId, isLoggedIn }: { targetType:
 
   return (
     <section className="space-y-3" aria-labelledby={`reviews-${targetId}`}>
-      <h2 id={`reviews-${targetId}`} className="text-lg sm:text-xl font-bold text-slate-900">
+      <h2 id={`reviews-${targetId}`} className="text-xl sm:text-2xl font-bold text-slate-900">
         รีวิว
         {data && data.count > 0 && (
           <span className="ml-2 text-base font-semibold text-slate-600">

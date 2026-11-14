@@ -12,7 +12,11 @@ export function questDateRange(quest: Pick<ChallengeQuest, 'startDate' | 'endDat
   if (from === null || to === null) return '';
   const a = new Date(from);
   const b = new Date(to);
-  return a.getFullYear() === b.getFullYear() ? `${dayMonth(a)} – ${dayMonth(b)} ${shortYear(b)}` : `${dayMonth(a)} ${shortYear(a)} – ${dayMonth(b)} ${shortYear(b)}`;
+  // The month is said once when both days share it: "16–22 พ.ย. 69"; a one-day challenge is just that day
+  if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) {
+    return a.getDate() === b.getDate() ? `${dayMonth(b)} ${shortYear(b)}` : `${a.getDate()}–${dayMonth(b)} ${shortYear(b)}`;
+  }
+  return a.getFullYear() === b.getFullYear() ? `${dayMonth(a)} –${dayMonth(b)} ${shortYear(b)}` : `${dayMonth(a)} ${shortYear(a)} – ${dayMonth(b)} ${shortYear(b)}`;
 }
 
 /** One challenge date as "28 ก.พ. 70", whichever way it was stored; the stored text when it cannot be read */

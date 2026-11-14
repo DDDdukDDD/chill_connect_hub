@@ -19,12 +19,17 @@ const shortDate = (ts: number) => {
   return `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
 };
 
-// "ส. 1 พ.ย." for a one-day อีเวนต์, "23 ต.ค. – 1 พ.ย." for one over several days; no year, the tile is short.
+// "ส. 1 พ.ย." for a one-day อีเวนต์, "18–20 พ.ย." or "23 ต.ค. – 1 พ.ย." for one over several days; no year, the tile is short.
 // Imported events may hold the range in `date` itself ("24 ต.ค. - 28 ต.ค. 2569"), so the end comes from either.
 function whenLine(event: EventItem) {
   const start = parseEventDateToTimestamp(event.date);
   const end = parseEventEndDateToTimestamp(event.endDate || event.date);
-  if (new Date(end).toDateString() !== new Date(start).toDateString()) return `${shortDate(start)} – ${shortDate(end)}`;
+  if (new Date(end).toDateString() !== new Date(start).toDateString()) {
+    const a = new Date(start);
+    const b = new Date(end);
+    // The month once when both days share it: "18–20 พ.ย.", so the venue after it fits
+    return a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear() ? `${a.getDate()}–${shortDate(end)}` : `${shortDate(start)} – ${shortDate(end)}`;
+  }
   return `${WEEKDAYS[new Date(start).getDay()]} ${shortDate(start)}`;
 }
 

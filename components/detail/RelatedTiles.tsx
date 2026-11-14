@@ -42,7 +42,7 @@ function Section({
   title,
   allHref,
   allLabel = 'ดูทั้งหมด',
-  titleClassName = 'text-lg sm:text-xl font-bold text-slate-900 tracking-tight',
+  titleClassName = 'text-xl sm:text-2xl font-bold text-slate-900 tracking-tight',
   className = 'mt-12 sm:mt-16',
   // The /community and /challenges grid, so a tile is the same size on every page (owner 2026-10-27)
   gridClassName = DEFAULT_GRID,

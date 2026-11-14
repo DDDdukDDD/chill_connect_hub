@@ -40,9 +40,10 @@ interface Suggested {
 
 /**
  * People worth following (verified members who post, GET /api/members/suggested), each with a follow button.
- * Used by the onboarding summary. `onLoaded` tells how many came back.
+ * Used by the onboarding summary and the member home (a sideways row in the feed, a list in the right rail).
+ * `onLoaded` tells how many came back.
  */
-export function FollowRow({ onFollowed, onLoaded, emptyText }: { onFollowed?: () => void; onLoaded?: (count: number) => void; emptyText: string }) {
+export function FollowRow({ onFollowed, onLoaded, emptyText, layout = 'row' }: { onFollowed?: () => void; onLoaded?: (count: number) => void; emptyText: string; layout?: 'row' | 'list' }) {
   const [people, setPeople] = useState<Suggested[] | null>(null);
   const [done, setDone] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -73,8 +74,50 @@ export function FollowRow({ onFollowed, onLoaded, emptyText }: { onFollowed?: ()
       onFollowed?.();
     }
   };
+  if (people === null && layout === 'list') {
+    return (
+      <div className="space-y-3.5" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-full bg-slate-100 shrink-0" />
+            <span className="h-3 w-28 rounded-full bg-slate-100" />
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (people === null) return <div className="h-[92px]" aria-hidden="true" />;
   if (people.length === 0) return <p className="text-sm text-slate-600">{emptyText}</p>;
+  if (layout === 'list') {
+    // One person per line, as "Suggested for you" beside a feed: face, name and posts, a quiet text button
+    return (
+      <ul className="space-y-3.5">
+        {people.slice(0, 5).map((p) => {
+          const isDone = done.includes(p.id);
+          return (
+            <li key={p.id} className="flex items-center gap-3">
+              <Link href={`/profile?id=${encodeURIComponent(p.id)}`} className="group flex items-center gap-3 min-w-0 flex-1">
+                {p.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarImage(p.avatarUrl)} alt="" className="w-11 h-11 rounded-full object-cover bg-slate-100 shrink-0" />
+                ) : (
+                  <span className="w-11 h-11 rounded-full bg-slate-200 text-slate-600 font-bold flex items-center justify-center shrink-0" aria-hidden="true">{nameInitial(p.displayName)}</span>
+                )}
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900 truncate group-hover:underline">{p.displayName}</span>
+                  <span className="block text-xs text-slate-500">{p.momentCount} โมเมนต์</span>
+                </span>
+              </Link>
+              <button type="button" disabled={isDone || busy === p.id} onClick={() => follow(p.id)} aria-label={isDone ? `ติดตาม ${p.displayName} แล้ว` : `ติดตาม ${p.displayName}`}
+                className={`shrink-0 text-[13px] font-semibold whitespace-nowrap ${isDone ? 'text-slate-500' : 'text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer'}`}>
+                {isDone ? 'ติดตามแล้ว' : 'ติดตาม'}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
   return (
     <ul className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
       {people.slice(0, 5).map((p) => {

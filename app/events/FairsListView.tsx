@@ -358,7 +358,6 @@ function FairsPageContent({ initialEvents, initialCounts, sponsoredId = null }: 
           summary={
             (searchQuery ||
               selectedCategory ||
-              selectedProvince !== 'all' ||
               selectedVenue !== 'all' ||
               customStartDate ||
               priceFilter !== 'all' ||

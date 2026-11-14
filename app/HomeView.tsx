@@ -484,7 +484,6 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
             mine={myEvents}
             hostedIds={activity.hosted.map((e) => e.id)}
             savedIds={activity.savedEventIds}
-            noXpYet={myRewards.isLoaded && myRewards.earned === 0}
             savedCount={activity.savedEventIds.length + activity.savedSpotIds.length}
             likedCategories={likedCategories}
             isLoaded={activity.isLoaded && myRewards.isLoaded && isQuestsLoaded}

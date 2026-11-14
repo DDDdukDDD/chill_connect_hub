@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { BrandLogo } from '@/components/BrandLogo';
 import { BrandWordmark } from '@/components/BrandWordmark';
 
-const LINKS = [
+/** Also under the people list in the member home's right rail */
+export const FOOTER_LINKS = [
   { href: '/about', label: 'เกี่ยวกับเรา' },
   { href: '/safety', label: 'คู่มือความปลอดภัย' },
   { href: '/legal', label: 'ข้อตกลงการใช้งาน' },
@@ -23,7 +24,7 @@ export function SiteFooter({ className = '', children }: { className?: string; c
       </div>
       <p className="font-medium text-slate-600">ทำให้ทุกการออกไปใช้ชีวิตมีความหมาย</p>
       <nav aria-label="เกี่ยวกับเว็บไซต์" className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-500 pt-1 flex-wrap">
-        {LINKS.map((link, i) => (
+        {FOOTER_LINKS.map((link, i) => (
           <React.Fragment key={link.href}>
             {i > 0 && <span className="text-slate-300" aria-hidden="true">•</span>}
             <Link href={link.href} className="hover:text-slate-800 hover:underline">{link.label}</Link>

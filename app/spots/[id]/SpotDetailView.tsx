@@ -361,22 +361,11 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                 {isFavorite ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
                 {isFavorite ? 'บันทึกแล้ว' : 'บันทึกที่นี่'}
               </button>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.district, spot.province].filter(Boolean).join(' '))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="นำทาง"
-                className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}
-              >
-                <Navigation className="w-4 h-4" aria-hidden="true" />
-                {/* Icon only on phones, so ชวนไป and แชร์ stay on the row (owner 2026-11-11) */}
-                <span className="max-sm:sr-only">นำทาง</span>
-              </a>
-              {/* Tighter on phones so the four buttons fit one row at 360px with ชวนไป still named (2026-11-12) */}
-              <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3`} />
-              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
+              {/* นำทาง moved down to the map section (owner 2026-11-14): the header is for deciding to go */}
+              <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={heroButton.quiet} />
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
+                <span className="max-sm:sr-only lg:max-xl:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
             </>
           }
@@ -475,7 +464,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
 
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
               {spot.vibeIntro ? (
                 <>
                   {/* The feel first; the history (usually Wikipedia) waits one tap down */}
@@ -511,7 +500,23 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
             />
 
             <section className="space-y-4">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">แผนที่</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">แผนที่</h2>
+                {/* Directions by coordinates, so a shared name cannot send people to the wrong place */}
+                <a
+                  href={
+                    spot.latitude && spot.longitude
+                      ? `https://www.google.com/maps/dir/?api=1&destination=${spot.latitude},${spot.longitude}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.title, spot.district, spot.province].filter(Boolean).join(' '))}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={heroButton.quiet}
+                >
+                  <Navigation className="w-4 h-4" aria-hidden="true" />
+                  นำทาง
+                </a>
+              </div>
               <div className="relative w-full h-60 sm:h-72 rounded-3xl overflow-hidden bg-slate-100">
                 <iframe
                   title={`Google Map - ${cleanText(spot.title)}`}

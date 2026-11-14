@@ -51,7 +51,7 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, 
   return (
     <section className="space-y-3 pt-5 border-t border-slate-100">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">ร้านกาแฟและร้านอร่อยใกล้ๆ</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">ร้านกาแฟและร้านอร่อยใกล้ๆ</h2>
         <a href={liveSearchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
           ดูเพิ่มบนแผนที่
           <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
