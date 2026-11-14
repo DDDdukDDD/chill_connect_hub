@@ -366,17 +366,17 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="นำทาง"
-                className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}
+                className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}
               >
                 <Navigation className="w-4 h-4" aria-hidden="true" />
                 {/* Icon only on phones, so ชวนไป and แชร์ stay on the row (owner 2026-11-11) */}
-                <span className="max-sm:sr-only">นำทาง</span>
+                <span className="max-sm:sr-only lg:max-xl:sr-only">นำทาง</span>
               </a>
               {/* Tighter on phones so the four buttons fit one row at 360px with ชวนไป still named (2026-11-12) */}
               <InvitePill target={{ type: 'spot', id: spot.id }} place={spot.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปที่นี่ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3`} />
-              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
+                <span className="max-sm:sr-only lg:max-xl:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
             </>
           }
@@ -475,7 +475,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
 
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">เกี่ยวกับที่นี่</h2>
               {spot.vibeIntro ? (
                 <>
                   {/* The feel first; the history (usually Wikipedia) waits one tap down */}
@@ -511,7 +511,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
             />
 
             <section className="space-y-4">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">แผนที่</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">แผนที่</h2>
               <div className="relative w-full h-60 sm:h-72 rounded-3xl overflow-hidden bg-slate-100">
                 <iframe
                   title={`Google Map - ${cleanText(spot.title)}`}

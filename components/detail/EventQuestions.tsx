@@ -84,7 +84,7 @@ export function EventQuestions({ eventId, initial, isLoggedIn, onRequireLogin }:
 
   return (
     <section id="questions" className="scroll-mt-24 space-y-3">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900">ถาม {host} ก่อนไป</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">ถาม {host} ก่อนไป</h2>
       <ul className="divide-y divide-slate-100">
         {state.questions.map((q) => (
           <li key={q.id} className="py-3 text-sm text-slate-700">

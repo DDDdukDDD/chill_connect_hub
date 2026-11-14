@@ -327,7 +327,6 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
           summary={
             (searchQuery ||
               selectedCategory !== 'all' ||
-              selectedProvince !== 'all' ||
               customStartDate ||
               priceFilter !== 'all' ||
               openOnly ||

@@ -15,7 +15,7 @@ import { addDays, isFixedPlan, planNeeded, planSummary, planTotal, planWeekOf, t
 type Stamp = { day: string; momentId?: string };
 type PlanState = { start: string; stamps: Stamp[]; status: PlanStatus };
 
-const SECTION_TITLE = 'text-lg sm:text-xl font-bold text-slate-900';
+const SECTION_TITLE = 'text-xl sm:text-2xl font-bold text-slate-900';
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const shortDay = (day: string) => `${Number(day.slice(8, 10))} ${THAI_MONTHS[Number(day.slice(5, 7)) - 1]}`;
 /** Weeks shown around this one before "ดูทั้งหมด" */

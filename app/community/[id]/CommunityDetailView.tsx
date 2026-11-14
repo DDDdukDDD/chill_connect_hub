@@ -643,9 +643,9 @@ export default function CommunityDetailPage({
               )}
               {!isEnded && <InvitePill target={{ type: 'community', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนมาตี้นี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3.5`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
-              <button type="button" onClick={onShare} aria-label={shareLabel} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
+              <button type="button" onClick={onShare} aria-label={shareLabel} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
                 {isCopied && !isTripMember ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="max-sm:sr-only">{shareLabel}</span>
+                <span className="max-sm:sr-only lg:max-xl:sr-only">{shareLabel}</span>
               </button>
               {/* A ตี้ you joined or run is already on your schedule, so saving it says nothing more */}
               {!isJoined && !isHost && (
@@ -747,7 +747,7 @@ export default function CommunityDetailPage({
 
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">รายละเอียดตี้</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">รายละเอียดตี้</h2>
               {renderDescriptionContent(eventData.description)}
             </section>
 
@@ -805,7 +805,7 @@ export default function CommunityDetailPage({
             {/* How to get there (the meeting point sits with the schedule above), or how to join online */}
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isOnline ? 'เข้าร่วมออนไลน์' : 'การเดินทาง'}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{isOnline ? 'เข้าร่วมออนไลน์' : 'การเดินทาง'}</h2>
                 {!isOnline && (
                   <a
                     href={`https://maps.google.com/?q=${encodeURIComponent(eventData.location)}`}

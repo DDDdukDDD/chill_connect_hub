@@ -416,7 +416,8 @@ export default function FairDetailPage({
     if (!eventData) return { publicTransitText: '', parkingText: '', venueOrganizerName: '', officialWebsiteUrl: null };
     const loc = eventData.location || '';
     
-    let organizer = eventData.source || 'ผู้จัดงานทางการ (Official Partner)';
+    // Staff and seed อีเวนต์ still store the old name in `source` (lib/contentOrigin.ts reads it), so the page says the public one
+    let organizer = !eventData.source || /^Chill & Connect/.test(eventData.source) ? 'Chillwaa' : eventData.source;
     let website = eventData.externalUrl || eventData.sourceUrl || null;
     // Facts about the four known halls are kept for every event held there; the generic lines are filler
     let transit = isSample ? 'เดินทางสะดวกด้วยรถไฟฟ้า BTS / MRT และรถประจำทาง' : '';
@@ -607,9 +608,9 @@ export default function FairDetailPage({
               )}
               {!isEnded && <InvitePill target={{ type: 'fair', id: eventData.id }} place={eventData.title} isLoggedIn={isLoggedIn} onRequireLogin={() => { setMembershipActionTitle('เพื่อชวนเพื่อนไปงานนี้ด้วยกัน'); setIsRequireMembershipOpen(true); }} onMessage={showToast} className={`${heroButton.quiet} max-sm:px-3.5`} iconOnlyOnPhone />}
               {/* Icon only on phones, so it stays on the row with the main button */}
-              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0`}>
+              <button type="button" onClick={handleShare} aria-label={isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
                 {isCopied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="max-sm:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
+                <span className="max-sm:sr-only lg:max-xl:sr-only">{isCopied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
               </button>
             </>
           }
@@ -673,7 +674,7 @@ export default function FairDetailPage({
 
           <div className="lg:order-1 min-w-0 space-y-10">
             <section className="space-y-3">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">เกี่ยวกับงาน</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">เกี่ยวกับงาน</h2>
               {renderDescriptionContent(eventData.description, { linkify: true })}
             </section>
 
@@ -703,7 +704,7 @@ export default function FairDetailPage({
 
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">สถานที่จัดงาน</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">สถานที่จัดงาน</h2>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventData.location)}`}
                   target="_blank"
@@ -734,7 +735,7 @@ export default function FairDetailPage({
             <section className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{isRun ? 'นัดไปวิ่งด้วยกัน' : 'นัดเดินงานด้วยกัน'}</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{isRun ? 'นัดไปวิ่งด้วยกัน' : 'นัดเดินงานด้วยกัน'}</h2>
                   <p className="mt-1 text-sm font-medium text-slate-600">{isRun ? 'ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มนัดเจอกันก่อนปล่อยตัว' : 'ไปคนเดียวก็ไม่เหงา ขอแจมกลุ่มที่มีอยู่ หรือตั้งกลุ่มชวนเพื่อนเดินโซนที่ชอบ'}</p>
                 </div>
                 {!isEnded && (

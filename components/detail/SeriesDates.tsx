@@ -67,7 +67,7 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
 
   return (
     <section id="dates" className="scroll-mt-24 rounded-3xl border border-slate-200 p-5 sm:p-6">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-900">เลือกวันที่จะไป</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">เลือกวันที่จะไป</h2>
       <p className="mt-0.5 text-sm text-slate-500">แต่ละวันมีที่นั่งของตัวเอง ลงทะเบียนทีละวัน</p>
 
       {mine.length > 0 && (

@@ -10,9 +10,7 @@ type Attendee = { id: string; name: string; avatar: string; verified: boolean; i
 /** "มาตามนัด 9/10" from host check-ins on ended ตี้ (lib/social/attendance.ts); a first-timer has none yet */
 const attendanceLabel = (a: Attendee) => (a.attendance ? (a.attendance.total > 0 ? `มาตามนัด ${a.attendance.attended}/${a.attendance.total}` : 'ตี้แรก') : null);
 
-type Tile =
-  | { kind: 'person'; key: string; name: string; avatar: string; href: string; label: string; tone: 'host' | 'me' | 'plain'; verified: boolean }
-  | { kind: 'unknown'; key: string };
+type Tile = { kind: 'person'; key: string; name: string; avatar: string; href: string; label: string; tone: 'host' | 'me' | 'plain'; verified: boolean };
 
 const MOBILE_SHOWN = 3;
 const DESKTOP_SHOWN = 5;
@@ -80,28 +78,36 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
       verified: a.verified,
     });
   }
-  // People counted on the event but not listed (sample events)
-  for (let i = tiles.length; i < total; i++) tiles.push({ kind: 'unknown', key: `unknown-${i}` });
+  // People counted but not listed (sample counts, people who keep their list private) never get a grey tile each,
+  // which looked like a page still loading: they are only part of the "อีก N คน" tile
+  const unlisted = Math.max(0, total - tiles.length);
 
-  const moreTile = (rest: Tile[], className: string) => rest.length > 0 && (
-    <button
-      type="button"
-      onClick={() => setShowAll(true)}
-      className={`${className} flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-1 py-3 hover:bg-slate-50 transition-colors cursor-pointer`}
-    >
-      <span className="grid grid-cols-2 gap-0.5 w-12 h-12 place-items-center">
-        {rest.slice(0, 3).map((t) => t.kind === 'person'
-          ? <span key={t.key} className="blur-[0.5px]"><Face name={t.name} avatar={t.avatar} size="sm" /></span>
-          : <span key={t.key} className="w-5 h-5 rounded-full bg-slate-200" />)}
-        {rest.length > 3 && (
-          <span className="h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center tabular-nums">+{rest.length - 3 > 99 ? '99' : rest.length - 3}</span>
-        )}
-      </span>
-      <span className="text-xs font-bold text-slate-800">อีก {rest.length} คน</span>
-    </button>
-  );
+  const moreTile = (rest: Tile[], className: string, asButton = true) => {
+    const count = rest.length + unlisted;
+    if (count <= 0) return null;
+    const faces = rest.slice(0, 3);
+    const inner = (
+      <>
+        <span className="grid grid-cols-2 gap-0.5 w-12 h-12 place-items-center">
+          {faces.map((t) => <span key={t.key} className="blur-[0.5px]"><Face name={t.name} avatar={t.avatar} size="sm" /></span>)}
+          {Array.from({ length: Math.min(3 - faces.length, unlisted) }, (_, i) => <span key={`dot-${i}`} className="w-5 h-5 rounded-full bg-slate-200" />)}
+          {count > 3 && (
+            <span className="h-5 min-w-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold flex items-center justify-center tabular-nums">+{count - 3 > 99 ? '99' : count - 3}</span>
+          )}
+        </span>
+        <span className="text-xs font-bold text-slate-800">อีก {count.toLocaleString()} คน</span>
+      </>
+    );
+    const tileClass = `${className} flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-1 py-3`;
+    // Nothing more to open once everyone listed is on screen
+    return asButton && rest.length > 0 ? (
+      <button type="button" onClick={() => setShowAll(true)} className={`${tileClass} hover:bg-slate-50 transition-colors cursor-pointer`}>{inner}</button>
+    ) : (
+      <div className={tileClass}>{inner}</div>
+    );
+  };
 
-  const tileView = (t: Tile, className = 'flex') => t.kind === 'person' ? (
+  const tileView = (t: Tile, className = 'flex') => (
     <Link
       key={t.key}
       href={t.href}
@@ -111,11 +117,6 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
       <span className="mt-0.5 w-full truncate text-xs font-bold text-slate-900">{t.name}</span>
       <span className={`text-[11px] font-bold ${t.tone === 'host' ? 'text-indigo-700' : t.tone === 'me' ? 'text-emerald-700' : 'text-slate-500'}`}>{t.label}</span>
     </Link>
-  ) : (
-    <div key={t.key} className={`${className} flex-col items-center gap-1 rounded-2xl border border-slate-200 bg-white px-1 py-3 text-center`}>
-      <span className="w-12 h-12 rounded-full bg-slate-200" />
-      <span className="mt-0.5 text-xs font-bold text-slate-500">สมาชิก</span>
-    </div>
   );
 
   return (
@@ -137,14 +138,17 @@ export function EventAttendees({ src, title = 'ใครจะไปบ้าง
       </div>
 
       {showAll ? (
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">{tiles.map((t) => tileView(t))}</div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {tiles.map((t) => tileView(t))}
+          {moreTile([], 'flex', false)}
+        </div>
       ) : (
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
           {tiles.slice(0, MOBILE_SHOWN).map((t) => tileView(t))}
           {tiles.slice(MOBILE_SHOWN, DESKTOP_SHOWN).map((t, i) =>
-            // On phones the 4th place goes to "อีก N คน" unless this person is the last one
-            tileView(t, tiles.length === MOBILE_SHOWN + 1 && i === 0 ? 'flex' : 'hidden sm:flex'))}
-          {tiles.length > MOBILE_SHOWN + 1 && moreTile(tiles.slice(MOBILE_SHOWN), 'flex sm:hidden')}
+            // On phones the 4th place goes to "อีก N คน" unless this person is the last one and nobody is unlisted
+            tileView(t, tiles.length === MOBILE_SHOWN + 1 && unlisted === 0 && i === 0 ? 'flex' : 'hidden sm:flex'))}
+          {(tiles.length > MOBILE_SHOWN + 1 || (tiles.length > MOBILE_SHOWN && unlisted > 0)) ? moreTile(tiles.slice(MOBILE_SHOWN), 'flex sm:hidden') : moreTile([], 'flex sm:hidden', false)}
           {moreTile(tiles.slice(DESKTOP_SHOWN), 'hidden sm:flex')}
         </div>
       )}

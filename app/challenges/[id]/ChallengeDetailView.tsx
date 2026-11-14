@@ -595,9 +595,9 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
             )}
             {quest.status !== 'ended' && <InvitePill target={{ type: 'quest', id: quest.id }} place={quest.title} isLoggedIn={isLoggedIn} onRequireLogin={() => setIsRequireMembershipOpen(true)} onMessage={showToast} className={dialogButton.quiet} />}
             {/* Icon only on phones, so the main button, ชวนไป and แชร์ share one row at 360px (2026-11-12) */}
-            <button type="button" onClick={handleShare} aria-label={copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${dialogButton.quiet} max-sm:w-12 max-sm:px-0`}>
+            <button type="button" onClick={handleShare} aria-label={copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${dialogButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
               {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
-              <span className="max-sm:sr-only">{copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
+              <span className="max-sm:sr-only lg:max-xl:sr-only">{copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
             </button>
           </div>
         </div>

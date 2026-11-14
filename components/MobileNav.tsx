@@ -41,7 +41,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
   return (
     // Every width below the top bar's links (xl), so no screen is left without a menu (owner 2026-11-01)
-    // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones
+    // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones.
+    // On short screens (a phone or folded phone turned sideways, 416 high) icon and label sit side by side, so the bar takes ~45 px, not ~70
     <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] z-40 xl:hidden">
       {actionBar && (
         <div
@@ -54,7 +55,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           {actionBar}
         </div>
       )}
-      <div className="bg-white/95 supports-[backdrop-filter]:bg-white/70 backdrop-blur-2xl backdrop-saturate-150 text-slate-900 rounded-3xl p-1.5 border border-white/60 shadow-[0_8px_32px_rgba(15,23,42,0.18)] flex items-center justify-around max-w-md mx-auto">
+      <div className="bg-white/95 supports-[backdrop-filter]:bg-white/70 backdrop-blur-2xl backdrop-saturate-150 text-slate-900 rounded-3xl p-1.5 [@media(max-height:500px)]:p-1 border border-white/60 shadow-[0_8px_32px_rgba(15,23,42,0.18)] flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -63,7 +64,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               key={item.id}
               href={item.href}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
+              className={`flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 items-center justify-center py-2 [@media(max-height:500px)]:py-1.5 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
                 isActive
                   ? 'bg-white/80 text-slate-900 font-bold scale-105 shadow-sm'
                   : 'text-slate-700 hover:text-slate-900'
@@ -72,7 +73,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               <div className="relative">
                 <Icon className={`w-5 h-5 transition-transform ${isActive ? 'text-[#2563EB] stroke-[2.5]' : 'stroke-2'}`} />
               </div>
-              <span className="text-[11px] mt-0.5 tracking-tight font-medium">
+              <span className="text-[11px] mt-0.5 [@media(max-height:500px)]:mt-0 tracking-tight font-medium">
                 {item.label}
               </span>
             </Link>
