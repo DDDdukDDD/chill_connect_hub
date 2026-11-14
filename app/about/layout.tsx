@@ -2,7 +2,7 @@ import { pageMetadata } from '@/lib/site';
 
 export const metadata = pageMetadata({
   title: 'เกี่ยวกับเรา',
-  description: 'Chillwaa คือคอมมูนิตี้ของคนชอบออกไปใช้ชีวิต หากิจกรรมที่ใช่ ไปกับเพื่อนใหม่ และแบ่งปันเรื่องราว',
+  description: 'Chillwaa คือโซเชียลของคนชอบออกไปใช้ชีวิต หากิจกรรมที่ใช่ ไปกับเพื่อนใหม่ และแบ่งปันเรื่องราว',
   path: '/about',
 });
 
