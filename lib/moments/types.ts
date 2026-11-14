@@ -143,6 +143,8 @@ export interface MomentQuery {
   statuses: MomentStatus[];
   authorId?: string;
   savedBy?: string;
+  /** Only moments this member liked (the "first like" challenge) */
+  likedBy?: string;
   targetType?: MomentTargetType;
   targetId?: string;
   location?: string;

@@ -157,12 +157,45 @@ export interface QuestRulesText {
   eligible?: string;
 }
 
+/** Where a first-step challenge (QuestRule.actions) is done, and the button's words */
+export function questActionLink(rule: QuestRule | undefined): { href: string; label: string } | null {
+  const action = rule?.actions;
+  if (!action) return null;
+  if (action.kind === 'like' || action.kind === 'follow') return { href: '/moments', label: 'ไปดูโมเมนต์' };
+  if (action.kind === 'join') return { href: '/community', label: 'ไปดูตี้' };
+  if (action.targetType === 'fair') return { href: '/events', label: 'ไปดูอีเวนต์' };
+  if (action.targetType === 'spot') return { href: '/spots', label: 'ไปดูที่เที่ยว' };
+  return { href: '/community', label: 'ไปดูตี้' };
+}
+
+const ACTION_WORDS: Record<string, { unit: string; scope: string; goStep: string }> = {
+  like: { unit: 'โมเมนต์', scope: 'โมเมนต์ของเพื่อนๆ ที่คุณกดใจ', goStep: 'กดใจโมเมนต์ที่ชอบ ให้ครบ {n} โมเมนต์' },
+  follow: { unit: 'คน', scope: 'เพื่อนที่คุณกดติดตาม', goStep: 'กดติดตามเพื่อนที่ชอบโมเมนต์ของเขา ให้ครบ {n} คน' },
+  join: { unit: 'ตี้', scope: 'ตี้ที่คุณลงชื่อเข้าร่วม', goStep: 'ลงชื่อเข้าร่วมตี้ที่สนใจ ให้ครบ {n} ตี้' },
+  'save:community': { unit: 'ตี้', scope: 'ตี้ที่คุณกดบันทึก', goStep: 'กดบันทึกตี้ที่สนใจ ให้ครบ {n} ตี้' },
+  'save:fair': { unit: 'งาน', scope: 'อีเวนต์ที่คุณกดบันทึก', goStep: 'กดบันทึกอีเวนต์ที่สนใจ ให้ครบ {n} งาน' },
+  'save:spot': { unit: 'แห่ง', scope: 'ที่เที่ยวที่คุณกดบันทึก', goStep: 'กดบันทึกที่เที่ยวที่สนใจ ให้ครบ {n} แห่ง' },
+  save: { unit: 'รายการ', scope: 'สิ่งที่คุณกดบันทึก', goStep: 'กดบันทึกสิ่งที่สนใจ ให้ครบ {n} รายการ' },
+};
+
 /** The rule of a counted challenge in words; null for a challenge the server does not count */
 export function describeQuestRule(rule: QuestRule | undefined, evidence: Evidence | null): QuestRulesText | null {
   if (!rule) return null;
   const eligible = rule.newMemberDays
     ? `สมาชิกใหม่ นับเฉพาะการไปภายใน ${rule.newMemberDays} วันแรกหลังสมัคร`
     : undefined;
+  // A first step on the onboarding summary (owner 2026-11-14): a like, a follow, a save or a ตี้ signed up for
+  if (rule.actions) {
+    const words = ACTION_WORDS[rule.actions.kind === 'save' && rule.actions.targetType ? `save:${rule.actions.targetType}` : rule.actions.kind];
+    return {
+      unit: words.unit,
+      scope: words.scope,
+      proof: 'ทำในแอปแล้วนับทันที',
+      onceEach: 'ทำสำเร็จได้ครั้งเดียว',
+      goStep: words.goStep,
+      eligible: rule.newMemberDays ? `สมาชิกใหม่ ภายใน ${rule.newMemberDays} วันแรกหลังสมัคร` : undefined,
+    };
+  }
   // A starter challenge (owner 2026-11-11): one post from the phone, counted at once
   if (rule.posts) {
     return {

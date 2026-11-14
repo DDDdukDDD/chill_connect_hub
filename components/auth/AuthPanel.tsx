@@ -417,7 +417,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
 
       {view === 'signup' && (
         <div>
-          {header('สมัครสมาชิก', 'เข้าร่วมคอมมูนิตี้ของคนชอบออกไปใช้ชีวิต ฟรี ใช้เวลาไม่ถึง 1 นาที')}
+          {header('สมัครสมาชิก', 'เข้าร่วมโซเชียลของคนชอบออกไปใช้ชีวิต ฟรี ใช้เวลาไม่ถึง 1 นาที')}
           <SocialButtons verb="สมัคร" available={session.providers} disabled={busy} onPick={social} />
           <p className="mt-3 text-center text-xs text-slate-500 font-medium leading-relaxed">
             <PhraseText text="การสมัครถือว่าคุณอายุ 18 ปีขึ้นไป และยอมรับ" />{' '}{termsLinks}
