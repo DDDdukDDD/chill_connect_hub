@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-383 · อีเวนต์ ticket link is a round trip (owner 2026-11-14)
+- **What changed:** the อีเวนต์ header keeps one outside link, and only when it gets people what they came for: "ซื้อบัตร" (priced) or "สมัครวิ่ง" (runs), never on ended งาน. The site of a free or unpriced งาน lives only in the organizer box. Tapping the ticket link while signed in saves the งาน first (`data-out-kind="ticket"`, still tracked as outbound); coming back to the tab shows "ได้บัตรแล้วไหม?" with "ได้แล้ว ไปแน่" (keeps it saved, then the invite nudge "ได้บัตรแล้ว ชวนเพื่อนไปด้วยไหม?") or "ยังเลย". No new state: going = saved. Ideas 4-5 (info on our page, ticket-site referral fees) are in LAUNCH_CHECKLIST stage 8.
+- **What to do about it:** nothing. No migration.
+
+### BE-382 · Detail page headers: one button order (owner 2026-11-14)
+- **What changed:** every detail header reads main action → page's own link (อีเวนต์ tickets) → ชวนไป → แชร์ → save icon (ตี้ only). /spots/[id] drops "นำทาง" from the header; it sits beside the "แผนที่" heading and routes by coordinates (name search only when a place has none). /challenges/[id] buttons use `heroButton` (same height and type as the other pages), and "ยกเลิกการทำชาเลนจ์" is a small grey line under the row instead of a pill beside the main button. The ตี้ save icon is a bookmark like the other pages (the heart means like on posts).
+- **What to do about it:** nothing. No migration.
+
 ### BE-381 · /rewards and the reward popup: chip filter, earn list, pinned actions (9.5 pass, 2026-11-14)
 - **What changed:** "แลกได้ตอนนี้" is a chip at the end of the category row instead of a lone checkbox on its own line. "ได้ XP จาก" puts each amount on top of its own line ("+50 XP" over "ไปตี้ (คนจัดเช็กอินให้)"), so on wide screens it no longer reads as part of the next column; heading at the section size. On "คูปองของฉัน" the toggle pill is gone (the back link and the empty box already lead to the catalog). `RewardDialog` (shared with the promo row): details scroll while the actions stay pinned at the bottom (same layout as `CampaignDialog`); the photo is a short banner on screens under 560 px high; XP short now says "มี 80 XP ขาดอีก 70 XP ก็แลกได้แล้ว" with "หา XP จากชาเลนจ์" (to /challenges) instead of a dead grey button; the confirm step has "ยังก่อน" beside "ยืนยัน แลกเลย"; a redeemed reward labels its code ("แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน") and says until when; the row "ใช้" is now "แลกด้วย". The confirm and redeemed states could not be seen with dev data (no member has 150 XP); built from the code.
 - **What to do about it:** nothing. No migration.

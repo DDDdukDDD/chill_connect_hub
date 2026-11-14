@@ -1,7 +1,7 @@
 'use client';
 
 import { optimizedImage } from '@/lib/optimizedImage';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams, useRouter } from 'next/navigation';
@@ -129,6 +129,20 @@ export default function FairDetailPage({
   const [isSavedToCalendar, setIsSavedToCalendar] = useState(false);
   // Just saved this อีเวนต์: ask once whether a friend comes too (owner 2026-11-11)
   const [justSaved, setJustSaved] = useState(false);
+  const [nudgeText, setNudgeText] = useState('บันทึกแล้ว ชวนเพื่อนไปด้วยไหม?');
+  // A round trip, not a way out (owner 2026-11-14): "ซื้อบัตร" saves the งาน first, and coming back to this tab asks
+  // "ได้บัตรแล้วไหม?" so the trip ends with inviting a friend here
+  const awayForTicket = useRef<{ autoSaved: boolean } | null>(null);
+  const [ticketCheck, setTicketCheck] = useState<{ autoSaved: boolean } | null>(null);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || !awayForTicket.current) return;
+      setTicketCheck(awayForTicket.current);
+      awayForTicket.current = null;
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -242,7 +256,10 @@ export default function FairDetailPage({
     void activityActions.setSaved('event', eventId, !wasSaved).then((ok) => {
       if (!ok) return showToast('บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
       const isTargetEnded = eventId === eventData?.id ? isEnded : false;
-      if (eventId === eventData?.id) setJustSaved(!wasSaved && !isTargetEnded);
+      if (eventId === eventData?.id) {
+        setNudgeText('บันทึกแล้ว ชวนเพื่อนไปด้วยไหม?');
+        setJustSaved(!wasSaved && !isTargetEnded);
+      }
       showToast(wasSaved ? 'ลบออกจากรายการบันทึกแล้ว' : isTargetEnded ? 'เพิ่มเข้าคลังเพื่อติดตามรอบถัดไปเรียบร้อย' : 'บันทึกอีเวนต์นี้ใน MyHub เรียบร้อย');
     });
   };
@@ -474,7 +491,9 @@ export default function FairDetailPage({
   const priceUnknown = !parsedPrice.displayPrice || parsedPrice.displayPrice.startsWith('ไม่ระบุ');
   // A run's groups meet before the start; other อีเวนต์ walk the halls together
   const groupWord = isRun ? 'ไปวิ่ง' : 'เดินงาน';
-  const officialLinkLabel = isRun ? 'สมัครวิ่ง' : parsedPrice.isFree ? 'เว็บไซต์งาน' : priceUnknown ? 'ดูรายละเอียดงาน' : 'ซื้อบัตร';
+  // Only a link that gets people what they came for sits in the header (owner 2026-11-14): sign-ups and tickets. The
+  // site of a free or unpriced งาน is information, so it stays in the organizer box below
+  const ticketLabel = !officialWebsiteUrl ? null : isRun ? 'สมัครวิ่ง' : parsedPrice.isFree || priceUnknown ? null : 'ซื้อบัตร';
   const relatedFairs = useMemo(() => {
     if (initialRelated) return initialRelated.filter((e) => !isEventEnded(e));
     if (!eventData) return [];
@@ -544,6 +563,21 @@ export default function FairDetailPage({
   // Started and not ended: "กำลังจัดอยู่" (the landing's fair list uses the same rule)
   const isOngoing = !isEnded && parseEventDateToTimestamp(eventData.date) <= openedAt;
 
+  // "ซื้อบัตร" / "สมัครวิ่ง": save the งาน on the way out (members), then ask on the way back (see awayForTicket)
+  const onTicketClick = () => {
+    if (!isLoggedIn) return;
+    const autoSaved = !isFav;
+    awayForTicket.current = { autoSaved };
+    if (autoSaved) void activityActions.setSaved('event', eventData.id, true);
+  };
+  const answerTicketCheck = (gotIt: boolean) => {
+    setTicketCheck(null);
+    if (!gotIt) return showToast(isRun ? 'ไว้กลับมาสมัครได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว' : 'ไว้กลับมาซื้อได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว');
+    if (!favorites.includes(eventData.id) && !joinedEventIds.includes(eventData.id)) void activityActions.setSaved('event', eventData.id, true);
+    setNudgeText(isRun ? 'สมัครแล้ว ชวนเพื่อนไปวิ่งด้วยไหม?' : 'ได้บัตรแล้ว ชวนเพื่อนไปด้วยไหม?');
+    setJustSaved(true);
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#1E293B] flex flex-col font-sans selection:bg-[#2B527A] selection:text-white">
       
@@ -592,17 +626,9 @@ export default function FairDetailPage({
                 {isFav ? <Check className="w-5 h-5" aria-hidden="true" /> : <BookMarked className="w-5 h-5" aria-hidden="true" />}
                 {isFav ? 'บันทึกแล้ว' : isEnded ? 'ติดตามงานรอบหน้า' : 'บันทึกงานนี้'}
               </button>
-              {officialWebsiteUrl && (
-                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" aria-label={officialLinkLabel} className={`${heroButton.quiet} max-sm:px-3`}>
-                  {/* "ดูรายละเอียดงาน" pushed ชวนไป and แชร์ to a second row at 390px: phones say it shorter */}
-                  {officialLinkLabel === 'ดูรายละเอียดงาน' ? (
-                    <>
-                      <span className="sm:hidden" aria-hidden="true">เว็บงาน</span>
-                      <span className="max-sm:hidden" aria-hidden="true">{officialLinkLabel}</span>
-                    </>
-                  ) : (
-                    officialLinkLabel
-                  )}
+              {officialWebsiteUrl && ticketLabel && !isEnded && (
+                <a href={officialWebsiteUrl} target="_blank" rel="noopener noreferrer" data-out-kind="ticket" onClick={onTicketClick} className={`${heroButton.quiet} max-sm:px-3`}>
+                  {ticketLabel}
                   <ExternalLink className="w-4 h-4 max-sm:hidden" aria-hidden="true" />
                 </a>
               )}
@@ -618,8 +644,28 @@ export default function FairDetailPage({
           note={!isEnded && !isFav ? (isOngoing ? 'บันทึกไว้ กลับมาเปิดดูได้ตลอดช่วงงาน' : 'บันทึกไว้ แล้วเราจะเตือนก่อนวันงาน') : undefined}
         />
 
+        {ticketCheck && !isEnded && (
+          <div role="status" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-blue-50 pl-4 pr-2 py-2.5">
+            <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">
+              {ticketCheck.autoSaved && <span className="text-slate-600">บันทึกงานนี้ไว้ในมายฮับให้แล้ว · </span>}
+              {isRun ? 'สมัครเรียบร้อยไหม?' : 'ได้บัตรแล้วไหม?'}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => answerTicketCheck(true)} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white cursor-pointer whitespace-nowrap">
+                {isRun ? 'สมัครแล้ว ไปแน่' : 'ได้แล้ว ไปแน่'}
+              </button>
+              <button type="button" onClick={() => answerTicketCheck(false)} className="h-9 px-3 rounded-full text-sm font-bold text-slate-700 hover:bg-white cursor-pointer whitespace-nowrap">
+                ยังเลย
+              </button>
+              <button type="button" onClick={() => setTicketCheck(null)} aria-label="ปิด" className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white cursor-pointer">
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {justSaved && !isEnded && (
-          <InviteNudge className="mt-4" target={{ type: 'fair', id: eventData.id }} place={eventData.title} text="บันทึกแล้ว ชวนเพื่อนไปด้วยไหม?" onMessage={showToast} onClose={() => setJustSaved(false)} />
+          <InviteNudge className="mt-4" target={{ type: 'fair', id: eventData.id }} place={eventData.title} text={nudgeText} onMessage={showToast} onClose={() => setJustSaved(false)} />
         )}
 
         {/* Like the challenge page: the story, the details as a plain table and the way there on the left; on the
