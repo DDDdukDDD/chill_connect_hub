@@ -10,7 +10,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
+import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questActionLink, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
 import { EventAttendees } from '@/components/EventAttendees';
 import { InvitePill } from '@/components/invites/InvitePill';
 import { InviteBanner } from '@/components/invites/InviteBanner';
@@ -222,7 +222,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       ];
   // Where to go shows while deciding too, so a visitor sees where before joining (owner 2026-10-16);
   // with nothing in the period yet it says so instead of leaving the question open
-  const showPlaces = tracked && !plan && !earned && !isEnded && !quest.rule?.posts;
+  const showPlaces = tracked && !plan && !earned && !isEnded && !quest.rule?.posts && !quest.rule?.actions;
   // On a desktop, places sit under the reward while deciding (what you get, then where); once joined they move to the main column
   const placesBesideReward = showPlaces && !joined;
   // A host challenge is done by hosting: it offers to open a ตี้ instead of places to go
@@ -230,6 +230,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   // A starter challenge counts posts (QuestRule.posts): its next step is the posting form, not a list of places
   const isPostQuest = Boolean(quest.rule?.posts);
   const postHref = '/?share=general:';
+  // A first-step challenge (QuestRule.actions): its next step is the page where it is done
+  const actionLink = questActionLink(quest.rule);
   const memories = earned ? detail.mine?.memories ?? [] : [];
   const finishedDate = earned ? shortDate(detail.mine?.finishedAt) : '';
   const next = earned ? detail.next : null;
@@ -312,6 +314,13 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
         <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
       </a>
     );
+  } else if (tracked && actionLink) {
+    mainAction = (
+      <Link href={actionLink.href} className={dialogButton.primary}>
+        {actionLink.label}
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
+      </Link>
+    );
   } else if (tracked && isPostQuest) {
     mainAction = (
       <Link href={postHref} className={dialogButton.primary}>
@@ -385,6 +394,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           </button>
         ) : plan ? (
           <a href="#plan" className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>แผนของฉัน</a>
+        ) : tracked && actionLink ? (
+          <Link href={actionLink.href} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>{actionLink.label}</Link>
         ) : tracked && isPostQuest ? (
           <Link href={postHref} className={`${barButton} bg-slate-900 hover:bg-slate-800 text-white`}>โพสต์โมเมนต์</Link>
         ) : tracked ? (

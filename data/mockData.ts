@@ -188,7 +188,17 @@ export interface QuestRule {
    * targetTypes stays empty.
    */
   posts?: { withPlace?: boolean };
+  /**
+   * Counts a simple thing done in the app instead of visits (owner 2026-11-14, the first steps on the onboarding
+   * summary): a like on someone's moment, a member followed, something saved (a ตี้, an อีเวนต์ or a place, by
+   * `targetType`), or a ตี้ signed up for. What the member has now is counted, so taking it back before the
+   * challenge is finished takes the step back; meant for small, once-only rewards with `newMemberDays`.
+   * targetTypes stays empty.
+   */
+  actions?: { kind: QuestActionKind; targetType?: 'spot' | 'community' | 'fair' };
 }
+
+export type QuestActionKind = 'like' | 'follow' | 'save' | 'join';
 
 export interface ChallengeQuest {
   id: string;

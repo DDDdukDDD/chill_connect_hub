@@ -307,6 +307,7 @@ function filters(tx: Sql, query: MomentQuery): Fragment {
   return tx`m.status in ${tx(query.statuses)}
     ${query.authorId ? tx`and a.legacy_id = ${query.authorId}` : tx``}
     ${query.savedBy ? tx`and exists (select 1 from app.moment_saves s join app.members x on x.id = s.member_id where s.moment_id = m.id and x.legacy_id = ${query.savedBy})` : tx``}
+    ${query.likedBy ? tx`and exists (select 1 from app.moment_likes l join app.members x on x.id = l.member_id where l.moment_id = m.id and x.legacy_id = ${query.likedBy})` : tx``}
     ${query.targetType ? tx`and m.target_type = ${query.targetType}` : tx``}
     ${query.targetId ? tx`and m.target_ref = ${query.targetId}` : tx``}
     ${location ? tx`and (m.location_text ilike ${contains(location)} or m.target_title ilike ${contains(location)})` : tx``}

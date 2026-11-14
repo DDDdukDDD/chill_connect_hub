@@ -1,4 +1,4 @@
-import type { ChallengeQuest, EventItem, QuestPlan, QuestRule } from '@/data/mockData';
+import type { ChallengeQuest, EventItem, QuestActionKind, QuestPlan, QuestRule } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { db } from '../db';
@@ -61,6 +61,39 @@ const stringList = (value: unknown): string[] | undefined => {
   return list.length ? list : undefined;
 };
 
+const ACTION_KINDS: QuestActionKind[] = ['like', 'follow', 'save', 'join'];
+
+/**
+ * How many of one kind of thing the member has done now (QuestRule.actions): moments of others liked, members
+ * followed, ตี้ / อีเวนต์ / places saved, ตี้ signed up for (not ones they host)
+ */
+async function actionCount(memberId: string, action: NonNullable<QuestRule['actions']>, limit: number): Promise<number> {
+  if (action.kind === 'like') {
+    const { items } = await momentRepository.query({ statuses: ['published'], likedBy: memberId, sort: 'newest', page: 1, limit: Math.max(limit, 1) + 5 });
+    return items.filter((m) => m.authorId !== memberId).length;
+  }
+  const member = await memberRepository.findById(memberId);
+  if (!member) return 0;
+  if (action.kind === 'follow') return member.followingIds?.length ?? 0;
+  if (action.kind === 'save') {
+    if (action.targetType === 'spot') return member.savedSpotIds?.length ?? 0;
+    let found = 0;
+    for (const id of member.savedEventIds ?? []) {
+      if (found >= limit) break;
+      const event = await db.findEventById(id);
+      if (event && (!action.targetType || eventTargetType(event) === action.targetType)) found++;
+    }
+    return found;
+  }
+  let joined = 0;
+  for (const p of await db.listParticipations(memberId)) {
+    if (joined >= limit) break;
+    const event = await db.findEventById(p.eventId);
+    if (event && eventTargetType(event) === 'community' && (event as { createdByMemberId?: string }).createdByMemberId !== memberId) joined++;
+  }
+  return joined;
+}
+
 /** Validates a rule coming from the admin console; null when it is not a usable rule */
 export function parseQuestRule(input: unknown): QuestRule | null {
   if (!input || typeof input !== 'object') return null;
@@ -70,7 +103,14 @@ export function parseQuestRule(input: unknown): QuestRule | null {
   // A starter challenge counts posts, not visits (QuestRule.posts)
   if (raw.posts && typeof raw.posts === 'object') {
     if (!(count >= 1 && count <= 20)) return null;
-    return { targetTypes: [], count, posts: { withPlace: (raw.posts as { withPlace?: unknown }).withPlace === true || undefined } };
+    return { targetTypes: [], count, posts: { withPlace: (raw.posts as { withPlace?: unknown }).withPlace === true || undefined }, newMemberDays: wholeNumberIn(raw.newMemberDays, 1, 90) };
+  }
+  // A first-step challenge counts likes, follows, saves or ตี้ signed up for (QuestRule.actions)
+  if (raw.actions && typeof raw.actions === 'object') {
+    const action = raw.actions as { kind?: unknown; targetType?: unknown };
+    if (!ACTION_KINDS.includes(action.kind as QuestActionKind) || !(count >= 1 && count <= 20)) return null;
+    const targetType = action.kind === 'save' && isVisitTargetType(action.targetType) ? action.targetType : undefined;
+    return { targetTypes: [], count, actions: { kind: action.kind as QuestActionKind, targetType }, newMemberDays: wholeNumberIn(raw.newMemberDays, 1, 90) };
   }
   if (targetTypes.length === 0 || !(count >= 1 && count <= 100)) return null;
   return {
@@ -419,11 +459,20 @@ export async function progressOf(memberId: string) {
   // The member's posts, read once and only when a starter challenge counts them (QuestRule.posts)
   let posts: Moment[] | null = null;
   const myPosts = async () => (posts ??= (await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 100 })).items);
+  // A first-step challenge is for new members: past its days only a finish already earned stays
+  const newEnough = (rule: QuestRule) => !rule.newMemberDays || since === undefined || Date.now() - since <= rule.newMemberDays * 86_400_000;
   for (const quest of await questsWithRules()) {
+    if (quest.rule.actions) {
+      const current = finishedIds.has(quest.id)
+        ? quest.rule.count
+        : joined.has(quest.id) && newEnough(quest.rule) ? Math.min(quest.rule.count, await actionCount(memberId, quest.rule.actions, quest.rule.count)) : 0;
+      quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
+      continue;
+    }
     if (quest.rule.posts) {
       const join = joinList.find((item) => item.questId === quest.id);
       const fits = (m: Moment) => m.createdAt >= (join?.joinedAt ?? '') && (!quest.rule.posts?.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim()));
-      const current = finishedIds.has(quest.id) ? quest.rule.count : join ? Math.min(quest.rule.count, (await myPosts()).filter(fits).length) : 0;
+      const current = finishedIds.has(quest.id) ? quest.rule.count : join && newEnough(quest.rule) ? Math.min(quest.rule.count, (await myPosts()).filter(fits).length) : 0;
       quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
       continue;
     }
@@ -478,8 +527,8 @@ export interface QuestCheckItem {
  * whether it counts, waits for review, or was not counted (so they can send another photo).
  */
 export async function checklistOf(quest: ChallengeQuest, memberId: string): Promise<{ items: QuestCheckItem[]; current: number; total: number } | null> {
-  // A starter challenge counts posts, so it has no list of places
-  if (!quest.rule || quest.rule.posts) return null;
+  // A starter challenge counts posts or things done in the app, so it has no list of places
+  if (!quest.rule || quest.rule.posts || quest.rule.actions) return null;
   const ruled = quest as ChallengeQuest & { rule: QuestRule };
   const items: QuestCheckItem[] = [];
   const seen = new Set<string>();

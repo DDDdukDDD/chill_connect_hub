@@ -304,6 +304,7 @@ export const jsonMomentRepository: MomentRepository = {
       query.statuses.includes(m.status) &&
       (!query.authorId || m.authorId === query.authorId) &&
       (!query.savedBy || m.savedBy.includes(query.savedBy)) &&
+      (!query.likedBy || m.likedBy.includes(query.likedBy)) &&
       (!query.targetType || m.targetType === query.targetType) &&
       (!query.targetId || m.targetId === query.targetId) &&
       (!location || m.location.toLowerCase().includes(location) || (m.targetTitle ?? '').toLowerCase().includes(location)) &&
