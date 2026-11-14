@@ -3,7 +3,7 @@
 // Created through the admin API like any challenge, so the same script works on dev and on live:
 //   node db/seed-starter-quests.mjs                              (http://localhost:3000, ADMIN_PASSWORD from .env.development.local)
 //   BASE_URL=https://www.chillwaa.com ADMIN_PASSWORD=… node db/seed-starter-quests.mjs
-// Running it again skips challenges whose title already exists.
+// Running it again skips challenges whose title already exists, carries reward changes over, and ends RETIRED_TITLES.
 import fs from 'node:fs';
 
 export const STARTER_QUESTS = [
@@ -221,6 +221,14 @@ export const STARTER_QUESTS = [
   },
 ];
 
+// Older welcome challenges that count the same first visit as the new first steps (owner 2026-11-14: retire them, so
+// one visit is not paid twice). Ended, not deleted: members who finished one keep its XP and badge.
+export const RETIRED_TITLES = [
+  'ตี้แรกของฉัน: ไปเจอเพื่อนใหม่ 1 ตี้',
+  'ตี้แรก มีของ: ไปตี้แรกภายใน 14 วันหลังสมัคร',
+  'อีเวนต์แรก: ไปงานกับเพื่อนแล้วแชร์โมเมนต์',
+];
+
 const fromFile = (name) => {
   try {
     const line = fs.readFileSync(new URL('../.env.development.local', import.meta.url), 'utf8').match(new RegExp(`^${name}=(.*)$`, 'm'));
@@ -256,6 +264,15 @@ async function main() {
     if (!created.success) throw new Error(`${quest.title}: ${created.error}`);
     const published = await call('POST', { action: 'update', id: created.quest.id, updatedFields: { status: 'active' } });
     console.log(published.success ? 'created' : `created as draft (${published.error})`, created.quest.id, quest.title);
+  }
+  for (const title of RETIRED_TITLES) {
+    const found = (existing.quests ?? existing.items ?? existing.data ?? []).find((q) => q.title === title);
+    if (!found) console.log('retire: not found', title);
+    else if (found.status === 'ended') console.log('retire: already ended', title);
+    else {
+      const ended = await call('POST', { action: 'update', id: found.id, updatedFields: { status: 'ended' } });
+      console.log(ended.success ? 'retired' : `not retired (${ended.error})`, found.id, title);
+    }
   }
 }
 
