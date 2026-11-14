@@ -49,7 +49,7 @@ import {
   Calendar,
   Globe,
   Repeat,
-  Heart,
+  BookMarked,
   Star,
   Share2,
   Check,
@@ -656,7 +656,7 @@ export default function CommunityDetailPage({
                   aria-label={isFav ? 'บันทึกตี้นี้แล้ว' : 'บันทึกตี้นี้'}
                   className={heroButton.icon}
                 >
-                  <Heart className={`w-5 h-5 ${isFav ? 'fill-[#F26430] text-[#F26430]' : ''}`} aria-hidden="true" />
+                  <BookMarked className={`w-5 h-5 ${isFav ? 'fill-[#2563EB]/15 text-[#2563EB]' : ''}`} aria-hidden="true" />
                 </button>
               )}
             </>

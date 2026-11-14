@@ -10,6 +10,7 @@ import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
+import { heroButton } from '@/components/detail/DetailHero';
 import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questActionLink, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
 import { EventAttendees } from '@/components/EventAttendees';
 import { InvitePill } from '@/components/invites/InvitePill';
@@ -293,7 +294,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   let mainAction: React.ReactNode = null;
   if (earned) {
     mainAction = (
-      <Link href={isPartner ? '/myhub?tab=quests_rewards' : '/rewards'} className={dialogButton.primary}>
+      <Link href={isPartner ? '/myhub?tab=quests_rewards' : '/rewards'} className={heroButton.primary}>
         {isPartner ? 'ไปมายฮับ' : 'ไปเลือกของรางวัล'}
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
@@ -302,35 +303,35 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
     mainAction = null;
   } else if (!joined) {
     mainAction = (
-      <button type="button" onClick={handleJoin} disabled={isSaving} className={dialogButton.primary}>
+      <button type="button" onClick={handleJoin} disabled={isSaving} className={heroButton.primary}>
         {isSaving ? 'กำลังบันทึก…' : 'ร่วมชาเลนจ์นี้'}
       </button>
     );
   } else if (plan) {
     // Joined a plan: today's stamp is the next thing to do
     mainAction = (
-      <a href="#plan" className={dialogButton.primary}>
+      <a href="#plan" className={heroButton.primary}>
         แผนของฉัน
         <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
       </a>
     );
   } else if (tracked && actionLink) {
     mainAction = (
-      <Link href={actionLink.href} className={dialogButton.primary}>
+      <Link href={actionLink.href} className={heroButton.primary}>
         {actionLink.label}
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
     );
   } else if (tracked && isPostQuest) {
     mainAction = (
-      <Link href={postHref} className={dialogButton.primary}>
+      <Link href={postHref} className={heroButton.primary}>
         โพสต์โมเมนต์
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
     );
   } else if (tracked && isHostQuest) {
     mainAction = (
-      <Link href="/community?create=1" className={dialogButton.primary}>
+      <Link href="/community?create=1" className={heroButton.primary}>
         ตั้งตี้ของฉัน
         <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </Link>
@@ -338,14 +339,14 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   } else if (tracked) {
     // Joined and counted by the system: the next thing to do is go somewhere that counts
     mainAction = (
-      <button type="button" onClick={scrollToPlaces} className={dialogButton.primary}>
+      <button type="button" onClick={scrollToPlaces} className={heroButton.primary}>
         {placesButton}
         <ArrowRight className="w-4 h-4 rotate-90" aria-hidden="true" />
       </button>
     );
   } else {
     mainAction = (
-      <button type="button" onClick={handleNote} disabled={selfDone} className={dialogButton.primary}>
+      <button type="button" onClick={handleNote} disabled={selfDone} className={heroButton.primary}>
         <Check className="w-4 h-4" aria-hidden="true" />
         บันทึกเอง
       </button>
@@ -588,18 +589,19 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
 
           <div data-hero-actions className="flex flex-wrap items-center gap-2 pt-1">
             {mainAction}
-            {isDoing && (
-              <button type="button" onClick={() => setIsLeaveOpen(true)} className={dialogButton.quiet}>
-                ยกเลิกการทำชาเลนจ์
-              </button>
-            )}
-            {quest.status !== 'ended' && <InvitePill target={{ type: 'quest', id: quest.id }} place={quest.title} isLoggedIn={isLoggedIn} onRequireLogin={() => setIsRequireMembershipOpen(true)} onMessage={showToast} className={dialogButton.quiet} />}
+            {quest.status !== 'ended' && <InvitePill target={{ type: 'quest', id: quest.id }} place={quest.title} isLoggedIn={isLoggedIn} onRequireLogin={() => setIsRequireMembershipOpen(true)} onMessage={showToast} className={heroButton.quiet} />}
             {/* Icon only on phones, so the main button, ชวนไป and แชร์ share one row at 360px (2026-11-12) */}
-            <button type="button" onClick={handleShare} aria-label={copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${dialogButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
+            <button type="button" onClick={handleShare} aria-label={copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'} className={`${heroButton.quiet} max-sm:w-12 max-sm:px-0 lg:max-xl:w-12 lg:max-xl:px-0`}>
               {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
               <span className="max-sm:sr-only lg:max-xl:sr-only">{copied ? 'คัดลอกลิงก์แล้ว' : 'แชร์'}</span>
             </button>
           </div>
+          {/* Leaving is a small line under the row, not a pill beside the main button (same row on every detail page, 2026-11-14) */}
+          {isDoing && (
+            <button type="button" onClick={() => setIsLeaveOpen(true)} className="min-h-11 -mt-1 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-700 hover:underline cursor-pointer">
+              ยกเลิกการทำชาเลนจ์
+            </button>
+          )}
         </div>
       </section>
 
