@@ -35,7 +35,8 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
     ? 'จบแล้ว'
     : quest.startsInDays
       ? `เริ่มในอีก ${quest.startsInDays} วัน`
-      : quest.daysRemaining !== undefined ? `เหลือ ${quest.daysRemaining} วัน` : 'ไม่มีวันปิด';
+      // A countdown only means something when the end is near; "เหลือ 413 วัน" is noise next to the dates
+      : quest.daysRemaining === undefined ? 'ไม่มีวันปิด' : quest.daysRemaining <= 90 ? `เหลือ ${quest.daysRemaining} วัน` : '';
 
   return (
     <Link
@@ -76,7 +77,7 @@ function ChallengeRow({ quest, on, isJoined, mine }: RowProps) {
         )}
         <span className="tabular-nums whitespace-nowrap">
           <span className={isUrgent ? 'font-bold text-rose-700' : quest.startsInDays ? 'font-bold text-[#5B21B6]' : 'font-semibold text-slate-700'}>{when}</span>
-          {!isEnded && quest.participantsCount ? ` · ${quest.participantsCount.toLocaleString()} คนร่วมทำ` : ''}
+          {!isEnded && quest.participantsCount ? `${when ? ' · ' : ''}${quest.participantsCount.toLocaleString()} คนร่วมทำ` : ''}
         </span>
         {isJoined && !isEnded && (
           <span className="mt-1 px-2.5 py-0.5 rounded-full bg-[#F5F3FF] border border-purple-200 text-[#5B21B6] font-bold whitespace-nowrap tabular-nums">
@@ -110,7 +111,7 @@ function MonthRows({ quests, on, monthWord, joinedIds, progress }: { quests: Cha
         const mine = isJoined ? progress.find((p) => p.questId === quest.id) : undefined;
         return (
           <React.Fragment key={quest.id}>
-            {label && <p className="pt-3 pb-1 text-xs font-bold text-slate-500 first:pt-1">{label}</p>}
+            {label && <p className="pt-4 pb-1 text-xs font-bold text-slate-500">{label}</p>}
             <div className={label ? '' : 'border-t border-slate-100'}>
               <ChallengeRow quest={quest} on={side} isJoined={isJoined} mine={mine} />
             </div>
@@ -121,13 +122,12 @@ function MonthRows({ quests, on, monthWord, joinedIds, progress }: { quests: Cha
   );
 }
 
-const groupBox = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs';
-
 /**
  * Challenges as a dated list, like the schedule in My Hub. Those starting soon come first as rows, the nearest three
  * while others can be done now, so a new challenge is seen before its start (a strip of cards here made the switch from
  * the card view look like nothing happened, TR-004); then "ทำได้เลยตอนนี้", by closing day (soonest first). Empty groups are left out.
- * Ended challenges are one group, latest first. Used on /challenges and in My Hub ("ชาเลนจ์ของฉัน").
+ * Ended challenges are one group, latest first. Open layout like the ค้นพบ lists (EventDateList): headings and rows, no boxes.
+ * Used on /challenges and in My Hub ("ชาเลนจ์ของฉัน").
  */
 const SOON_ROWS = 3;
 
@@ -157,23 +157,23 @@ export function ChallengeList({ quests, joinedIds, progress, onBrowseAllSoon, pa
     .filter((group) => group.visible.length > 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8 sm:space-y-10">
       {visibleGroups.map((group) => (
-        <section key={group.key} aria-label={group.title} className={groupBox}>
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-base font-bold text-slate-900">
-              {group.title} <span className="text-xs font-bold text-slate-500 tabular-nums">{group.count}</span>
-            </h2>
-            {group.key === 'upcoming' && group.count > group.items.length && onBrowseAllSoon && (
-              <button type="button" onClick={onBrowseAllSoon} className="shrink-0 py-2 -my-2 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
-                ดูทั้งหมด
-              </button>
-            )}
+        <section key={group.key} aria-label={group.title}>
+          <div className="pb-2 border-b border-slate-200">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                {group.title} <span className="ml-1 text-sm font-medium text-slate-500 tabular-nums">{group.count}</span>
+              </h2>
+              {group.key === 'upcoming' && group.count > group.items.length && onBrowseAllSoon && (
+                <button type="button" onClick={onBrowseAllSoon} className="shrink-0 py-2 -my-2 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap">
+                  ดูทั้งหมด
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">{group.note}</p>
           </div>
-          <p className="text-xs text-slate-500">{group.note}</p>
-          <div className="mt-1">
-            <MonthRows quests={group.visible} on={group.on} monthWord={group.monthWord} joinedIds={joinedIds} progress={progress} />
-          </div>
+          <MonthRows quests={group.visible} on={group.on} monthWord={group.monthWord} joinedIds={joinedIds} progress={progress} />
         </section>
       ))}
       {pageSize && shown < total && (
