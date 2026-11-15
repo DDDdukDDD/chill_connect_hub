@@ -170,6 +170,8 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   total: 3,
   verificationMethod: VERIFY_OPTIONS[0],
   badgeLabel: '',
+  rewardPoints: 100,
+  questRuleMode: 'posts_with_place' as 'posts_with_place' | 'posts_any' | 'visits',
 });
 type Form = ReturnType<typeof initialForm>;
 type Errors = Partial<Record<keyof Form, string>>;
@@ -505,12 +507,15 @@ interface CreateEventModalProps {
   initialPlace?: PlacePick;
   /** A schedule to start from, e.g. the Smart Plan's stops */
   initialItinerary?: Array<{ time: string; title: string }>;
+  /** When opened from /admin, bypasses member gates and publishes via admin APIs */
+  adminMode?: boolean;
+  onAdminCreated?: (message: string) => void;
   onCreateSuccess: (newEvent: EventItem) => void;
 }
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = (props) => (props.isOpen ? <CreateDialog {...props} /> : null);
 
-function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, onCreateSuccess }: CreateEventModalProps) {
+function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, adminMode = false, onAdminCreated, onCreateSuccess }: CreateEventModalProps) {
   const { userProfile, isOrganizer, isVenueOwner, isHost } = useAuth();
   const { member, isLoaded } = useMemberSession();
   const titleId = useId();
@@ -521,8 +526,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary],
   );
 
-  const canCreate = Boolean(member) && member?.trust?.level !== 'new';
-  const canCreateFair = isOrganizer || isVenueOwner;
+  const canCreate = adminMode || (Boolean(member) && member?.trust?.level !== 'new');
+  const canCreateFair = adminMode || isOrganizer || isVenueOwner;
   const startType = initialType && (initialType !== 'fair' || canCreateFair) ? initialType : null;
 
   const [type, setType] = useState<CreationEntityType | null>(startType);
@@ -597,9 +602,9 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const info = type ? TYPE_INFO[type] : null;
   const lastStep = info ? info.steps.length - 1 : 0;
-  const publishesNow = type === 'community' && isHost;
+  const publishesNow = adminMode || (type === 'community' && isHost);
   // An approved host's ตี้ goes live at once, so it needs no time for the team's check
-  const minDate = isoDay(type === 'fair' ? 7 : type === 'challenge' ? 0 : publishesNow ? 1 : 3);
+  const minDate = adminMode ? isoDay(0) : isoDay(type === 'fair' ? 7 : type === 'challenge' ? 0 : publishesNow ? 1 : 3);
   const price = form.priceMode === 'free' ? 'ฟรี' : form.priceText.trim();
   // The "เหมาะกับ" chips as the detail page lists them, for the review step
   const inPerson = form.locationType === 'physical';
@@ -683,7 +688,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       price: price || 'ฟรี',
       description: form.description.trim(),
       itinerary: form.itinerary.filter((row) => row.title.trim()),
-      hostAvatar: userProfile.avatar,
+      hostAvatar: userProfile.avatar || (adminMode ? '/icons/icon-192.png' : ''),
       isNew: true,
       createdAtTimestamp: Date.now(),
     };
@@ -737,7 +742,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       locationType: form.locationType,
       onlinePlatform: online ? form.onlinePlatform : undefined,
       onlineJoinUrl: online && form.onlineJoinUrl.trim() ? form.onlineJoinUrl.trim() : undefined,
-      hostName: userProfile.name,
+      hostName: adminMode && (!userProfile.name || userProfile.name === 'ผู้ใช้งาน') ? 'ทีม Chillwaa' : userProfile.name,
       participantsCount: 0,
       maxParticipants: form.maxParticipants,
       targetGender: form.targetGender,
@@ -767,21 +772,65 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     setServerError(null);
     setIsSubmitting(true);
     try {
-      const request = type === 'spot'
-        ? { url: '/api/spots', body: { title: form.title, category: form.spotCategory, image: form.image, province: form.province, district: form.district, googleMapsUrl: form.googleMapsUrl.trim().startsWith('https://') ? form.googleMapsUrl.trim() : '', latitude: form.pin?.latitude, longitude: form.pin?.longitude, openHours: form.openHours, bestTime: form.bestTime, price: form.priceText, description: form.description, highlights: form.highlights } }
-        : type === 'challenge'
-          ? { url: '/api/quests', body: { title: form.title, category: form.category, image: form.image, objective: form.objective, steps: form.steps.filter((item) => item.trim()), total: form.total, verificationMethod: form.verificationMethod, startDate: form.startDate, endDate: form.endDate, badgeLabel: form.badgeLabel } }
-          : { url: '/api/events', body: { eventData: eventPayload() } };
+      const spotBody = { title: form.title, category: form.spotCategory, image: form.image, province: form.province, district: form.district, googleMapsUrl: form.googleMapsUrl.trim().startsWith('https://') ? form.googleMapsUrl.trim() : '', latitude: form.pin?.latitude, longitude: form.pin?.longitude, openHours: form.openHours, bestTime: form.bestTime, price: form.priceText, description: form.description, highlights: form.highlights };
+      const questSteps = form.steps.filter((item) => item.trim());
+      const questTarget = form.objective.trim() || form.title.trim();
+      const questBadge = form.badgeLabel.trim() || form.title.trim().slice(0, 24);
+      const questCount = Math.max(1, Math.floor(Number(form.total) || 1));
+      const questXp = Math.max(0, Math.floor(Number(form.rewardPoints) || 0));
+      const questRule = form.questRuleMode === 'posts_with_place'
+        ? { targetTypes: [], count: questCount, posts: { withPlace: true } }
+        : form.questRuleMode === 'posts_any'
+          ? { targetTypes: [], count: questCount, posts: {} }
+          : { targetTypes: ['spot', 'community', 'fair'], count: questCount };
+      const request = adminMode
+        ? type === 'spot'
+          ? { url: '/api/admin/spots', body: { action: 'create', newSpot: { ...spotBody, publicationStatus: 'published' } } }
+          : type === 'challenge'
+            ? {
+                url: '/api/admin/quests',
+                body: {
+                  action: 'create',
+                  quest: {
+                    title: form.title.trim(),
+                    badgeLabel: questBadge,
+                    targetGoal: questTarget,
+                    objective: questTarget,
+                    category: form.category,
+                    image: form.image,
+                    total: questCount,
+                    steps: questSteps,
+                    verificationMethod: form.verificationMethod,
+                    startDate: form.startDate,
+                    endDate: form.endDate,
+                    rewardPoints: questXp,
+                    rewardsText: `+${questXp} XP และเหรียญ ${questBadge}`,
+                    brandReward: { type: 'hub_central', title: questBadge, shortTitle: `+${questXp} XP`, hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ' },
+                    rule: questRule,
+                  },
+                },
+              }
+            : { url: '/api/admin/events', body: { action: 'create', eventData: { ...eventPayload(), approvalStatus: 'approved' } } }
+        : type === 'spot'
+          ? { url: '/api/spots', body: spotBody }
+          : type === 'challenge'
+            ? { url: '/api/quests', body: { title: form.title, category: form.category, image: form.image, objective: form.objective, steps: questSteps, total: form.total, verificationMethod: form.verificationMethod, startDate: form.startDate, endDate: form.endDate, badgeLabel: form.badgeLabel } }
+            : { url: '/api/events', body: { eventData: eventPayload() } };
       const res = await fetch(request.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body) });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.success) {
-        setServerError(data?.message || 'ส่งไม่สำเร็จ ลองใหม่อีกครั้ง');
+        setServerError(adminMode && res.status === 401 ? 'เซสชันแอดมินหมดอายุ กรุณาเข้าสู่ระบบใหม่' : (data?.message || data?.error || 'ส่งไม่สำเร็จ ลองใหม่อีกครั้ง'));
         return;
       }
       try {
         sessionStorage.removeItem(draftKey(type));
       } catch {
         // Nothing stored
+      }
+      if (adminMode) {
+        onAdminCreated?.(type === 'challenge' ? `สร้างแบบร่าง "${form.title.trim()}" แล้ว` : `สร้าง "${form.title.trim()}" และเผยแพร่แล้ว`);
+        onClose();
+        return;
       }
       // Waiting for staff: its page is not public yet, so the form says so instead of handing the page a link that 404s
       if (data.event && (data.event as EventItem).approvalStatus === 'pending') {
@@ -1277,9 +1326,24 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           <Field label="ชื่อเหรียญที่จะได้รับ" htmlFor={id('badge')} error={errors.badgeLabel} hint="ตั้งให้สั้นและจำง่าย">
             <input id={id('badge')} value={form.badgeLabel} maxLength={40} onChange={(e) => set('badgeLabel', e.target.value)} placeholder="เช่น นักสำรวจกาแฟ" className={inputClass(Boolean(errors.badgeLabel))} />
           </Field>
-          <p className="text-xs font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-            คะแนนและรางวัลของชาเลนจ์ ทีมงานเป็นผู้กำหนดตอนตรวจ เพื่อให้ทุกชาเลนจ์ใช้เกณฑ์เดียวกัน
-          </p>
+          {adminMode ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="คะแนน XP ที่ได้รับ" htmlFor={id('rewardPoints')}>
+                <input id={id('rewardPoints')} type="number" inputMode="numeric" min={0} max={5000} value={form.rewardPoints} onChange={(e) => set('rewardPoints', Number(e.target.value))} className={inputClass()} />
+              </Field>
+              <Field label="วิธีนับผลอัตโนมัติ" htmlFor={id('questRuleMode')}>
+                <select id={id('questRuleMode')} value={form.questRuleMode} onChange={(e) => set('questRuleMode', e.target.value as Form['questRuleMode'])} className={inputClass()}>
+                  <option value="posts_with_place">โพสต์โมเมนต์ที่ปักชื่อสถานที่</option>
+                  <option value="posts_any">โพสต์โมเมนต์ทั่วไป</option>
+                  <option value="visits">เช็กอินที่สถานที่ / ตี้ / อีเวนต์</option>
+                </select>
+              </Field>
+            </div>
+          ) : (
+            <p className="text-xs font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+              คะแนนและรางวัลของชาเลนจ์ ทีมงานเป็นผู้กำหนดตอนตรวจ เพื่อให้ทุกชาเลนจ์ใช้เกณฑ์เดียวกัน
+            </p>
+          )}
         </>
       );
     }
