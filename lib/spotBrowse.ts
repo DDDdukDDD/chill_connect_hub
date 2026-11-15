@@ -162,7 +162,7 @@ export function browseParamsFrom(get: (key: string) => string | null | undefined
   };
 }
 
-/** Cafés count as "near" within this (components/NearbyDiningSection.tsx, and the Google search radius) */
+/** Cafés count as "near" within this (components/NearbyDining.tsx, and the Google search radius) */
 const DINING_KM = 3;
 
 /**

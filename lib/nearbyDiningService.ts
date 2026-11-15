@@ -168,6 +168,6 @@ export function getNearbyDiningSync(
     if (results.length >= limit) break;
   }
 
-  // No invented fallback: with nothing nearby the section hides itself (NearbyDiningSection returns null)
+  // No invented fallback: with nothing nearby the section hides itself (NearbyNextSection leaves the tab out)
   return results;
 }

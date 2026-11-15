@@ -94,6 +94,10 @@ export interface Moment {
   sharesCount?: number;
   /** The no-database mode keeps who shared it on the moment itself */
   sharedBy?: string[];
+  /** How many members sent "ชวนไป" from it (each counted once, BE-384); 0 on a database without migration 0056 */
+  invitesCount?: number;
+  /** The no-database mode keeps who sent "ชวนไป" on the moment itself */
+  invitedBy?: string[];
   /** Like count carried over from the bundled samples (illustrative); 0 for real posts */
   sampleLikes: number;
   comments: MomentComment[];
@@ -255,6 +259,8 @@ export interface MomentRepository {
   findById(id: string): Promise<Moment | null>;
   /** Counts the member's share once (BE-369); quietly nothing on a database without migration 0050 */
   addShare(id: string, memberId: string): Promise<void>;
+  /** Counts the member's "ชวนไป" once (BE-384); quietly nothing on a database without migration 0056 */
+  addInvite(id: string, memberId: string): Promise<void>;
   create(moment: Moment): Promise<Moment>;
   /** Applies `change` to the stored moment atomically and returns the result */
   mutate(id: string, change: (moment: Moment) => Moment): Promise<Moment>;

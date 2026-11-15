@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Check, Loader2, MessageCircle, Search, Share2 } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -16,6 +16,27 @@ export type InviteTargetType = 'spot' | 'fair' | 'community' | 'quest' | 'moment
 export interface InviteTarget {
   type: InviteTargetType;
   id: string;
+  /** A place's day plan (SmartSpotPlanCard): sent along, and the server opens a new plan's chat with it (BE-385) */
+  route?: { id: string; time: string }[];
+}
+
+/** Sent on window after "ชวนไป" from a post: detail { id, count } */
+export const MOMENT_INVITED_EVENT = 'chillwaa:moment-invited';
+
+/** Keeps a post's ชวนไป count in step after an invitation sent from it */
+export function useMomentInvited(onCount: (id: string, count: number) => void) {
+  const ref = useRef(onCount);
+  useEffect(() => {
+    ref.current = onCount;
+  });
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; count: number }>).detail;
+      if (d?.id) ref.current(d.id, d.count);
+    };
+    window.addEventListener(MOMENT_INVITED_EVENT, on);
+    return () => window.removeEventListener(MOMENT_INVITED_EVENT, on);
+  }, []);
 }
 
 type SendResult = { ok: boolean; message?: string; invited?: number; link?: string; dateLabel?: string };
@@ -25,6 +46,10 @@ export async function sendInvites(target: InviteTarget, to: string[] = [], day?:
   try {
     const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to, ...(day ? { day } : {}) }) });
     const json = await res.json().catch(() => null);
+    // From a post, the post's ชวนไป count changes: whichever screen shows that post picks it up (BE-384)
+    if (target.type === 'moment' && typeof json?.momentInvites === 'number') {
+      window.dispatchEvent(new CustomEvent(MOMENT_INVITED_EVENT, { detail: { id: target.id, count: json.momentInvites } }));
+    }
     return { ok: res.ok && json?.success !== false, message: json?.message, invited: json?.invited, link: json?.share || json?.link, dateLabel: json?.dateLabel };
   } catch {
     return { ok: false, message: 'เชื่อมต่อไม่ได้ ลองอีกครั้งนะ' };

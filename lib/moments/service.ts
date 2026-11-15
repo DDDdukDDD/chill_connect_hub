@@ -128,6 +128,7 @@ export function toFeedItem(moment: Moment, viewer: Member | null, people: Map<st
     likesCount: moment.likesOff ? 0 : (moment.feedFacts?.likes ?? moment.likedBy.length) + moment.sampleLikes,
     commentsCount: moment.commentsOff ? 0 : (moment.feedFacts?.comments ?? comments.length),
     sharesCount: moment.sharesOff ? 0 : moment.sharesCount ?? 0,
+    invitesCount: moment.sharesOff ? 0 : moment.invitesCount ?? 0,
     commentsOff: Boolean(moment.commentsOff),
     likesOff: Boolean(moment.likesOff),
     sharesOff: Boolean(moment.sharesOff),
@@ -536,6 +537,11 @@ export async function recordShare(member: Member, id: string): Promise<Moment> {
   if (moment.sharesOff) throw new MomentError('เจ้าของโพสต์ปิดการแชร์ไว้');
   await momentRepository.addShare(id, member.id);
   return requireVisible(id);
+}
+
+/** Counts a member's "ชวนไป" from a moment (each member once, BE-384), called when the invitation is sent */
+export async function recordInvite(member: Member, id: string): Promise<void> {
+  await momentRepository.addInvite(id, member.id);
 }
 
 export async function setSaved(member: Member, id: string, saved: boolean): Promise<Moment> {

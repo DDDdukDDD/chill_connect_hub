@@ -27,8 +27,7 @@ import { fairPlace } from '@/lib/placeName';
 import { formatEventDateRange, isEventEnded, parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { resolveEventGallery } from '@/lib/eventImageResolver';
 import { parseEventPrice } from '@/lib/priceUtils';
-import { renderDescriptionContent, stripHtmlToPlainText } from '@/components/RichTextEditor';
-import type { SpotBuddyPostItem } from '@/components/SpotBuddyGatheringModal';
+import { renderDescriptionContent } from '@/components/RichTextEditor';
 import type { ExpoMeetupPassData } from '@/components/ExpoMeetupPassModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { RelatedFairTiles } from '@/components/detail/RelatedTiles';
@@ -38,7 +37,8 @@ import { Toast } from '@/components/Toast';
 import dynamic from 'next/dynamic';
 
 // Dialogs most visits never open: their code loads on the first open, not with the page (2026-10-28)
-const SpotBuddyGatheringModal = dynamic(() => import('@/components/SpotBuddyGatheringModal').then((m) => m.SpotBuddyGatheringModal), { ssr: false });
+const FairGroupDialog = dynamic(() => import('@/components/detail/FairGroupDialog').then((m) => m.FairGroupDialog), { ssr: false });
+import type { FairGroupInput } from '@/components/detail/FairGroupDialog';
 const ExpoMeetupPassModal = dynamic(() => import('@/components/ExpoMeetupPassModal').then((m) => m.ExpoMeetupPassModal), { ssr: false });
 const GroupChatModal = dynamic(() => import('@/components/GroupChatModal').then((m) => m.GroupChatModal), { ssr: false });
 
@@ -48,6 +48,8 @@ export interface FairSubActivityItem {
   creatorName: string;
   creatorAvatar: string;
   meetupPoint: string;
+  /** "ส. 22 พ.ย." (BE-386); none on groups made before */
+  dateLabel?: string;
   time: string;
   currentMembers: number;
   maxMembers: number;
@@ -81,7 +83,9 @@ import {
   Plus,
   Compass,
   CalendarPlus,
-  Ticket
+  Ticket,
+  Footprints,
+  CalendarDays
 } from 'lucide-react';
 import { avatarImage } from '@/lib/optimizedImage';
 
@@ -95,6 +99,23 @@ const cleanText = (str?: string): string => {
 };
 
 /** The page itself: `initialEvent` comes from the server page, so the content is in the HTML search engines read. */
+const TICKET_ASKED_KEY = 'chillwaa:ticket-asked';
+function ticketAsked(id: string): boolean {
+  try {
+    return (JSON.parse(localStorage.getItem(TICKET_ASKED_KEY) || '[]') as string[]).includes(id);
+  } catch {
+    return false;
+  }
+}
+function markTicketAsked(id: string) {
+  try {
+    const list = (JSON.parse(localStorage.getItem(TICKET_ASKED_KEY) || '[]') as string[]).filter((x) => x !== id);
+    localStorage.setItem(TICKET_ASKED_KEY, JSON.stringify([...list, id].slice(-200)));
+  } catch {
+    // Storage blocked: it may ask again next time, nothing else
+  }
+}
+
 export default function FairDetailPage({
   initialEvent = null,
   initialRelated = null,
@@ -133,7 +154,9 @@ export default function FairDetailPage({
   // A round trip, not a way out (owner 2026-11-14): "ซื้อบัตร" saves the งาน first, and coming back to this tab asks
   // "ได้บัตรแล้วไหม?" so the trip ends with inviting a friend here
   const awayForTicket = useRef<{ autoSaved: boolean } | null>(null);
-  const [ticketCheck, setTicketCheck] = useState<{ autoSaved: boolean } | null>(null);
+  // "why": "ยังเลย" was tapped, and the bar asks why in place (owner 2026-11-15)
+  const [ticketCheck, setTicketCheck] = useState<{ autoSaved: boolean; why?: boolean } | null>(null);
+  const ticketCheckRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== 'visible' || !awayForTicket.current) return;
@@ -143,6 +166,11 @@ export default function FairDetailPage({
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
+  // Coming back scrolled away from the buttons, the question still comes into view
+  const isAskingTicket = Boolean(ticketCheck);
+  useEffect(() => {
+    if (isAskingTicket) ticketCheckRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [isAskingTicket]);
 
   // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -169,10 +197,10 @@ export default function FairDetailPage({
   const [selectedPassData, setSelectedPassData] = useState<ExpoMeetupPassData | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
 
-  type ServerGroup = { id: string; title: string; meetupPoint: string; time: string; note: string; maxMembers: number; currentMembers: number; creator: { displayName: string; avatarUrl: string }; isJoined: boolean };
+  type ServerGroup = { id: string; title: string; meetupPoint: string; dateLabel?: string; time: string; note: string; maxMembers: number; currentMembers: number; creator: { displayName: string; avatarUrl: string }; isJoined: boolean };
   const applyGroups = (groups: ServerGroup[]) => {
     setFairSubActivities(
-      groups.map((g) => ({ id: g.id, title: g.title, creatorName: g.creator.displayName, creatorAvatar: g.creator.avatarUrl, meetupPoint: g.meetupPoint, time: g.time, currentMembers: g.currentMembers, maxMembers: g.maxMembers, note: g.note }))
+      groups.map((g) => ({ id: g.id, title: g.title, creatorName: g.creator.displayName, creatorAvatar: g.creator.avatarUrl, meetupPoint: g.meetupPoint, dateLabel: g.dateLabel, time: g.time, currentMembers: g.currentMembers, maxMembers: g.maxMembers, note: g.note }))
     );
     setJoinedSubIds(groups.filter((g) => g.isJoined).map((g) => g.id));
   };
@@ -338,7 +366,7 @@ export default function FairDetailPage({
         id: sub.id,
         fairTitle: cleanText(eventData?.title) || 'อีเวนต์',
         fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
-        fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+        fairDate: sub.dateLabel || cleanText(eventData?.date) || 'วันจัดแสดง',
         groupTitle: sub.title,
         meetupPoint: sub.meetupPoint,
         time: sub.time,
@@ -368,7 +396,7 @@ export default function FairDetailPage({
         id: sub.id,
         fairTitle: cleanText(eventData?.title) || 'อีเวนต์',
         fairLocation: cleanText(eventData?.location) || 'ศูนย์นิทรรศการ',
-        fairDate: cleanText(eventData?.date) || 'วันจัดแสดง',
+        fairDate: sub.dateLabel || cleanText(eventData?.date) || 'วันจัดแสดง',
         groupTitle: sub.title,
         meetupPoint: sub.meetupPoint,
         time: sub.time,
@@ -395,16 +423,10 @@ export default function FairDetailPage({
     showToast(`ยกเลิกการเข้าร่วมกลุ่ม${groupWord}แล้ว`);
   };
 
-  const handleBuddyModalSuccess = async (newTrip: SpotBuddyPostItem) => {
-    const created = await groupRequest('POST', {
-      action: 'create',
-      title: newTrip.title,
-      meetupPoint: newTrip.meetingPoint || 'จุดนัดพบในงาน',
-      time: newTrip.time,
-      note: stripHtmlToPlainText(newTrip.description),
-      maxMembers: newTrip.maxParticipants || 4,
-    });
-    showToast(created.ok ? `เปิดกลุ่มนัด${groupWord} "${newTrip.title}" แล้ว` : created.message);
+  const createGroup = async (input: FairGroupInput) => {
+    const created = await groupRequest('POST', { action: 'create', ...input });
+    if (created.ok) showToast(`เปิดกลุ่ม "${input.title}" แล้ว`);
+    return { ok: created.ok, message: created.message };
   };
 
   // Keyboard navigation for lightbox
@@ -567,12 +589,33 @@ export default function FairDetailPage({
   const onTicketClick = () => {
     if (!isLoggedIn) return;
     const autoSaved = !isFav;
-    awayForTicket.current = { autoSaved };
+    // Asked once per งาน (owner 2026-11-15): answered or closed, it does not ask again; "รอตัดสินใจอีกที" asks next trip
+    if (!ticketAsked(eventData.id)) awayForTicket.current = { autoSaved };
     if (autoSaved) void activityActions.setSaved('event', eventData.id, true);
   };
-  const answerTicketCheck = (gotIt: boolean) => {
+  const closeTicketCheck = () => {
     setTicketCheck(null);
-    if (!gotIt) return showToast(isRun ? 'ไว้กลับมาสมัครได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว' : 'ไว้กลับมาซื้อได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว');
+    markTicketAsked(eventData.id);
+  };
+  // Why not yet: a link that does not open, or sign-up closed / sold out, goes to staff as "ข้อมูลไม่ถูกต้อง" (the same
+  // queue as แจ้งข้อมูลผิด), so the next person is not sent to a dead end
+  const answerTicketWhy = (why: 'broken' | 'closed' | 'later' | 'other') => {
+    setTicketCheck(null);
+    if (why === 'later') return showToast(isRun ? 'ไว้กลับมาสมัครได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว' : 'ไว้กลับมาซื้อได้ทุกเมื่อ งานนี้อยู่ในมายฮับแล้ว');
+    markTicketAsked(eventData.id);
+    if (why === 'other') return showToast('ไม่เป็นไรนะ งานนี้อยู่ในมายฮับแล้ว กลับมาดูได้ทุกเมื่อ');
+    const details = why === 'broken' ? `เข้าเว็บ${isRun ? 'สมัคร' : 'ซื้อบัตร'}ไม่ได้` : isRun ? 'ปิดรับสมัครแล้ว' : 'บัตรหมดแล้ว';
+    void fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetType: 'fair', targetId: eventData.id, targetTitle: eventData.title, reason: 'wrong_info', details: `[ตอบหลังกดลิงก์${isRun ? 'สมัคร' : 'ซื้อบัตร'}] ${details}` }),
+    }).catch(() => null);
+    showToast(why === 'broken' ? 'ขอบคุณที่บอกนะ ทีมงานจะเช็กลิงก์ให้' : 'ขอบคุณที่บอกนะ เดี๋ยวทีมงานอัปเดตให้คนอื่นรู้ด้วย');
+  };
+  const answerTicketCheck = (gotIt: boolean) => {
+    if (!gotIt) return setTicketCheck((now) => (now ? { ...now, why: true } : now));
+    setTicketCheck(null);
+    markTicketAsked(eventData.id);
     if (!favorites.includes(eventData.id) && !joinedEventIds.includes(eventData.id)) void activityActions.setSaved('event', eventData.id, true);
     setNudgeText(isRun ? 'สมัครแล้ว ชวนเพื่อนไปวิ่งด้วยไหม?' : 'ได้บัตรแล้ว ชวนเพื่อนไปด้วยไหม?');
     setJustSaved(true);
@@ -645,22 +688,45 @@ export default function FairDetailPage({
         />
 
         {ticketCheck && !isEnded && (
-          <div role="status" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-blue-50 pl-4 pr-2 py-2.5">
-            <p className="flex-1 min-w-[12rem] text-sm font-semibold text-slate-900">
-              {ticketCheck.autoSaved && <span className="text-slate-600">บันทึกงานนี้ไว้ในมายฮับให้แล้ว · </span>}
-              {isRun ? 'สมัครเรียบร้อยไหม?' : 'ได้บัตรแล้วไหม?'}
-            </p>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => answerTicketCheck(true)} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white cursor-pointer whitespace-nowrap">
-                {isRun ? 'สมัครแล้ว ไปแน่' : 'ได้แล้ว ไปแน่'}
-              </button>
-              <button type="button" onClick={() => answerTicketCheck(false)} className="h-9 px-3 rounded-full text-sm font-bold text-slate-700 hover:bg-white cursor-pointer whitespace-nowrap">
-                ยังเลย
-              </button>
-              <button type="button" onClick={() => setTicketCheck(null)} aria-label="ปิด" className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white cursor-pointer">
-                <X className="w-4 h-4" aria-hidden="true" />
-              </button>
-            </div>
+          // "We noticed" (owner 2026-11-15): it rises in with a short glow, says we saw the trip to the sign-up page, and
+          // stays one quiet line; "ยังเลย" turns it into why, in place
+          <div ref={ticketCheckRef} role="status" className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 relative rounded-2xl bg-white border border-blue-100 shadow-sm pl-3 pr-12 py-2.5 scroll-mt-24 motion-safe:animate-notice-in">
+            <span className="w-10 h-10 shrink-0 rounded-full bg-blue-50 text-[#2563EB] flex items-center justify-center" aria-hidden="true">
+              {isRun ? <Footprints className="w-5 h-5" /> : <Ticket className="w-5 h-5" />}
+            </span>
+            {ticketCheck.why ? (
+              <>
+                <p className="flex-1 min-w-[10rem] text-sm font-semibold text-slate-900">{isRun ? 'ยังไม่ได้สมัคร ติดอะไรเหรอ?' : 'ยังไม่ได้บัตร ติดอะไรเหรอ?'}</p>
+                <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="เหตุผล">
+                  {([['broken', 'เข้าเว็บไม่ได้'], ['closed', isRun ? 'ปิดรับสมัครแล้ว' : 'บัตรหมดแล้ว'], ['later', 'รอตัดสินใจอีกที'], ['other', 'อื่นๆ']] as const).map(([id, label]) => (
+                    <button key={id} type="button" onClick={() => answerTicketWhy(id)} className="h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer whitespace-nowrap">
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 min-w-[10rem]">
+                  <p className="text-sm font-semibold text-slate-900">{isRun ? 'สมัครเรียบร้อยไหม?' : 'ได้บัตรแล้วไหม?'}</p>
+                  <p className="text-[13px] text-slate-600">
+                    {isRun ? 'เห็นว่าเพิ่งไปหน้าสมัครมา' : 'เห็นว่าเพิ่งไปหน้าซื้อบัตรมา'}
+                    {ticketCheck.autoSaved && ' · บันทึกงานนี้ไว้ในมายฮับให้แล้ว'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button type="button" onClick={() => answerTicketCheck(true)} className="h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white cursor-pointer whitespace-nowrap">
+                    {isRun ? 'สมัครเรียบร้อย' : 'ได้บัตรแล้ว'}
+                  </button>
+                  <button type="button" onClick={() => answerTicketCheck(false)} className="h-9 px-3 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-100 cursor-pointer whitespace-nowrap">
+                    ยังเลย
+                  </button>
+                </div>
+              </>
+            )}
+            <button type="button" onClick={closeTicketCheck} aria-label="ปิด" className="absolute right-2 top-2 sm:top-1/2 sm:-translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer">
+              <X className="w-4 h-4" aria-hidden="true" />
+            </button>
           </div>
         )}
 
@@ -796,7 +862,8 @@ export default function FairDetailPage({
                         setIsFairBuddyModalOpen(true);
                       }
                     }}
-                    className={heroButton.quiet}
+                    // A small chip beside the heading (owner 2026-11-15: the full hero button was too big here)
+                    className="self-start sm:self-auto shrink-0 h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 whitespace-nowrap cursor-pointer transition-colors"
                   >
                     <Plus className="w-4 h-4" aria-hidden="true" />
                     ตั้งกลุ่ม{groupWord}
@@ -840,6 +907,10 @@ export default function FairDetailPage({
                         <h4 className="font-bold text-sm text-slate-900 leading-snug">
                           {sub.title}
                         </h4>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 tabular-nums">
+                          <CalendarDays className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+                          {sub.dateLabel ? `${sub.dateLabel} · ${sub.time}` : sub.time}
+                        </p>
 
                         <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
                           {sub.note}
@@ -855,7 +926,7 @@ export default function FairDetailPage({
                           />
                           <div className="min-w-0">
                             <span className="text-xs font-bold text-slate-800 block truncate">{sub.creatorName}</span>
-                            <span className="text-[11px] text-slate-500 block">นัด {sub.time}</span>
+                            <span className="text-[11px] text-slate-500 block">เปิดกลุ่ม</span>
                           </div>
                         </div>
 
@@ -1041,17 +1112,9 @@ export default function FairDetailPage({
         <>
           {/* A group brings people out to meet, so it asks for the same check as a ตี้, before any typing goes to waste; the form opens once it passes */}
           {isFairBuddyModalOpen && organizerGate && <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={() => setIsFairBuddyModalOpen(false)} />}
-          {isFairBuddyModalOpen && !organizerGate && <SpotBuddyGatheringModal
-            isOpen={isFairBuddyModalOpen}
-            onClose={() => setIsFairBuddyModalOpen(false)}
-            spotTitle={cleanText(eventData.title)}
-            spotLocation={eventData.location}
-            spotImage={eventData.image}
-            spotId={eventData.id}
-            spotProvince={eventData.province}
-            mode="fair"
-            onSuccess={handleBuddyModalSuccess}
-          />}
+          {isFairBuddyModalOpen && !organizerGate && (
+            <FairGroupDialog event={{ title: cleanText(eventData.title), date: eventData.date, endDate: eventData.endDate }} isRun={isRun} onClose={() => setIsFairBuddyModalOpen(false)} onCreate={createGroup} />
+          )}
           <ReportSafetyModal
             isOpen={isReportModalOpen}
             onClose={() => setIsReportModalOpen(false)}

@@ -230,22 +230,22 @@ export const VisitPanel: React.FC<VisitPanelProps> = ({ targetType, targetId, ti
         </section>
       )}
       {momentsFolded ? (
-        <button
-          type="button"
-          data-visit-panel
-          onClick={() => setMomentsOpen(true)}
-          aria-expanded={false}
-          className="w-full flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 hover:bg-slate-50 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
-        >
-          <span className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0" aria-hidden="true">
-            <Camera className="w-5 h-5" />
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-bold text-slate-900">โมเมนต์จากเพื่อนๆ</span>
-            <span className="block text-xs font-medium text-slate-600 truncate">ยังไม่มีโมเมนต์ · มาแชร์เป็นคนแรกกัน</span>
-          </span>
-          <ChevronDown className="w-5 h-5 text-slate-500 shrink-0" aria-hidden="true" />
-        </button>
+        // No moments yet (owner 2026-11-15, every detail page): no empty box, one quiet line that opens the posting form;
+        // "ไปมาแล้ว" opens the full panel, where marking the visit lives
+        <p data-visit-panel className="flex flex-wrap items-center gap-x-1 text-sm text-slate-600">
+          <Camera className="w-4 h-4 mr-1 text-slate-500 shrink-0" aria-hidden="true" />
+          <button type="button" onClick={() => (isLoggedIn ? setIsComposerOpen(true) : onRequireLogin())} className="min-h-11 font-bold text-slate-800 hover:text-slate-950 hover:underline cursor-pointer">
+            มาแชร์โมเมนต์เป็นคนแรก
+          </button>
+          {canMark && (
+            <>
+              <span aria-hidden="true">·</span>
+              <button type="button" onClick={() => setMomentsOpen(true)} className="min-h-11 font-medium hover:text-slate-900 hover:underline cursor-pointer">
+                {targetType === 'fair' ? 'ไปงานนี้มาแล้ว' : 'มาที่นี่แล้ว'}
+              </button>
+            </>
+          )}
+        </p>
       ) : (
       <div data-visit-panel className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
         {/* Who has been */}
