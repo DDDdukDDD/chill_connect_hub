@@ -128,7 +128,6 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
         spotId={spot.id}
         spotProvince={spot.province}
         spotDistrict={spot.district}
-        mode="spot"
         onSuccess={(trip) => {
           onShowToast(`ส่งทริป "${trip.title}" แล้ว จะขึ้นที่หน้านี้เมื่อพร้อมเผยแพร่`);
           load();

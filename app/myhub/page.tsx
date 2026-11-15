@@ -1001,9 +1001,10 @@ function MyHubContent() {
       <section aria-label="กำลังทำอยู่" className={hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-900">กำลังทำอยู่</h2>
-          {doingChallenges.length > 2 && (
+          {/* The way into all of the member's challenges, whenever there is one (was only past two) */}
+          {doingChallenges.length > 0 && (
             <button type="button" onClick={openMyChallenges} className="py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap tabular-nums">
-              ดูทั้งหมด {doingChallenges.length}
+              {doingChallenges.length > 2 ? `ดูทั้งหมด ${doingChallenges.length}` : 'ดูทั้งหมด'}
             </button>
           )}
         </div>
@@ -1763,7 +1764,10 @@ function MyHubContent() {
                         {/* The day, a small photo to know the event by, then what it is */}
                         <div className="w-10 shrink-0 text-center">
                           <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
-                          <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_DAY_SHORT[when.getDay()] : ''}</span>
+                          {/* In the month view a day of another month (a challenge's last day) says its month, not its weekday */}
+                          <span className="block text-[11px] font-semibold text-slate-500">
+                            {when ? (scheduleView === 'month' && (when.getMonth() !== calMonth || when.getFullYear() !== calYear) ? THAI_MONTH_SHORT[when.getMonth()] : THAI_DAY_SHORT[when.getDay()]) : ''}
+                          </span>
                         </div>
                         <Link href={detailHref} className="shrink-0" title={`ดูรายละเอียด ${ev.title}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2113,14 +2117,11 @@ function MyHubContent() {
                     </Link>
                     <div className="min-w-0">
                       <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
-                      {/* The XP and the way to the challenges, one line under the name like the home greeting (was a box of its own) */}
-                      <button
-                        type="button"
-                        onClick={openMyChallenges}
-                        className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
-                      >
-                        {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}ชาเลนจ์ของฉัน ›
-                      </button>
+                      {/* The XP and what it buys, one line under the name (owner 2026-11-15: it said "ชาเลนจ์ของฉัน" and opened
+                          the same view as "กำลังทำอยู่ › ดูทั้งหมด"; each link now has one job) */}
+                      <Link href="/rewards" className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline tabular-nums">
+                        {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}แลกของรางวัล ›
+                      </Link>
                       <span className="text-slate-300 mx-1.5" aria-hidden="true">·</span>
                       <Link href="/profile?id=me" className="inline-flex items-center min-h-11 text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline">
                         โปรไฟล์ ›
@@ -2658,7 +2659,6 @@ function MyHubContent() {
         spotId={selectedSpotForBuddy?.id}
         spotProvince={selectedSpotForBuddy?.province}
         spotDistrict={selectedSpotForBuddy?.district}
-        mode="spot"
         onSuccess={(newTrip: SpotBuddyPostItem) => {
           const newEventId = newTrip.id;
           const updatedSubs = {
