@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-389 · Avatar cropper, XP line, small fixes, fair mode removed (owner 2026-11-15)
+- **What changed:** Picking a profile photo opens "ปรับรูปโปรไฟล์" (`app/profile/AvatarCropDialog.tsx`): circle frame, drag, pinch / scroll / slider zoom up to 4x, keyboard, saves a 640 px square JPEG; "ปรับตำแหน่ง" reopens it before saving. My Hub: the line under the name is "80 XP · แลกของรางวัล ›" (to /rewards); all challenges open from "กำลังทำอยู่ › ดูทั้งหมด", shown from one challenge up; in the month view a day of another month says its month. `lib/eventImageResolver.ts` (shared): the `move` stand-in cover is a run, not the surf photo. `SpotBuddyGatheringModal` lost its unused `mode: 'fair'` (fair groups use FairGroupDialog since BE-386); the `mode` prop is gone.
+- **Left for the next session (owner OK'd 2026-11-15):** photo check of /spots "แถวนี้มีอะไรต่อ" after BE-385's tab and button changes; read TR-002 (SSR hydration) and propose a fix; 9.5 walks of /profile and /rewards; then "หลายสิทธิ์ต่อแคมเปญ" and "ของรางวัล + วันจับรางวัลในแอดมิน" (LAUNCH_CHECKLIST, agreed 2026-11-08). The owner starts journey content on 2026-11-16.
+
 ### BE-388 · Gemini's admin wizard merged and reviewed (owner 2026-11-15)
 - **What changed:** Merged `origin/tester` `bfdbe51` (done by Gemini at the owner's request): /admin "ตั้งตี้ / เพิ่มอีเวนต์ / ชาเลนจ์ / สถานที่" open `CreateEventModal` with `adminMode` (member gates skipped in the UI only; the admin APIs still check the admin session and keep their field whitelist), PlacePicker "แนะนำช่วงนี้", and `db/seed-atmbkk-2026.mjs` with its pictures. Review fixes: PlacePicker suggests the member's own places (`/api/spots?home=1`) instead of the first four in the catalog; the four ATMBKK pictures shrunk from 4.4 MB to 0.94 MB.
 - **What to do about it:** the ATMBKK seed has not run on live; run it after this reaches main (see the script's header). AGENTS.md now allows Gemini code changes only when the owner asks.
