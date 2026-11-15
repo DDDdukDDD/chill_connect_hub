@@ -14,7 +14,7 @@ export async function GET(request: Request, context: Context) {
 }
 
 /**
- * { action: 'create', title, meetupPoint, time, note?, maxMembers? }
+ * { action: 'create', title, meetupPoint, date?, time, note?, maxMembers? }   (date: one of the fair's days, BE-386)
  * { action: 'join' | 'leave', groupId }   (leaving one's own group closes it)
  * Creating or joining a group also puts the fair in the member's plan.
  */

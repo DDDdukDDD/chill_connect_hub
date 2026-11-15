@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { isEventEnded } from '../dateUtils';
+import { bangkokYmd, fairGroupDayLabel, fairGroupDays } from '../fairGroupDays';
 import { db } from '../db';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
@@ -15,6 +16,8 @@ export interface FairGroup {
   fairId: string;
   title: string;
   meetupPoint: string;
+  /** "YYYY-MM-DD" in Bangkok (BE-386); none on groups made before */
+  date?: string;
   time: string;
   note: string;
   maxMembers: number;
@@ -31,7 +34,11 @@ export const fairGroupById = (groupId: string) => fairGroupStore.find(groupId);
 export async function fairGroupsOf(fairId: string, viewer: Member | null) {
   const blocked = new Set(viewer?.blockedIds ?? []);
   const result = [];
-  const groups = (await fairGroupStore.ofFair(fairId)).filter((g) => !blocked.has(g.creatorId));
+  const today = bangkokYmd();
+  // A group whose day has passed is gone for everyone but its people; the soonest day first
+  const groups = (await fairGroupStore.ofFair(fairId))
+    .filter((g) => !blocked.has(g.creatorId) && (!g.date || g.date >= today || Boolean(viewer && g.memberIds.includes(viewer.id))))
+    .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'));
   const creators = await memberRepository.findByIds(groups.map((g) => g.creatorId));
   for (const group of groups) {
     const creator = creators.get(group.creatorId);
@@ -40,6 +47,7 @@ export async function fairGroupsOf(fairId: string, viewer: Member | null) {
       id: group.id,
       title: group.title,
       meetupPoint: group.meetupPoint,
+      ...(group.date ? { date: group.date, dateLabel: fairGroupDayLabel(group.date) } : {}),
       time: group.time,
       note: group.note,
       maxMembers: group.maxMembers,
@@ -61,7 +69,7 @@ async function requireOpenFair(fairId: string) {
 
 export async function createFairGroup(member: Member, fairId: string, input: Record<string, unknown>): Promise<FairGroup> {
   guardOrganizer(member);
-  await requireOpenFair(fairId);
+  const fair = await requireOpenFair(fairId);
   const title = clean(input.title, 80);
   const meetupPoint = clean(input.meetupPoint, 120);
   const time = clean(input.time, 40);
@@ -69,12 +77,17 @@ export async function createFairGroup(member: Member, fairId: string, input: Rec
   if (title.length < 5) throw new MemberAuthError('ตั้งชื่อกลุ่มอย่างน้อย 5 ตัวอักษร');
   if (!meetupPoint) throw new MemberAuthError('บอกจุดนัดพบในงานด้วยนะ');
   if (!time) throw new MemberAuthError('บอกเวลานัดด้วยนะ');
+  // The day: one of the fair's days still ahead; a one-day fair takes its day without asking
+  const days = fairGroupDays(fair);
+  const asked = typeof input.date === 'string' ? input.date : '';
+  const date = days.includes(asked) ? asked : days.length === 1 ? days[0] : '';
+  if (days.length > 0 && !date) throw new MemberAuthError('เลือกวันที่ไปงานด้วยนะ');
   const maxMembers = Math.min(15, Math.max(2, Math.round(Number(input.maxMembers)) || 4));
   await guardMemberText(member, `${title} ${meetupPoint} ${note}`, 'กลุ่มในอีเวนต์');
   if ((await fairGroupStore.ofFair(fairId)).filter((g) => g.creatorId === member.id).length >= MAX_GROUPS_PER_MEMBER_PER_FAIR) {
     throw new MemberAuthError(`เปิดได้ ${MAX_GROUPS_PER_MEMBER_PER_FAIR} กลุ่มต่องาน ลบกลุ่มเก่าก่อนนะ`, 429);
   }
-  const group: FairGroup = { id: `grp_${randomUUID()}`, fairId, title, meetupPoint, time, note, maxMembers, creatorId: member.id, memberIds: [member.id], createdAt: new Date().toISOString() };
+  const group: FairGroup = { id: `grp_${randomUUID()}`, fairId, title, meetupPoint, ...(date ? { date } : {}), time, note, maxMembers, creatorId: member.id, memberIds: [member.id], createdAt: new Date().toISOString() };
   await fairGroupStore.add(group);
   return group;
 }
@@ -104,7 +117,7 @@ export async function myFairGroups(memberId: string) {
   const result = [];
   for (const group of await fairGroupStore.ofMember(memberId)) {
     const fair = await db.findEventById(group.fairId);
-    result.push({ id: group.id, fairId: group.fairId, fairTitle: fair?.title ?? '', title: group.title, time: group.time, meetupPoint: group.meetupPoint, isMine: group.creatorId === memberId });
+    result.push({ id: group.id, fairId: group.fairId, fairTitle: fair?.title ?? '', title: group.title, ...(group.date ? { date: group.date, dateLabel: fairGroupDayLabel(group.date) } : {}), time: group.time, meetupPoint: group.meetupPoint, isMine: group.creatorId === memberId });
   }
   return result;
 }

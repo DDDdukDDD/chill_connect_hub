@@ -831,6 +831,7 @@ function pgFairGroups(): FairGroupStore {
     fairId: r.fair as string,
     title: r.title as string,
     meetupPoint: r.meetup_point as string,
+    ...(r.meet_date ? { date: r.meet_date as string } : {}),
     time: r.meet_time as string,
     note: r.note as string,
     maxMembers: r.max_members as number,
@@ -839,7 +840,7 @@ function pgFairGroups(): FairGroupStore {
     createdAt: iso(r.created_at),
   });
   const select = (db: Sql) => db`
-    select g.legacy_id, e.slug as fair, g.title, g.meetup_point, g.meet_time, g.note, g.max_members, c.legacy_id as creator, g.created_at,
+    select g.legacy_id, e.slug as fair, g.title, g.meetup_point, to_jsonb(g)->>'meet_date' as meet_date, g.meet_time, g.note, g.max_members, c.legacy_id as creator, g.created_at,
       array(select m.legacy_id from app.fair_group_members gm join app.members m on m.id = gm.member_id where gm.group_id = g.id order by gm.joined_at) as member_ids
     from app.fair_groups g join app.events e on e.id = g.event_id join app.members c on c.id = g.creator_id`;
   return {
@@ -857,13 +858,26 @@ function pgFairGroups(): FairGroupStore {
       return (await db`${select(db)} where g.id in (select gm.group_id from app.fair_group_members gm where gm.member_id = ${memberRow(db, memberId)}) order by g.created_at desc`).map(toGroup);
     },
     async add(group) {
-      await sql().begin(async (tx) => {
-        const [row] = await tx`
-          insert into app.fair_groups (legacy_id, event_id, creator_id, title, meetup_point, meet_time, note, max_members, members_count)
-          values (${group.id}, ${eventRow(tx, group.fairId)}, ${memberRow(tx, group.creatorId)}, ${group.title}, ${group.meetupPoint}, ${group.time}, ${group.note}, ${group.maxMembers}, 1)
-          returning id`;
-        await tx`insert into app.fair_group_members (group_id, member_id) values (${row.id}, ${memberRow(tx, group.creatorId)})`;
-      });
+      const write = (withDay: boolean) =>
+        sql().begin(async (tx) => {
+          const [row] = withDay
+            ? await tx`
+              insert into app.fair_groups (legacy_id, event_id, creator_id, title, meetup_point, meet_date, meet_time, note, max_members, members_count)
+              values (${group.id}, ${eventRow(tx, group.fairId)}, ${memberRow(tx, group.creatorId)}, ${group.title}, ${group.meetupPoint}, ${group.date ?? null}, ${group.time}, ${group.note}, ${group.maxMembers}, 1)
+              returning id`
+            : await tx`
+              insert into app.fair_groups (legacy_id, event_id, creator_id, title, meetup_point, meet_time, note, max_members, members_count)
+              values (${group.id}, ${eventRow(tx, group.fairId)}, ${memberRow(tx, group.creatorId)}, ${group.title}, ${group.meetupPoint}, ${group.time}, ${group.note}, ${group.maxMembers}, 1)
+              returning id`;
+          await tx`insert into app.fair_group_members (group_id, member_id) values (${row.id}, ${memberRow(tx, group.creatorId)})`;
+        });
+      try {
+        await write(true);
+      } catch (error) {
+        // 42703: migration 0057 (meet_date) not run yet; the group is kept without its day
+        if ((error as { code?: string }).code !== '42703') throw error;
+        await write(false);
+      }
     },
     async join(groupId, memberId) {
       return sql().begin(async (tx) => {
