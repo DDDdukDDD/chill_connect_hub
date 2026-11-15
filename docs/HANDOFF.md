@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-388 · Gemini's admin wizard merged and reviewed (owner 2026-11-15)
+- **What changed:** Merged `origin/tester` `bfdbe51` (done by Gemini at the owner's request): /admin "ตั้งตี้ / เพิ่มอีเวนต์ / ชาเลนจ์ / สถานที่" open `CreateEventModal` with `adminMode` (member gates skipped in the UI only; the admin APIs still check the admin session and keep their field whitelist), PlacePicker "แนะนำช่วงนี้", and `db/seed-atmbkk-2026.mjs` with its pictures. Review fixes: PlacePicker suggests the member's own places (`/api/spots?home=1`) instead of the first four in the catalog; the four ATMBKK pictures shrunk from 4.4 MB to 0.94 MB.
+- **What to do about it:** the ATMBKK seed has not run on live; run it after this reaches main (see the script's header). AGENTS.md now allows Gemini code changes only when the owner asks.
+
+### BE-387 · My Hub 9.5 pass (owner 2026-11-15)
+- **What changed:** The month view opens on this month, and a month now holds an event only when its days overlap it (it matched the month's name with no year and fell back to when the row was created, so December งาน showed under October); multi-day งาน use `endDate`. Under "ทั้งหมด" the month list leaves challenges out ("กำลังทำอยู่" lists them; their chip still shows them). The list / month switch sits at the end of the tab row (icons on a phone). The ticket is an icon in the row on a phone. "งานที่จัด" shows only to someone who has hosted. The photo and "โปรไฟล์ ›" lead to `/profile?id=me`. Open ตี้ suggestions show while nothing but challenges is coming up; each row is one link, and a broken picture falls back to the category's. No "0 XP" flash, no "ตี้ที่ไปมา 0", no "เหลือ 412 วัน".
+
 ### BE-386 · Groups inside an อีเวนต์: short form with a day (owner 2026-11-15)
 - **What changed:** "ตั้งกลุ่มเดินงาน / ไปวิ่ง" opens `components/detail/FairGroupDialog.tsx` instead of `SpotBuddyGatheringModal` (mode 'fair', which asked for a cover, a schedule and more, then kept none of it): day (chips, a list past 14 days, nothing to pick on a one-day งาน), time, meeting point, name, a line, size, the safety promise. Groups now keep their day (`app.fair_groups.meet_date`, migration 0057, read through to_jsonb so it runs before the migration; `lib/fairGroupDays.ts` shared by form and server). Cards show "พฤ. 3 ธ.ค. · 13:00 น."; the list goes soonest first and hides past days from others. The "ตั้งกลุ่ม" button is a small chip.
 - **What to do about it:** live needs migration 0057 (applied on dev). The 'fair' branch of `SpotBuddyGatheringModal` is now unused.
