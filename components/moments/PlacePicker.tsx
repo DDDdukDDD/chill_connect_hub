@@ -31,9 +31,28 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
   const [searching, setSearching] = useState(false);
   const [general, setGeneral] = useState<{ query: string; places: GeneralPlace[]; used: GeneralPlace[]; error?: string } | null>(null);
   const [nearby, setNearby] = useState<NearbyState>({ status: 'idle' });
+  const [featured, setFeatured] = useState<MomentLinkTarget[]>([]);
   // Where the member is, once they allowed it: the map search puts places near them first
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const q = query.trim();
+
+  // Popular spots & upcoming events so first-time users see choices right away without GPS or typing
+  useEffect(() => {
+    let active = true;
+    const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
+    Promise.all([get('/api/events?limit=3'), get('/api/spots?limit=4')]).then(([events, spots]) => {
+      if (!active) return;
+      const seen = new Set(mine.map((item) => `${item.type}:${item.id}`));
+      const combined: MomentLinkTarget[] = [
+        ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
+        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
+      ].filter((item) => !seen.has(`${item.type}:${item.id}`));
+      setFeatured(combined);
+    });
+    return () => {
+      active = false;
+    };
+  }, [mine]);
 
   const findNearby = useCallback(() => {
     if (!navigator.geolocation) return setNearby({ status: 'error' });
@@ -199,6 +218,12 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
               <div>
                 <p className={groupTitle}>ที่คุณเข้าร่วมหรือบันทึกไว้</p>
                 <ul className={`${listBox} max-h-56 overflow-y-auto`}>{mine.map(targetRow)}</ul>
+              </div>
+            )}
+            {featured.length > 0 && (
+              <div>
+                <p className={groupTitle}>แนะนำช่วงนี้</p>
+                <ul className={`${listBox} max-h-56 overflow-y-auto`}>{featured.map(targetRow)}</ul>
               </div>
             )}
             <div>

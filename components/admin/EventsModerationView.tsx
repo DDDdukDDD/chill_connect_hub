@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { AdminPageHeader, AdminStatusChip, adminButton } from './AdminUI';
 import { checkEventQuality } from '@/lib/contentQuality';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { EventEditorDrawer, eventStatus } from './EventEditorDrawer';
 import { useAdminSession } from './AdminAuthGate';
 import { handleAdminUnauthorized } from './adminAuthUtils';
@@ -511,9 +512,24 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
         </div>
       )}
 
-      {editing !== undefined && type !== 'all' && (
+      {editing === null && type !== 'all' && (
+        <CreateEventModal
+          isOpen
+          initialType={type === 'community' ? 'community' : 'fair'}
+          adminMode
+          onClose={() => setEditing(undefined)}
+          onAdminCreated={(message) => {
+            setEditing(undefined);
+            showToast(message);
+            refresh();
+          }}
+          onCreateSuccess={() => {}}
+        />
+      )}
+
+      {editing && type !== 'all' && (
         <EventEditorDrawer
-          key={editing?.id ?? 'new'}
+          key={editing.id}
           event={editing}
           type={type}
           onClose={() => setEditing(undefined)}
