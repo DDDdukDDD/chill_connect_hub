@@ -10,6 +10,7 @@ import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { compressImage } from '@/lib/media/compressor';
 import type { MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
 import { safeImageSrc } from '@/lib/optimizedImage';
+import { AvatarCropDialog } from './AvatarCropDialog';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions } from '@/lib/useMemberSession';
 
@@ -103,6 +104,9 @@ export function EditProfileDialog({
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries([...ME_FIELDS, ...ABOUT_FIELDS].map((f) => [f.key, details[f.key] ?? ''])));
   const [hidden, setHidden] = useState<string[]>(details.hidden);
   const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null);
+  // The picked photo before placing it in the circle; kept so "ปรับตำแหน่ง" can open it again
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [province, setProvince] = useState(preferences?.province ?? '');
   // สาย are the ตี้ categories, as asked in onboarding; places and events follow from them on save
   const [sai, setSai] = useState<string[]>(() => preferences?.interests.communityCategories ?? []);
@@ -117,8 +121,10 @@ export function EditProfileDialog({
     e.target.value = '';
     if (!file) return;
     try {
-      const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.85, targetMimeType: 'image/webp' });
-      setPhoto({ file: compressed, preview: URL.createObjectURL(compressed) });
+      // Big enough to zoom in on, small enough for the phone's memory; the cropper saves a 640 px square
+      const compressed = await compressImage(file, { maxWidth: 2000, maxHeight: 2000, quality: 0.92, targetMimeType: 'image/jpeg' });
+      setCropSrc(URL.createObjectURL(compressed));
+      setIsCropping(true);
     } catch {
       setError('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
     }
@@ -231,12 +237,29 @@ export function EditProfileDialog({
                     nameInitial(name, 'C')
                   )}
                 </span>
-                <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
-                  <Camera className="w-4 h-4" aria-hidden="true" />
-                  {member.avatarUrl || photo ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
-                  <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={pickPhoto} />
-                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap">
+                    <Camera className="w-4 h-4" aria-hidden="true" />
+                    {member.avatarUrl || photo ? 'เปลี่ยนรูป' : 'เพิ่มรูป'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={pickPhoto} />
+                  </label>
+                  {photo && cropSrc && (
+                    <button type="button" onClick={() => setIsCropping(true)} className="px-3 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 cursor-pointer whitespace-nowrap">
+                      ปรับตำแหน่ง
+                    </button>
+                  )}
+                </div>
               </div>
+              {isCropping && cropSrc && (
+                <AvatarCropDialog
+                  src={cropSrc}
+                  onCancel={() => setIsCropping(false)}
+                  onDone={(file, preview) => {
+                    setPhoto({ file, preview });
+                    setIsCropping(false);
+                  }}
+                />
+              )}
               <div className="space-y-1.5">
                 <label htmlFor="pf-name" className="block text-sm font-bold text-slate-800">ชื่อที่แสดง</label>
                 <input id="pf-name" data-autofocus type="text" autoComplete="nickname" maxLength={40} value={name} onChange={(e) => setName(tidyDisplayName(e.target.value))} className={inputClass} />
