@@ -34,7 +34,7 @@ import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { ShareSheet } from '@/components/moments/ShareSheet';
 import { LikersDialog } from '@/components/moments/LikersDialog';
 import { markVia } from '@/lib/social/via';
-import { InviteSheet } from '@/components/invites/InviteSheet';
+import { InviteSheet, useMomentInvited } from '@/components/invites/InviteSheet';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { Mention } from '@/lib/moments/mentions';
 import { HOME_FEED_LOAD_AHEAD_PX } from '@/lib/social/socialRules';
@@ -305,8 +305,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </button>
         )}
         {mayShare && momentHasPlace(moment) && (
-        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label="ชวนเพื่อนไปด้วยกัน" className="inline-flex items-center justify-center min-h-11 min-w-11 px-1 cursor-pointer hover:opacity-80">
+        <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label={moment.invitesCount > 0 ? `ชวนเพื่อนไปด้วยกัน (ชวนแล้ว ${moment.invitesCount.toLocaleString()} คน)` : 'ชวนเพื่อนไปด้วยกัน'} className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 px-1 cursor-pointer hover:opacity-80">
           <InviteIcon className="h-[17px] w-[39px] shrink-0" />
+          {moment.invitesCount > 0 && <span className="tabular-nums">{moment.invitesCount.toLocaleString()}</span>}
         </button>
         )}
         <button
@@ -740,6 +741,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     saveFeedReturn({ url: window.location.pathname, momentId, moments, page, hasMore, cursor, scrollY: window.scrollY, view: sort });
 
   const replace = (updated: FeedItem) => setMoments((list) => list.map((m) => (m.id === updated.id ? updated : m)));
+  useMomentInvited((id, count) => setMoments((list) => list.map((m) => (m.id === id ? { ...m, invitesCount: count } : m))));
 
   const handlers: PostHandlers = {
     onToggle: (id, action) => {

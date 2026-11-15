@@ -3,19 +3,22 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { LifestyleSpotItem } from '@/data/spotsData';
+import { InviteSheet } from '@/components/invites/InviteSheet';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { buildPlan, clockText, planCandidates, planMapsUrl, replacementFor, type PlanStop } from '@/lib/spotDayPlan';
-
-export interface SmartPlanForTee {
-  itinerary: Array<{ time: string; title: string }>;
-}
 
 interface SmartSpotPlanCardProps {
   currentSpot: LifestyleSpotItem;
   /** Places near this one to plan with, picked by the server page (lib/spotBrowse.ts nearbyPool) */
   catalog: LifestyleSpotItem[];
-  /** "ชวนเพื่อนตั้งตี้": the page opens the create dialog with this schedule (and asks guests to log in) */
-  onStartTee: (plan: SmartPlanForTee) => void;
+  isLoggedIn: boolean;
+  onRequireLogin: () => void;
+  onMessage: (message: string) => void;
+}
+
+/** Whether there is a plan to show here: something worth pairing within reach (the same pick the card makes) */
+export function hasSmartPlan(currentSpot: LifestyleSpotItem, catalog: LifestyleSpotItem[]): boolean {
+  return buildPlan(currentSpot, planCandidates(currentSpot, catalog), null, new Set()).length >= 2;
 }
 
 const cleanText = (str?: string): string =>
@@ -27,9 +30,11 @@ const travelText = (travel: NonNullable<PlanStop['travel']>) =>
 /**
  * Smart Plan, "ไปที่นี่แล้วไปต่อไหนดี" (owner 2026-10-25): the place first, then one or two places of another kind
  * near by in route order, with times from their opening hours. Each added stop can be swapped; the plan leads to
- * going with friends (a ตี้ with the schedule filled in) or to the route on Google Maps.
+ * going with friends as ไปกัน (owner 2026-11-15: friends, not a ตี้ for strangers; the route opens the plan's chat)
+ * or to the route on Google Maps. It sits in "แถวนี้มีอะไรต่อ" (NearbyNextSection), which carries the heading.
  */
-export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpot, catalog, onStartTee }) => {
+export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpot, catalog, isLoggedIn, onRequireLogin, onMessage }) => {
+  const [isInviting, setIsInviting] = useState(false);
   const candidates = useMemo(() => planCandidates(currentSpot, catalog), [currentSpot, catalog]);
   // null = the automatic pick; a swap pins the places shown
   const [chosen, setChosen] = useState<LifestyleSpotItem[] | null>(null);
@@ -53,26 +58,14 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpo
     setChosen(others.map((s, i) => (i === index ? next : s)));
   };
 
-  const startTee = () =>
-    onStartTee({
-      itinerary: stops.map((stop, index) => ({
-        time: clockText(stop.arrive),
-        title: `${index === 0 ? 'เจอกันที่' : 'ไปต่อ'} ${cleanText(stop.spot.title)}`.slice(0, 80),
-      })),
-    });
 
   const area = cleanText(currentSpot.district || currentSpot.province);
 
   return (
-    <section aria-labelledby="smart-plan-title" className="pt-6 border-t border-slate-200 space-y-4">
-      <div className="space-y-1">
-        <h2 id="smart-plan-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-          ไปที่นี่แล้ว ไปต่อไหนดี
-        </h2>
-        <p className="text-sm text-slate-600">
-          แผนเที่ยว{area ? `รอบ${area}` : ''} {stops.length} ที่ คนละแนว เรียงตามทาง
-        </p>
-      </div>
+    <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        แผนเที่ยว{area ? `รอบ${area}` : ''} {stops.length} ที่ คนละแนว เรียงตามทาง
+      </p>
 
       <ol className="space-y-0">
         {stops.map((stop, index) => {
@@ -128,10 +121,10 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpo
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={startTee}
-          className="flex-1 min-h-11 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer whitespace-nowrap"
+          onClick={() => (isLoggedIn ? setIsInviting(true) : onRequireLogin())}
+          className="flex-1 min-h-11 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap"
         >
-          ชวนเพื่อนตั้งตี้
+          ชวนเพื่อนไปกัน
         </button>
         <a
           href={planMapsUrl(stops)}
@@ -143,6 +136,17 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpo
         </a>
       </div>
       <p className="text-xs text-slate-500">เวลาเป็นค่าประมาณจากเวลาเปิดที่มีในระบบ เช็กอีกทีก่อนออกเดินทางนะ</p>
-    </section>
+      {isInviting && (
+        <InviteSheet
+          target={{ type: 'spot', id: currentSpot.id, route: stops.map((stop) => ({ id: stop.spot.id, time: clockText(stop.arrive) })) }}
+          place={cleanText(currentSpot.title)}
+          onClose={() => setIsInviting(false)}
+          onDone={(message) => {
+            setIsInviting(false);
+            onMessage(message);
+          }}
+        />
+      )}
+    </div>
   );
 };

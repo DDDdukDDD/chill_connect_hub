@@ -26,10 +26,9 @@ import { travelModes, visitorFacilities } from '@/lib/spotFacilities';
 import { resolveSpotGallery, resolveSpotImage } from '@/lib/spotImageResolver';
 import { renderDescriptionContent } from '@/components/RichTextEditor';
 import { ReportSafetyModal } from '@/components/ReportSafetyModal';
-import { SmartSpotPlanCard } from '@/components/SmartSpotPlanCard';
 import { SpotBuddyTrips } from '@/components/SpotBuddyTrips';
 import { VisitPanel } from '@/components/VisitPanel';
-import { NearbyDiningSection } from '@/components/NearbyDiningSection';
+import { NearbyNextSection } from '@/components/NearbyNextSection';
 import { DetailHero, DetailTable, heroButton } from '@/components/detail/DetailHero';
 import { VisitReviews } from '@/components/detail/VisitReviews';
 import { Toast } from '@/components/Toast';
@@ -98,7 +97,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   // The Smart Plan schedule carried into the create dialog; empty when opened from other buttons
-  const [teeItinerary, setTeeItinerary] = useState<Array<{ time: string; title: string }> | undefined>(undefined);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
@@ -277,7 +275,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
           setIsLoggedIn={handleSetIsLoggedIn}
           onOpenLogin={() => setIsAuthModalOpen(true)}
           onOpenLogout={() => setIsLogoutModalOpen(true)}
-          onOpenCreateEvent={() => { setTeeItinerary(undefined); setIsCreateEventModalOpen(true); }}
+          onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
         />
         <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
           <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto">
@@ -319,7 +317,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
         setIsLoggedIn={handleSetIsLoggedIn}
         onOpenLogin={() => setIsAuthModalOpen(true)}
         onOpenLogout={() => setIsLogoutModalOpen(true)}
-        onOpenCreateEvent={() => { setTeeItinerary(undefined); setIsCreateEventModalOpen(true); }}
+        onOpenCreateEvent={() => setIsCreateEventModalOpen(true)}
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 xl:pb-16">
@@ -442,24 +440,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
             />
 
 
-            {/* Been here, where next: beside the details on a computer; on phones and iPads right after the food
-                close by, which ends the main column (owner 2026-11-08) */}
-            <div className="max-lg:order-1">
-              <SmartSpotPlanCard
-                key={spot.id}
-                currentSpot={spot}
-                catalog={publishedSpots}
-                onStartTee={(plan) => {
-                  if (!isLoggedIn) {
-                    setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
-                    setIsRequireMembershipOpen(true);
-                    return;
-                  }
-                  setTeeItinerary(plan.itinerary);
-                  setIsCreateEventModalOpen(true);
-                }}
-              />
-            </div>
           </aside>
 
           <div className="lg:order-1 min-w-0 space-y-10">
@@ -532,8 +512,18 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
             {/* Ratings and tips from people who have been (the "จบ" phase of a place) */}
             <VisitReviews targetType="spot" targetId={spot.id} isLoggedIn={isLoggedIn} />
 
-            {/* Cafés and restaurants close by */}
-            <NearbyDiningSection spot={spot} pool={publishedSpots} />
+            {/* "แถวนี้มีอะไรต่อ": where next (the day plan, sent to friends as ไปกัน) and the cafés close by, as one
+                section with two tabs (owner 2026-11-15); it ends the main column */}
+            <NearbyNextSection
+              spot={spot}
+              pool={publishedSpots}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={() => {
+                setMembershipActionTitle('เพื่อชวนเพื่อนไปตามแผนนี้');
+                setIsRequireMembershipOpen(true);
+              }}
+              onMessage={showToast}
+            />
           </div>
         </div>
 
@@ -657,8 +647,6 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
         initialTitle={spot ? `ชวนไปเที่ยว ${spot.title}` : undefined}
         initialImage={spot?.image}
         initialPlace={initialPlace}
-        initialItinerary={teeItinerary}
-        initialType={teeItinerary ? 'community' : undefined}
         onCreateSuccess={(newEvent: EventItem) => {
           if (newEvent.approvalStatus === 'pending') {
             showToast(`ส่งข้อมูล "${newEvent.title}" เรียบร้อยแล้ว (รอตรวจสอบและอนุมัติโดยทีมงาน)`);

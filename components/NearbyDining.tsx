@@ -15,13 +15,13 @@ interface NearbyDiningSectionProps {
 /** "Near" for cafés around a place: a short ride (the Google search radius is 3 km too) */
 const NEAR_KM = 3;
 
-export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, pool: nearbyPool }) => {
+/** Cafés and restaurants a short ride away, nearest first; the list grows when the live search answers */
+export function useNearbyDining({ spot, pool: nearbyPool }: NearbyDiningSectionProps) {
   // Nearby cafes come from the live catalog (imported places carry real coordinates)
   const pool = useMemo(() => nearbyPool ?? [], [nearbyPool]);
   const localItems = useMemo(() => getNearbyDiningSync(spot, 6, pool), [spot, pool]);
   const [liveItems, setLiveItems] = useState<NearbyDiningItem[] | null>(null);
   const diningItems = liveItems ?? localItems;
-  const [isLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -42,21 +42,21 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, 
   }, [spot, pool]);
 
   const liveSearchUrl = `https://www.google.com/maps/search/${encodeURIComponent('คาเฟ่ ร้านอาหาร')}/@${spot.latitude},${spot.longitude},15z`;
-
   // Only places a short ride away, nearest first ("รอบย่าน" means close; the catalog fallback had no limit)
-  const nearby = diningItems.filter((item) => item.distanceKm <= NEAR_KM).sort((a, b) => a.distanceKm - b.distanceKm);
-  if (isLoading || nearby.length === 0) return null;
+  const nearby = useMemo(() => diningItems.filter((item) => item.distanceKm <= NEAR_KM).sort((a, b) => a.distanceKm - b.distanceKm), [diningItems]);
+  return { nearby, liveSearchUrl };
+}
+
+/** The rows of NearbyDiningSection's data; "แถวนี้มีอะไรต่อ" (NearbyNextSection) carries the heading */
+export function NearbyDiningList({ nearby, liveSearchUrl }: ReturnType<typeof useNearbyDining>) {
   const fromGoogle = nearby.some((item) => item.reviewsSource === 'google');
 
   return (
-    <section className="space-y-3 pt-5 border-t border-slate-100">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">ร้านกาแฟและร้านอร่อยใกล้ๆ</h2>
-        <a href={liveSearchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline shrink-0">
-          ดูเพิ่มบนแผนที่
-          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-        </a>
-      </div>
+    <div className="space-y-3">
+      <a href={liveSearchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+        ดูร้านเพิ่มบนแผนที่
+        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+      </a>
 
       {/* One column of rows: names and details have room to be read in full */}
       <ul className="divide-y divide-slate-100">
@@ -100,6 +100,6 @@ export const NearbyDiningSection: React.FC<NearbyDiningSectionProps> = ({ spot, 
         })}
       </ul>
       {fromGoogle && <p className="text-[11px] text-slate-500">ข้อมูลร้านและคะแนน: Google Maps</p>}
-    </section>
+    </div>
   );
-};
+}

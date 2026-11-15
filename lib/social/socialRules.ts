@@ -22,6 +22,12 @@ export const PLAN_TOGETHER_POINTS = 40;
 
 /** A plan made from a post that names no place is called this (lib/social/friendPlans.ts) */
 export const POST_PLACE_FALLBACK = 'ที่ในโพสต์นี้';
+
+/**
+ * Why someone calls a plan off or leaves it (2026-11-15): optional, one tap, from this fixed list only, so the chat
+ * hears a kind reason and nobody types something hurtful. The words follow "ยกเลิกแผน…แล้ว" / "รอบนี้ขอไม่ไปก่อนนะ".
+ */
+export const PLAN_LEAVE_REASONS = ['ติดธุระกะทันหัน', 'วันนั้นไม่ว่างแล้ว', 'ไม่ค่อยสบาย', 'อากาศไม่เป็นใจ', 'ขอเปลี่ยนไปที่อื่น'] as const;
 /**
  * A plan's chat title, the same in the chat list, the chat's header and the phone notification: "ไป<place>" or
  * "ทำชาเลนจ์ <name>". A post with no place would read "ไปที่ในโพสต์นี้" in every such room, so that one is named

@@ -19,7 +19,7 @@ import { CaptionText } from '@/components/moments/CaptionText';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { AchievementLine } from '@/components/moments/AchievementLine';
 import { ShareSheet } from '@/components/moments/ShareSheet';
-import { InviteSheet } from '@/components/invites/InviteSheet';
+import { InviteSheet, useMomentInvited } from '@/components/invites/InviteSheet';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { MomentPhotos } from '@/components/moments/MomentPhotos';
 import { PhotoViewer, REPORT_REASONS, call } from '@/components/home/HomeMomentFeed';
@@ -37,9 +37,13 @@ const Avatar = MomentAvatar;
 const iconButton =
   'inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors duration-200 tabular-nums focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]';
 
-/** The buttons down the side of a clip */
-const railButton =
-  'flex min-w-12 min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-xs font-bold text-white tabular-nums cursor-pointer active:scale-90 transition-transform [text-shadow:0_1px_3px_rgb(0_0_0/0.8)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white';
+/**
+ * The buttons down the side of a clip. Like TikTok and Reels, each keeps a fixed slot whatever its count says, so a
+ * tap never moves the column (the heart jumped up when the first like split its number off, 2026-11-15)
+ */
+const railBase =
+  'flex min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-xs font-bold text-white tabular-nums cursor-pointer active:scale-90 transition-transform [text-shadow:0_1px_3px_rgb(0_0_0/0.8)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white';
+const railButton = `${railBase} min-h-12`;
 
 interface DetailProps {
   initialMoment: FeedItem;
@@ -84,6 +88,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   const me = useMemberSession().member;
   const myId = me?.id;
   const [moment, setMoment] = useState(initialMoment);
+  useMomentInvited((id, count) => id === moment.id && setMoment((m) => ({ ...m, invitesCount: count })));
   const [viewer, setViewer] = useState<number | null>(null);
   const [comment, setComment] = useState('');
   const [isBusy, setIsBusy] = useState(false);
@@ -479,7 +484,10 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             )}
 
             <div
-              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pb-4 pl-4 pr-16 sm:pb-6 sm:pl-6 sm:pr-28 text-white pointer-events-none ${commentsOpen ? 'max-lg:hidden' : ''} ${
+              className={`absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 via-black/60 to-transparent pt-16 pl-4 pr-16 sm:pl-6 sm:pr-28 text-white pointer-events-none ${
+                // In full screen the seek bar runs along the bottom (20 px): the name and the caption sit above it, as on Reels
+                isFull ? 'pb-[calc(1.75rem+env(safe-area-inset-bottom))] sm:pb-[calc(2.25rem+env(safe-area-inset-bottom))]' : 'pb-4 sm:pb-6'
+              } ${commentsOpen ? 'max-lg:hidden' : ''} ${
                 besideClip ? 'lg:inset-x-auto lg:bottom-auto lg:top-4 lg:right-[calc(50%+var(--clip-w)/2+0.75rem)] lg:w-[min(20rem,calc(50%-var(--clip-w)/2-5rem))] lg:bg-none lg:p-0' : ''
               }`}
             >
@@ -515,17 +523,21 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               </div>
             </div>
 
-            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] ${isFull ? 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:bottom-[calc(2.25rem+env(safe-area-inset-bottom))]' : 'bottom-3 sm:bottom-6'} z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               {!moment.likesOff && (
-              <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={railButton}>
-                <LikeIcon active={moment.isLiked} onDark className="w-7 h-7 drop-shadow" />
-                {!canSeeLikers && moment.likesCount.toLocaleString()}
-              </button>
-              )}
-              {!moment.likesOff && canSeeLikers && (
-              <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railButton} -mt-2 min-h-8`}>
-                {moment.likesCount.toLocaleString()}
-              </button>
+              // One slot: the heart, and its number under it, which opens who liked it once there is someone to see
+              <div className="flex flex-col items-center">
+                <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={`${railBase} h-9`}>
+                  <LikeIcon active={moment.isLiked} onDark className="w-7 h-7 drop-shadow" />
+                </button>
+                {canSeeLikers ? (
+                  <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railBase} h-6`}>
+                    {moment.likesCount.toLocaleString()}
+                  </button>
+                ) : (
+                  <span className={`${railBase} h-6 cursor-default`}>{moment.likesCount.toLocaleString()}</span>
+                )}
+              </div>
               )}
               {!moment.commentsOff && (
               <button
@@ -554,6 +566,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 {/* 46 px wide, inside the rail's 48 px like the other icons: at 55 px it widened the column and pushed it
                     against the screen's edge (owner's phone, 2026-11-12) */}
                 <InviteIcon className="h-5 w-[46px] drop-shadow" mono />
+                {(moment.invitesCount ?? 0) > 0 && moment.invitesCount!.toLocaleString()}
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
@@ -719,8 +732,9 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             </button>
             )}
             {mayShare && momentHasPlace(moment) && (
-            <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน" className="inline-flex items-center justify-center min-h-11 min-w-11 px-1 cursor-pointer hover:opacity-80">
+            <button type="button" onClick={() => setSharing(true)} aria-label={(moment.invitesCount ?? 0) > 0 ? `ชวนเพื่อนไปด้วยกัน (ชวนแล้ว ${moment.invitesCount} คน)` : 'ชวนเพื่อนไปด้วยกัน'} className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 px-1 text-sm font-bold text-slate-700 tabular-nums cursor-pointer hover:opacity-80">
               <InviteIcon className="h-[17px] w-[39px] shrink-0" />
+              {(moment.invitesCount ?? 0) > 0 && moment.invitesCount!.toLocaleString()}
             </button>
             )}
             <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={`${iconButton} ml-auto`}>

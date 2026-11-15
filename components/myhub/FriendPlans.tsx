@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CalendarDays, Check, ChevronRight, Loader2, MapPin, MessageCircle, MoreHorizontal, UserPlus } from 'lucide-react';
+import { CalendarDays, Camera, Check, ChevronRight, Loader2, MapPin, MessageCircle, MoreHorizontal, UserPlus } from 'lucide-react';
 import { GroupChatModal } from '@/components/GroupChatModal';
 import { DialogShell } from '@/components/auth/DialogShell';
 import { MomentAvatar } from '@/components/moments/CommentThread';
@@ -11,7 +11,7 @@ import { openLineShare } from '@/components/moments/lineInvite';
 import { InviteSheet } from '@/components/invites/InviteSheet';
 import type { PlanView } from '@/lib/social/friendPlans';
 import { unreadLabel, useChatInbox } from '@/lib/useChatInbox';
-import { planChatTitle } from '@/lib/social/socialRules';
+import { PLAN_LEAVE_REASONS, planChatTitle } from '@/lib/social/socialRules';
 import { useMemberSession } from '@/lib/useMemberSession';
 
 /**
@@ -315,6 +315,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
   const [isMarking, setIsMarking] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [askLeave, setAskLeave] = useState(false);
+  const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
   const save = async (date: string | null) => {
@@ -328,7 +329,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
   };
   const leave = async () => {
     setIsBusy(true);
-    const result = await patchPlan(plan.id, { action: 'leave' });
+    const result = await patchPlan(plan.id, { action: 'leave', ...(reason ? { reason } : {}) });
     setIsBusy(false);
     if (!result.ok) return setError(result.message || 'ทำรายการไม่สำเร็จ ลองอีกครั้งนะ');
     onGone();
@@ -375,6 +376,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
   }
 
   const isEditing = isPicking || isMarking;
+  const canTellWent = (plan.isPast || plan.isToday) && !plan.wentByMe && plan.kind !== 'quest';
   const canInvite = Boolean(onInvite) && plan.spotsLeft > 0 && !plan.isPast;
   return (
     <div className="space-y-5">
@@ -436,8 +438,19 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
             <p id={`plan-leave-${plan.id}`} className="text-sm font-semibold text-slate-900">{plan.isHost ? 'ยกเลิกแผนนี้สำหรับทุกคน?' : 'ออกจากแผนนี้?'}</p>
             <p className="mt-0.5 text-[13px] text-slate-600">{plan.isHost ? 'เพื่อนในแผนจะเห็นว่ายกเลิกแล้ว และแชตกลุ่มนี้จะปิด' : 'แชตกลุ่มนี้จะหายจากรายการของคุณ'}</p>
           </div>
+          {/* A reason is optional and one tap (2026-11-15): it goes into the message the chat hears, so friends know why */}
+          <div>
+            <p className="text-[13px] font-medium text-slate-700">บอกเพื่อนๆ ไหมว่าเพราะอะไร <span className="font-normal text-slate-500">(ไม่บังคับ)</span></p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5" role="group" aria-label="เหตุผล">
+              {PLAN_LEAVE_REASONS.map((r) => (
+                <button key={r} type="button" aria-pressed={reason === r} onClick={() => setReason((now) => (now === r ? '' : r))} className={`${BUTTON} h-8 px-3 text-[13px] font-medium ${reason === r ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" autoFocus onClick={() => setAskLeave(false)} className={`${BUTTON} h-11 bg-white hover:bg-slate-100 text-sm font-semibold text-slate-700`}>
+            <button type="button" autoFocus onClick={() => { setAskLeave(false); setReason(''); }} className={`${BUTTON} h-11 bg-white hover:bg-slate-100 text-sm font-semibold text-slate-700`}>
               ไม่ใช่ตอนนี้
             </button>
             <button type="button" onClick={leave} disabled={isBusy} className={`${BUTTON} h-11 bg-rose-600 hover:bg-rose-700 text-sm font-bold text-white`}>
@@ -448,9 +461,16 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
         </div>
       ) : (
         !isEditing && (
-          // Talk: our chat leads (owner 2026-11-12), LINE is there for whoever prefers it
+          // Talk: our chat leads (owner 2026-11-12), LINE is there for whoever prefers it. From the day itself, "ไปกันมาแล้ว"
+          // leads instead: it is posting a moment there, which is what proves the visit and counts the plan's XP
           <div className="grid gap-1.5 pt-1">
-            <button type="button" onClick={onOpenChat} className={`${PRIMARY} h-12 text-sm`}>
+            {canTellWent && (
+              <Link href={plan.postHref} className={`${PRIMARY} h-12 text-sm`}>
+                <Camera className="w-4 h-4" aria-hidden="true" />
+                ไปกันมาแล้ว โพสต์โมเมนต์
+              </Link>
+            )}
+            <button type="button" onClick={onOpenChat} className={canTellWent ? `${BUTTON} h-12 bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-800` : `${PRIMARY} h-12 text-sm`}>
               <MessageCircle className="w-4 h-4" aria-hidden="true" />
               คุยในแชตกลุ่ม
               {unread > 0 && (
@@ -551,9 +571,13 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   // A chat opened straight from a link (the แชต list, a phone notification) closes back to where the member was, not
   // onto the plan sheet: the plan card above the chat already says what the plan is (owner 2026-11-12)
   const chatOnlyRef = useRef(false);
+  // The link opens its plan once. useSearchParams does not follow showInAddress (it keeps Next's own history state, so
+  // Next takes it for its own call): without this, a plan called off reloaded the list and reopened the linked plan
+  const openedAskRef = useRef('');
   useEffect(() => {
     const plan = plans.find((p) => p.id === asked);
-    if (!plan) return;
+    if (!plan || openedAskRef.current === `${asked}:${askedChat}`) return;
+    openedAskRef.current = `${asked}:${askedChat}`;
     // Someone still asked (not answered) answers first; the chat is for people going
     if (askedChat && !plan.isInvited) {
       chatOnlyRef.current = true;

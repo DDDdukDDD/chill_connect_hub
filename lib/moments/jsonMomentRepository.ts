@@ -127,6 +127,9 @@ export const jsonMomentRepository: MomentRepository = {
   async addShare(id, memberId) {
     await jsonMomentRepository.mutate(id, (m) => (m.sharedBy?.includes(memberId) ? m : { ...m, sharedBy: [...(m.sharedBy ?? []), memberId], sharesCount: (m.sharesCount ?? 0) + 1 }));
   },
+  async addInvite(id, memberId) {
+    await jsonMomentRepository.mutate(id, (m) => (m.invitedBy?.includes(memberId) ? m : { ...m, invitedBy: [...(m.invitedBy ?? []), memberId], invitesCount: (m.invitesCount ?? 0) + 1 }));
+  },
   async create(moment) {
     return mutex.runExclusive(async () => {
       persist([moment, ...load()]);

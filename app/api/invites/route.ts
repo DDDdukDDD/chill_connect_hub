@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   if (await isRateLimited(`invite-send:${member.id}`, INVITE_SENDS_PER_HOUR, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
   try {
-    const body = (await request.json().catch(() => ({}))) as { type?: unknown; id?: unknown; to?: unknown; day?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { type?: unknown; id?: unknown; to?: unknown; day?: unknown; route?: unknown };
     return NextResponse.json({ success: true, ...(await sendInvites(member, body)) });
   } catch (error) {
     if (error instanceof MemberAuthError || error instanceof MomentError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });

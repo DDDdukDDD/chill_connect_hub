@@ -6,7 +6,7 @@ import { setFollowing } from '../members/safety';
 import type { Member } from '../members/types';
 import { tidyDisplayName } from '../displayName';
 import type { Moment } from '../moments/types';
-import { setSaved, taggableFriends, visibleMoment } from '../moments/service';
+import { recordInvite, setSaved, taggableFriends, visibleMoment } from '../moments/service';
 import { sendChatMessage } from './chat';
 import { friendPlanStore, type FriendPlan, type PlanTargetType } from './friendPlanStore';
 import { planToken, readInviteToken, teeToken } from './inviteLinks';
@@ -15,7 +15,7 @@ import { inviteCodeOf } from './friends';
 import { notifyInvite, notifyInviteNo, notifyInviteYes, notifyPlan } from './notifications';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
-import { INVITE_MAX_FRIENDS, PLAN_TOGETHER_POINTS, POST_PLACE_FALLBACK } from './socialRules';
+import { INVITE_MAX_FRIENDS, PLAN_LEAVE_REASONS, PLAN_TOGETHER_POINTS, POST_PLACE_FALLBACK } from './socialRules';
 import { shortLabelOf } from './recurring';
 import type { Visit } from './visits';
 import { traceAction } from './actionLog';
@@ -141,18 +141,38 @@ async function shareLink(member: Member, path: string, token: string): Promise<s
   }
 }
 
-/** The host's plan for this target that is still ahead (or undated), or a new one */
-async function hostPlanFor(member: Member, target: InviteTarget): Promise<FriendPlan> {
+/** The host's plan for this target that is still ahead (or undated), or a new one (isNew) */
+async function hostPlanFor(member: Member, target: InviteTarget): Promise<{ plan: FriendPlan; isNew: boolean }> {
   const today = bangkokDay();
   const open = (await friendPlanStore.openOfHost(member.id, target.type, target.targetId, target.momentId)).find((p) => !p.date || p.date >= today);
-  return open ?? friendPlanStore.create({ hostId: member.id, targetType: target.type, targetId: target.targetId, momentId: target.momentId, title: target.title, image: target.image });
+  if (open) return { plan: open, isNew: false };
+  return { plan: await friendPlanStore.create({ hostId: member.id, targetType: target.type, targetId: target.targetId, momentId: target.momentId, title: target.title, image: target.image }), isNew: true };
+}
+
+/** Stops a day plan may hold (components/SmartSpotPlanCard.tsx shows 2 or 3) */
+const ROUTE_MAX_STOPS = 4;
+
+/**
+ * "ไปที่นี่แล้ว ไปต่อไหนดี" sent as ไปกัน (owner 2026-11-15): the route becomes the new plan's first chat line, e.g.
+ * "แผนเที่ยว 3 ที่: 10:00 ไอคอนสยาม → 11:55 วัดเบญฯ → 13:10 ป้อมพระสุเมรุ". The words are built here from published
+ * places only, never taken from the browser; the first stop must be the plan's own place. Anything off: no line.
+ */
+async function routeLine(target: InviteTarget, route: unknown): Promise<string | null> {
+  if (target.type !== 'spot' || !Array.isArray(route) || route.length < 2 || route.length > ROUTE_MAX_STOPS) return null;
+  const stops = route.map((s) => (s && typeof s === 'object' ? (s as { id?: unknown; time?: unknown }) : {}));
+  if (stops.some((s) => typeof s.id !== 'string' || typeof s.time !== 'string' || !/^([01]?\d|2[0-3]):[0-5]\d$/.test(s.time))) return null;
+  if (stops[0].id !== target.targetId) return null;
+  const spots = await Promise.all(stops.map((s) => db.findSpotById(s.id as string).catch(() => null)));
+  if (spots.some((s) => !s || s.publicationStatus === 'draft')) return null;
+  const name = (title: string) => title.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  return `แผนเที่ยว ${stops.length} ที่: ${stops.map((s, i) => `${s.time} ${name(spots[i]!.title)}`).join(' → ')}`;
 }
 
 /**
  * Sends "ชวนไป": friends picked in the app get a notice, and the link is returned for LINE. Both open the same page
  * with the same signed invitation. Returns how many were newly asked; `share` is the short link for LINE.
  */
-export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown; day?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string; dateLabel?: string }> {
+export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown; day?: unknown; route?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string; dateLabel?: string; momentInvites?: number }> {
   const target = await targetOf(input.type, input.id);
   const sharesOff = (target as InviteTarget & { sharesOff?: string }).sharesOff;
   if (sharesOff && sharesOff !== member.id) throw new MemberAuthError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
@@ -168,7 +188,19 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
     return { invited: chosen.length, link, share: await shareLink(member, target.path, token) };
   }
 
-  let plan = await hostPlanFor(member, target);
+  // Sent from a post: the post's ชวนไป count goes up, once per member (BE-384); a failed count never stops the invitation
+  let momentInvites: number | undefined;
+  if (target.momentId) {
+    await recordInvite(member, target.momentId).catch((error) => console.error('invite: count failed', error));
+    momentInvites = (await visibleMoment(target.momentId).catch(() => null))?.invitesCount;
+  }
+  const held = await hostPlanFor(member, target);
+  let plan = held.plan;
+  // A day plan from the place's page: its route opens the new plan's chat (once, when the plan is made)
+  if (held.isNew && input.route) {
+    const line = await routeLine(target, input.route);
+    if (line) await tellChat(member, plan, line);
+  }
   // A day picked when inviting ("เสาร์นี้", owner 2026-11-12) sets the plan's day, unless it already has one
   if (typeof input.day === 'string' && input.day && !plan.date && plan.targetType !== 'quest') {
     await friendPlanStore.update(plan.id, { date: await checkPlanDay(plan, input.day), status: 'set' });
@@ -182,7 +214,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const token = planToken(plan.id);
   const link = withToken(target.path, token);
   await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
-  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: shortLabelOf(plan.date) } : {}) };
+  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: shortLabelOf(plan.date) } : {}), ...(momentInvites !== undefined ? { momentInvites } : {}) };
 }
 
 export interface InviteInfo {
@@ -312,6 +344,8 @@ export interface PlanView {
   dateMax?: string;
   /** The day has passed */
   isPast: boolean;
+  /** The day is today (Bangkok): "ไปกันมาแล้ว" shows from now on */
+  isToday: boolean;
   isHost: boolean;
   host: { id: string; name: string };
   /** Everyone going, the host first */
@@ -371,6 +405,7 @@ async function viewsOf(member: Member, plans: FriendPlan[]): Promise<PlanView[]>
       ...(range.min ? { dateMin: range.min > today ? range.min : today } : {}),
       ...(range.max ? { dateMax: range.max } : {}),
       isPast: Boolean(plan.date && plan.date < today),
+      isToday: plan.date === today,
       isHost: plan.hostId === member.id,
       host: { id: host.id, name: nameOf(host) },
       people: shown,
@@ -486,17 +521,21 @@ export async function setPlanDate(member: Member, id: string, date: unknown): Pr
   return view;
 }
 
-/** The host calls the plan off for everyone; anyone else leaves it (an invitation not answered is turned down) */
-export async function leavePlan(member: Member, id: string): Promise<'cancelled' | 'left'> {
+/**
+ * The host calls the plan off for everyone; anyone else leaves it (an invitation not answered is turned down).
+ * A reason from PLAN_LEAVE_REASONS, when picked, goes into the chat's words; anything else is ignored.
+ */
+export async function leavePlan(member: Member, id: string, reason?: unknown): Promise<'cancelled' | 'left'> {
+  const why = typeof reason === 'string' && (PLAN_LEAVE_REASONS as readonly string[]).includes(reason) ? ` เพราะ${reason}` : '';
   const plan = await friendPlanStore.byId(id);
   const mine = plan && plan.status !== 'cancelled' ? memberOf(plan, member.id) : undefined;
   if (!plan || !mine) throw new MemberAuthError('ไม่พบแผนนี้แล้ว', 404);
   if (plan.hostId === member.id) {
-    await tellChat(member, plan, `ยกเลิกแผนไป${plan.title}แล้ว ไว้ชวนกันใหม่นะ`);
+    await tellChat(member, plan, `ยกเลิกแผนไป${plan.title}แล้ว${why} ไว้ชวนกันใหม่นะ`);
     await friendPlanStore.update(plan.id, { status: 'cancelled' });
     return 'cancelled';
   }
-  if (mine.state === 'going') await tellChat(member, plan, 'รอบนี้ขอไม่ไปก่อนนะ ไว้ชวนกันใหม่');
+  if (mine.state === 'going') await tellChat(member, plan, `รอบนี้ขอไม่ไปก่อนนะ${why} ไว้ชวนกันใหม่`);
   await friendPlanStore.removeMember(plan.id, member.id);
   return 'left';
 }
