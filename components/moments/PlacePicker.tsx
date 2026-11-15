@@ -36,16 +36,16 @@ export function PlacePicker({ mine, onPickTarget, onPickName, onClose }: {
   const [near, setNear] = useState<{ lat: number; lng: number } | null>(null);
   const q = query.trim();
 
-  // Popular spots & upcoming events so first-time users see choices right away without GPS or typing
+  // Upcoming events and the places picked for this member (the home page's, ?home=1) so first-time posters see choices without GPS or typing
   useEffect(() => {
     let active = true;
     const get = (url: string) => fetch(url).then((res) => res.json()).catch(() => ({}));
-    Promise.all([get('/api/events?limit=3'), get('/api/spots?limit=4')]).then(([events, spots]) => {
+    Promise.all([get('/api/events?limit=3'), get('/api/spots?home=1')]).then(([events, spots]) => {
       if (!active) return;
       const seen = new Set(mine.map((item) => `${item.type}:${item.id}`));
       const combined: MomentLinkTarget[] = [
         ...((events.events ?? []) as EventItem[]).map((e) => ({ type: e.eventType === 'public_venue' ? ('fair' as const) : ('community' as const), id: e.id, title: e.title, location: e.location || '' })),
-        ...((spots.spots ?? []) as LifestyleSpotItem[]).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
+        ...((spots.spots ?? []) as LifestyleSpotItem[]).slice(0, 4).map((s) => ({ type: 'spot' as const, id: s.id, title: s.title, location: [s.district, s.province].filter(Boolean).join(', ') })),
       ].filter((item) => !seen.has(`${item.type}:${item.id}`));
       setFeatured(combined);
     });
