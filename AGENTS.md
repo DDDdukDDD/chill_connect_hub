@@ -21,7 +21,7 @@ System overview: [ARCHITECTURE.md](ARCHITECTURE.md). What is left before launch:
 
 Since 2026-11-02 **Claude Code builds the whole project**: user-facing pages, admin console and backend. The old frontend/backend split (FE-001) is retired.
 
-**Antigravity IDE (Gemini) is the tester.** It tests the site and reports problems as `TR-###` items in **[docs/TEST_REPORTS.md](docs/TEST_REPORTS.md)**, which also holds the format and the steps for both sides. It works on its own `tester` branch, changes only that file, and never changes code or data.
+**Antigravity IDE (Gemini) is the tester.** It tests the site and reports problems as `TR-###` items in **[docs/TEST_REPORTS.md](docs/TEST_REPORTS.md)**, which also holds the format and the steps for both sides. It works on its own `tester` branch, changes only that file, and never changes code or data. **One exception (owner 2026-11-15):** when the owner asks Gemini for a specific change, it may change code on `tester` for that task only; Claude Code reviews the commit before merging `origin/tester` into `claude`, and fixes what it finds as its own `BE-###`.
 
 Claude Code runs in **two local clones** of `github.com/DDDdukDDD/chill_connect_hub`, one per computer. The clones share nothing except GitHub, so each has its own branch:
 

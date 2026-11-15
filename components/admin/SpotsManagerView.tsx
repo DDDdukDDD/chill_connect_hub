@@ -19,6 +19,7 @@ import { AdminPageHeader, AdminStatusChip, adminButton } from './AdminUI';
 import { ALL_THAI_PROVINCES, SPOT_CATEGORIES, LifestyleSpotItem } from '@/data/spotsData';
 import { checkSpotQuality } from '@/lib/contentQuality';
 import { defaultSpotCategoryLabel } from '@/lib/spotCategories';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { SpotEditorDrawer } from './SpotEditorDrawer';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 import { AdminPagination, AdminPaginationState } from './AdminPagination';
@@ -433,9 +434,24 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
         </div>
       )}
 
-      {editing !== undefined && (
+      {editing === null && (
+        <CreateEventModal
+          isOpen
+          initialType="spot"
+          adminMode
+          onClose={() => setEditing(undefined)}
+          onAdminCreated={(message) => {
+            setEditing(undefined);
+            showToast(message);
+            setReloadToken((token) => token + 1);
+          }}
+          onCreateSuccess={() => {}}
+        />
+      )}
+
+      {editing && (
         <SpotEditorDrawer
-          key={editing?.id ?? 'new'}
+          key={editing.id}
           spot={editing}
           onClose={() => setEditing(undefined)}
           onSaved={(message) => {

@@ -96,6 +96,7 @@ import {
   REWARD_SHOP_ITEMS,
 } from '@/data/rewardsData';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
+import { defaultEventImage } from '@/lib/eventImageResolver';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -206,8 +207,9 @@ function MyHubContent() {
   const [reviewedEventIds, setReviewedEventIds] = useState<string[]>([]);
 
   // Calendar Navigation State
-  const [calYear, setCalYear] = useState<number>(2026);
-  const [calMonth, setCalMonth] = useState<number>(9); // 0 = Jan, 9 = Oct (October 2026)
+  // The month view opens on this month (it was fixed on October 2026)
+  const [calYear, setCalYear] = useState<number>(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState<number>(() => new Date().getMonth()); // 0 = Jan
   const [selectedCalDay, setSelectedCalDay] = useState<number | null>(null);
   const [calendarTimeScope, setCalendarTimeScope] = useState<'month' | 'all'>('month');
 
@@ -498,7 +500,8 @@ function MyHubContent() {
   const [openEvents, setOpenEvents] = useState<EventItem[]>([]);
   const emptySchedule = activity.isLoaded && guestEvents.length === 0;
   // Nothing coming up, also for someone who has been out before: that is when an invite helps most
-  const needsSuggestions = activity.isLoaded && !guestEvents.some((e) => !isEventEnded(e));
+  // A challenge under way is not a plan to go out, so it does not hide the open ตี้ (2026-11-15)
+  const needsSuggestions = activity.isLoaded && !guestEvents.some((e) => (e as { eventType?: string }).eventType !== 'challenge' && !e.id.startsWith('quest-') && !isEventEnded(e));
   // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
   const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
   const [openedOnHosting, setOpenedOnHosting] = useState(false);
@@ -628,15 +631,13 @@ function MyHubContent() {
 
   const isEventInCalMonth = (ev: EventItem, monthIdx: number, year: number) => {
     if (isQuestEntry(ev)) return questSpanInMonth(ev, monthIdx, year) !== null;
-    const monthShort = THAI_MONTH_SHORT[monthIdx];
-    const monthFull = THAI_MONTH_NAMES[monthIdx];
-    const dateStr = ev.date || '';
-    if (dateStr.includes(monthShort) || dateStr.includes(monthFull)) return true;
-    if (ev.createdAtTimestamp) {
-      const d = new Date(ev.createdAtTimestamp);
-      if (d.getFullYear() === year && d.getMonth() === monthIdx) return true;
-    }
-    return false;
+    // The event's days overlap the month, year included (2026-11-15: matching the month's name and falling back to when
+    // the row was created put December งาน under October)
+    if (!ev.date || !/[0-9]/.test(ev.date)) return false;
+    const start = parseEventDateToTimestamp(ev.date);
+    const end = parseEventEndDateToTimestamp(ev.endDate || ev.date);
+    if (!start || !end) return false;
+    return start <= new Date(year, monthIdx + 1, 0, 23, 59, 59).getTime() && end >= new Date(year, monthIdx, 1).getTime();
   };
 
   // Cancel Event (Marks as cancelled in history rather than wiping out)
@@ -813,7 +814,7 @@ function MyHubContent() {
     if (!ev.date || !/[0-9]/.test(ev.date)) return false;
     const dayStart = new Date(year, monthIdx, day, 0, 0, 0).getTime();
     const dayEnd = new Date(year, monthIdx, day, 23, 59, 59).getTime();
-    return parseEventDateToTimestamp(ev.date) <= dayEnd && parseEventEndDateToTimestamp(ev.date) >= dayStart;
+    return parseEventDateToTimestamp(ev.date) <= dayEnd && parseEventEndDateToTimestamp(ev.endDate || ev.date) >= dayStart;
   };
 
   // Active scope events for current calendar view (either selected day, or the current month, or all-time)
@@ -842,7 +843,7 @@ function MyHubContent() {
       else if (group === 'quests') quests++;
       else community++;
     });
-    return { all: scopedCalendarEvents.length, community, fairs, spots, quests, hosting };
+    return { all: scopedCalendarEvents.length - quests, community, fairs, spots, quests, hosting };
   }, [scopedCalendarEvents, hostedIdSet]);
 
   // Master Calendar filtered dataset (used for calendar day cells and dots)
@@ -863,7 +864,8 @@ function MyHubContent() {
 
   // Daily agenda events: exactly equals scopedCalendarEvents filtered by category
   const dailyAgendaEvents = useMemo(() => {
-    if (calendarCategoryFilter === 'all') return scopedCalendarEvents;
+    // "ทั้งหมด" leaves challenges out: "กำลังทำอยู่" already lists them, and their chip still shows them
+    if (calendarCategoryFilter === 'all') return scopedCalendarEvents.filter((ev) => calGroupOf(ev) !== 'quests');
     return scopedCalendarEvents.filter((ev) => calGroupOf(ev) === calendarCategoryFilter);
   }, [scopedCalendarEvents, calendarCategoryFilter, hostedIdSet]);
 
@@ -1009,8 +1011,18 @@ function MyHubContent() {
           {doingChallenges.slice(0, 2).map((challenge) => (
             <li key={challenge.questId}>
               <Link href={`/challenges/${encodeURIComponent(challenge.questId)}`} className="py-2.5 flex items-center gap-3 group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={questCatalog?.find((entry) => entry.id === challenge.questId)?.badgeCoverImg} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
+                {(() => {
+                  const entry = questCatalog?.find((q) => q.id === challenge.questId);
+                  const cover = entry?.badgeCoverImg || entry?.image;
+                  return cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={optimizedImage(cover, 128)} alt="" className="w-14 h-14 rounded-xl object-cover bg-[#F5F3FF] shrink-0" />
+                  ) : (
+                    <span className="w-14 h-14 rounded-xl bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center shrink-0" aria-hidden="true">
+                      <Trophy className="w-6 h-6" />
+                    </span>
+                  );
+                })()}
                 <span className="min-w-0 flex-1 space-y-1.5">
                   <span className="block text-[11px] font-bold text-[#6D28D9]">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7C3AED] mr-1.5 align-middle" aria-hidden="true" />
@@ -1023,7 +1035,7 @@ function MyHubContent() {
                     </span>
                     <span className="text-xs font-medium text-slate-500 tabular-nums whitespace-nowrap">
                       {challenge.isPlan ? 'stamp แล้ว' : 'ไปแล้ว'} {challenge.current} จาก {challenge.total}
-                      {challenge.daysRemaining !== undefined ? ` · เหลือ ${challenge.daysRemaining} วัน` : ''}
+                      {challenge.daysRemaining !== undefined && challenge.daysRemaining <= 90 ? ` · เหลือ ${challenge.daysRemaining} วัน` : ''}
                     </span>
                   </span>
                 </span>
@@ -1047,24 +1059,33 @@ function MyHubContent() {
               {suggestedEvents.map((ev) => {
                 const ts = parseEventDateToTimestamp(ev.date);
                 const when = Number.isFinite(ts) && ts > 0 ? new Date(ts) : null;
+                // The whole row opens the ตี้ (2026-11-15: a full-width button under every row made the list heavy on a phone)
                 return (
-                  <li key={ev.id} className="py-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
-                    <div className="w-10 shrink-0 text-center">
-                      <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
-                      <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
-                    </div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={optimizedImage(ev.image, 128)} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
-                    <div className="min-w-0 flex-1 basis-44">
-                      <p className="text-sm font-bold text-slate-900 truncate" title={ev.title}>{ev.title}</p>
-                      <p className="text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">{[ev.time, ev.location].filter(Boolean).join(' · ')}</p>
-                      <p className="text-xs font-medium text-slate-500 tabular-nums mt-0.5">เข้าร่วมแล้ว {ev.participantsCount ?? 0} จาก {ev.maxParticipants ?? 0} คน</p>
-                    </div>
-                    <Link
-                      href={`/community/${encodeURIComponent(ev.id)}`}
-                      className="w-full sm:w-auto inline-flex items-center justify-center h-9 px-4 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold whitespace-nowrap"
-                    >
-                      ดูรายละเอียด
+                  <li key={ev.id}>
+                    <Link href={`/community/${encodeURIComponent(ev.id)}`} className="group py-3 flex items-center gap-3 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                      <span className="w-10 shrink-0 text-center">
+                        <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
+                        <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
+                      </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- a missing picture falls back to the category's own */}
+                      <img
+                        src={optimizedImage(ev.image, 128)}
+                        alt=""
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (img.dataset.fallback) return;
+                          img.dataset.fallback = '1';
+                          img.src = defaultEventImage(ev.category);
+                        }}
+                        className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-slate-900 truncate group-hover:underline" title={ev.title}>{ev.title}</span>
+                        <span className="block text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">{[ev.time, ev.location].filter(Boolean).join(' · ')}</span>
+                        <span className="block text-xs font-medium text-slate-500 tabular-nums mt-0.5">เข้าร่วมแล้ว {ev.participantsCount ?? 0} จาก {ev.maxParticipants ?? 0} คน</span>
+                      </span>
+                      <span className="hidden sm:inline-flex items-center h-9 px-4 rounded-full bg-white group-hover:bg-slate-50 border border-slate-300 text-slate-800 text-sm font-bold whitespace-nowrap">ดูรายละเอียด</span>
+                      <ChevronRight className="sm:hidden w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
                     </Link>
                   </li>
                 );
@@ -1233,9 +1254,9 @@ function MyHubContent() {
     // One line of tabs, like the profile. The list and the month show the same events through the same filters; the month has no
     // upcoming or past, so no tab is lit there and a tab returns to the list
     const tabs = (
-      <div className="flex flex-col-reverse sm:flex-row sm:items-end justify-between gap-x-3 gap-y-2 sm:border-b sm:border-slate-200">
+      <div className="flex items-end justify-between gap-x-3 border-b border-slate-200">
         <h2 className="sr-only">กำหนดการและที่บันทึกไว้</h2>
-        <div className="flex items-center gap-4 sm:gap-5 border-b border-slate-200 sm:border-b-0" role="group" aria-label="แสดง">
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0" role="group" aria-label="แสดง">
           {([
             { id: 'upcoming', label: 'กำลังจะมาถึง', count: whenCounts.upcoming },
             { id: 'saved', label: 'ที่บันทึก', count: savedCount },
@@ -1260,7 +1281,7 @@ function MyHubContent() {
           })}
         </div>
         {!showingSaved && guestEvents.length > 0 && (
-          <div className="self-end sm:mb-1.5 inline-flex items-center p-1 bg-slate-100 rounded-full" role="group" aria-label="วิธีมอง">
+          <div className="shrink-0 mb-1.5 inline-flex items-center p-1 bg-slate-100 rounded-full" role="group" aria-label="วิธีมอง">
             {([
               { id: 'list', label: 'รายการ', Icon: Layers },
               { id: 'month', label: 'เดือน', Icon: CalendarDays },
@@ -1269,14 +1290,15 @@ function MyHubContent() {
                 key={id}
                 type="button"
                 aria-pressed={scheduleView === id}
+                aria-label={label}
                 onClick={() => {
                   setScheduleView(id);
                   setSelectedCalDay(null);
                 }}
-                className={`flex items-center gap-1.5 h-8 px-3 sm:px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`flex items-center gap-1.5 h-8 px-2.5 sm:px-3.5 rounded-full text-xs sm:text-sm font-bold transition-colors cursor-pointer whitespace-nowrap ${scheduleView === id ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 <Icon className={`w-4 h-4 ${scheduleView === id ? 'text-slate-900' : 'text-slate-400'}`} aria-hidden="true" />
-                {label}
+                <span className="max-sm:sr-only">{label}</span>
               </button>
             ))}
           </div>
@@ -1717,6 +1739,8 @@ function MyHubContent() {
                   const isQuest = meta.pillar === 'quests';
                   // Without a button the row keeps only ⋯, which stays on the same line on a phone
                   const hasRowAction = !(isQuest || isCancelled || isMissed) && (isAttended || isHost || ev.eventType !== 'public_venue');
+                  // Only a worded button (แชร์โมเมนต์, จัดการตี้) takes a line of its own on a phone; the ticket is an icon in the row
+                  const actionWraps = hasRowAction && (isAttended || isHost);
                   const ts = scheduleTs(ev);
                   const when = Number.isFinite(ts) && ts > 0 ? new Date(ts) : null;
                   const monthOf = (item?: EventItem) => {
@@ -1749,7 +1773,7 @@ function MyHubContent() {
                             className={`w-14 h-14 rounded-xl object-cover bg-slate-100 ${isCancelled || isMissed ? 'grayscale-[0.6] opacity-85' : ''}`}
                           />
                         </Link>
-                        <div className={`min-w-0 flex-1 ${hasRowAction ? 'basis-44' : 'basis-28'}`}>
+                        <div className={`min-w-0 flex-1 ${actionWraps ? 'basis-44' : 'basis-28'}`}>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${meta.badgeText}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} aria-hidden="true" />
@@ -1777,7 +1801,7 @@ function MyHubContent() {
 
                         {/* Actions: at most one small white button; the photo and title open the event, the rest is under ⋯.
                             Solid black is kept for the ticket in "ถัดไปของคุณ" on the day, so this list stays quiet */}
-                        <div className={`flex items-center justify-end gap-1.5 sm:pl-0 sm:w-auto sm:shrink-0 ml-auto ${hasRowAction ? 'w-full pl-[52px]' : ''}`}>
+                        <div className={`flex items-center justify-end gap-1.5 sm:pl-0 sm:w-auto sm:shrink-0 ml-auto ${actionWraps ? 'w-full pl-[52px]' : ''}`}>
                           {isQuest || isCancelled || isMissed ? null : isAttended ? (
                             <button
                               type="button"
@@ -1805,10 +1829,11 @@ function MyHubContent() {
                                 setSelectedTicketEvent(ev);
                                 setIsETicketModalOpen(true);
                               }}
-                              className={rowBtn}
+                              aria-label="ดูบัตร"
+                              className={`${rowBtn} max-sm:px-2.5`}
                             >
                               <Ticket className="w-3.5 h-3.5" aria-hidden="true" />
-                              ดูบัตร
+                              <span className="max-sm:sr-only">ดูบัตร</span>
                             </button>
                           )}
 
@@ -2075,13 +2100,17 @@ function MyHubContent() {
                 {/* Whose hub this is. A member who runs events also gets the switch to their host side; a guest sees no switch at all */}
                 <div className="space-y-3 text-slate-900">
                   <div className="flex items-center gap-3 min-w-0">
-                    {hubMember?.avatarUrl ? (
-                      <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
-                    ) : (
-                      <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
-                        {nameInitial(hubName)}
-                      </span>
-                    )}
+                    {/* The photo opens the member's own profile, as on Instagram */}
+                    <Link href="/profile?id=me" aria-label="ดูโปรไฟล์ของฉัน" className="shrink-0 rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                      {hubMember?.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
+                        <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                      ) : (
+                        <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center" aria-hidden="true">
+                          {nameInitial(hubName)}
+                        </span>
+                      )}
+                    </Link>
                     <div className="min-w-0">
                       <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
                       {/* The XP and the way to the challenges, one line under the name like the home greeting (was a box of its own) */}
@@ -2090,13 +2119,18 @@ function MyHubContent() {
                         onClick={openMyChallenges}
                         className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
                       >
-                        {userXp} XP · ชาเลนจ์ของฉัน ›
+                        {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}ชาเลนจ์ของฉัน ›
                       </button>
+                      <span className="text-slate-300 mx-1.5" aria-hidden="true">·</span>
+                      <Link href="/profile?id=me" className="inline-flex items-center min-h-11 text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline">
+                        โปรไฟล์ ›
+                      </Link>
                     </div>
                   </div>
 
-                  {/* Always there: this is also where someone who has never hosted finds "ตั้งตี้ใหม่" */}
-                  {activity.isLoaded && (
+                  {/* Only for someone who has hosted (owner 2026-11-15; it used to show to everyone, so they could find
+                      "ตั้งตี้ใหม่", which the ตี้ pages and the + button offer anyway) */}
+                  {activity.isLoaded && (activity.hosted.length > 0 || hubMainMode === 'hosting') && (
                     <div className="flex items-center gap-5" role="group" aria-label="บทบาท">
                       {([
                         { mode: 'calendar', label: 'ของฉัน', Icon: Users },

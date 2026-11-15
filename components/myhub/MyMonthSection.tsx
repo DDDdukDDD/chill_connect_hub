@@ -68,9 +68,11 @@ export function MyMonthSection({ isLoggedIn, onToast, showEmptyInvite }: { isLog
         </p>
       ) : (
         <>
-          <p className="mt-3 text-sm font-bold">
-            ตี้ที่ไปมา <span className="tabular-nums">{month.connect.length}</span>
-          </p>
+          {month.connect.length > 0 && (
+            <p className="mt-3 text-sm font-bold">
+              ตี้ที่ไปมา <span className="tabular-nums">{month.connect.length}</span>
+            </p>
+          )}
           {month.connect.length > 0 && (
             <ul className="mt-2 space-y-3">
               {month.connect.map((item) => (

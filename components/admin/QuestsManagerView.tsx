@@ -4,6 +4,7 @@ import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDialogBehavior } from '@/components/auth/DialogShell';
 import { AlertCircle, Check, Clock3, Pencil, Plus, RefreshCw, Search, Trash2, Trophy, X, Zap } from 'lucide-react';
+import { CreateEventModal } from '@/components/LazyCreateEventModal';
 import { AdminPageHeader, adminButton } from './AdminUI';
 import { ChallengeQuest, QuestReward } from '@/data/mockData';
 import { parseQuestDate } from '@/lib/questLifecycle';
@@ -362,6 +363,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
   };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false);
   const questPanelRef = useRef<HTMLElement>(null);
   useDialogBehavior(questPanelRef, () => setIsDialogOpen(false), { active: isDialogOpen, focusField: false });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -460,10 +462,7 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
   });
 
   const openCreate = () => {
-    setEditingId(null);
-    setDraft(EMPTY_DRAFT);
-    setError(null);
-    setIsDialogOpen(true);
+    setIsCreateWizardOpen(true);
   };
 
   const openEdit = (quest: ChallengeQuest) => {
@@ -742,6 +741,19 @@ export function QuestsManagerView({ initialQuery = '' }: { initialQuery?: string
           })}
         </div>
       </section>
+
+      <CreateEventModal
+        isOpen={isCreateWizardOpen}
+        initialType="challenge"
+        adminMode
+        onClose={() => setIsCreateWizardOpen(false)}
+        onAdminCreated={(message) => {
+          setIsCreateWizardOpen(false);
+          setNotice(message);
+          void loadQuests();
+        }}
+        onCreateSuccess={() => {}}
+      />
 
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsDialogOpen(false); }}>
