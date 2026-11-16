@@ -30,7 +30,9 @@ interface MomentPhotosProps {
  * Uploads are served through the image optimizer in three widths; others at one width (Unsplash samples were full JPEGs).
  * Quality 85, above the site's 75: these are the page's whole point (owner 2026-11-04). It must be in images.qualities in next.config.ts
  */
-const FRAME_WIDTHS = [640, 828, 1200];
+// Shown at most 560 px wide: 1080 covers a 2x screen. Every width here must be in next.config.ts images sizes, and each
+// is a separate resize on Vercel's monthly quota (1200 was dropped 2026-11-16 for that)
+const FRAME_WIDTHS = [640, 828, 1080];
 const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=85`;
 const responsive = (src: string) =>
   src.startsWith('/uploads/') || isOptimizedRemote(src) ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
