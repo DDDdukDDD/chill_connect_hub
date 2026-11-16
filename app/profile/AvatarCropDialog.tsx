@@ -15,7 +15,11 @@ type View = { zoom: number; x: number; y: number };
  * drag to move, pinch / scroll / the slider to zoom, then save the square inside the frame. Only placing the photo:
  * filters and stickers belong to posts (components/moments/PhotoEditor.tsx).
  */
-export function AvatarCropDialog({ src, onCancel, onDone }: { src: string; onCancel: () => void; onDone: (file: File, preview: string) => void }) {
+/** Only the member's own picked photo (a blob: URL from URL.createObjectURL) is placed; anything else shows nothing (CodeQL) */
+const ownPhoto = (src: string) => (src.startsWith('blob:') ? encodeURI(src) : '');
+
+export function AvatarCropDialog({ src: given, onCancel, onDone }: { src: string; onCancel: () => void; onDone: (file: File, preview: string) => void }) {
+  const src = ownPhoto(given);
   const stageRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
