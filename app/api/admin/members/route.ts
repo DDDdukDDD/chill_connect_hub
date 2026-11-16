@@ -1,22 +1,7 @@
-import { removePlansBy } from '@/lib/social/friendPlans';
 import { NextResponse } from 'next/server';
 import { notifyDecision } from '@/lib/social/notifications';
-import { removeNotificationsOf } from '@/lib/social/notifications';
-import { removeMeetAgainOf } from '@/lib/social/meetAgain';
-import { removeWaitlistOf } from '@/lib/social/waitlist';
-import { removeQuestionsOf } from '@/lib/social/eventQuestions';
-import { removeReviewsBy } from '@/lib/social/reviews';
-import { removeVisitsBy } from '@/lib/social/visits';
-import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
-import { removeQuestJoinsBy } from '@/lib/social/questJoins';
-import { removeCampaignEntriesBy } from '@/lib/campaigns/members';
-import { removeWinnerEntriesBy } from '@/lib/campaigns/winners';
-import { removeVouchersBy } from '@/lib/social/questVouchers';
-import { removeFinishesBy } from '@/lib/social/questFinishes';
-import { removeContentReportsBy } from '@/lib/social/contentReports';
-import { removeFairGroupsOf } from '@/lib/social/fairGroups';
-import { removeChatMessagesBy } from '@/lib/social/chat';
-import { db } from '@/lib/db';
+import { deleteMemberAccount } from '@/lib/members/deleteAccount';
+import { familyForStaff, setAccountLimit } from '@/lib/members/subAccounts';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { tidyDisplayName } from '@/lib/displayName';
@@ -106,6 +91,14 @@ export async function GET(request: Request) {
 
   if (searchParams.get('view') === 'overview') {
     return NextResponse.json({ success: true, overview: await overview() }, { headers: { 'Cache-Control': 'no-store' } });
+  }
+
+  // The member's accounts and how many they may hold (BE-393)
+  const familyId = searchParams.get('family');
+  if (familyId) {
+    const member = await memberRepository.findById(familyId);
+    if (!member) return NextResponse.json({ success: false, error: 'ไม่พบสมาชิก' }, { status: 404 });
+    return NextResponse.json({ success: true, family: await familyForStaff(member) }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
   // PDPA access request handled by staff: download everything stored about one member
@@ -219,32 +212,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, member: toAdminMember(updated) });
   }
 
+  // How many accounts this person may hold, main one included (BE-393); limit null = back to the default
+  if (body.action === 'set_account_limit') {
+    try {
+      const owner = await setAccountLimit(member, body.limit ?? null);
+      const family = await familyForStaff(owner);
+      recordAudit(actor, 'member.account_limit', `ตั้งจำนวนบัญชีของ ${owner.displayName} เป็น ${family.limit}${family.isDefaultLimit ? ' (ค่าเริ่มต้น)' : ''}`, { type: 'member', id: owner.id });
+      return NextResponse.json({ success: true, family });
+    } catch (error) {
+      return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'บันทึกไม่สำเร็จ' }, { status: 400 });
+    }
+  }
+
   if (body.action === 'delete') {
     if (!actor || !roleHasPermission(actor.role, 'staff.manage')) {
       return NextResponse.json({ success: false, error: 'เฉพาะ Owner เท่านั้นที่ลบบัญชีสมาชิกได้' }, { status: 403 });
     }
     if (!reason) return NextResponse.json({ success: false, error: 'กรุณาระบุเหตุผล เช่น เลขที่คำขอของสมาชิก' }, { status: 400 });
     if (body.confirmName !== (tidyDisplayName(member.displayName).trim() || member.displayName)) return NextResponse.json({ success: false, error: 'พิมพ์ชื่อสมาชิกให้ตรงเพื่อยืนยัน' }, { status: 400 });
-    const removedMoments = await momentRepository.removeByAuthor(member.id);
-    const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
-    await removeReviewsBy(member.id);
-    await removeVisitsBy(member.id);
-    await removeRedemptionsBy(member.id);
-    await removeQuestJoinsBy(member.id);
-    await removeCampaignEntriesBy(member.id);
-    await removePlansBy(member.id);
-    await removeWinnerEntriesBy(member.id);
-    await removeVouchersBy(member.id);
-  await removeFinishesBy(member.id);
-    await removeContentReportsBy(member.id);
-    await removeFairGroupsOf(member.id);
-    await removeChatMessagesBy(member.id);
-    await db.removeParticipantEverywhere(member.id);
-    await removeNotificationsOf(member.id);
-    await removeMeetAgainOf(member.id);
-  await removeWaitlistOf(member.id);
-  await removeQuestionsOf(member.id);
-    await memberRepository.remove(member.id);
+    // Same clean-up as a member deleting themselves; an owner's sub-accounts go with it (BE-393)
+    const { removedMoments, removedComments } = await deleteMemberAccount(member, 'staff');
     // The audit entry keeps the id and the reason, not the member's name or email
     recordAudit(actor, 'member.delete', `ลบบัญชีสมาชิกถาวร (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments}) · เหตุผล: ${reason}`, { type: 'member', id: member.id });
     return NextResponse.json({ success: true, removedMoments, removedComments });

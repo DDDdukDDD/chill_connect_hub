@@ -42,8 +42,15 @@ export function nameInitial(name: string, fallback = '?'): string {
   return (letters.find((ch) => !THAI_LEADING_VOWEL.test(ch)) ?? letters[0] ?? fallback).toUpperCase();
 }
 
-// Names that read as the site or its staff (owner 2026-10-31): nobody may pass as the team. Duplicate names are fine,
-// as on IG or LINE (Thai nicknames repeat a lot); a unique @handle would be a separate field if it is ever needed
+/**
+ * How two names are compared for "already taken" (BE-394, owner 2026-11-16: no two members share a name, as on IG):
+ * tidied, case and spaces ignored, so "มะลิ ใจดี", "มะลิใจดี" and "Mali" / "mali" count as the same.
+ * The Postgres check (lib/members/pgMemberRepository.ts) applies the same rule to stored names.
+ */
+export const nameKey = (name: string): string => tidyDisplayName(name).toLowerCase().replace(/\s+/g, '');
+
+// Names that read as the site or its staff (owner 2026-10-31): nobody may pass as the team.
+// Since 2026-11-16 names are also unique across members (nameKey above; it replaced "duplicate names are fine")
 const RESERVED_NAMES = [
   /chill\W*waa/i,
   /chill\W*(&|and)\W*connect/i,

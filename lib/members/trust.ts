@@ -34,8 +34,12 @@ export function hasOpenRisk(member: Member): boolean {
   return newFlag || newReport;
 }
 
+/**
+ * A sub-account (BE-393) stands on its owner's identity: only a verified owner can make one, and it is reached only
+ * through the owner's sign-in. Its phone and email checks are the owner's too (hasVerifiedPhone, organizerNeeds; BE-394).
+ */
 export function hasConfirmedIdentity(member: Member): boolean {
-  return member.emailVerified || member.providers.length > 0;
+  return member.emailVerified || member.providers.length > 0 || Boolean(member.ownerId);
 }
 
 /** The phone check runs where a code can reach the member: with an SMS provider, or on a local server that shows the code */
@@ -50,8 +54,13 @@ export function phoneCheckIsOn(): boolean {
 export function organizerNeeds(member: Member): OrganizerNeed | null {
   if (!hasConfirmedIdentity(member)) return 'identity';
   if (!member.pledgeAcceptedAt) return 'pledge';
-  if (phoneCheckIsOn()) return member.phoneVerifiedAt ? null : 'phone';
-  return member.emailVerified ? null : 'email';
+  if (phoneCheckIsOn()) return hasVerifiedPhone(member) ? null : 'phone';
+  return member.emailVerified || member.ownerChecks?.emailVerified ? null : 'email';
+}
+
+/** Its own number, or for a sub-account the main account's (BE-394, owner 2026-11-16): one number, one person */
+export function hasVerifiedPhone(member: Member): boolean {
+  return Boolean(member.phoneVerifiedAt || member.ownerChecks?.phoneVerifiedAt);
 }
 
 /** The refusal for a "new" account, naming only what is really missing */
@@ -74,7 +83,8 @@ export function trustOf(member: Member): MemberTrust {
     emailVerified: member.emailVerified,
     hasEmail: Boolean(member.email),
     identityConfirmed: hasConfirmedIdentity(member),
-    phoneVerified: Boolean(member.phoneVerifiedAt),
+    phoneVerified: hasVerifiedPhone(member),
+    phoneFromOwner: !member.phoneVerifiedAt && Boolean(member.ownerChecks?.phoneVerifiedAt),
     phoneCheckOn: phoneCheckIsOn(),
     organizerNeeds: organizerNeeds(member),
     pledged: Boolean(member.pledgeAcceptedAt),

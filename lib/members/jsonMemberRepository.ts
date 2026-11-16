@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { IS_SERVERLESS } from '../db/databaseFile';
 import { AsyncMutex } from '../db/mutex';
+import { nameKey } from '../displayName';
 import type { Member, MemberQuery, MemberRepository, MemberStatus, OAuthProvider } from './types';
 
 /**
@@ -36,7 +37,17 @@ function out(member: Member | undefined): Member | null;
 function out(member: Member | undefined): Member | null {
   if (!member) return null;
   const { passwordHash, ...rest } = member;
-  return { ...rest, hasPassword: Boolean(passwordHash) };
+  // Sub-accounts read what the main account confirmed, as the Postgres read does (BE-394)
+  const owner = member.ownerId ? load().find((m) => m.id === member.ownerId) : undefined;
+  return { ...rest, hasPassword: Boolean(passwordHash), ...(owner && { ownerChecks: { emailVerified: owner.emailVerified, phoneVerifiedAt: owner.phoneVerifiedAt } }) };
+}
+
+/** What is stored: derived read-only fields left out */
+function stored(member: Member): Member {
+  const { ownerChecks: _checks, hasPassword: _has, ...rest } = member;
+  void _checks;
+  void _has;
+  return rest;
 }
 
 export const jsonMemberRepository: MemberRepository = {
@@ -63,6 +74,12 @@ export const jsonMemberRepository: MemberRepository = {
   async findInvitees(id) {
     return load().filter((m) => m.invitedBy === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((m) => out(m));
   },
+  async isNameTaken(key, exceptId) {
+    return load().some((m) => m.id !== exceptId && !m.isSample && nameKey(m.displayName) === key);
+  },
+  async findSubAccounts(ownerId) {
+    return load().filter((m) => m.ownerId === ownerId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((m) => out(m));
+  },
   async countFollowers(id) {
     return load().filter((m) => m.status === 'active' && m.followingIds?.includes(id)).length;
   },
@@ -83,8 +100,8 @@ export const jsonMemberRepository: MemberRepository = {
     return mutex.runExclusive(async () => {
       const members = load();
       if (member.email && members.some((m) => m.email === member.email)) throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว');
-      persist([...members, member]);
-      return out(member);
+      persist([...members, stored(member)]);
+      return out(stored(member));
     });
   },
   async update(id, changes) {
@@ -92,7 +109,7 @@ export const jsonMemberRepository: MemberRepository = {
       const members = load();
       const index = members.findIndex((m) => m.id === id);
       if (index === -1) throw new Error('ไม่พบสมาชิก');
-      const updated = { ...members[index], ...changes, id };
+      const updated = stored({ ...members[index], ...changes, id });
       persist(members.map((m, i) => (i === index ? updated : m)));
       return out(updated);
     });

@@ -48,6 +48,8 @@ import { MASTER_COMMUNITY_LIFESTYLE_CATEGORIES } from '@/data/masterHub';
 import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { NEW_MEMBER_NAME, nameInitial, reservedNameProblem, tidyDisplayName } from '@/lib/displayName';
+import { useNameCheck } from '@/lib/useNameCheck';
+import { NameCheckHint } from '@/components/auth/NameCheckHint';
 import { compressImage } from '@/lib/media/compressor';
 import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
@@ -671,6 +673,11 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     // LINE, Google and Facebook bring the full name: suggest the first name only, so the surname is not shown to strangers
     const suggested = session.member.loginMethods.includes('email') ? accountName : accountName.split(/\s+/)[0];
     if (!displayName && !isPlaceholder) setDisplayName(suggested);
+    // Answers the account already has start filled in: a new sub-account carries its owner's birth year, area and
+    // gender (owner 2026-11-16), and a member coming back sees what they said before. Stored in CE, shown in BE
+    if (!birthYear && session.member.birthYear) setBirthYear(String(session.member.birthYear + 543));
+    if (!province && session.member.province) setProvince(session.member.province);
+    if (!gender && session.member.gender) setGender(session.member.gender);
   }
   // A picked photo wins; otherwise show the picture the account already has (from LINE, Google or Facebook)
   const shownPhoto = safeImageSrc(photo?.preview ?? (preview ? null : session.member?.avatarUrl)) || null;
@@ -716,7 +723,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   // "บอกเราเกี่ยวกับคุณ": the first-moment example, and which required answers are in (ticks and "อีก N ข้อ")
   const firstMomentBase = FIRST_MOMENT_BY_SAI[communityInterests.find((id) => FIRST_MOMENT_BY_SAI[id]) ?? ''] ?? FIRST_MOMENT_DEFAULT;
   const firstMoment = { image: firstMomentBase.image, caption: province ? `${firstMomentBase.caption} ที่${province}` : firstMomentBase.caption };
-  const nameOk = displayName.trim().length >= 2 && !reservedNameProblem(displayName);
+  // Names are unique (BE-394): asked while typing; the visitor's own current name needs no check
+  const nameCheck = useNameCheck(displayName, { current: session.member?.displayName, enabled: !preview && Boolean(session.member) });
+  const nameOk = displayName.trim().length >= 2 && !reservedNameProblem(displayName) && nameCheck.state !== 'taken';
   const aboutLeft = [!nameOk, !birthYear, !province].filter(Boolean).length;
   const alreadyPledged = Boolean(session.member?.trust.pledged);
 
@@ -753,7 +762,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     // Name, birth year and area are required (owner 2026-10-23): matching ตี้ by age and distance depends on them
     if (step === STEP_ABOUT) {
       const name = displayName.trim();
-      const nameProblem = name.length < 2 ? 'ใส่ชื่อก่อนนะ อย่างน้อย 2 ตัวอักษร' : name.length > 40 ? 'ชื่อยาวได้ไม่เกิน 40 ตัวอักษร' : reservedNameProblem(name);
+      const nameProblem = name.length < 2 ? 'ใส่ชื่อก่อนนะ อย่างน้อย 2 ตัวอักษร' : name.length > 40 ? 'ชื่อยาวได้ไม่เกิน 40 ตัวอักษร' : reservedNameProblem(name) || (nameCheck.state === 'taken' ? nameCheck.message ?? 'ชื่อนี้มีคนใช้แล้ว' : '');
       setNameError(nameProblem);
       setBirthYearMissing(!birthYear);
       setProvinceMissing(!province);
@@ -1685,6 +1694,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                         {/* Says where the name shows: it is the profile name everyone sees (owner 2026-10-31) */}
                         {nameError ? (
                           <p id="onb-name-error" className="text-xs font-bold text-rose-600">{nameError}</p>
+                        ) : nameCheck.state !== 'idle' ? (
+                          <NameCheckHint check={nameCheck} id="onb-name-hint" />
                         ) : (
                           <p id="onb-name-hint" className="text-xs font-medium text-slate-500">แสดงบนโปรไฟล์ โมเมนต์ และในตี้ เปลี่ยนได้ทีหลัง</p>
                         )}

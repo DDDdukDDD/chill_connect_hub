@@ -143,6 +143,89 @@ const METHOD_LABELS: Record<LoginMethod, string> = { email: 'อีเมล', g
 
 const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 
+interface MemberFamily {
+  ownerId: string;
+  limit: number;
+  isDefaultLimit: boolean;
+  accounts: { id: string; displayName: string; isOwner: boolean; status: MemberStatus }[];
+}
+
+/** The person's accounts (main and sub-accounts) and how many they may hold (BE-393) */
+function MemberAccountsSection({ memberId }: { memberId: string }) {
+  const [family, setFamily] = useState<MemberFamily | null>(null);
+  const [limit, setLimit] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/admin/members?family=${encodeURIComponent(memberId)}`, { cache: 'no-store' })
+      .then((res) => (handleAdminUnauthorized(res) ? null : res.json()))
+      .then((json) => {
+        if (!alive || !json?.success) return;
+        setFamily(json.family);
+        setLimit(String(json.family.limit));
+      })
+      .catch(() => alive && setMessage({ tone: 'error', text: 'โหลดรายชื่อบัญชีไม่สำเร็จ' }));
+    return () => {
+      alive = false;
+    };
+  }, [memberId]);
+
+  const save = async (value: number | null) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set_account_limit', id: memberId, limit: value }) });
+      if (handleAdminUnauthorized(res)) return;
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
+      setFamily(json.family);
+      setLimit(String(json.family.limit));
+      setMessage({ tone: 'ok', text: `บันทึกแล้ว มีได้ ${json.family.limit} บัญชี` });
+    } catch (err) {
+      setMessage({ tone: 'error', text: err instanceof Error ? err.message : 'บันทึกไม่สำเร็จ' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <FormSection title="บัญชีของคนนี้" hint="บัญชีหลักกับบัญชีย่อยที่สร้างจากบัญชีหลัก บัญชีย่อยไม่มีอีเมล เข้าได้โดยสลับจากบัญชีหลักเท่านั้น ลดจำนวนลงจะไม่ลบบัญชีที่มีอยู่ แค่สร้างเพิ่มไม่ได้">
+      <div className="sm:col-span-2 space-y-3 text-sm text-slate-700">
+        {!family ? (
+          <p className="flex items-center gap-2 text-slate-500"><Loader2 size={14} className="animate-spin" /> กำลังโหลด…</p>
+        ) : (
+          <>
+            <ul className="space-y-1">
+              {family.accounts.map((account) => (
+                <li key={account.id} className="flex flex-wrap items-center gap-2">
+                  <span className={account.id === memberId ? 'font-bold text-slate-900' : ''}>{account.displayName}</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{account.isOwner ? 'บัญชีหลัก' : 'บัญชีย่อย'}</span>
+                  {account.status !== 'active' && <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${STATUS_META[account.status].className}`}>{STATUS_META[account.status].label}</span>}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-end gap-2">
+              <Field label="จำนวนบัญชีที่มีได้ (รวมบัญชีหลัก)" htmlFor="account-limit">
+                <input id="account-limit" type="number" min={1} max={10} inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value)} className={`${fieldInputClass} w-28`} />
+              </Field>
+              <button type="button" disabled={busy || Number(limit) === family.limit} onClick={() => save(Number(limit))} className={adminButton.primary}>
+                {busy && <Loader2 size={14} className="animate-spin" />} บันทึกจำนวน
+              </button>
+              {!family.isDefaultLimit && (
+                <button type="button" disabled={busy} onClick={() => save(null)} className={adminButton.secondary}>ใช้ค่าเริ่มต้น</button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">ใช้อยู่ {family.accounts.length} จาก {family.limit} บัญชี{family.isDefaultLimit ? ' (ค่าเริ่มต้น)' : ''}</p>
+          </>
+        )}
+        {message && <p role={message.tone === 'error' ? 'alert' : 'status'} className={`text-xs font-semibold ${message.tone === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>{message.text}</p>}
+      </div>
+    </FormSection>
+  );
+}
+
 function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; onClose: () => void; onDone: (message: string) => void }) {
   const { can } = useAdminSession();
   const nameOf = useInterestNames();
@@ -218,6 +301,7 @@ function ModerationDrawer({ member, onClose, onDone }: { member: AdminMember; on
           </p>
         </div>
       </FormSection>
+      <MemberAccountsSection memberId={member.id} />
       {(openFlags.length > 0 || openReports.length > 0 || (member.riskFlags?.length ?? 0) > 0) && (
         <FormSection title="ธงเตือนและรายงาน" hint="ระบบตั้งธงให้อัตโนมัติเมื่อพบสัญญาณเสี่ยง และเมื่อสมาชิกคนอื่นรายงาน ธงไม่ได้แปลว่าผิด ให้ทีมงานดูแล้วตัดสิน">
           <div className="sm:col-span-2 space-y-3">

@@ -17,6 +17,7 @@ import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
 import { notifyFriendsGoing, notifyJoined } from '../social/notifications';
 import { pendingJoinsOf, settlePendingJoins } from '../social/pendingJoins';
+import { FAMILY_ALREADY_IN_MESSAGE, familyAlreadyIn } from './subAccounts';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -60,6 +61,11 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
       status: 'not_allowed',
       message: hasConfirmedIdentity(member) ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)',
     };
+  }
+  // Two accounts of one person never sit in the same ตี้ or trip (BE-393): the 3-person minimum must be 3 people
+  if (isCommunity(event)) {
+    const people = [...(await db.listParticipants(eventId)).map((p) => p.userId), ...(hostOf(event) ? [hostOf(event)!] : [])];
+    if (await familyAlreadyIn(member, people)) return { status: 'not_allowed', message: FAMILY_ALREADY_IN_MESSAGE };
   }
   const result = await db.atomicJoinEvent(eventId, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
   if (result.success || result.status === 'already_joined') {

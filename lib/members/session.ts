@@ -68,6 +68,8 @@ interface SessionPayload {
   sub: string;
   ver: number;
   exp: number;
+  /** Sub-accounts (BE-393): the owner's sessionVersion, so the owner's "log out everywhere" or new password ends these too */
+  own?: number;
 }
 
 const cookieOptions = (maxAge: number) => ({
@@ -78,9 +80,12 @@ const cookieOptions = (maxAge: number) => ({
   maxAge,
 });
 
-export function setMemberSessionCookie(response: NextResponse, member: Member) {
+/** `owner`: required for a sub-account, whose session lives only as long as its owner's sign-in holds */
+export function setMemberSessionCookie(response: NextResponse, member: Member, owner?: Member) {
+  if (member.ownerId && owner?.id !== member.ownerId) throw new Error('A sub-account session needs its owner');
   const exp = Math.floor(Date.now() / 1000) + MEMBER_SESSION_TTL_SECONDS;
-  response.cookies.set(MEMBER_SESSION_COOKIE, signPayload({ sub: member.id, ver: member.sessionVersion, exp }), cookieOptions(MEMBER_SESSION_TTL_SECONDS));
+  const payload: SessionPayload = { sub: member.id, ver: member.sessionVersion, exp, ...(owner && member.ownerId && { own: owner.sessionVersion }) };
+  response.cookies.set(MEMBER_SESSION_COOKIE, signPayload(payload), cookieOptions(MEMBER_SESSION_TTL_SECONDS));
 }
 
 export function clearMemberSessionCookie(response: NextResponse) {
@@ -113,6 +118,11 @@ async function memberFromSessionToken(token: string | null | undefined): Promise
   if (!stored || stored.sessionVersion !== payload.ver) return null;
   const member = await refreshMemberStatus(stored);
   if (member.status !== 'active') return null;
+  // A sub-account holds only while its owner's sign-in does, and while the owner may use the site
+  if (member.ownerId) {
+    const owner = await memberRepository.findFresh(member.ownerId);
+    if (!owner || owner.sessionVersion !== payload.own || (await refreshMemberStatus(owner)).status !== 'active') return null;
+  }
   // Retention: the first signed-in request of the day is noted, once (lib/members/activeDays.ts)
   noteActiveDay(member.id);
   return member;

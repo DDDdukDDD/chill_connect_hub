@@ -1,6 +1,7 @@
 import type { RewardShopItem } from '@/data/rewardsData';
 import { tidyDisplayName } from '../displayName';
-import { memberRepository } from '../members';
+import { memberRepository, type Member } from '../members';
+import { familyIdOf } from '../members/subAccounts';
 import { drawWinnerMessage, sendMail } from '../members/mailer';
 import { notifyDrawResult, notifyDrawWon } from '../social/notifications';
 import { entryCodeOf, findReward } from '../rewards/catalog';
@@ -57,6 +58,23 @@ export async function drawCampaigns(): Promise<DrawCampaign[]> {
     withPrize.flatMap(({ campaign, prize }) => (prize ? [{ campaign, prize }] : [])).map(async ({ campaign, prize }) => {
       const rows = winners.filter((w) => w.campaignId === campaign.id);
       const people = await memberRepository.findByIds(rows.flatMap((w) => (w.memberId ? [w.memberId] : [])));
+      // Sub-accounts (BE-393): staff reach their owner, and see when one owner holds more than one win
+      const owners = await memberRepository.findByIds([...people.values()].flatMap((p) => (p.ownerId ? [p.ownerId] : [])));
+      const familyWins = new Map<string, string[]>();
+      for (const w of rows) {
+        const person = w.memberId ? people.get(w.memberId) : undefined;
+        if (person && w.status !== 'forfeited') familyWins.set(familyIdOf(person), [...(familyWins.get(familyIdOf(person)) ?? []), person.displayName]);
+      }
+      const familyNoteOf = (person: Member | undefined) => {
+        if (!person) return undefined;
+        const owner = person.ownerId ? owners.get(person.ownerId) : undefined;
+        const siblings = (familyWins.get(familyIdOf(person)) ?? []).filter((name) => name !== person.displayName);
+        const notes = [
+          ...(person.ownerId ? [`บัญชีย่อยของ ${owner?.displayName ?? 'บัญชีที่ถูกลบ'} (ติดต่อผ่านบัญชีหลัก)`] : []),
+          ...(siblings.length ? [`เจ้าของเดียวกับผู้โชคดี ${siblings.join(', ')}`] : []),
+        ];
+        return notes.length ? notes.join(' · ') : undefined;
+      };
       const pool = await poolOf(prize);
       return {
         id: campaign.id,
@@ -70,7 +88,8 @@ export async function drawCampaigns(): Promise<DrawCampaign[]> {
         refusal: drawRefusal(campaign, prize, all, winners),
         winners: rows.map(({ memberId, ...w }) => {
           const person = memberId ? people.get(memberId) : undefined;
-          return { ...w, name: person?.displayName ?? 'บัญชีถูกลบแล้ว', email: person?.email, phone: person?.phone };
+          const contact = person?.ownerId ? owners.get(person.ownerId) : person;
+          return { ...w, name: person?.displayName ?? 'บัญชีถูกลบแล้ว', email: contact?.email, phone: person?.phone ?? contact?.phone, familyNote: familyNoteOf(person) };
         }),
       };
     })
@@ -82,9 +101,11 @@ async function tellWinner(winner: CampaignWinner, campaign: Campaign, prizeTitle
   if (!winner.memberId) return;
   await notifyDrawWon(winner.memberId, winnerPath(campaign.id), campaign.headline);
   const member = await memberRepository.findById(winner.memberId);
+  // A sub-account has no email: its owner's address hears, with the sub-account's name (BE-393)
+  const mailbox = member?.ownerId ? await memberRepository.findById(member.ownerId) : member;
   // The time to claim is short and the bell needs the member to come back, so a confirmed address hears as well
-  if (member?.email && member.emailVerified) {
-    await sendMail({ to: member.email, ...drawWinnerMessage(tidyDisplayName(member.displayName), prizeTitle, winner.code, absoluteUrl(winnerPath(campaign.id)), CLAIM_DAYS) });
+  if (member && mailbox?.email && mailbox.emailVerified) {
+    await sendMail({ to: mailbox.email, ...drawWinnerMessage(tidyDisplayName(member.displayName), prizeTitle, winner.code, absoluteUrl(winnerPath(campaign.id)), CLAIM_DAYS) });
   }
 }
 

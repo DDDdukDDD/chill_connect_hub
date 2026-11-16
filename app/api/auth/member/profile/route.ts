@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { toPublicMember } from '@/lib/members';
-import { MemberAuthError, updateProfile } from '@/lib/members/accounts';
+import { MemberAuthError, cleanDisplayName, ensureNameFree, updateProfile } from '@/lib/members/accounts';
+import { nameKey } from '@/lib/displayName';
 import { followerCount, publicProfileOf, updateProfileDetails } from '@/lib/members/safety';
 import { finishesOf } from '@/lib/social/questFinishes';
 import { hostReviewSummary } from '@/lib/social/reviews';
@@ -32,6 +33,11 @@ export async function PATCH(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   try {
     const body = await request.json();
+    // The name is checked first (BE-394: taken names refused), so a refused name saves nothing else either
+    if (body?.displayName !== undefined) {
+      const name = cleanDisplayName(body.displayName);
+      if (nameKey(name) !== nameKey(member.displayName)) await ensureNameFree(name, member.id);
+    }
     const withDetails = await updateProfileDetails(member, body);
     const updated = await updateProfile(withDetails, body);
     return NextResponse.json({ success: true, member: toPublicMember(updated), details: updated.profile });

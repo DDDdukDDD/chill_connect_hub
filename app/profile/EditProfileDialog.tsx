@@ -7,6 +7,8 @@ import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { SAI_FAIRS, SAI_SPOTS } from '@/app/onboarding/OnboardingFlow';
 import { nameInitial, tidyDisplayName } from '@/lib/displayName';
+import { useNameCheck } from '@/lib/useNameCheck';
+import { NameCheckHint } from '@/components/auth/NameCheckHint';
 import { compressImage } from '@/lib/media/compressor';
 import type { MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
 import { safeImageSrc } from '@/lib/optimizedImage';
@@ -112,6 +114,7 @@ export function EditProfileDialog({
   const [sai, setSai] = useState<string[]>(() => preferences?.interests.communityCategories ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const nameCheck = useNameCheck(name, { current: member.displayName });
 
   const setShown = (key: string, shown: boolean) => setHidden((list) => (shown ? list.filter((k) => k !== key) : [...new Set([...list, key])]));
   const toggleSai = (id: string) => setSai((now) => (now.includes(id) ? now.filter((x) => x !== id) : [...now, id]));
@@ -137,6 +140,10 @@ export function EditProfileDialog({
     if (name.trim().length < 2) {
       setTab('me');
       return setError('ชื่อต้องมีอย่างน้อย 2 ตัวอักษร');
+    }
+    if (nameCheck.state === 'taken') {
+      setTab('me');
+      return setError(nameCheck.message ?? 'ชื่อนี้มีคนใช้แล้ว');
     }
     setBusy(true);
     setError('');
@@ -262,7 +269,8 @@ export function EditProfileDialog({
               )}
               <div className="space-y-1.5">
                 <label htmlFor="pf-name" className="block text-sm font-bold text-slate-800">ชื่อที่แสดง</label>
-                <input id="pf-name" data-autofocus type="text" autoComplete="nickname" maxLength={40} value={name} onChange={(e) => setName(tidyDisplayName(e.target.value))} className={inputClass} />
+                <input id="pf-name" data-autofocus type="text" autoComplete="nickname" maxLength={40} value={name} onChange={(e) => setName(tidyDisplayName(e.target.value))} aria-invalid={nameCheck.state === 'taken' || undefined} aria-describedby="pf-name-check" className={`${inputClass} aria-[invalid=true]:border-rose-400`} />
+                <NameCheckHint check={nameCheck} id="pf-name-check" />
               </div>
               {ME_FIELDS.map(textField)}
             </>
