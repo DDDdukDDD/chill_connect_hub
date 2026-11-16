@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-403 · Android app shell (TWA) started, offline and store items in the checklist (owner 2026-11-16)
+- **What changed:** The owner chose to wrap the website as store apps (Android first, then iPhone with Capacitor), not write a separate app. New: `android/twa-manifest.json` (Bubblewrap settings, package `com.chillwaa.app`), `android/.gitignore` (signing key never in git), `GET /.well-known/assetlinks.json` (`app/.well-known/assetlinks.json/route.ts`, reads `ANDROID_CERT_SHA256` + `ANDROID_PACKAGE_ID`, empty list until set), steps in `docs/ANDROID_APP.md`. LAUNCH_CHECKLIST gains "แอปในสโตร์": Play/Apple accounts (Play's 12 testers × 14 days rule for new personal accounts), Sign in with Apple, and offline tickets + last feed.
+- **What to do about it:** Nothing yet. The app file is not built: this machine has no JDK/Android SDK.
+
 ### BE-402 · Tagged friends follow the author's name under the post (owner 2026-11-16)
 - **What changed:** UI only. On feed cards (`components/home/HomeMomentFeed.tsx`) "กับ …" moved from under the author at the top to the caption line after the author's name ("TingerBell กับ Duke เจลาโต้…"); a tagged post with no caption still gets that line. `TaggedFriends` gains `inline`. The moment page (`components/moments/MomentDetailView.tsx`, photo and clip) shows it under the caption as "<author> กับ …".
 
