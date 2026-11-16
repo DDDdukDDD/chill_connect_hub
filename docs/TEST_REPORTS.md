@@ -67,7 +67,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Evidence:** `components/PosterPhoto.tsx` (บรรทัด 40–51) และ `components/FairTile.tsx` (บรรทัด 104)
   - **Re-test (2026-11-06 on `3745704`):** รูปที่เพิ่งโหลดหลังเลื่อนหน้าจอเปลี่ยนเป็น `PHOTO_STAND_IN` แล้ว แต่การ์ดชุดแรกที่อยู่ใน SSR HTML ของ `/events` (เช่น `/events/live-agg-50cd344c700e3fcf18fe` รูป `one-fight-night-49-6abf6cd60c539-l.png` และ `/events/live-agg-15c758f2787260a944cd` รูป `one-lumpinee-178-6ab4b8f1c402f-l.jpg`) โหลดล้มเหลว (HTTP 404) เสร็จก่อนที่ React จะ hydrate ทำให้ `onError` ไม่ถูกเรียก และใน `useEffect` (`components/PosterPhoto.tsx` บรรทัด 37–40) เช็กแค่ `if (ref.current?.complete) measure(ref.current)` ซึ่งทำเฉพาะกรณี `img.naturalWidth > 0` แต่ไม่ได้เรียก `setFailedSrc(src)` เมื่อ `ref.current.complete && ref.current.naturalWidth === 0` ทำให้ 2 การ์ดนี้ยังแสดงไอคอนรูปแตก (`naturalWidth === 0`)
 - **Status:** Ready to re-test
-- **Fix:** 13f8949 PosterPhoto และ MeetupTile ใช้รูปสำรองเมื่อโหลดรูปไม่ได้ ตรวจแล้วโดยบังคับลิงก์เสียบน /events · c9fee5a (BE-289) รูปใน SSR ที่โหลดไม่ได้ก่อน hydrate: `useEffect` เช็ก `complete && naturalWidth === 0` แล้วเปลี่ยนเป็นรูปสำรอง
+- **Fix:** 13f8949 PosterPhoto และ MeetupTile ใช้รูปสำรองเมื่อโหลดรูปไม่ได้ ตรวจแล้วโดยบังคับลิงก์เสียบน /events · c9fee5a (BE-289) รูปใน SSR ที่โหลดไม่ได้ก่อน hydrate: `useEffect` เช็ก `complete && naturalWidth === 0` แล้วเปลี่ยนเป็นรูปสำรอง · BE-390 ใช้วิธีเดียวกันกับรูปที่เหลือ (`components/FallbackImg.tsx`: EventDateList, แถวอีเวนต์หน้าแรก, ตี้แนะนำใน My Hub)
 
 ### TR-003 · `/moments` และ `/moments/[id]`: ชื่อผู้โพสต์แสดงชื่อบัญชีภาษาอังกฤษในวงเล็บต่อท้ายชื่อไทย เช่น `คุณกี้ (Kee_Explorer)`
 - **Severity:** Low
@@ -80,7 +80,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Actual:** แสดงชื่อพร้อมชื่อบัญชีภาษาอังกฤษในวงเล็บ เช่น `คุณกี้ (Kee_Explorer)`, `คุณมินท์ (Mint_Vibes)` ทำให้บรรทัดชื่อบนการ์ด 2 คอลัมน์ที่ความกว้าง `360px` แน่นและยาวเกินจำเป็น
 - **Evidence:** หน้า `/moments` และ `/moments/sample-post-spot-1`
 - **Status:** Confirmed fixed
-- **Fix:** 13f8949 ตัดวงเล็บออกตอนแสดงผล เฉพาะบัญชีและโพสต์ตัวอย่าง (withoutSampleHandle) รวมกับ TR-007
+- **Fix:** 13f8949 ตัดวงเล็บออกตอนแสดงผล เฉพาะบัญชีและโพสต์ตัวอย่าง (withoutSampleHandle) รวมกับ TR-007 · BE-390 หน้าโปรไฟล์ของบัญชีตัวอย่างด้วย (publicProfileOf)
 
 ### TR-004 · `/community`, `/events`, `/challenges`: สลับเป็นมุมมอง "รายการ" บนมือถือ 360px แล้วครึ่งบนของหน้าจอยังคงแสดงเป็นการ์ดรูปขนาดใหญ่
 - **Severity:** Medium

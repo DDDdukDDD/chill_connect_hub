@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { EventItem } from '@/data/mockData';
 import { areaLabel } from '@/components/MeetupTile';
+import FallbackImg from '@/components/FallbackImg';
 import { isEventEnded, parseEventDateToTimestamp, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -63,12 +64,9 @@ function Row({ kind, event }: { kind: Kind; event: EventItem }) {
   return (
     <li className="min-w-0">
       <Link href={hrefOf(kind, event)} className="group flex items-center gap-3 sm:gap-4 py-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={event.image || FALLBACK_IMAGE}
-          onError={(ev) => {
-            if (ev.currentTarget.src !== FALLBACK_IMAGE) ev.currentTarget.src = FALLBACK_IMAGE;
-          }}
+        <FallbackImg
+          src={event.image}
+          fallback={FALLBACK_IMAGE}
           alt=""
           loading="lazy"
           className="w-16 h-16 sm:w-28 sm:h-[72px] shrink-0 rounded-xl object-cover bg-slate-100"

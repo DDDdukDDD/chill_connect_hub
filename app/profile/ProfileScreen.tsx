@@ -679,7 +679,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   // Under the name, as on IG: posts, followers, following (zeros too: they are the start of a profile, not a gap)
   const social: { label: string; value: number; tab?: ProfileTab; list?: FollowTab }[] = profile
     ? [
-        { label: 'โพสต์', value: state.momentsTotal ?? state.moments.length, tab: 'moments' as const },
+        { label: 'โมเมนต์', value: state.momentsTotal ?? state.moments.length, tab: 'moments' as const },
         ...(profile.followerCount !== undefined ? [{ label: 'ผู้ติดตาม', value: profile.followerCount, list: 'followers' as const }] : []),
         ...(profile.followingCount !== undefined ? [{ label: 'กำลังติดตาม', value: profile.followingCount, list: 'following' as const }] : []),
       ]

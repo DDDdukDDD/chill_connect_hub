@@ -77,8 +77,8 @@ export function getNearbyRecommendationInfo(currentSpot: LifestyleSpotItem, limi
   const isZonal = Boolean(zoneName && zoneName !== currentSpot.province);
 
   const sectionTitle = isZonal
-    ? `สถานที่แนะนำในย่าน ${zoneName} และใกล้เคียง 🌿`
-    : `สถานที่แนะนำอื่นๆ ในจังหวัด ${currentSpot.province} 🌿`;
+    ? `ที่เที่ยวในย่าน${zoneName}`
+    : `ที่เที่ยวอื่นใน${currentSpot.province}`;
 
   const sectionSubtitle = isZonal
     ? `จุดเช็คอินและที่เที่ยวยอดฮิตในย่าน ${zoneName} ที่เดินทางไปต่อได้สะดวกในทริปเดียวกัน`
