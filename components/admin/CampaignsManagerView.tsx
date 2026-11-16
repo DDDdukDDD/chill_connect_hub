@@ -4,6 +4,7 @@ import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Eye, EyeOff, Loader2, Megaphone, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { CampaignStrip } from '@/components/CampaignStrip';
+import type { RewardShopItem } from '@/data/rewardsData';
 import { type Campaign, type CampaignStats, MAX_HOME_CAMPAIGNS, bangkokToday, campaignDay, homeCampaignsOf } from '@/lib/campaigns/types';
 import { AdminDrawer, Field, FormSection, fieldInputClass } from './AdminDrawer';
 import { AdminEmptyState, AdminPageHeader, adminButton } from './AdminUI';
@@ -12,7 +13,7 @@ import { ImageField } from './masterAdmin';
 
 type AdminCampaign = Campaign & { live: boolean; stats: CampaignStats };
 type QuestOption = { id: string; title: string; status?: string; startDate?: string; endDate?: string; rewardPoints: number };
-type RewardOption = { id: string; title: string; costXp: number; drawLabel?: string };
+type RewardOption = RewardShopItem;
 type Role = 'none' | 'step' | 'extra';
 
 const EMPTY: Omit<Campaign, 'createdAt' | 'updatedAt'> = {
@@ -75,7 +76,8 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
     }
   };
 
-  const preview: Campaign = { ...form, createdAt: '', updatedAt: '', prizeImage: form.prizeImage || undefined, rewardId: form.rewardId || undefined };
+  const prize = rewards.find((r) => r.id === form.rewardId);
+  const preview: Campaign & { prize?: RewardShopItem } = { ...form, createdAt: '', updatedAt: '', prizeImage: form.prizeImage || undefined, rewardId: form.rewardId || undefined, prize };
 
   return (
     <AdminDrawer
@@ -148,10 +150,17 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
           <select id="campaign-reward" value={form.rewardId} onChange={(e) => set('rewardId', e.target.value)} className={fieldInputClass}>
             <option value="">ไม่มี</option>
             {rewards.map((r) => (
-              <option key={r.id} value={r.id}>{r.title} · {r.costXp.toLocaleString()} XP{r.drawLabel ? ` · จับรางวัล ${r.drawLabel}` : ''}</option>
+              <option key={r.id} value={r.id}>{r.title} · {r.costXp.toLocaleString()} XP{r.drawEntry ? ` · จับรางวัล ${r.drawEntry.drawLabel}` : ''}</option>
             ))}
           </select>
         </Field>
+        {/* The draw date and entry limits belong to the reward (one pool per reward), so they are set there */}
+        {prize?.drawEntry && (
+          <p className="sm:col-span-2 text-xs text-slate-600">
+            {prize.costXp.toLocaleString()} XP ต่อสิทธิ์ · จับรางวัล {prize.drawEntry.drawLabel} · {(prize.drawEntry.maxPerMember ?? 1) > 1 ? `สูงสุด ${prize.drawEntry.maxPerMember} สิทธิ์ต่อคน${prize.drawEntry.perDay ? ` · วันละ ${prize.drawEntry.perDay}` : ' · ไม่จำกัดต่อวัน'}` : 'คนละ 1 สิทธิ์'}
+            {' · '}<a href="/admin?m=rewards" className="font-semibold text-blue-700 underline">แก้ที่หน้าของรางวัล</a>
+          </p>
+        )}
         <div className="sm:col-span-2">
           <ImageField id="campaign-image" value={form.prizeImage ?? ''} onChange={(url) => set('prizeImage', url)} folder="campaign" />
         </div>

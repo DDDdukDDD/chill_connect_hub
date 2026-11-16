@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { LAUNCH_CAMPAIGN } from '@/data/launchCampaign';
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { db } from '../db';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
@@ -10,6 +9,7 @@ import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { createJsonStore } from '../social/jsonStore';
 import { progressOf } from '../social/questProgress';
 import { allQuestJoins } from '../social/questJoins';
+import { findReward, listRewards } from '../rewards/catalog';
 import { redemptionCountOf } from '../social/rewardsLedger';
 import { wentTogether } from '../social/friends';
 import { QuestJoinError, joinQuest } from '../social/questJoins';
@@ -117,9 +117,10 @@ const campaignViews = (): Promise<CampaignView[]> =>
   cacheManager.getOrSet(
     `${CACHE_KEY}:views`,
     async () => {
-      const { items: quests } = await db.findQuests({ page: 1, limit: 500, status: 'all' });
+      const [{ items: quests }, rewards] = await Promise.all([db.findQuests({ page: 1, limit: 500, status: 'all' }), listRewards()]);
       return (await listCampaigns()).map((campaign) => ({
         ...campaign,
+        prize: rewards.find((item) => item.id === campaign.rewardId),
         steps: campaign.questIds.flatMap((id) => {
           const quest = quests.find((q) => q.id === id);
           return quest ? [{ id, title: quest.title, image: quest.badgeCoverImg, total: Number(quest.total) || 1, rewardPoints: quest.rewardPoints ?? 0 }] : [];
@@ -156,7 +157,7 @@ export async function campaignsOfMember(memberId: string): Promise<MyCampaign[]>
       const rows = announced.filter((w) => w.campaignId === campaign.id);
       const mine = rows.find((w) => w.memberId === memberId);
       const firstOut = rows.map((w) => Date.parse(w.announcedAt as string)).sort((a, b) => a - b)[0];
-      const isDraw = Boolean(REWARD_SHOP_ITEMS.find((item) => item.id === campaign.rewardId)?.drawEntry);
+      const isDraw = Boolean(campaign.prize?.drawEntry);
       const stillShown = firstOut === undefined || Date.now() - firstOut < RESULTS_SHOWN_DAYS * DAY;
       const shown = isCampaignLive(campaign, today) || (redeemedAt && isDraw && stillShown) || mine?.status === 'pending' || mine?.status === 'claimed';
       if (!shown) return [];
@@ -199,7 +200,7 @@ export async function saveCampaign(input: Record<string, unknown>): Promise<Camp
   const prizeImage = text(input.prizeImage, 500);
   if (prizeImage && !/^(\/[\w\-./]+|https:\/\/\S+)$/.test(prizeImage)) throw new CampaignError('รูปรางวัลต้องเป็นลิงก์ https หรือไฟล์ใน /public');
   const rewardId = text(input.rewardId, 80);
-  if (rewardId && !REWARD_SHOP_ITEMS.some((item) => item.id === rewardId)) throw new CampaignError('ไม่พบของรางวัลนี้ในแคตตาล็อก');
+  if (rewardId && !(await findReward(rewardId))) throw new CampaignError('ไม่พบของรางวัลนี้ในแคตตาล็อก');
 
   const { items: quests } = await db.findQuests({ page: 1, limit: 500, status: 'all' });
   const known = new Set(quests.map((q) => q.id));
@@ -250,7 +251,7 @@ export async function leaveCampaign(memberId: string, campaignId: string): Promi
 
 /** Why this member cannot redeem this reward now, or null. A draw needs a real person, and a campaign's prize closes with the campaign */
 export async function redeemRefusal(member: Member, rewardId: string): Promise<{ message: string; status: number } | null> {
-  const reward = REWARD_SHOP_ITEMS.find((item) => item.id === rewardId);
+  const reward = await findReward(rewardId);
   if (!reward) return null;
   const owners = (await campaigns()).filter((c) => c.rewardId === rewardId && c.published);
   if (owners.length === 0) return reward.campaignOnly ? { message: 'ไม่พบของรางวัลนี้', status: 404 } : null;

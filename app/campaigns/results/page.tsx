@@ -65,6 +65,7 @@ export default async function CampaignResultsPage() {
                           <PartyPopper className="w-4 h-4 shrink-0 text-[#F26430]" aria-hidden="true" />
                           <span className="font-mono font-bold tracking-wider">{winner.code}</span>
                           <span className="text-sm text-slate-600">คุณ {winner.name}</span>
+                          {winner.entries > 1 && <span className="ml-auto text-xs text-slate-500 tabular-nums">มี {winner.entries.toLocaleString()} สิทธิ์</span>}
                         </li>
                       ))}
                     </ul>

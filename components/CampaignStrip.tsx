@@ -3,7 +3,7 @@
 import { useId, useState } from 'react';
 import { ArrowRight, ChevronDown, ChevronRight, Gift } from 'lucide-react';
 import { useDragRail } from '@/components/campaigns/useDragRail';
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import type { RewardShopItem } from '@/data/rewardsData';
 import { type Campaign, campaignDay } from '@/lib/campaigns/types';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -14,6 +14,8 @@ export interface CampaignMemberState {
   enrolled: boolean;
   /** Redeemed the campaign's prize entry */
   entered: boolean;
+  /** Entries held (a draw may allow several) */
+  entries?: number;
   /** Steps done and XP enough: the entry can be redeemed */
   ready: boolean;
   done: number;
@@ -21,7 +23,7 @@ export interface CampaignMemberState {
 }
 
 interface CampaignStripProps {
-  campaign: Campaign;
+  campaign: Campaign & { prize?: RewardShopItem };
   member?: CampaignMemberState | null;
   onOpen: (id: string) => void;
   className?: string;
@@ -34,7 +36,8 @@ interface CampaignStripProps {
  * where the member stands, the headline, and the prize as a tilted sticker. Pressing it opens the popup (components/campaigns/useCampaigns.tsx).
  */
 export function CampaignStrip({ campaign, member, onOpen, className = '', narrow = false }: CampaignStripProps) {
-  const prize = REWARD_SHOP_ITEMS.find((item) => item.id === campaign.rewardId);
+  const prize = campaign.prize;
+  const held = (member?.entries ?? 0) > 1 ? `คุณมี ${member?.entries} สิทธิ์ลุ้นแล้ว` : 'คุณมีสิทธิ์ลุ้นแล้ว';
   const cost = prize?.costXp ?? 0;
   const xp = member?.xp ?? 0;
   const image = optimizedImage(campaign.prizeImage, 256);
@@ -51,7 +54,7 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
 
   if (narrow) {
     const line = member?.entered
-      ? `คุณมีสิทธิ์ลุ้นแล้ว${prize?.drawEntry ? ` · ประกาศผล ${prize.drawEntry.drawLabel}` : ''}`
+      ? `${held}${prize?.drawEntry ? ` · ประกาศผล ${prize.drawEntry.drawLabel}` : ''}`
       : ready
         ? 'XP ครบแล้ว แลกสิทธิ์ลุ้นได้เลย'
         : collecting
@@ -71,7 +74,7 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
     );
   }
 
-  const state = member?.entered ? 'คุณมีสิทธิ์ลุ้นแล้ว' : ready ? `XP ของคุณ ${xp.toLocaleString()} ครบแล้ว!` : enrolled ? 'เข้าร่วมแล้ว' : until;
+  const state = member?.entered ? held : ready ? `XP ของคุณ ${xp.toLocaleString()} ครบแล้ว!` : enrolled ? 'เข้าร่วมแล้ว' : until;
   const detail = member?.entered
     ? (prize?.drawEntry ? `ประกาศผล ${prize.drawEntry.drawLabel}` : until)
     : collecting

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { AuthModal } from '@/components/AuthModal';
 import { CampaignDialog } from '@/components/campaigns/CampaignDialog';
 import { RewardDialog } from '@/components/rewards/RewardDialog';
-import { REWARD_SHOP_ITEMS, type RewardShopItem } from '@/data/rewardsData';
+import type { RewardShopItem } from '@/data/rewardsData';
 import { recall, remember } from '@/lib/clientMemory';
 import type { CampaignView, MyCampaign } from '@/lib/campaigns/types';
 import type { useMyRewards } from '@/lib/useMyRewards';
@@ -191,7 +191,7 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
         onClose={close}
         onLeave={() => void leave(shown.id)}
         onRedeemPrize={() => {
-          const prize = REWARD_SHOP_ITEMS.find((item) => item.id === shown.rewardId);
+          const prize = shown.prize;
           if (!prize) return;
           close();
           setRewardItem(prize);

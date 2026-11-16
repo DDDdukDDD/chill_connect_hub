@@ -1,3 +1,5 @@
+import type { RewardShopItem } from '@/data/rewardsData';
+
 /**
  * A marketing campaign (owner 2026-10-25): the words on the home page strip and the /challenges banner, its dates,
  * the challenges that make it up and the prize behind it. Staff edit campaigns in the admin console (?m=campaigns).
@@ -22,7 +24,7 @@ export interface Campaign {
   endDate: string;
   /** Prize picture: a path under /public or an https URL; empty → the strip draws a phone */
   prizeImage?: string;
-  /** The rewards catalog item (data/rewardsData.ts) the XP is spent on, usually a draw entry */
+  /** The rewards catalog item (lib/rewards/catalog.ts) the XP is spent on, usually a draw entry */
   rewardId?: string;
   /** The steps on the banner, in the order a new member meets them */
   questIds: string[];
@@ -39,6 +41,8 @@ export interface Campaign {
 /** A campaign with what its popup lists: the challenges behind the steps */
 export interface CampaignView extends Campaign {
   steps: { id: string; title: string; image?: string; total: number; rewardPoints: number }[];
+  /** The catalog item behind `rewardId`, so a page needs no catalog of its own to show the price and the draw */
+  prize?: RewardShopItem;
 }
 
 /** A winner's way: drawn or announced and waiting for them, they pressed claim, staff gave the prize, or it was lost */
@@ -70,6 +74,8 @@ export interface DrawCampaign {
   prizeCount: number;
   /** Entries that can be drawn now */
   entries: number;
+  /** Members behind those entries (one may hold several) */
+  people: number;
   /** Why it cannot be drawn today */
   refusal: string | null;
   winners: {
@@ -96,7 +102,8 @@ export interface CampaignResult {
   prizeTitle: string;
   announcedAt: string;
   entries: number;
-  winners: { code: string; name: string }[];
+  /** `entries`: how many entries the winner held */
+  winners: { code: string; name: string; entries: number }[];
 }
 
 /** What one campaign brought in, for the admin page */

@@ -98,7 +98,7 @@ export function CampaignDrawsView() {
                   <h2 className="text-base sm:text-lg font-bold text-slate-900">{campaign.name}</h2>
                   <p className="text-sm text-slate-600">{campaign.prizeTitle} · {campaign.prizeCount} รางวัล</p>
                   <p className="text-xs text-slate-500 tabular-nums">
-                    จบ {campaignDay(campaign.endDate)} · จับรางวัล {campaign.drawLabel} · ลุ้นได้ {campaign.entries.toLocaleString()} สิทธิ์
+                    จบ {campaignDay(campaign.endDate)} · จับรางวัล {campaign.drawLabel} · ลุ้นได้ {campaign.entries.toLocaleString()} สิทธิ์{campaign.people !== campaign.entries ? ` จาก ${campaign.people.toLocaleString()} คน` : ''}
                     {isOut && (
                       <>
                         {' · '}

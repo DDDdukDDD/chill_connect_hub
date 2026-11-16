@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
 import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { CampaignError, campaignStats, deleteCampaign, findCampaign, listCampaigns, saveCampaign } from '@/lib/campaigns/store';
 import { isCampaignLive } from '@/lib/campaigns/types';
 import { db } from '@/lib/db';
+import { listRewards } from '@/lib/rewards/catalog';
 
 // Campaigns with their stats, plus the challenges and rewards a campaign can name (for the form)
 export async function GET(request: Request) {
@@ -20,7 +20,8 @@ export async function GET(request: Request) {
     success: true,
     campaigns,
     quests: items.map((q) => ({ id: q.id, title: q.title, status: q.status, startDate: q.startDate, endDate: q.endDate, rewardPoints: q.rewardPoints ?? 0 })),
-    rewards: REWARD_SHOP_ITEMS.map((r) => ({ id: r.id, title: r.title, costXp: r.costXp, drawLabel: r.drawEntry?.drawLabel })),
+    // Whole items: the form's preview strip shows the prize as members will see it
+    rewards: (await listRewards()).filter((r) => !r.hidden),
   });
 }
 

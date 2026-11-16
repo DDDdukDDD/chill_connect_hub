@@ -1,4 +1,6 @@
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import { entryRulesOf } from '@/data/rewardsData';
+import { bangkokToday } from '../campaigns/types';
+import { entryCodeOf, findReward, listRewards } from '../rewards/catalog';
 import { redemptionStore } from './stores';
 import { joinedQuestIdsOf } from './questJoins';
 import { finishesOf, settleFinishes } from './questFinishes';
@@ -23,10 +25,6 @@ export class RewardError extends Error {
   }
 }
 
-/** A draw entry gets its own code from the redemption id; a voucher keeps the partner's code (null here) */
-export const entryCodeOf = (redemptionId: string, rewardId: string): string | null =>
-  REWARD_SHOP_ITEMS.find((item) => item.id === rewardId)?.drawEntry ? `CC-${redemptionId.replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase()}` : null;
-
 /** How many times a reward was redeemed (prize entries, for campaign stats) */
 export const redemptionCountOf = (rewardId: string) => redemptionStore.countOf(rewardId);
 
@@ -35,7 +33,8 @@ export async function rewardsOf(memberId: string) {
   const progress = await progressOf(memberId);
   // A challenge finished since the last read is recorded now: notification, reward code, badge
   await settleFinishes(memberId, progress.quests);
-  const redemptions = await redemptionStore.ofMember(memberId);
+  const [redemptions, catalog] = await Promise.all([redemptionStore.ofMember(memberId), listRewards()]);
+  const rewardOf = (id: string) => catalog.find((item) => item.id === id);
   const spent = redemptions.reduce((sum, r) => sum + r.cost, 0);
   return {
     points: { ...progress.points, earned: progress.points.total, spent, balance: Math.max(0, progress.points.total - spent) },
@@ -43,24 +42,37 @@ export async function rewardsOf(memberId: string) {
     joinedQuestIds: await joinedQuestIdsOf(memberId),
     /** Challenges the member finished: the badge, and the code when a partner gives the reward */
     finished: await finishesOf(memberId),
-    redeemedRewardIds: redemptions.map((r) => r.rewardId),
-    redemptions: redemptions.map(({ id, rewardId, cost, createdAt }) => ({ rewardId, cost, createdAt, code: entryCodeOf(id, rewardId) })),
+    // A draw may be redeemed more than once (BE-391): one id here, every entry below
+    redeemedRewardIds: [...new Set(redemptions.map((r) => r.rewardId))],
+    redemptions: redemptions.map(({ id, rewardId, cost, createdAt }) => ({ rewardId, cost, createdAt, code: entryCodeOf(id, rewardOf(rewardId)) })),
   };
 }
 
-/** One of each reward per member; the balance must cover the price */
+/** When today began in Bangkok: the daily entry limit counts from here */
+const bangkokDayStart = () => new Date(`${bangkokToday()}T00:00:00+07:00`).toISOString();
+
+/**
+ * A voucher once per member; a draw entry up to the reward's limits (per member, per day), each one paid in full.
+ * The balance must cover the price
+ */
 export async function redeemReward(memberId: string, rewardId: string) {
-  const reward = REWARD_SHOP_ITEMS.find((item) => item.id === rewardId);
-  if (!reward) throw new RewardError('ไม่พบของรางวัลนี้', 404);
+  const reward = await findReward(rewardId);
+  if (!reward || reward.hidden) throw new RewardError('ไม่พบของรางวัลนี้', 404);
+  const rules = entryRulesOf(reward);
   const current = await rewardsOf(memberId);
-  if (current.redeemedRewardIds.includes(rewardId)) throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
+  const held = current.redemptions.filter((r) => r.rewardId === rewardId);
+  const fullMessage = rules.max > 1 ? `คุณแลกครบ ${rules.max} สิทธิ์แล้ว` : 'คุณแลกของรางวัลนี้ไปแล้ว';
+  const dailyMessage = `วันนี้แลกครบ ${rules.perDay} สิทธิ์แล้ว พรุ่งนี้มาแลกต่อได้นะ`;
+  if (held.length >= rules.max) throw new RewardError(fullMessage, 409);
+  if (rules.perDay !== null && held.filter((r) => r.createdAt >= bangkokDayStart()).length >= rules.perDay) throw new RewardError(dailyMessage, 409);
   if (current.points.balance < reward.costXp) {
     throw new RewardError(`XP ไม่พอ ต้องการอีก ${(reward.costXp - current.points.balance).toLocaleString()} XP`);
   }
   // The check above is for a quick answer; the store checks again under a per-member lock, so two redemptions sent
   // together cannot spend the same XP twice (database review item 1)
-  const added = await redemptionStore.add({ memberId, rewardId, cost: reward.costXp }, current.points.earned);
-  if (added === 'duplicate') throw new RewardError('คุณแลกของรางวัลนี้ไปแล้ว', 409);
+  const added = await redemptionStore.add({ memberId, rewardId, cost: reward.costXp }, current.points.earned, { ...rules, dayStart: bangkokDayStart() });
+  if (added === 'duplicate') throw new RewardError(fullMessage, 409);
+  if (added === 'daily') throw new RewardError(dailyMessage, 409);
   if (added === 'short') throw new RewardError('XP ไม่พอสำหรับของรางวัลนี้แล้ว');
   return rewardsOf(memberId);
 }

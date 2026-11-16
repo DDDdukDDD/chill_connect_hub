@@ -91,12 +91,10 @@ const THAI_MONTH_SHORT = [
   'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
 ];
 
-import {
-  RewardShopItem,
-  REWARD_SHOP_ITEMS,
-} from '@/data/rewardsData';
+import { useRewardCatalog } from '@/lib/useRewardCatalog';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { defaultEventImage } from '@/lib/eventImageResolver';
+import FallbackImg from '@/components/FallbackImg';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -138,6 +136,7 @@ function MyHubContent() {
   const [storedChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
   // Points, redeemed rewards and the progress of challenges that count visits come from the account (GET /api/rewards)
   const myRewards = useMyRewards(isLoggedIn);
+  const rewardCatalog = useRewardCatalog();
   const userXp = myRewards.balance;
   const redeemedRewardIds = myRewards.redeemedRewardIds;
   const myChallenges = useMemo(() => withRealProgress(storedChallenges, myRewards.quests), [storedChallenges, myRewards.quests]);
@@ -1068,16 +1067,10 @@ function MyHubContent() {
                         <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
                         <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
                       </span>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- a missing picture falls back to the category's own */}
-                      <img
+                      {/* a missing picture falls back to the category's own */}
+                      <FallbackImg
                         src={optimizedImage(ev.image, 128)}
-                        alt=""
-                        onError={(e) => {
-                          const img = e.currentTarget;
-                          if (img.dataset.fallback) return;
-                          img.dataset.fallback = '1';
-                          img.src = defaultEventImage(ev.category);
-                        }}
+                        fallback={defaultEventImage(ev.category)}
                         className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
                       />
                       <span className="min-w-0 flex-1">
@@ -2438,7 +2431,7 @@ function MyHubContent() {
                         </div>
                       ) : (
                         <div className="flex flex-wrap gap-3 sm:gap-4">
-                          {REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)).map((item) => (
+                          {rewardCatalog.filter((item) => redeemedRewardIds.includes(item.id)).map((item) => (
                             <div
                               key={item.id}
                               className="w-full sm:w-auto sm:max-w-[270px] min-h-[105px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 flex flex-col justify-between gap-2.5"

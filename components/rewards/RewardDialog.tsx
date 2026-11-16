@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, Gift } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import type { RewardShopItem } from '@/data/rewardsData';
+import { type RewardShopItem, entryRulesOf } from '@/data/rewardsData';
 import type { useMyRewards } from '@/lib/useMyRewards';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -56,6 +56,11 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
   const router = useRouter();
   const userXp = rewards.balance;
   const detailRedeemed = rewards.redeemedRewardIds.includes(item.id);
+  // A draw may allow more entries (BE-391): the code stays in view and the redeem button comes back under it
+  const rules = entryRulesOf(item);
+  const entries = rewards.entryCount[item.id] ?? (detailRedeemed ? 1 : 0);
+  const todayFull = rules.perDay !== null && (rewards.entryToday[item.id] ?? 0) >= rules.perDay;
+  const canAddEntry = entries < rules.max && !todayFull;
   const detailShort = Math.max(0, item.costXp - userXp);
   const codeOf = (reward: RewardShopItem) => rewardCodeOf(rewards, reward);
 
@@ -157,9 +162,14 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
             {[
               ['สิทธิ์', amountOf(item)],
               ['ใช้ที่', item.partnerLocation],
-              ['ใช้ได้ถึง', item.validUntil],
-              ['แลกด้วย', `${item.costXp.toLocaleString()} XP`],
-            ].map(([label, value]) => (
+              [item.drawEntry ? 'แลกได้ถึง' : 'ใช้ได้ถึง', item.validUntil],
+              ['แลกด้วย', `${item.costXp.toLocaleString()} XP${rules.max > 1 ? ' ต่อสิทธิ์' : ''}`],
+              // Several entries allowed (BE-391): said before anyone spends
+              ['สิทธิ์ต่อคน', rules.max > 1 ? `สูงสุด ${rules.max.toLocaleString()} สิทธิ์${rules.perDay ? ` · วันละ ${rules.perDay}` : ''}` : ''],
+            ]
+              // A reward set up without a place or a last day leaves the row out instead of an empty line
+              .filter(([, value]) => value)
+              .map(([label, value]) => (
               <div key={label} className="py-2.5 grid grid-cols-[6rem_1fr] gap-3">
                 <dt className="text-slate-500">{label}</dt>
                 <dd className="font-medium text-slate-800">{value}</dd>
@@ -176,10 +186,12 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
           </div>
 
           <div className="shrink-0 border-t border-slate-100 px-5 sm:px-7 py-4">
-          {detailRedeemed ? (
+          {detailRedeemed && (
             // Already mine: what the code is for comes first, so it is never just a string of letters
             <div className="rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
-              <p className="text-xs font-bold text-slate-500">{item.drawEntry ? 'แลกแล้ว · รหัสสิทธิ์ลุ้นของคุณ' : 'แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน'}</p>
+              <p className="text-xs font-bold text-slate-500">
+                {item.drawEntry ? (entries > 1 ? `คุณมี ${entries.toLocaleString()} สิทธิ์ · รหัสล่าสุด` : 'แลกแล้ว · รหัสสิทธิ์ลุ้นของคุณ') : 'แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน'}
+              </p>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="font-mono text-lg font-bold text-slate-900 tracking-wider break-all">{codeOf(item)}</span>
                 <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="shrink-0 inline-flex items-center gap-1.5 min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
@@ -187,10 +199,14 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
                   {copiedCode === codeOf(item) ? 'คัดลอกแล้ว' : 'คัดลอก'}
                 </button>
               </div>
-              <p className="mt-1 text-xs font-medium text-slate-500">{untilOf(item)}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {untilOf(item)}
+                {detailRedeemed && rules.max > 1 && !canAddEntry && (todayFull && entries < rules.max ? ' · วันนี้แลกครบแล้ว พรุ่งนี้แลกเพิ่มได้' : ' · ครบจำนวนสิทธิ์แล้ว')}
+              </p>
             </div>
-          ) : (
-            <div className="space-y-2">
+          )}
+          {(!detailRedeemed || canAddEntry) && (
+            <div className={`space-y-2 ${detailRedeemed ? 'mt-3' : ''}`}>
               {isConfirming && (
                 <p className="text-sm font-medium text-slate-700 tabular-nums">
                   ใช้ {item.costXp} XP จาก {userXp.toLocaleString()} XP เหลือ {(userXp - item.costXp).toLocaleString()} XP แลกเลยไหม
@@ -219,7 +235,7 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
                     </button>
                   )}
                   <button type="button" onClick={handleRedeem} disabled={isRedeeming} className={`${dialogButton.primary} w-full`}>
-                    {!isLoggedIn ? 'เข้าสู่ระบบเพื่อแลก' : isRedeeming ? 'กำลังแลก…' : isConfirming ? 'ยืนยัน แลกเลย' : `แลกด้วย ${item.costXp} XP`}
+                    {!isLoggedIn ? 'เข้าสู่ระบบเพื่อแลก' : isRedeeming ? 'กำลังแลก…' : isConfirming ? 'ยืนยัน แลกเลย' : detailRedeemed ? `แลกเพิ่มอีก 1 สิทธิ์ · ${item.costXp} XP` : `แลกด้วย ${item.costXp} XP`}
                   </button>
                 </div>
               )}

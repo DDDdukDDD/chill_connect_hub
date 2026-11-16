@@ -9,7 +9,7 @@ import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { dialogButton } from '@/components/auth/DialogShell';
-import { RewardShopItem, REWARD_CATEGORIES, REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import { RewardShopItem, REWARD_CATEGORIES } from '@/data/rewardsData';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { Toast } from '@/components/Toast';
@@ -42,9 +42,11 @@ const TICKET_TILTS = ['-rotate-6', 'rotate-3', '-rotate-3', 'rotate-6'];
  * is coloured (campaign cards, XP tickets); the interface stays neutral so the page is not yellow all over. It should still feel
  * like getting a gift (owner 2026-10-25): yellow XP tickets, coloured category tiles, and confetti when a reward is redeemed.
  * Flat colours only (DESIGN_SYSTEM → Gradients); the one blue action stays blue; no purple.
- * Points and redemptions come from the account (GET/POST /api/rewards); the catalog is still sample data.
+ * Points and redemptions come from the account (GET/POST /api/rewards); the catalog is what staff set in the admin console.
  */
-export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }) {
+export default function RewardsView({ campaigns, catalog }: { campaigns: CampaignView[]; catalog: RewardShopItem[] }) {
+  // Staff edit the catalog in the admin console; the page reads it on the server (app/rewards/page.tsx)
+  const shopItems = useMemo(() => catalog.filter((item) => !item.hidden), [catalog]);
   const [activeNavTab, setActiveNavTab] = useState('rewards');
   const { isLoggedIn, isAuthReady, userProfile, handleSetIsLoggedIn } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -68,9 +70,9 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
     const category = params.get('category');
     if (category) setSelectedCategory(category);
     // ?reward=ID opens that reward (the launch campaign links to its prize)
-    const reward = REWARD_SHOP_ITEMS.find((item) => item.id === params.get('reward'));
+    const reward = catalog.find((item) => item.id === params.get('reward'));
     if (reward) setDetailItem(reward);
-  }, []);
+  }, [catalog]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -95,15 +97,15 @@ export default function RewardsView({ campaigns }: { campaigns: CampaignView[] }
 
   const filteredRewards = useMemo(
     () =>
-      REWARD_SHOP_ITEMS.filter(
+      shopItems.filter(
         // A draw prize is reached through its campaign in the row above (owner 2026-11-04); ?reward=ID still opens it
         (item) => !item.campaignOnly && !item.drawEntry && (selectedCategory === 'all' || item.category === selectedCategory) && (!onlyAffordable || userXp >= item.costXp)
       ),
-    [selectedCategory, onlyAffordable, userXp]
+    [shopItems, selectedCategory, onlyAffordable, userXp]
   );
-  const myRedeemedItems = useMemo(() => REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)), [redeemedRewardIds]);
+  const myRedeemedItems = useMemo(() => catalog.filter((item) => redeemedRewardIds.includes(item.id)), [catalog, redeemedRewardIds]);
   // What the wallet cheers about: how many I can take now, or how far the next one is
-  const openRewards = REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id));
+  const openRewards = shopItems.filter((item) => !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id));
   const affordableCount = openRewards.filter((item) => item.costXp <= userXp).length;
   const nextGoal = openRewards.filter((item) => item.costXp > userXp).sort((a, b) => a.costXp - b.costXp)[0];
 

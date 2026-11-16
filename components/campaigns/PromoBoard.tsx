@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Gift } from 'lucide-react';
 import { useDragRail } from '@/components/campaigns/useDragRail';
-import { REWARD_SHOP_ITEMS, type RewardShopItem } from '@/data/rewardsData';
+import type { RewardShopItem } from '@/data/rewardsData';
+import { useRewardCatalog } from '@/lib/useRewardCatalog';
 import { type Campaign, campaignDay } from '@/lib/campaigns/types';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -92,9 +93,10 @@ export function PromoBoard({ campaigns, onOpen, onOpenReward, redeemedRewardIds 
   rewardsOnPhone?: boolean;
   className?: string;
 }) {
+  const catalog = useRewardCatalog();
   const canRedeem = (item: RewardShopItem) => balance !== undefined && balance >= item.costXp;
   const rewards = withRewards
-    ? REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id))
+    ? catalog.filter((item) => !item.hidden && !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id))
         .sort((a, b) => Number(canRedeem(b)) - Number(canRedeem(a)) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
         .slice(0, REWARDS_SHOWN)
     : [];

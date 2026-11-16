@@ -1,9 +1,9 @@
-import { type RewardShopItem, REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import type { RewardShopItem } from '@/data/rewardsData';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import { drawWinnerMessage, sendMail } from '../members/mailer';
 import { notifyDrawResult, notifyDrawWon } from '../social/notifications';
-import { entryCodeOf } from '../social/rewardsLedger';
+import { entryCodeOf, findReward } from '../rewards/catalog';
 import { redemptionStore } from '../social/stores';
 import { absoluteUrl } from '../site';
 import { CampaignError, findCampaign, listCampaigns } from './store';
@@ -15,27 +15,30 @@ import { type CampaignWinner, type PoolEntry, winnerStore } from './winners';
  * came up, then announce: only then do members hear and the result goes public. A winner has CLAIM_DAYS to press
  * claim; staff then check who they are and mark the prize as given, or mark it forfeited and draw again.
  */
-const prizeOf = (campaign: Campaign): (RewardShopItem & { drawEntry: NonNullable<RewardShopItem['drawEntry']> }) | null => {
-  const prize = REWARD_SHOP_ITEMS.find((item) => item.id === campaign.rewardId);
-  return prize?.drawEntry ? (prize as RewardShopItem & { drawEntry: NonNullable<RewardShopItem['drawEntry']> }) : null;
+type DrawPrize = RewardShopItem & { drawEntry: NonNullable<RewardShopItem['drawEntry']> };
+const prizeOf = async (campaign: Campaign): Promise<DrawPrize | null> => {
+  const prize = await findReward(campaign.rewardId);
+  return prize?.drawEntry ? (prize as DrawPrize) : null;
 };
 
 const winnerPath = (campaignId: string) => `/myhub?campaign=${encodeURIComponent(campaignId)}`;
 const resultPath = (campaignId: string) => `${RESULTS_PATH}#${encodeURIComponent(campaignId)}`;
 
-/** Who can be drawn: an active real member holding an entry. A suspended or deleted account stays out */
-async function poolOf(rewardId: string): Promise<PoolEntry[]> {
-  const entries = await redemptionStore.ofReward(rewardId);
+/**
+ * Who can be drawn: every entry of an active real member, so a member holding three entries has three chances
+ * (BE-391; the draw still gives one member one prize). A suspended or deleted account stays out
+ */
+async function poolOf(prize: DrawPrize): Promise<PoolEntry[]> {
+  const entries = await redemptionStore.ofReward(prize.id);
   const members = await memberRepository.findByIds(entries.map((entry) => entry.memberId));
   return entries.flatMap((entry) => {
     const member = members.get(entry.memberId);
-    return member?.status === 'active' && !member.isSample ? [{ memberId: entry.memberId, code: entryCodeOf(entry.id, rewardId) as string }] : [];
+    return member?.status === 'active' && !member.isSample ? [{ memberId: entry.memberId, code: entryCodeOf(entry.id, prize) as string }] : [];
   });
 }
 
 /** Why this campaign cannot be drawn today, or null */
-function drawRefusal(campaign: Campaign, all: Campaign[], winners: CampaignWinner[]): string | null {
-  const prize = prizeOf(campaign);
+function drawRefusal(campaign: Campaign, prize: DrawPrize | null, all: Campaign[], winners: CampaignWinner[]): string | null {
   if (!prize) return 'แคมเปญนี้ไม่มีการจับรางวัล';
   const today = bangkokToday();
   if (!campaign.published) return 'แคมเปญนี้ยังเป็นฉบับร่าง';
@@ -49,12 +52,12 @@ function drawRefusal(campaign: Campaign, all: Campaign[], winners: CampaignWinne
 /** The draw page: every campaign with a draw, newest first, with its entries and winners */
 export async function drawCampaigns(): Promise<DrawCampaign[]> {
   const [all, winners] = await Promise.all([listCampaigns(), winnerStore.all()]);
+  const withPrize = await Promise.all(all.map(async (campaign) => ({ campaign, prize: await prizeOf(campaign) })));
   const views = await Promise.all(
-    all.filter(prizeOf).map(async (campaign) => {
-      const prize = prizeOf(campaign)!;
+    withPrize.flatMap(({ campaign, prize }) => (prize ? [{ campaign, prize }] : [])).map(async ({ campaign, prize }) => {
       const rows = winners.filter((w) => w.campaignId === campaign.id);
       const people = await memberRepository.findByIds(rows.flatMap((w) => (w.memberId ? [w.memberId] : [])));
-      const pool = await poolOf(prize.id);
+      const pool = await poolOf(prize);
       return {
         id: campaign.id,
         name: campaign.name,
@@ -63,7 +66,8 @@ export async function drawCampaigns(): Promise<DrawCampaign[]> {
         drawLabel: prize.drawEntry.drawLabel,
         prizeCount: prize.drawEntry.prizeCount,
         entries: pool.length,
-        refusal: drawRefusal(campaign, all, winners),
+        people: new Set(pool.map((entry) => entry.memberId)).size,
+        refusal: drawRefusal(campaign, prize, all, winners),
         winners: rows.map(({ memberId, ...w }) => {
           const person = memberId ? people.get(memberId) : undefined;
           return { ...w, name: person?.displayName ?? 'บัญชีถูกลบแล้ว', email: person?.email, phone: person?.phone };
@@ -88,10 +92,10 @@ async function tellWinner(winner: CampaignWinner, campaign: Campaign, prizeTitle
 export async function drawWinners(campaignId: string, staff: string): Promise<CampaignWinner[]> {
   const campaign = await findCampaign(campaignId);
   if (!campaign) throw new CampaignError('ไม่พบแคมเปญนี้', 404);
-  const refusal = drawRefusal(campaign, await listCampaigns(), await winnerStore.all());
-  if (refusal) throw new CampaignError(refusal, 409);
-  const prize = prizeOf(campaign)!;
-  const pool = await poolOf(prize.id);
+  const prize = await prizeOf(campaign);
+  const refusal = drawRefusal(campaign, prize, await listCampaigns(), await winnerStore.all());
+  if (refusal || !prize) throw new CampaignError(refusal ?? 'แคมเปญนี้ไม่มีการจับรางวัล', 409);
+  const pool = await poolOf(prize);
   if (pool.length === 0) throw new CampaignError('ยังไม่มีผู้มีสิทธิ์ลุ้น', 409);
   const drawn = await winnerStore.draw(campaign.id, pool, prize.drawEntry.prizeCount, staff);
   if (drawn.length === 0) throw new CampaignError('ไม่มีรางวัลให้จับเพิ่ม หรือไม่เหลือผู้มีสิทธิ์แล้ว', 409);
@@ -102,13 +106,13 @@ export async function drawWinners(campaignId: string, staff: string): Promise<Ca
 /** Goes public: winners get a notice and an email, everyone else holding an entry gets a notice with the result */
 export async function announceResults(campaignId: string): Promise<CampaignWinner[]> {
   const campaign = await findCampaign(campaignId);
-  const prize = campaign && prizeOf(campaign);
+  const prize = campaign && (await prizeOf(campaign));
   if (!campaign || !prize) throw new CampaignError('ไม่พบแคมเปญนี้', 404);
   const announced = await winnerStore.announce(campaign.id);
   if (announced.length === 0) throw new CampaignError('ยังไม่มีผู้โชคดีที่รอประกาศ', 409);
   for (const winner of announced) await tellWinner(winner, campaign, prize.discountValue);
   const won = new Set((await winnerStore.all()).filter((w) => w.campaignId === campaign.id).map((w) => w.memberId));
-  const others = (await redemptionStore.ofReward(prize.id)).map((entry) => entry.memberId).filter((id) => !won.has(id));
+  const others = [...new Set((await redemptionStore.ofReward(prize.id)).map((entry) => entry.memberId))].filter((id) => !won.has(id));
   await notifyDrawResult(others, resultPath(campaign.id), campaign.headline);
   return announced;
 }
@@ -138,10 +142,13 @@ export async function publicResults(): Promise<CampaignResult[]> {
   const campaigns = (await listCampaigns()).filter((c) => c.published && winners.some((w) => w.campaignId === c.id));
   const standing = winners.filter((w) => w.status !== 'forfeited');
   const people = await memberRepository.findByIds(standing.flatMap((w) => (w.memberId ? [w.memberId] : [])));
-  return campaigns
-    .map((campaign) => {
+  const results = await Promise.all(
+    campaigns.map(async (campaign) => {
       const rows = winners.filter((w) => w.campaignId === campaign.id);
-      const prize = prizeOf(campaign);
+      const prize = await prizeOf(campaign);
+      // How many entries each winner held: more entries, more chances, said openly on the results page
+      const held = new Map<string, number>();
+      for (const entry of prize ? await redemptionStore.ofReward(prize.id) : []) held.set(entry.memberId, (held.get(entry.memberId) ?? 0) + 1);
       return {
         id: campaign.id,
         headline: campaign.headline,
@@ -149,8 +156,11 @@ export async function publicResults(): Promise<CampaignResult[]> {
         prizeTitle: prize?.discountValue ?? '',
         announcedAt: rows.map((w) => w.announcedAt as string).sort()[0],
         entries: Math.max(...rows.map((w) => w.poolSize)),
-        winners: rows.filter((w) => w.status !== 'forfeited').map((w) => ({ code: w.code, name: maskedName(w.memberId ? people.get(w.memberId)?.displayName : undefined) })),
+        winners: rows
+          .filter((w) => w.status !== 'forfeited')
+          .map((w) => ({ code: w.code, name: maskedName(w.memberId ? people.get(w.memberId)?.displayName : undefined), entries: (w.memberId && held.get(w.memberId)) || 1 })),
       };
     })
-    .sort((a, b) => b.announcedAt.localeCompare(a.announcedAt));
+  );
+  return results.sort((a, b) => b.announcedAt.localeCompare(a.announcedAt));
 }
