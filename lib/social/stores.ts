@@ -538,6 +538,62 @@ function pgReviews(): ReviewStore {
 
 export const reviewStore: ReviewStore = USE_POSTGRES ? pgReviews() : jsonReviews();
 
+/* ---------- ตี้ sign-ups waiting for an email confirmation ---------- */
+
+export interface PendingJoin {
+  eventId: string;
+  memberId: string;
+  /** The picked date of a recurring ตี้ */
+  date?: string;
+  at: string;
+}
+
+interface PendingJoinStore {
+  ofMember(memberId: string): Promise<PendingJoin[]>;
+  add(entry: Omit<PendingJoin, 'at'>): Promise<void>;
+  remove(eventId: string, memberId: string): Promise<void>;
+}
+
+function jsonPendingJoins(): PendingJoinStore {
+  const store = createJsonStore<PendingJoin>('pending_joins');
+  return {
+    async ofMember(memberId) {
+      return store.read().filter((p) => p.memberId === memberId);
+    },
+    async add(entry) {
+      await store.update((items) => [...items.filter((p) => !(p.eventId === entry.eventId && p.memberId === entry.memberId)), { ...entry, at: new Date().toISOString() }]);
+    },
+    async remove(eventId, memberId) {
+      await store.update((items) => items.filter((p) => !(p.eventId === eventId && p.memberId === memberId)));
+    },
+  };
+}
+
+function pgPendingJoins(): PendingJoinStore {
+  return {
+    async ofMember(memberId) {
+      const db = sql();
+      const rows = await db`
+        select e.slug, p.meet_date::text, p.created_at from app.pending_joins p join app.events e on e.id = p.event_id
+        where p.member_id = ${memberRow(db, memberId)} order by p.created_at`;
+      return rows.map((r) => ({ eventId: r.slug, memberId, date: r.meet_date ?? undefined, at: iso(r.created_at) }));
+    },
+    async add(entry) {
+      const db = sql();
+      await db`
+        insert into app.pending_joins (event_id, member_id, meet_date)
+        values (${eventRow(db, entry.eventId)}, ${memberRow(db, entry.memberId)}, ${entry.date ?? null}::date)
+        on conflict (event_id, member_id) do update set meet_date = excluded.meet_date, created_at = now()`;
+    },
+    async remove(eventId, memberId) {
+      const db = sql();
+      await db`delete from app.pending_joins where event_id = ${eventRow(db, eventId)} and member_id = ${memberRow(db, memberId)}`;
+    },
+  };
+}
+
+export const pendingJoinStore: PendingJoinStore = USE_POSTGRES ? pgPendingJoins() : jsonPendingJoins();
+
 /* ---------- Waiting list ---------- */
 
 interface WaitlistStore {

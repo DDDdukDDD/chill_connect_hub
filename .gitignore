@@ -64,3 +64,4 @@ next-env.d.ts
 /data/content_reports.json
 # Runtime uploads (local dev; production uses Vercel Blob)
 /public/uploads/
+/data/pending_joins.json

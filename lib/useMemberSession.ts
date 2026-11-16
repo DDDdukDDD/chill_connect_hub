@@ -154,7 +154,7 @@ export const memberActions = {
   confirmEmailVerification: async (token: string) => {
     const json = await postJson('/api/auth/member/verify-email/confirm', { token });
     if (state.member && state.member.id === json.member.id) setState({ member: json.member });
-    return json.member as PublicMember;
+    return { member: json.member as PublicMember, settled: (json.settled ?? []) as { eventId: string; title: string; outcome: 'joined' | 'waitlist' | 'closed' }[] };
   },
   submitHostApplication: async (input: { kind: HostApplication['kind']; about: string; link?: string }) => {
     const json = await postJson('/api/auth/member/host-application', input);

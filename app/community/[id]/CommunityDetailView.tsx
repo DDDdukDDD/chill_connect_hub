@@ -20,7 +20,7 @@ import { InviteNudge } from '@/components/invites/InviteNudge';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
 import { EventAttendees } from '@/components/EventAttendees';
-import { JoinReadinessNotice, joinBlocker } from '@/components/JoinReadinessNotice';
+import { JoinReadinessNotice, joinBlocker, joinWaitsForEmail } from '@/components/JoinReadinessNotice';
 import { DetailHero, DetailTable, ItineraryList, heroButton } from '@/components/detail/DetailHero';
 import { PillarLinks } from '@/components/detail/PillarLinks';
 import { AfterTeePanel } from '@/components/detail/AfterTeePanel';
@@ -70,6 +70,7 @@ import {
   ChevronRight,
   CheckSquare,
   CheckCircle2,
+  Mail,
   Ticket
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -133,6 +134,8 @@ export default function CommunityDetailPage({
   const [joinedEventIds, setJoinedEventIds] = useState<string[]>([]);
   // What the member joined comes from the account; this keeps the page in step with it
   const myActivity = useMyActivity();
+  // The link from a join that waits for the email, on a server without a mailer (BE-392)
+  const [pendingDevUrl, setPendingDevUrl] = useState<string | undefined>(undefined);
   const favorites = isLoggedIn ? myActivity.savedEventIds : [];
   useEffect(() => {
     if (myActivity.isLoaded) setJoinedEventIds(myActivity.joinedIds);
@@ -270,6 +273,11 @@ export default function CommunityDetailPage({
     if (!joinResult.ok) {
       setIsConfirmJoinModalOpen(false);
       showToast(joinResult.message);
+      return;
+    }
+    // Email not confirmed yet (BE-392): kept in My Hub, no seat yet. The dialog stays open and says so
+    if (joinResult.status === 'pending') {
+      setPendingDevUrl(joinResult.devVerifyUrl);
       return;
     }
 
@@ -488,6 +496,11 @@ export default function CommunityDetailPage({
   const isFav = favorites.includes(eventData.id);
   const isHost = Boolean(eventData.isHost || (hostCheckMember && (eventData as { createdByMemberId?: string }).createdByMemberId === hostCheckMember.id));
   const isJoined = isHost || joinedEventIds.includes(eventData.id);
+  const isPending = !isJoined && myActivity.pendingIds.includes(eventData.id);
+  const cancelPending = async () => {
+    const result = await activityActions.leave(eventData.id);
+    showToast(result.ok ? 'ยกเลิกที่สมัครไว้แล้ว' : result.message);
+  };
   // A recurring ตี้ (the series, not one of its dates) goes on: seats and dates come from its dates
   const isSeriesEvent = eventData.scheduleType === 'recurring' && Boolean(eventData.recurrence?.daysOfWeek?.length) && !eventData.seriesId;
   const isEnded = !isSeriesEvent && isEventEnded(eventData);
@@ -594,7 +607,11 @@ export default function CommunityDetailPage({
             { icon: Ticket, text: parsedPrice.displayPrice },
           ]}
           note={
-            isJoined && !isHost && !isEnded ? (
+            isPending && !isEnded ? (
+              <button type="button" onClick={() => void cancelPending()} className="font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
+                ไม่ไปแล้ว? ยกเลิกที่สมัครไว้
+              </button>
+            ) : isJoined && !isHost && !isEnded ? (
               <button type="button" onClick={() => setIsCancelModalOpen(true)} className="font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
                 ไปไม่ได้แล้ว? ยกเลิกการเข้าร่วม
               </button>
@@ -627,6 +644,11 @@ export default function CommunityDetailPage({
                 </>
               ) : isEnded || isStarted ? (
                 <button type="button" disabled className={heroButton.primary}>{isCancelled ? 'ทริปนี้ยกเลิกแล้ว' : isEnded ? 'ตี้นี้จบแล้ว' : 'ปิดรับแล้ว ตี้เริ่มไปแล้ว'}</button>
+              ) : isPending ? (
+                <button type="button" onClick={() => setIsConfirmJoinModalOpen(true)} className={heroButton.quiet}>
+                  <Mail className="w-5 h-5" aria-hidden="true" />
+                  รอยืนยันอีเมล
+                </button>
               ) : isSeriesPage ? (
                 <a href="#dates" className={heroButton.primary}>เลือกวันที่จะไป</a>
               ) : isFull ? (
@@ -1169,7 +1191,7 @@ export default function CommunityDetailPage({
             </div>
 
             {/* What the account still needs, said before the button rather than as a refusal after it */}
-            {hostCheckMember && <JoinReadinessNotice member={hostCheckMember} event={eventData} returnTo={joinReturnPath} />}
+            {hostCheckMember && <JoinReadinessNotice member={hostCheckMember} event={eventData} returnTo={joinReturnPath} pending={isPending} devUrl={pendingDevUrl} />}
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3.5 pt-1">
@@ -1183,11 +1205,11 @@ export default function CommunityDetailPage({
               <button
                 type="button"
                 onClick={handleExecuteJoin}
-                disabled={Boolean(joinBlocker(hostCheckMember, eventData))}
+                disabled={isPending || (Boolean(joinBlocker(hostCheckMember, eventData)) && !joinWaitsForEmail(hostCheckMember, eventData))}
                 className="w-full py-3.5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold shadow-sm transition-colors active:scale-98 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span>ยืนยันการเข้าร่วม</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>{isPending ? 'เก็บไว้แล้ว' : joinWaitsForEmail(hostCheckMember, eventData) ? 'สมัครไว้ก่อน' : 'ยืนยันการเข้าร่วม'}</span>
+                {!isPending && <ArrowRight className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -1296,7 +1318,7 @@ export default function CommunityDetailPage({
                 ? 'px-4 py-2.5 rounded-full border-[1.5px] border-[#2563EB] bg-white text-[#1D4ED8] text-sm font-semibold shrink-0 cursor-pointer active:scale-95'
                 : 'px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold shrink-0 cursor-pointer active:scale-95'}
             >
-              {isHost ? 'แชตกับคนในตี้' : isJoined ? 'ดูบัตร' : 'ลงทะเบียน'}
+              {isHost ? 'แชตกับคนในตี้' : isJoined ? 'ดูบัตร' : isPending ? 'รอยืนยันอีเมล' : 'ลงทะเบียน'}
             </button>
           )}
         </div>

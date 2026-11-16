@@ -79,7 +79,7 @@ import {
   Ticket,
   Layers,
   Camera,
-  AlertCircle, Plus } from 'lucide-react';
+  AlertCircle, MailCheck, Plus } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -525,10 +525,11 @@ function MyHubContent() {
   const suggestedEvents = useMemo(
     () =>
       openEvents
-        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id))
+        // A ตี้ waiting for the email (BE-392) is already listed above it
+        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id) && !activity.pendingIds.includes(e.id))
         .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
         .slice(0, 4),
-    [openEvents, hostedIdSet, guestEvents]
+    [openEvents, hostedIdSet, guestEvents, activity.pendingIds]
   );
 
   // Events the member saved but has not joined: they had no place on this page before
@@ -890,6 +891,17 @@ function MyHubContent() {
   const listItems = guestEvents.filter((ev) => !isQuestFarOff(ev) && ev.id !== nextEvent?.id);
   const upcomingTotal = listItems.filter(isUpcomingItem).length;
   const whenCounts = { upcoming: upcomingTotal, past: listItems.length - upcomingTotal };
+  // Opens on the first tab that has something (owner 2026-11-16: it always opened on an empty "กำลังจะมาถึง"):
+  // upcoming, then saved, then past. Once per visit, after the account answered; a ?tab= link keeps its own tab
+  const pickedScheduleTab = useRef(false);
+  const savedTotal = activity.savedEventIds.filter((id) => !activity.joinedIds.includes(id)).length + activity.savedSpotIds.length;
+  useEffect(() => {
+    if (pickedScheduleTab.current || !activity.isLoaded) return;
+    pickedScheduleTab.current = true;
+    if (searchParams.get('tab') || whenCounts.upcoming > 0) return;
+    if (savedTotal > 0) setScheduleWhen('saved');
+    else if (whenCounts.past > 0) setScheduleWhen('past');
+  }, [activity.isLoaded, searchParams, whenCounts.upcoming, whenCounts.past, savedTotal]);
   const listPool = listItems.filter((ev) => isUpcomingItem(ev) === (scheduleWhen === 'upcoming'));
   // Counts are the rows in the list: what is shown above ("กำลังทำอยู่", "ถัดไปของคุณ") is not counted again.
   // A type with no rows has no chip (owner 2026-11-03: "ชาเลนจ์ (0)" read as a wrong count beside the month's 2)
@@ -2096,28 +2108,26 @@ function MyHubContent() {
                 {/* Who this hub belongs to, and three real numbers from the account (levels and points return with the challenges work) */}
                 {/* Whose hub this is. A member who runs events also gets the switch to their host side; a guest sees no switch at all */}
                 <div className="space-y-3 text-slate-900">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* The photo opens the member's own profile, as on Instagram */}
-                    <Link href="/profile?id=me" aria-label="ดูโปรไฟล์ของฉัน" className="shrink-0 rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    {/* The photo opens the member's own profile, as on Instagram; "โปรไฟล์" sits under it (owner 2026-11-16:
+                        the photo was too small beside the name, and the link read as part of the XP line) */}
+                    <Link href="/profile?id=me" className="group shrink-0 flex flex-col items-center gap-1 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
                       {hubMember?.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                        <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-16 h-16 rounded-full object-cover border border-slate-200" />
                       ) : (
-                        <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center" aria-hidden="true">
+                        <span className="w-16 h-16 rounded-full bg-slate-100 text-slate-600 text-xl font-bold flex items-center justify-center" aria-hidden="true">
                           {nameInitial(hubName)}
                         </span>
                       )}
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 group-hover:underline">โปรไฟล์ ›</span>
                     </Link>
-                    <div className="min-w-0">
+                    <div className="min-w-0 min-h-16 flex flex-col justify-center">
                       <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
                       {/* The XP and what it buys, one line under the name (owner 2026-11-15: it said "ชาเลนจ์ของฉัน" and opened
                           the same view as "กำลังทำอยู่ › ดูทั้งหมด"; each link now has one job) */}
-                      <Link href="/rewards" className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline tabular-nums">
+                      <Link href="/rewards" className="self-start inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline tabular-nums">
                         {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}แลกของรางวัล ›
-                      </Link>
-                      <span className="text-slate-300 mx-1.5" aria-hidden="true">·</span>
-                      <Link href="/profile?id=me" className="inline-flex items-center min-h-11 text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline">
-                        โปรไฟล์ ›
                       </Link>
                     </div>
                   </div>
@@ -2177,6 +2187,31 @@ function MyHubContent() {
                       <div className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
                         <MyCampaignsSection campaigns={myCampaigns.mine} rewards={myRewards} onOpen={myCampaigns.open} />
                       </div>
+                    )}
+                    {/* ตี้ signed up for before the email was confirmed (BE-392): kept here, no seat yet */}
+                    {hubMainMode === 'calendar' && activity.pending.length > 0 && (
+                      <section aria-label="รอยืนยันอีเมล" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
+                        <h2 className="text-base font-bold text-slate-900">รอยืนยันอีเมล</h2>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500">กดลิงก์ในอีเมลแล้วได้ที่นั่งทันที ถ้ายังว่างอยู่</p>
+                        <ul className="mt-1 divide-y divide-slate-100">
+                          {activity.pending.map((event) => (
+                            <li key={event.id}>
+                              <Link href={`/community/${encodeURIComponent(event.id)}`} className="py-2.5 flex items-center gap-3 group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={optimizedImage(event.image || defaultEventImage(event.category), 128)} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
+                                <span className="min-w-0 flex-1">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                                    <MailCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                                    รอยืนยันอีเมล
+                                  </span>
+                                  <span className="block text-sm font-bold text-slate-900 line-clamp-1 group-hover:underline">{event.title}</span>
+                                  <span className="block text-xs text-slate-500 truncate">{event.pendingDate ?? event.date}{event.time ? ` · ${event.time}` : ''}</span>
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
                     )}
                     {/* Challenges done by plan: today's task and its stamp, first thing in the schedule (owner 2026-11-07) */}
                     {hubMainMode === 'calendar' && isLoggedIn && <TodayPlans onToast={showToast} />}

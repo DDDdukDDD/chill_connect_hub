@@ -7,7 +7,7 @@ import { CalendarCheck } from 'lucide-react';
 import type { EventItem } from '@/data/mockData';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { joinBlocker, JoinReadinessNotice } from '@/components/JoinReadinessNotice';
+import { joinBlocker, JoinReadinessNotice, joinWaitsForEmail } from '@/components/JoinReadinessNotice';
 
 interface SeriesDate {
   date: string;
@@ -30,6 +30,7 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
   const [picked, setPicked] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [devUrl, setDevUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +52,9 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
   }, [series.id]);
 
   const mine = activity.joined.filter((e) => (e as EventItem).seriesId === series.id);
+  // Signed up before confirming the email (BE-392): the series waits in My Hub with the picked date
+  const pendingDate = activity.pending.find((e) => e.id === series.id)?.pendingDate;
+  const blocked = Boolean(member && joinBlocker(member, series)) && !joinWaitsForEmail(member, series);
   const choice = dates?.find((d) => d.date === picked);
   const returnTo = `/community/${encodeURIComponent(series.id)}?date=${picked}`;
 
@@ -62,6 +66,7 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
     const result = await activityActions.join(series.id, choice.date);
     setBusy(false);
     if (!result.ok) return setError(result.message);
+    if (result.status === 'pending') return setDevUrl(result.devVerifyUrl);
     if (result.event) router.push(`/community/${encodeURIComponent(result.event.id)}`);
   };
 
@@ -111,16 +116,26 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
         </div>
       )}
 
-      {member && joinBlocker(member, series) && <div className="mt-3"><JoinReadinessNotice member={member} event={series} returnTo={returnTo} /></div>}
+      {member && joinBlocker(member, series) && (
+        <div className="mt-3">
+          <JoinReadinessNotice member={member} event={series} returnTo={returnTo} pending={Boolean(pendingDate)} devUrl={devUrl} />
+        </div>
+      )}
       {error && <p className="mt-2 text-sm font-semibold text-rose-700" role="alert">{error}</p>}
       {choice && (
         <button
           type="button"
           onClick={join}
-          disabled={busy || Boolean(member && joinBlocker(member, series))}
+          disabled={busy || blocked || pendingDate === choice.date}
           className="mt-4 h-12 px-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-slate-300 text-white font-semibold cursor-pointer disabled:cursor-not-allowed"
         >
-          {busy ? 'กำลังลงทะเบียน…' : `ลงทะเบียน ${choice.label}`}
+          {busy
+            ? 'กำลังลงทะเบียน…'
+            : pendingDate === choice.date
+              ? `เก็บ ${choice.label} ไว้แล้ว รอยืนยันอีเมล`
+              : joinWaitsForEmail(member, series)
+                ? `สมัคร ${choice.label} ไว้ก่อน`
+                : `ลงทะเบียน ${choice.label}`}
         </button>
       )}
     </section>
