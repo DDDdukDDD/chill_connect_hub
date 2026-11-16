@@ -503,7 +503,6 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                       <span className="text-sm font-bold truncate">{moment.userName}</span>
                     )}
                   </div>
-                  <TaggedFriends people={moment.tagged} className="text-xs text-white" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-white/80">
                     {moment.timeAgo}
                   </time>
@@ -515,6 +514,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 <h1 ref={titleRef} className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}
                 {rest && <p className={`mt-1 text-sm font-medium leading-relaxed whitespace-pre-line break-words ${showFullCaption ? '' : 'hidden'}`}><CaptionText text={rest} mentions={moment.tagged} linkClassName="underline" /></p>}
+                {/* Tagged friends after the author's name under the caption, as on feed cards (owner 2026-11-16) */}
+                {moment.tagged?.length ? <p className="mt-1 text-sm"><span className="font-bold">{moment.userName}</span> <TaggedFriends people={moment.tagged} inline className="text-white" /></p> : null}
                 {(rest || titleCut) && (
                   <button type="button" onClick={() => setShowFullCaption((open) => !open)} className="mt-1 text-xs font-bold text-white/80 hover:text-white cursor-pointer">
                     {showFullCaption ? 'ย่อ' : 'ดูเพิ่มเติม'}
@@ -631,7 +632,6 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                       <span className="text-sm font-bold text-slate-900 truncate">{moment.userName}</span>
                     )}
                   </div>
-                  <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
                   <time dateTime={moment.createdAt} className="block text-xs font-medium text-slate-500">
                     {moment.timeAgo}
                   </time>
@@ -676,6 +676,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               <div className="space-y-2">
                 <h1 className={!title ? 'sr-only' : title.length > LONG_HEADLINE ? 'text-[15px] font-medium text-slate-800 leading-relaxed break-words' : 'text-xl sm:text-2xl font-bold text-slate-900 leading-snug tracking-tight break-words'}>{title ? <CaptionText text={title} mentions={moment.tagged} /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {rest && <p className="text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line break-words"><CaptionText text={rest} mentions={moment.tagged} /></p>}
+                {/* Tagged friends after the author's name under the caption, as on feed cards (owner 2026-11-16) */}
+                {moment.tagged?.length ? <p className="text-sm text-slate-700"><span className="font-semibold text-slate-900">{moment.userName}</span> <TaggedFriends people={moment.tagged} inline /></p> : null}
               </div>
             </>
           )}

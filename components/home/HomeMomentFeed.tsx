@@ -194,7 +194,6 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
             <span className="font-semibold text-slate-900 truncate">{moment.userName}</span>
           </p>
-          <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
             {moment.timeAgo}
             {moment.location && ` · ${moment.location}`}
@@ -330,10 +329,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       )}
       {likersOpen && <LikersDialog momentId={moment.id} onClose={() => setLikersOpen(false)} />}
 
-      {moment.caption && (
+      {/* Tagged friends follow the author's name in this line, not under it at the top (owner 2026-11-16) */}
+      {(moment.caption || moment.tagged?.length) && (
         <div>
           <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            {moment.tagged?.length ? <> <TaggedFriends people={moment.tagged} inline className="text-slate-700" /></> : null}
+            {moment.caption && <> <CaptionText text={moment.caption} mentions={moment.tagged} /></>}
           </p>
           {!showWholeCaption && captionCut && (
             <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
