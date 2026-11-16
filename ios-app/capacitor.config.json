@@ -1,0 +1,17 @@
+{
+  "appId": "com.chillwaa.app",
+  "appName": "Chillwaa",
+  "webDir": "www",
+  "server": {
+    "url": "https://www.chillwaa.com",
+    "allowNavigation": ["www.chillwaa.com", "chillwaa.com"]
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#FFFFFF",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  }
+}

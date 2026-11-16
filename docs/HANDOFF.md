@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-404 · iPhone app shell (Capacitor) and its cloud build (owner 2026-11-17)
+- **What changed:** iPhone before Android (the owner's circle all use iPhone). `ios-app/`: Capacitor 8.6.0 with its own package.json (`.vercelignore` keeps it and `android/` out of Vercel; `tsconfig.json` and `eslint.config.mjs` skip both), `capacitor.config.json` (`com.chillwaa.app`, `server.url` = the live site), an offline page, the generated Xcode project (Swift Package Manager) with the 1024 px icon from `maskable-512.png` and Thai permission texts in `Info.plist`. `.github/workflows/ios-build.yml` builds it unsigned for the simulator on a GitHub macOS runner when `ios-app/` changes or by hand. Plan and owner steps in `docs/IOS_APP.md`.
+- **What to do about it:** The owner joins the Apple Developer Program and adds the App Store Connect API key to GitHub secrets; then the TestFlight job, in-app social sign-in (Google refuses embedded web views), Sign in with Apple and native push (docs/IOS_APP.md "Still to build").
+
 ### BE-403 · Android app shell (TWA) started, offline and store items in the checklist (owner 2026-11-16)
 - **What changed:** The owner chose to wrap the website as store apps (Android first, then iPhone with Capacitor), not write a separate app. New: `android/twa-manifest.json` (Bubblewrap settings, package `com.chillwaa.app`), `android/.gitignore` (signing key never in git), `GET /.well-known/assetlinks.json` (`app/.well-known/assetlinks.json/route.ts`, reads `ANDROID_CERT_SHA256` + `ANDROID_PACKAGE_ID`, empty list until set), steps in `docs/ANDROID_APP.md`. LAUNCH_CHECKLIST gains "แอปในสโตร์": Play/Apple accounts (Play's 12 testers × 14 days rule for new personal accounts), Sign in with Apple, and offline tickets + last feed.
 - **What to do about it:** JDK 17 + Android SDK installed in `~/.bubblewrap` on the main computer; the Gradle project is generated in `android/` (minSdk 24) and a debug build passes. Next: the owner makes the upload key (docs/ANDROID_APP.md), then `bubblewrap build`, then `ANDROID_CERT_SHA256` on Vercel.

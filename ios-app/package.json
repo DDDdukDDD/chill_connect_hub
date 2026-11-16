@@ -1,0 +1,18 @@
+{
+  "name": "chillwaa-ios",
+  "private": true,
+  "description": "The iPhone app: a Capacitor shell that opens www.chillwaa.com (docs/IOS_APP.md). Kept apart from the website's package.json so the web build never installs it.",
+  "scripts": {
+    "sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/push-notifications": "8.1.2",
+    "@capacitor/share": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}
