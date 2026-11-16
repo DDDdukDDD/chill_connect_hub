@@ -21,11 +21,11 @@ Tools: JDK 17 and the Android SDK, in `~/.bubblewrap` (`config.json` points Bubb
 
 ### First release: the signing key (owner, in your own terminal)
 
-The key is made once, with passwords only the owner knows:
+The key is made once, with passwords only the owner knows (PowerShell: the `&` runs a quoted path):
 
 ```sh
 cd android
-"C:/Users/Asus/.bubblewrap/jdk/jdk-17.0.21+9/bin/keytool.exe" -genkeypair -v -keystore chillwaa-upload.keystore -alias chillwaa -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Chillwaa, O=Chillwaa, C=TH"
+& "C:/Users/Asus/.bubblewrap/jdk/jdk-17.0.21+9/bin/keytool.exe" -genkeypair -v -keystore chillwaa-upload.keystore -alias chillwaa -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Chillwaa, O=Chillwaa, C=TH"
 ```
 
 **Keep `android/chillwaa-upload.keystore` and its password** in a password manager and a backup, never in git or chat (`android/.gitignore` keeps it out). Google Play keeps the real app signing key (Play App Signing), so a lost upload key can be replaced through Play support, but it takes days.
@@ -42,7 +42,7 @@ For a new store version: raise `appVersionCode` and `appVersionName` in `twa-man
 ## Connect the app to the site
 
 1. Get the fingerprints:
-   - the upload key: `keytool -list -v -keystore android/chillwaa-upload.keystore -alias chillwaa` → the `SHA256:` line
+   - the upload key: `keytool -list -v -keystore android/chillwaa-upload.keystore -alias chillwaa` → the `SHA256:` line. Made 2026-11-16: `30:9F:01:EA:70:E3:B4:2D:5C:8F:E0:55:C7:FF:CF:CF:CA:D2:43:31:FD:B7:67:B3:E5:18:D2:56:8B:49:3B:CA` (a fingerprint is public, not a secret)
    - after the first upload to Play: Play Console → the app → Test and release → App integrity → App signing key certificate → SHA-256
 2. On Vercel (Production): `ANDROID_CERT_SHA256` = both fingerprints, comma separated. Redeploy.
 3. Check: `https://www.chillwaa.com/.well-known/assetlinks.json` lists them. Then open the app: no URL bar at the top means the link works.
