@@ -1,6 +1,7 @@
 'use client';
 
 import { optimizedImage } from '@/lib/optimizedImage';
+import { DetailBackLink } from '@/components/detail/DetailBackLink';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useOutboundTracking } from '@/lib/social/trackClient';
@@ -321,10 +322,7 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 xl:pb-16">
-        <Link href="/spots" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          ที่เที่ยวทั้งหมด
-        </Link>
+        <DetailBackLink href="/spots" label="ที่เที่ยวทั้งหมด" />
 
         {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
         <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} />

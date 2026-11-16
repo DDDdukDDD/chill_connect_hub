@@ -1,5 +1,6 @@
 import { cacheManager } from '../cache';
 import { db } from '../db';
+import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { tidyDisplayName } from '../displayName';
 import { memberRepository, type Member } from '../members';
 import { momentRepository } from '../moments';
@@ -39,6 +40,14 @@ export interface CircleItem {
 
 type Raw = Omit<CircleItem, 'person' | 'isMe' | 'timeAgo'> & { memberId: string };
 
+/** A challenge by its id; the sample posts' challenge lines carry the database uuid instead of the slug, so that is tried too */
+export async function findQuest(id: string) {
+  const quest = await db.findQuestById(id);
+  if (quest || !USE_POSTGRES || !/^[0-9a-f-]{36}$/.test(id)) return quest;
+  const [row] = await sql()`select slug from app.quests where id::text = ${id}`;
+  return row ? db.findQuestById(String(row.slug)) : null;
+}
+
 /** Everyone's achievements in the window, the same for every reader: read at most once a minute */
 const everyone = () =>
   cacheManager.getOrSet(
@@ -50,6 +59,12 @@ const everyone = () =>
         // A database without migration 0040 has no challenge lines yet
         momentRepository.recentAchievements(new Date(since), 200).catch(() => []),
       ]);
+      // A post's line counts only while its challenge can be seen (not a draft), under the challenge's own id
+      const live = new Map<string, { id: string; title: string }>();
+      for (const id of new Set(steps.map((s) => s.achievement.questId))) {
+        const quest = await findQuest(id);
+        if (quest && quest.status !== 'draft') live.set(id, { id: quest.id, title: quest.title });
+      }
       const titles = new Map<string, string>();
       for (const id of new Set(finishes.map((f) => f.questId))) {
         const quest = await db.findQuestById(id);
@@ -61,11 +76,11 @@ const everyone = () =>
             ? [{ id: `f:${f.questId}:${f.memberId}`, memberId: f.memberId, kind: 'finish', quest: { id: f.questId, title: titles.get(f.questId) as string }, href: `/challenges/${encodeURIComponent(f.questId)}`, at: f.finishedAt }]
             : []
         ),
-        ...steps.map((s): Raw => ({
+        ...steps.filter((s) => live.has(s.achievement.questId)).map((s): Raw => ({
           id: `s:${s.momentId}`,
           memberId: s.authorId,
           kind: s.achievement.current >= s.achievement.total ? 'finish' : 'step',
-          quest: { id: s.achievement.questId, title: s.achievement.title },
+          quest: live.get(s.achievement.questId)!,
           current: s.achievement.current,
           total: s.achievement.total,
           momentId: s.momentId,

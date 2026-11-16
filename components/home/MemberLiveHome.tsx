@@ -6,6 +6,7 @@ import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
 import { Bookmark, CalendarDays, Camera, Gift, Zap } from 'lucide-react';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
+import { useHomeExitNote } from '@/lib/backFromHome';
 import { meetupTimes, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
@@ -72,6 +73,8 @@ export interface MemberLiveHomeProps {
  */
 export function MemberLiveHome(props: MemberLiveHomeProps) {
   const { name, plans, isLoaded } = props;
+  // A page opened from here says "กลับหน้าหลัก" and comes back here (owner 2026-11-16)
+  useHomeExitNote();
   const [feedView, setFeedView] = useState<FeedView>('foryou');
   const hasPlans = plans.length > 0;
   const [shareRequest, setShareRequest] = useState<ShareRequest | null>(null);

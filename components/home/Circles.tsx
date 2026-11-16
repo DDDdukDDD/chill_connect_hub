@@ -7,6 +7,7 @@ import type { CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
 import { recall, remember } from '@/lib/clientMemory';
+import { CircleViewer } from '@/components/home/CircleViewer';
 
 const MEMORY_KEY = 'circles';
 
@@ -14,11 +15,13 @@ const MEMORY_KEY = 'circles';
  * Circles (one is a Circle; owner 2026-11-16) above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
  * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
  * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
- * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
+ * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
+ * too. Nothing shows until someone has achieved something.
  */
 export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[]; /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */ lead?: React.ReactNode; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<CircleItem[]>(() => initial ?? recall<CircleItem[]>(MEMORY_KEY) ?? []);
+  const [openAt, setOpenAt] = useState<number | null>(null);
   useEffect(() => {
     if (initial) {
       remember(MEMORY_KEY, initial);
@@ -71,7 +74,7 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
       {/* The row fades out at the side that has more (2026-11-14): a circle cut in half at the feed edge looked like a mistake */}
       <ul ref={listRef} onScroll={measure} style={fadeMask(more)} className="sm:[mask-image:var(--row-fade)] flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {lead}
-        {items.map((item) => {
+        {items.map((item, index) => {
           const done = item.kind === 'finish';
           const doing = item.kind === 'doing';
           const name = item.isMe ? (doing ? item.quest.title : 'คุณ') : item.person.name;
@@ -85,12 +88,12 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
               : `${name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
           return (
             <li key={item.id} className="shrink-0 w-[80px]">
-              <Link
-                href={item.href}
-                onClick={() => item.momentId && onOpenMoment?.(item.momentId)}
+              <button
+                type="button"
+                onClick={() => setOpenAt(index)}
                 aria-label={meaning}
                 title={meaning}
-                className="group flex flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
                 <span className={`relative rounded-full p-[3px] ${done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]'}`}>
                   <span className="block rounded-full bg-white p-[2px]">
@@ -112,11 +115,12 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
                   {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
                   {name.replace(/\s*\(.*$/, '') || name}
                 </span>
-              </Link>
+              </button>
             </li>
           );
         })}
       </ul>
+      {openAt !== null && items[openAt] && <CircleViewer items={items} start={openAt} onClose={() => setOpenAt(null)} onOpenMoment={onOpenMoment} />}
     </section>
   );
 }

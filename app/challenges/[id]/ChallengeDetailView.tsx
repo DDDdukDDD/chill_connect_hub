@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { DetailBackLink } from '@/components/detail/DetailBackLink';
 import Link from 'next/link';
 import { useOutboundTracking } from '@/lib/social/trackClient';
 import { useParams } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, ArrowRight, Award, Calendar, Check, ChevronDown, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Award, Calendar, Check, ChevronDown, Clock, Gift, Share2, Ticket, Trophy, Users, Zap } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -13,6 +14,7 @@ import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { heroButton } from '@/components/detail/DetailHero';
 import { EVIDENCE_HINTS, NOTES_KEY, QuestDetail, SELF_NOTED_HINT, describeQuestRule, getQuestBrandReward, questActionLink, questDateRange, questDay, readNotes } from '@/lib/questDisplay';
 import { EventAttendees } from '@/components/EventAttendees';
+import { QuestFriendsDoing } from '@/components/social/FriendsDoingLine';
 import { InvitePill } from '@/components/invites/InvitePill';
 import { InviteBanner } from '@/components/invites/InviteBanner';
 import { useAuth } from '@/lib/useAuth';
@@ -112,10 +114,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
       />
       <Toast message={toastMessage} />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 xl:pb-16">
-        <Link href="/challenges" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          ชาเลนจ์ทั้งหมด
-        </Link>
+        <DetailBackLink href="/challenges" label="ชาเลนจ์ทั้งหมด" />
         {content}
       </main>
       {bottomBar ?? <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />}
@@ -792,6 +791,7 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
           )}
 
           <div className="order-6">
+            <QuestFriendsDoing questId={quest.id} refreshKey={joined} className="mb-4" />
             <EventAttendees
               src={`/api/quests/${encodeURIComponent(quest.id)}/members`}
               title="ใครทำอยู่บ้าง"

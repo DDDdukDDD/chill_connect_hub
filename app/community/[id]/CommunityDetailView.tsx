@@ -1,6 +1,7 @@
 'use client';
 
 import { optimizedImage } from '@/lib/optimizedImage';
+import { DetailBackLink } from '@/components/detail/DetailBackLink';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDialogBehavior } from '@/components/auth/DialogShell';
 import Link from 'next/link';
@@ -564,10 +565,7 @@ export default function CommunityDetailPage({
 
       {/* Main Container */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-48 xl:pb-16">
-        <Link href="/community" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          ตี้ทั้งหมด
-        </Link>
+        <DetailBackLink href="/community" label="ตี้ทั้งหมด" />
 
         {/* Opened from a friend's "ชวนไป": a ตี้ hands over to its own sign-up (owner 2026-11-11) */}
         {!isJoined && !isHost && !isEnded && (
