@@ -130,8 +130,9 @@ export const activityActions = {
   /** Joins an event. `ok` is false with a message to show when the server refuses (full, ended, account not verified, signed out). */
   /** `date` (YYYY-MM-DD) picks one date of a recurring ตี้; the result's event is that date's own event */
   /** `status: 'pending'`: the email is not confirmed yet, so the ตี้ waits in My Hub and the link was sent (`devVerifyUrl` locally) */
-  join: async (eventId: string, date?: string): Promise<{ ok: boolean; message: string; status?: string; event?: EventItem; devVerifyUrl?: string }> => {
-    const res = await post({ action: 'join', eventId, ...(date ? { date } : {}) });
+  /** `invite`: the ตี้ invitation link the member came through, so the friend who asked hears they signed up */
+  join: async (eventId: string, date?: string, invite?: string): Promise<{ ok: boolean; message: string; status?: string; event?: EventItem; devVerifyUrl?: string }> => {
+    const res = await post({ action: 'join', eventId, ...(date ? { date } : {}), ...(invite ? { invite } : {}) });
     if (!res.ok) return { ok: false, message: res.json?.message || (res.status === 401 ? 'กรุณาเข้าสู่ระบบก่อน' : 'เข้าร่วมไม่สำเร็จ ลองอีกครั้งนะ'), status: res.json?.status };
     await activityActions.refresh();
     return { ok: true, message: res.json.message, status: res.json.status, event: res.json.event, devVerifyUrl: res.json.devVerifyUrl };

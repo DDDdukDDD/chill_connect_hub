@@ -48,6 +48,8 @@ interface FriendPlanStore {
   byId(id: string): Promise<FriendPlan | null>;
   /** The host's open plans for one target, newest first */
   openOfHost(hostId: string, targetType: PlanTargetType, targetId: string | undefined, momentId: string | undefined): Promise<FriendPlan[]>;
+  /** Every plan not called off for this place, อีเวนต์, challenge or post, whoever hosts it, newest first (at most 50) */
+  openAt(targetType: PlanTargetType, targetId: string | undefined, momentId: string | undefined): Promise<FriendPlan[]>;
   /** The plans the member is in (invited or going) that are not called off, newest first */
   ofMember(memberId: string): Promise<FriendPlan[]>;
   /** Adds people (or moves 'invited' to 'going'); someone already going stays going */
@@ -87,6 +89,9 @@ function jsonPlans(): FriendPlanStore {
     },
     async openOfHost(hostId, type, targetId, momentId) {
       return store.read().filter((p) => isOpen(p) && p.hostId === hostId && sameTarget(p, type, targetId, momentId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async openAt(type, targetId, momentId) {
+      return store.read().filter((p) => isOpen(p) && sameTarget(p, type, targetId, momentId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 50);
     },
     async ofMember(memberId) {
       return store.read().filter((p) => isOpen(p) && p.members.some((m) => m.memberId === memberId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -200,6 +205,12 @@ function pgPlans(): FriendPlanStore {
       const db = sql();
       const target = type === 'general' ? db`mo.slug = ${momentId ?? ''}` : db`p.target_ref = ${targetId ?? ''}`;
       const rows = await db`${select(db)} where p.status <> 'cancelled' and h.legacy_id = ${hostId} and p.target_type = ${type} and ${target} order by p.created_at desc limit 5`;
+      return rows.map(toPlan);
+    },
+    async openAt(type, targetId, momentId) {
+      const db = sql();
+      const target = type === 'general' ? db`mo.slug = ${momentId ?? ''}` : db`p.target_ref = ${targetId ?? ''}`;
+      const rows = await db`${select(db)} where p.status <> 'cancelled' and p.target_type = ${type} and ${target} order by p.created_at desc limit 50`;
       return rows.map(toPlan);
     },
     async ofMember(memberId) {

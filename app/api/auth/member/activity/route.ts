@@ -7,6 +7,24 @@ import { sendVerification } from '../verify-email/send';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { traceAction } from '@/lib/social/actionLog';
+import { readInviteToken } from '@/lib/social/inviteLinks';
+import { recordTeeInvite } from '@/lib/social/notifications';
+import { memberRepository } from '@/lib/members';
+import type { Member } from '@/lib/members/types';
+
+/**
+ * A ตี้ invitation from a LINE link (2026-11-16): checked (signed, this ตี้, someone else, not blocked) and kept as an
+ * already-read invite notice, which joinEvent reads to tell the inviter. An in-app invitation is already a notice.
+ */
+async function keepTeeInvite(member: Member, eventId: string, token: unknown): Promise<void> {
+  if (token === undefined || !eventId) return;
+  const read = readInviteToken(token);
+  if (read?.kind !== 'tee' || read.eventId !== eventId || read.inviterId === member.id) return;
+  const inviter = await memberRepository.findById(read.inviterId);
+  if (!inviter || inviter.status !== 'active' || inviter.blockedIds?.includes(member.id) || member.blockedIds?.includes(inviter.id)) return;
+  const event = await db.findEventById(eventId);
+  if (event && event.eventType !== 'public_venue') await recordTeeInvite(member.id, inviter.id, eventId, event.title);
+}
 
 const EMPTY = { joined: [], hosted: [], cancelled: [], pending: [], joinedIds: [], pendingIds: [], savedSpotIds: [], savedEventIds: [], reviewedEventIds: [], fairGroups: [] };
 
@@ -18,7 +36,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * { action: 'join' | 'leave' | 'forget_cancelled', eventId, date? (YYYY-MM-DD, one date of a recurring ตี้) }
+ * { action: 'join' | 'leave' | 'forget_cancelled', eventId, date? (YYYY-MM-DD, one date of a recurring ตี้), invite? (the ตี้ invitation link's token) }
  * { action: 'missed', eventId, missed: boolean } (ended event without a host check-in)
  * { action: 'save' | 'unsave', kind: 'spot' | 'event', id }
  */
@@ -34,6 +52,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'ทำรายการบ่อยเกินไป กรุณารอสักครู่' }, { status: 429 });
       }
       const date = typeof body.date === 'string' ? body.date : undefined;
+      // Came from a friend's ตี้ invitation (`invite`, the signed link): kept, so the friend hears when the seat comes
+      await keepTeeInvite(member, eventId, body.invite);
       // Email not confirmed yet (BE-392): the ตี้ waits in My Hub and the link goes out; confirming turns it into a seat
       const target = canWaitForEmail(member) ? await db.findEventById(eventId) : null;
       if (target && target.eventType !== 'public_venue') {

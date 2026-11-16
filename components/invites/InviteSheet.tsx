@@ -8,6 +8,7 @@ import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { TagFriend } from '@/components/moments/FriendTagPicker';
 import { openLineShare } from '@/components/moments/lineInvite';
 import { APPS_INVITE_HINT, appsInviteCopied, useAppsInvite } from './useAppsInvite';
+import { POST_PLACE_FALLBACK } from '@/lib/social/socialRules';
 
 /** Friends one plan can hold besides the one who asks (lib/social/socialRules.ts INVITE_MAX_FRIENDS) */
 export const MAX_INVITES = 15;
@@ -61,9 +62,13 @@ export async function sendInvites(target: InviteTarget, to: string[] = [], day?:
  * chat reads like a friend asking and LINE's preview card (the /i/<code> page) carries the picture.
  */
 /** With a day ("ส. 15 พ.ย.") it leads: an invitation with a day gets answered more often (owner 2026-11-12) */
-export const inviteWords = (place: string, isTee = false, dateLabel?: string) =>
-  `${dateLabel ? `${dateLabel} ` : ''}${place ? (isTee ? `ไปตี้ "${place}" ด้วยกันไหม?` : `ไป${place}กันไหม?`) : 'ไปด้วยกันไหม?'} กดดูแล้วตอบได้เลย`;
-export const inviteLineText = (place: string, link: string, isTee = false, dateLabel?: string) => `${inviteWords(place, isTee, dateLabel)}
+/** One verb per section, the same as the page and the notice (2026-11-16): ตี้ ลงทะเบียน, challenge ทำด้วยกัน, else ไปกัน */
+export function inviteWords(place: string, type: InviteTargetType, dateLabel?: string): string {
+  const name = place === POST_PLACE_FALLBACK ? '' : place;
+  const ask = !name ? 'ไปด้วยกันไหม?' : type === 'community' ? `ไปตี้ "${name}" ด้วยกันไหม?` : type === 'quest' ? `ทำชาเลนจ์ "${name}" ด้วยกันไหม?` : `ไป${name}กันไหม?`;
+  return `${dateLabel ? `${dateLabel} ` : ''}${ask} กดดูแล้วตอบได้เลย`;
+}
+export const inviteLineText = (place: string, link: string, type: InviteTargetType, dateLabel?: string) => `${inviteWords(place, type, dateLabel)}
 ${window.location.origin}${link}`;
 
 /** The coming Saturday and Sunday in Bangkok ("YYYY-MM-DD"); today counts when it is one */
@@ -85,22 +90,34 @@ function weekendDays(): { sat: string; sun: string } {
 export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { target: InviteTarget; place: string; onClose: () => void; onDone: (message: string) => void; exceptPlanId?: string }) {
   const [friends, setFriends] = useState<TagFriend[] | null>(null);
   // "คุณมีนัดที่นี่แล้ว" (owner 2026-11-12): plans the member is already going on here lead back to their chat
-  const [plans, setPlans] = useState<{ id: string; title: string; dateLabel?: string; people: number; inPlan?: string[] }[]>([]);
+  const [plans, setPlans] = useState<{ id: string; title: string; dateLabel?: string; people: number; inPlan?: string[]; going?: string[] }[]>([]);
+  // Who is where already (2026-11-16): the plan invitations join, friends with a plan here of their own, and for a ตี้
+  // friends signed up or already asked by the reader (GET /api/invites?type=&id=)
+  const [where, setWhere] = useState<{ into?: string; elsewhere: string[]; joined: string[]; asked: string[] }>({ elsewhere: [], joined: [], asked: [] });
   useEffect(() => {
     let active = true;
     fetch(`/api/invites?type=${encodeURIComponent(target.type)}&id=${encodeURIComponent(target.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => active && Array.isArray(json?.plans) && setPlans(json.plans))
+      .then((json) => {
+        if (!active) return;
+        if (Array.isArray(json?.plans)) setPlans(json.plans);
+        const list = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+        setWhere({ into: typeof json?.into === 'string' ? json.into : undefined, elsewhere: list(json?.elsewhere), joined: list(json?.joined), asked: list(json?.asked) });
+      })
       .catch(() => undefined);
     return () => {
       active = false;
     };
   }, [target.type, target.id]);
   const planned = plans.filter((p) => p.id !== exceptPlanId);
-  // Friends already asked to (or going on) the member's own plan here: asking again would do nothing
-  const alreadyIn = useMemo(() => new Set(plans.flatMap((p) => p.inPlan ?? [])), [plans]);
-  // Invitations join one's own plan here; when it already has a day, a day picked now would be ignored
+  // Friends already asked to (or going on) the plan invitations join, or asked to this ตี้: asking again does nothing
+  const alreadyIn = useMemo(() => new Set([...plans.flatMap((p) => p.inPlan ?? []), ...where.asked]), [plans, where.asked]);
+  const inTee = useMemo(() => new Set(where.joined), [where.joined]);
+  const goingWithMe = useMemo(() => new Set(plans.flatMap((p) => p.going ?? [])), [plans]);
+  const elsewhere = useMemo(() => new Set(where.elsewhere), [where.elsewhere]);
+  // Invitations join the plan the reader is in here; when it already has a day, a day picked now would be ignored
   const ownHasDay = plans.some((p) => p.inPlan && p.dateLabel);
+  const joinsPlan = Boolean(where.into && planned.some((p) => p.id === where.into));
   const [picked, setPicked] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -146,7 +163,7 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
     setError('');
     const result = await sendInvites(target, [], day || undefined);
     if (!result.ok || !result.link) return setError(result.message || 'ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ');
-    openLineShare(inviteLineText(place, result.link, isTee, result.dateLabel));
+    openLineShare(inviteLineText(place, result.link, target.type, result.dateLabel));
   };
 
   return (
@@ -169,6 +186,7 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
               </li>
             ))}
           </ul>
+          {joinsPlan && <p className="mt-2 text-[13px] text-slate-600">เพื่อนที่คุณชวนจะเข้านัดนี้ ได้คุยในแชตเดียวกัน</p>}
         </div>
       )}
       {canPickDay && !ownHasDay && (
@@ -222,7 +240,8 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
           <ul className="max-h-[45dvh] overflow-y-auto -mx-2 mb-4" aria-label="เพื่อนที่ชวนได้">
             {shown.map((friend) => {
               const isPicked = picked.includes(friend.id);
-              const isIn = alreadyIn.has(friend.id);
+              const joinedTee = inTee.has(friend.id);
+              const isIn = joinedTee || alreadyIn.has(friend.id);
               const isFull = !isPicked && picked.length >= MAX_INVITES;
               return (
                 <li key={friend.id}>
@@ -234,9 +253,13 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
                     className={`w-full flex items-center gap-3 px-2 py-2 rounded-2xl text-left cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${isIn ? '' : 'hover:bg-slate-50 disabled:opacity-40'}`}
                   >
                     <MomentAvatar name={friend.name} src={friend.avatar} className="w-10 h-10 text-sm" />
-                    <span className="flex-1 min-w-0 truncate text-sm font-semibold text-slate-900">{friend.name}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block truncate text-sm font-semibold text-slate-900">{friend.name}</span>
+                      {/* Still pickable: they may well want to go with this group too */}
+                      {!isIn && elsewhere.has(friend.id) && <span className="block text-xs text-slate-500">มีนัดที่นี่แล้ว</span>}
+                    </span>
                     {isIn ? (
-                      <span className="shrink-0 text-xs text-slate-500">ชวนแล้ว</span>
+                      <span className="shrink-0 text-xs text-slate-500">{joinedTee ? 'อยู่ในตี้แล้ว' : goingWithMe.has(friend.id) ? 'อยู่ในนัดแล้ว' : 'ชวนแล้ว'}</span>
                     ) : (
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isPicked ? 'bg-slate-900 text-white' : 'border-2 border-slate-300'}`} aria-hidden="true">
                         {isPicked && <Check className="w-4 h-4" />}

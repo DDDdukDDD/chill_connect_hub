@@ -16,6 +16,7 @@ import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { InvitePill } from '@/components/invites/InvitePill';
 import { PHONE_BAR_INVITE } from '@/components/detail/PhoneActionBar';
 import { InviteBanner } from '@/components/invites/InviteBanner';
+import { MomentAvatar } from '@/components/moments/CommentThread';
 import { InviteNudge } from '@/components/invites/InviteNudge';
 import { useAuth } from '@/lib/useAuth';
 import { VisitPanel } from '@/components/VisitPanel';
@@ -114,6 +115,8 @@ export default function CommunityDetailPage({
   const [activeNavTab, setActiveNavTab] = useState('events');
   // Just joined: ask once whether a friend comes too (owner 2026-11-11)
   const [justJoined, setJustJoined] = useState(false);
+  // Opened from a friend's "ชวนไป": the join dialog names who asked, the reason to say yes (2026-11-16)
+  const [invitedBy, setInvitedBy] = useState<{ id: string; name: string; avatar: string; token: string } | null>(null);
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn, member: authMember } = useAuth();
   const hostCheckMember = useMemberSession().member;
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -269,7 +272,8 @@ export default function CommunityDetailPage({
   const handleExecuteJoin = async () => {
     if (!eventData) return;
     // The server decides (seats left, event ended, account verified)
-    const joinResult = await activityActions.join(eventData.id);
+    // Through a friend's invitation, the link goes along: the friend hears the answer (2026-11-16)
+    const joinResult = await activityActions.join(eventData.id, undefined, invitedBy && invitedBy.id !== authMember?.id ? invitedBy.token : undefined);
     if (!joinResult.ok) {
       setIsConfirmJoinModalOpen(false);
       showToast(joinResult.message);
@@ -567,7 +571,7 @@ export default function CommunityDetailPage({
 
         {/* Opened from a friend's "ชวนไป": a ตี้ hands over to its own sign-up (owner 2026-11-11) */}
         {!isJoined && !isHost && !isEnded && (
-          <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} onJoinTee={handleJoinEvent} />
+          <InviteBanner className="mt-2 mb-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} onJoinTee={handleJoinEvent} onTeeInviter={(inviter, token) => setInvitedBy({ ...inviter, token })} />
         )}
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx): every fact here once */}
@@ -703,7 +707,7 @@ export default function CommunityDetailPage({
           ]}
         />
 
-        {isSeriesPage && <SeriesDates series={eventData} onRequireLogin={(returnTo) => askToJoin('เพื่อลงทะเบียนเข้าร่วมตี้', returnTo)} />}
+        {isSeriesPage && <SeriesDates series={eventData} invite={invitedBy && invitedBy.id !== authMember?.id ? invitedBy.token : undefined} onRequireLogin={(returnTo) => askToJoin('เพื่อลงทะเบียนเข้าร่วมตี้', returnTo)} />}
 
         {/* The day itself: ticket, way there, chat, who has arrived (participant) and the check-in (host) */}
         {isJoined && !isHost && isToday(eventData) && (
@@ -1110,9 +1114,18 @@ export default function CommunityDetailPage({
               <h3 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
                 ยืนยันการลงทะเบียน
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                ร่วมตี้และพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย
-              </p>
+              {invitedBy && invitedBy.id !== authMember?.id ? (
+                <p className="flex items-center gap-2 pt-1 text-sm text-slate-700 font-medium">
+                  <MomentAvatar name={invitedBy.name} src={invitedBy.avatar} className="w-7 h-7 text-xs shrink-0" />
+                  <span>
+                    <strong className="font-semibold text-slate-900">{invitedBy.name}</strong> ชวนคุณมาตี้นี้ด้วยกัน
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  ร่วมตี้และพบปะเพื่อนใหม่ในบรรยากาศที่เป็นกันเองและปลอดภัย
+                </p>
+              )}
             </div>
 
             {/* Editorial Reservation Pass Card */}
