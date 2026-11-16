@@ -3,7 +3,7 @@
  * "วิธีคิดของระบบ" (components/admin/SystemLogicView.tsx) shows them, so the two can never say different things.
  */
 
-/** "เพื่อนๆ กำลังออกไปใช้ชีวิต": how far back the row looks, and how many circles it shows */
+/** Circles: how far back the row looks, and how many circles it shows */
 export const ACHIEVEMENTS_WINDOW_DAYS = 14;
 export const ACHIEVEMENTS_ROW_MAX = 15;
 

@@ -6,7 +6,7 @@ import { homeCampaigns } from '@/lib/campaigns/store';
 import { HOME_CARD_WIDTH, memberHomeData, sizedImage, type HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { listMoments } from '@/lib/moments/service';
-import { achievementsRow } from '@/lib/social/achievementsRow';
+import { circleItems } from '@/lib/social/circles';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import type { Member } from '@/lib/members/types';
 import { optimizedImage } from '@/lib/optimizedImage';
@@ -61,12 +61,12 @@ export default async function HomePage() {
   );
 }
 
-/** The member feed's first page and achievements row, with the page: the same answers /api/moments?tab=foryou and /api/achievements give. A failure leaves them to the browser as before */
+/** The member feed's first page and Circles, with the page: the same answers /api/moments?tab=foryou and /api/circles give. A failure leaves them to the browser as before */
 async function homeFeedStart(member: Member): Promise<HomeFeedStart | null> {
   try {
     await ensureSampleMembers();
-    const [feed, achievements] = await Promise.all([listMoments(member, { tab: 'foryou', page: 1, limit: HOME_FEED_PAGE_SIZE }), achievementsRow(member)]);
-    return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, achievements };
+    const [feed, circles] = await Promise.all([listMoments(member, { tab: 'foryou', page: 1, limit: HOME_FEED_PAGE_SIZE }), circleItems(member)]);
+    return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, circles };
   } catch {
     return null;
   }

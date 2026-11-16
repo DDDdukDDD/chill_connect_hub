@@ -5,12 +5,12 @@ import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignSt
 import type { Campaign } from '@/lib/campaigns/types';
 import Link from 'next/link';
 import { Bookmark, CalendarDays, Camera, Gift, Zap } from 'lucide-react';
-import { avatarImage } from '@/lib/optimizedImage';
+import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { meetupTimes, parseEventEndDateToTimestamp } from '@/lib/dateUtils';
 import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
-import { RowCircle } from '@/components/home/AchievementsRow';
+import { Circle } from '@/components/home/Circles';
 import { FollowRow } from '@/components/home/onboardingFirstStep';
 import { FOOTER_LINKS } from '@/components/SiteFooter';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
@@ -22,7 +22,7 @@ import type { HomeFeedStart } from '@/lib/homeData';
 
 
 export interface MemberLiveHomeProps {
-  /** The feed's first page and achievements row from the server (app/page.tsx) */
+  /** The feed's first page and Circles from the server (app/page.tsx) */
   feedStart?: HomeFeedStart;
   name: string;
   /** The running campaigns (server, homeCampaigns()); shown again with the member's own progress */
@@ -108,7 +108,12 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
             inserts={feedCards(props, showPicks)}
             tailUpTo={FIRST_SLOTS[FIRST_SLOTS.length - 1]}
             start={props.feedStart}
-            rowLead={<UpNextCircle {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />}
+            rowLead={
+              <>
+                <UpNextCircle {...props} sharedIds={sharedIds} onShare={(request) => setShareRequest({ ...request, key: Date.now() })} />
+                <CampaignCircles {...props} />
+              </>
+            }
           />
         </main>
 
@@ -204,7 +209,7 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
 
   if (justBack) {
     return (
-      <RowCircle
+      <Circle
         onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
         label={`ไปมาแล้ว? แชร์โมเมนต์จาก ${plainTitle(justBack.title)}`}
         image={justBack.image || FALLBACK_IMAGE}
@@ -218,7 +223,7 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
   const next = props.plans[0];
   if (!next) return null;
   return (
-    <RowCircle
+    <Circle
       href={eventHref(next)}
       label={`นัดถัดไป ${awayLabel(next, now) ?? dayLine(next)} ${plainTitle(next.title)}`}
       image={next.image || FALLBACK_IMAGE}
@@ -228,6 +233,54 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
       name="นัดถัดไป"
       className="lg:hidden"
     />
+  );
+}
+
+/** At most this many campaign circles, so challenges and friends stay in view; ready-to-redeem ones come first */
+const MAX_CAMPAIGN_CIRCLES = 2;
+
+/** Joined campaigns this member is in, as circles in the row (owner 2026-11-16): something they are doing, like a
+ * challenge under way. Ones they have not joined stay in the shelf between the posts. Phones only: laptops have the
+ * campaign line beside the feed, like the next plan. */
+function joinedCampaigns(campaigns: Campaign[], memberOf: (campaign: Campaign) => CampaignMemberState) {
+  const rank = (member: CampaignMemberState) => (member.ready && !member.entered ? 0 : member.entered ? 2 : 1);
+  return campaigns
+    .map((campaign) => ({ campaign, member: memberOf(campaign) }))
+    .filter(({ member }) => member?.enrolled)
+    .sort((a, b) => rank(a.member) - rank(b.member));
+}
+
+/** The words under a campaign circle: headlines start alike ("ออกไปใช้ชีวิต ลุ้น…"), so the prize after ลุ้น tells them apart */
+function prizeWords(headline: string): string {
+  const at = headline.lastIndexOf('ลุ้น');
+  const prize = at >= 0 ? headline.slice(at + 'ลุ้น'.length).trim() : '';
+  return prize || headline;
+}
+
+function CampaignCircles({ campaigns, campaignMemberOf, onOpenCampaign }: MemberLiveHomeProps) {
+  if (!campaigns || !campaignMemberOf || !onOpenCampaign) return null;
+  return (
+    <>
+      {joinedCampaigns(campaigns, campaignMemberOf).slice(0, MAX_CAMPAIGN_CIRCLES).map(({ campaign, member }) => {
+        const badge = member.entered ? 'รอลุ้น' : member.ready ? 'แลกได้' : `${member.done}/${member.total}`;
+        const state = member.entered ? 'แลกสิทธิ์แล้ว รอประกาศผล' : member.ready ? 'ครบแล้ว แลกสิทธิ์ลุ้นได้' : `ทำแล้ว ${member.done} จาก ${member.total} ขั้น`;
+        return (
+          <Circle
+            key={campaign.id}
+            onClick={() => onOpenCampaign(campaign.id)}
+            label={`แคมเปญ ${campaign.headline}: ${state}`}
+            image={campaign.prizeImage ? optimizedImage(campaign.prizeImage, 128) : undefined}
+            fallback={<Gift className="w-7 h-7 text-[#D97706]" aria-hidden="true" />}
+            fit="contain"
+            ring="from-[#EAB308] to-[#FDE047]"
+            badge={badge}
+            badgeClass="bg-[#FFF0B3] text-[#92400E]"
+            name={prizeWords(campaign.headline)}
+            className="lg:hidden"
+          />
+        );
+      })}
+    </>
   );
 }
 
@@ -376,13 +429,16 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
       <PeopleToFollow />
     </>
   );
-  // Phones have no side column: the campaign comes between the posts, after the first cards, never on top
+  // Phones have no side column: the campaign comes between the posts, after the first cards, never on top. Joined
+  // ones are circles at the top (CampaignCircles), so the shelf offers only the rest and goes once all are joined
   if (props.campaigns && props.campaignMemberOf && props.onOpenCampaign) {
+    const memberOf = props.campaignMemberOf;
+    const notJoined = props.campaigns.filter((campaign) => !memberOf(campaign)?.enrolled);
     cards[PHONE_CAMPAIGN_SLOT] = (
       <>
         {cards[PHONE_CAMPAIGN_SLOT]}
         <section className="lg:hidden py-5 border-b border-slate-200 empty:hidden">
-          <CampaignShelf campaigns={props.campaigns} memberOf={props.campaignMemberOf} onOpen={props.onOpenCampaign} />
+          <CampaignShelf campaigns={notJoined} memberOf={memberOf} onOpen={props.onOpenCampaign} />
         </section>
       </>
     );

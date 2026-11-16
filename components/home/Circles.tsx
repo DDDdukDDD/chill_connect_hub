@@ -3,29 +3,29 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
-import type { AchievementItem } from '@/lib/social/achievementsRow';
+import type { CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
 import { recall, remember } from '@/lib/clientMemory';
 
-const MEMORY_KEY = 'achievements-row';
+const MEMORY_KEY = 'circles';
 
 /**
- * "เพื่อนๆ กำลังออกไปใช้ชีวิต" above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
+ * Circles (one is a Circle; owner 2026-11-16) above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
  * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
  * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
  * A tap opens the post or the challenge. Nothing shows until someone has achieved something.
  */
-export function AchievementsRow({ initial, onOpenMoment, lead }: { initial?: AchievementItem[]; /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */ lead?: React.ReactNode; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
+export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[]; /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */ lead?: React.ReactNode; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
-  const [items, setItems] = useState<AchievementItem[]>(() => initial ?? recall<AchievementItem[]>(MEMORY_KEY) ?? []);
+  const [items, setItems] = useState<CircleItem[]>(() => initial ?? recall<CircleItem[]>(MEMORY_KEY) ?? []);
   useEffect(() => {
     if (initial) {
       remember(MEMORY_KEY, initial);
       return;
     }
     let active = true;
-    fetch('/api/achievements', { cache: 'no-store' })
+    fetch('/api/circles', { cache: 'no-store' })
       .then((res) => res.json())
       .then((json) => {
         if (!active || !Array.isArray(json?.items)) return;
@@ -56,8 +56,8 @@ export function AchievementsRow({ initial, onOpenMoment, lead }: { initial?: Ach
   if (items.length === 0 && !lead) return null;
   // At the very top of home (owner 2026-11-13): the circles speak for themselves, so the label is for screen readers only
   return (
-    <section aria-labelledby="achievements-heading" className="relative mb-3">
-      <h3 id="achievements-heading" className="sr-only">เพื่อนๆ กำลังออกไปใช้ชีวิต</h3>
+    <section aria-labelledby="circles-heading" className="relative mb-3">
+      <h3 id="circles-heading" className="sr-only">เพื่อนๆ กำลังออกไปใช้ชีวิต</h3>
       {more.left && (
         <button type="button" onClick={() => page(-1)} aria-label="เลื่อนดูก่อนหน้า" className={`${arrow} -left-3`}>
           <ChevronLeft className="w-5 h-5" aria-hidden="true" />
@@ -121,12 +121,16 @@ export function AchievementsRow({ initial, onOpenMoment, lead }: { initial?: Ach
   );
 }
 
-/** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment */
-export function RowCircle({ href, onClick, label, image, ring, badge, badgeClass, name, className = '' }: {
+/** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment, a campaign */
+export function Circle({ href, onClick, label, image, fallback, fit = 'cover', ring, badge, badgeClass, name, className = '' }: {
   href?: string;
   onClick?: () => void;
   label: string;
-  image: string;
+  /** Empty: `fallback` is drawn instead */
+  image?: string;
+  fallback?: React.ReactNode;
+  /** 'contain': the whole picture on a tinted circle (a prize photo), not cropped like a cover */
+  fit?: 'cover' | 'contain';
   /** Tailwind gradient classes for the ring */
   ring: string;
   badge: React.ReactNode;
@@ -138,8 +142,12 @@ export function RowCircle({ href, onClick, label, image, ring, badge, badgeClass
     <>
       <span className={`relative rounded-full p-[3px] bg-linear-to-tr ${ring}`}>
         <span className="block rounded-full bg-white p-[2px]">
-          {/* eslint-disable-next-line @next/next/no-img-element -- event covers come from many hosts */}
-          <img src={image} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element -- event covers come from many hosts
+            <img src={image} alt="" className={`w-16 h-16 rounded-full group-hover:brightness-95 transition-[filter] ${fit === 'contain' ? 'object-contain bg-[#FFF8DB] p-2' : 'object-cover bg-slate-100'}`} />
+          ) : (
+            <span className="w-16 h-16 rounded-full bg-[#FFF8DB] flex items-center justify-center group-hover:brightness-95 transition-[filter]">{fallback}</span>
+          )}
         </span>
         <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badgeClass}`} aria-hidden="true">
           {badge}

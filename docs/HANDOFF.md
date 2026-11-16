@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-399 · The circle row is named Circles (owner 2026-11-16)
+- **What changed:** The row of circles above the member home feed is **Circles**, one item a **Circle** (AGENTS.md pillar facts). Renamed to match: `components/home/AchievementsRow.tsx` → `Circles.tsx` (`AchievementsRow` → `Circles`, `RowCircle` → `Circle`), `lib/social/achievementsRow.ts` → `circles.ts` (`achievementsRow()` → `circleItems()`, `AchievementItem` → `CircleItem`), `HomeFeedStart.achievements` → `circles`, `GET /api/achievements` → `GET /api/circles` (same response, docs/API.md), the admin topic "Circles (เซอร์เคิล)" in วิธีคิดของระบบ. Older HANDOFF items keep the old names.
+- **What to do about it:** Say Circles / Circle in new code and docs. A page open from before the deploy asks the old URL once and keeps the circles it had.
+
+### BE-398 · Joined campaigns as circles on the member home, the phone shelf shows only the rest (owner 2026-11-16)
+- **What changed:** UI only, no API change. On phones the circle row at the top of the member home (`AchievementsRow` lead) shows, after "นัดถัดไป", up to 2 campaigns the member joined (`CampaignCircles` in `components/home/MemberLiveHome.tsx`): yellow ring, the prize picture whole, the prize words under it (the headline after "ลุ้น"), badge `done/total`, "แลกได้" when it can be redeemed (those first) or "รอลุ้น" once redeemed; a tap opens the campaign dialog. The campaign shelf between the posts on phones now lists only campaigns not joined, and is gone when all are joined. Laptops are unchanged (the campaign line beside the feed). `RowCircle` gains `fit="contain"` and a `fallback` for no picture. Screenshots at 390 px and 1366 px on dev.
+- **What to do about it:** Nothing. No migration.
+
 ### BE-397 · Vercel image quota: WebP only, kept 31 days, fixed widths (owner 2026-11-16)
 - **What changed:** Vercel warned at 75% of the free 5,000 image transformations a month. `next.config.ts` `images`: `formats: ['image/webp']` (AVIF made a second copy of every resize), `minimumCacheTTL: 2678400` (31 days instead of Next 16's 4 hours; /public files and uploads send no long Cache-Control, so the same photo was resized again up to 6 times a day), `imageSizes [64, 96, 128, 256, 384]` + `deviceSizes [640, 828, 1080, 1920]` (only the widths `optimizedImage()` asks for; Next's defaults offered up to 15 per image). `MomentPhotos` frame widths 640/828/1080 (1200 dropped: shown at most 560 px). Checked on a local `next start`: 1080 comes back `image/webp` with `max-age=2678400`, every width the site uses answers 200, 1200 answers 400.
 - **What to do about it:** A new image width must be one of these (lib/optimizedImage.ts says so). A /public or partner image replaced under the same name can stay stale up to 31 days: rename the file instead.

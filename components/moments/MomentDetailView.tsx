@@ -190,7 +190,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
   // Back to the grid where the reader left it: the link goes to the tab it was opened from, and the browser's Back works the same
   const [savedGrid, setSavedGrid] = useState<string | null>(null);
   const backHref = savedGrid ?? '/moments';
-  // Says where it goes: opened from the Home feed (a post, a clip, the achievements row), it goes back there
+  // Says where it goes: opened from the Home feed (a post, a clip, the Circles), it goes back there
   const backLabel = savedGrid === '/' ? 'กลับหน้าหลัก' : 'โมเมนต์ทั้งหมด';
   useEffect(() => {
     setSavedGrid(showcaseUrlFor(returnId));

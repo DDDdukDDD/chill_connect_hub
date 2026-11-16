@@ -10,7 +10,7 @@ import { questMemberStore } from './stores';
 import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
 
 /**
- * "เพื่อนๆ กำลังออกไปใช้ชีวิต" at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
+ * Circles (one item is a Circle; owner 2026-11-16) at the top of the member home feed, where other apps put stories (owner 2026-11-10: no stories,
  * show who achieved what). Two public facts make it: a finished challenge ("ใครทำอยู่บ้าง" is public on the challenge
  * page) and a post's challenge line ("พิชิตชาเลนจ์ … 2/3", lib/social/achievement.ts). One circle per person:
  * a finish beats a step, the newest wins. The reader comes first, then people they follow (mutual first), then others.
@@ -21,7 +21,7 @@ import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS } from './socialRules';
 const WINDOW_DAYS = ACHIEVEMENTS_WINDOW_DAYS;
 const ROW_MAX = ACHIEVEMENTS_ROW_MAX;
 
-export interface AchievementItem {
+export interface CircleItem {
   id: string;
   person: { id: string; name: string; avatar?: string };
   isMe: boolean;
@@ -37,12 +37,12 @@ export interface AchievementItem {
   at: string;
 }
 
-type Raw = Omit<AchievementItem, 'person' | 'isMe' | 'timeAgo'> & { memberId: string };
+type Raw = Omit<CircleItem, 'person' | 'isMe' | 'timeAgo'> & { memberId: string };
 
 /** Everyone's achievements in the window, the same for every reader: read at most once a minute */
 const everyone = () =>
   cacheManager.getOrSet(
-    'achievements:row',
+    'circles',
     async (): Promise<Raw[]> => {
       const since = Date.now() - WINDOW_DAYS * 86_400_000;
       const [finishes, steps] = await Promise.all([
@@ -93,7 +93,7 @@ async function doingOf(memberId: string): Promise<Raw[]> {
   return items;
 }
 
-export async function achievementsRow(viewer: Member): Promise<AchievementItem[]> {
+export async function circleItems(viewer: Member): Promise<CircleItem[]> {
   const blocked = new Set(viewer.blockedIds ?? []);
   // One circle per person: a finish beats a step, then the newest
   const best = new Map<string, Raw>();
@@ -111,7 +111,7 @@ export async function achievementsRow(viewer: Member): Promise<AchievementItem[]
   const rank = (id: string) => (id === viewer.id ? 0 : mutual.has(id) ? 1 : following.has(id) ? 2 : 3);
   const now = Date.now();
   return [...doing, ...best.values()]
-    .flatMap((item): AchievementItem[] => {
+    .flatMap((item): CircleItem[] => {
       const person = people.get(item.memberId);
       if (!person || person.status !== 'active' || person.blockedIds?.includes(viewer.id)) return [];
       const { memberId, ...rest } = item;

@@ -27,7 +27,7 @@ import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
 import { AchievementLine } from '@/components/moments/AchievementLine';
-import { AchievementsRow } from '@/components/home/AchievementsRow';
+import { Circles } from '@/components/home/Circles';
 import { useClamped } from '@/components/moments/useClamped';
 import type { HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
@@ -467,7 +467,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
 }
 
 export interface HomeMomentFeedProps {
-  /** The first page of สำหรับคุณ and the achievements row, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
+  /** The first page of สำหรับคุณ and the Circles, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
   start?: HomeFeedStart;
   /** Circles at the front of the top row: the next plan or a ตี้ asking for its moment (MemberLiveHome) */
   rowLead?: React.ReactNode;
@@ -919,7 +919,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     <div ref={topRef} className="scroll-mt-24" onClickCapture={rememberPlace}>
       {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. At the very top since
           2026-11-13 (owner), in place of the next-plan line, which is now its first circle (rowLead) */}
-      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
+      {!PERSONAL[sort] && <Circles initial={start?.circles} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
 
       {/* The title is for screen readers only (owner 2026-11-13): the tabs already say this is the feed, and the circles sit above */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">

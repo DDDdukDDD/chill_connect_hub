@@ -6,7 +6,7 @@ import { eventListItem, spotListItem } from './listItems';
 import { optimizedImage } from './optimizedImage';
 import type { Member } from './members/types';
 import type { FeedItem } from './moments/service';
-import type { AchievementItem } from './social/achievementsRow';
+import type { CircleItem } from './social/circles';
 import { visitsOf } from './social/visits';
 
 /**
@@ -23,11 +23,11 @@ export type MemberHomeData = {
   /** Place and อีเวนต์ kinds saved with the onboarding answers: the feed cards lead with them */
   spotVibes: string[];
   fairCategories: string[];
-  /** The first page of สำหรับคุณ and the "เพื่อนๆ กำลังออกไปใช้ชีวิต" row, rendered with the page so the feed is there on arrival instead of after a second request */
+  /** The first page of สำหรับคุณ and Circles, rendered with the page so the feed is there on arrival instead of after a second request */
   feedStart?: HomeFeedStart;
 };
 
-export type HomeFeedStart = { items: FeedItem[]; hasNext: boolean; nextCursor?: string; achievements: AchievementItem[] };
+export type HomeFeedStart = { items: FeedItem[]; hasNext: boolean; nextCursor?: string; circles: CircleItem[] };
 
 /**
  * The member home's cards show `image` as it comes (MemberLiveHome, JourneyBand), and the sample events point at
