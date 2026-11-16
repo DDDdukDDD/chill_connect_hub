@@ -24,6 +24,8 @@ export function InviteBanner({
   myId,
   onMessage,
   onJoinTee,
+  onTeeInviter,
+  onAnswered,
   className = '',
 }: {
   isLoggedIn: boolean;
@@ -31,6 +33,10 @@ export function InviteBanner({
   onMessage: (message: string) => void;
   /** A ตี้: the page's own sign-up */
   onJoinTee?: () => void;
+  /** A ตี้: who asked and the signed link, read once the invitation is in: the join dialog names them and the join carries the link (2026-11-16) */
+  onTeeInviter?: (inviter: InviteInfo['host'], token: string) => void;
+  /** A plan was answered "ไปกัน": the page reloads what changed (a challenge is joined with it) */
+  onAnswered?: () => void;
   className?: string;
 }) {
   const [token, setToken] = useState<string | null>(null);
@@ -40,6 +46,11 @@ export function InviteBanner({
   const [isHidden, setIsHidden] = useState(false);
   // Back from sign-up with ?answer=1: answer "ไปกัน" once the invitation is read
   const autoAnswer = useRef(false);
+  // Read when the invitation arrives; a ref so a new callback from the page does not fetch the invitation again
+  const tellInviter = useRef(onTeeInviter);
+  useEffect(() => {
+    tellInviter.current = onTeeInviter;
+  }, [onTeeInviter]);
   const key = typeof window === 'undefined' ? '' : `chillwaa:invite:${window.location.pathname}`;
 
   useEffect(() => {
@@ -71,6 +82,7 @@ export function InviteBanner({
         const found: InviteInfo | null = json?.invite ?? null;
         setToken(asked);
         setInfo(found);
+        if (found?.kind === 'tee' && asked) tellInviter.current?.(found.host, asked);
       })
       .catch(() => undefined);
     return () => {
@@ -78,6 +90,9 @@ export function InviteBanner({
     };
     // The reader signing in changes what the server says ("already going")
   }, [isLoggedIn]);
+
+  // A challenge plan is done together and has no day (the server says what the plan is for)
+  const onChallenge = (inv: InviteInfo | null = info) => inv?.target === 'quest';
 
   const forget = () => {
     setInfo(null);
@@ -100,7 +115,9 @@ export function InviteBanner({
     if (!result.ok || !result.json?.planId) return onMessage(result.json?.message || 'ตอบไม่สำเร็จ ลองอีกครั้งนะ');
     // Stay on the page (owner 2026-11-12): they came to look at the place; the line turns into "คุณไปกับ … แล้ว · คุยในแชต"
     setInfo({ ...inv, isIn: true, planId: result.json.planId, goingCount: inv.isIn ? inv.goingCount : inv.goingCount + 1 });
-    onMessage('ไปกัน! คุยนัดวันกันในแชตได้เลย');
+    // A challenge is joined with the plan (lib/social/friendPlans.ts answerInvite), so the toast says so (2026-11-16)
+    onMessage(onChallenge(inv) ? `เข้าร่วมชาเลนจ์แล้ว ทำไปด้วยกันกับ ${inv.host.name} นะ` : 'ไปกัน! คุยนัดวันกันในแชตได้เลย');
+    onAnswered?.();
   };
 
   // "ไม่สะดวก" (owner 2026-11-12): a member's no reaches the host, gently; a guest's "ไว้ก่อน" only hides the line
@@ -132,18 +149,24 @@ export function InviteBanner({
 
   // The page already names the place: the line says who asked, the second line who is going (design pass 2026-11-12)
   // A post's page shows its photo first and names the place further down, so there the line names it (E2E pass 2026-11-12)
-  const onPost = window.location.pathname.startsWith('/moments/') && info.title && info.title !== POST_PLACE_FALLBACK;
+  const onPost = window.location.pathname.startsWith('/moments/') && Boolean(info.title) && info.title !== POST_PLACE_FALLBACK;
   // Warmer, not louder (owner 2026-11-12): the friend's face leads, the day sits in the first line, and whoever already
   // said yes shows as faces under it. No new colour: rose reads as "no" and is the Moments pillar's.
+  const isChallenge = info.kind === 'plan' && onChallenge(info);
   const where = onPost ? `ไป${info.title}` : 'ไปด้วยกัน';
   const title = info.isIn
-    ? `คุณไปกับ ${info.host.name} แล้ว`
+    ? isChallenge
+      ? `คุณทำชาเลนจ์นี้กับ ${info.host.name} แล้ว`
+      : `คุณไปกับ ${info.host.name} แล้ว`
     : info.kind === 'tee'
       ? `${info.host.name} ชวนคุณมาตี้นี้ด้วยกัน`
-      : `${info.host.name} ชวน${where}${info.dateLabel ? ` ${info.dateLabel}` : ''}`;
+      : isChallenge
+        ? `${info.host.name} ชวนทำชาเลนจ์นี้ด้วยกัน`
+        : `${info.host.name} ชวน${where}${info.dateLabel ? ` ${info.dateLabel}` : ''}`;
   const others = info.going.filter((p) => p.id !== info.host.id);
   const othersCount = Math.max(0, info.goingCount - 1);
-  const when = info.isIn ? info.dateLabel ?? 'ยังไม่ได้นัดวัน' : '';
+  // A challenge plan has no day to set
+  const when = info.isIn && !isChallenge ? info.dateLabel ?? 'ยังไม่ได้นัดวัน' : '';
 
   return (
     <div role="status" className={`flex flex-wrap items-center gap-x-3 gap-y-3 rounded-2xl bg-blue-50 px-4 py-3.5 ${className}`}>
@@ -159,7 +182,7 @@ export function InviteBanner({
                 ))}
               </span>
             )}
-            <span>{[when, othersCount > 0 ? `ไปด้วยแล้ว ${othersCount} คน` : ''].filter(Boolean).join(' · ')}</span>
+            <span>{[when, othersCount > 0 ? `${isChallenge ? 'ทำด้วยกันแล้ว' : 'ไปด้วยแล้ว'} ${othersCount} คน` : ''].filter(Boolean).join(' · ')}</span>
           </p>
         )}
       </div>
@@ -177,7 +200,7 @@ export function InviteBanner({
           {/* Dark, not blue: the page under the banner keeps its own one blue button (DESIGN_SYSTEM.md §4) */}
           <button type="button" onClick={() => void answer(info, token)} disabled={isBusy} className="h-9 px-4 inline-flex items-center gap-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-sm font-bold text-white whitespace-nowrap disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2">
             {isBusy && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-            {info.kind === 'tee' ? 'ลงทะเบียนไปด้วย' : 'ไปกัน'}
+            {info.kind === 'tee' ? 'ลงทะเบียนไปด้วย' : isChallenge ? 'ทำด้วยกัน' : 'ไปกัน'}
           </button>
         </div>
       )}

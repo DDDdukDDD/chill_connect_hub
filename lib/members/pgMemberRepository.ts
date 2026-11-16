@@ -16,7 +16,8 @@ type Row = Record<string, unknown>;
 /** One row per member with everything rowToMember needs (lib/db/postgres/rows.mjs) */
 type Fragment = PendingQuery<PgRow[]>;
 const hydrate = (tx: Sql, where: Fragment) => tx`
-  select m.*, (c.member_id is not null) as has_password, inviter.legacy_id as invited_by_legacy,
+  select m.*, (c.member_id is not null) as has_password, inviter.legacy_id as invited_by_legacy, owner.legacy_id as owner_legacy,
+    owner.email_verified_at as owner_email_verified_at, owner.phone_verified_at as owner_phone_verified_at,
     pr.bio, pr.occupation, pr.workplace, pr.education, pr.hometown, pr.living_area, pr.relationship_status, pr.connect_goal,
     pr.birth_year, pr.gender, pr.province_code, pr.intent, pr.goals, pr.hidden_fields, pr.preferences_at,
     (select coalesce(json_agg(json_build_object('provider', a.provider, 'subject', a.subject, 'linked_at', a.linked_at) order by a.linked_at), '[]')
@@ -42,6 +43,7 @@ const hydrate = (tx: Sql, where: Fragment) => tx`
   left join app.member_credentials c on c.member_id = m.id
   left join app.member_profiles pr on pr.member_id = m.id
   left join app.members inviter on inviter.id = m.invited_by
+  left join app.members owner on owner.id = m.owner_id
   where ${where}`;
 
 async function findOne(tx: Sql, where: Fragment): Promise<Member | null> {
@@ -99,11 +101,15 @@ const GROUPS: Record<string, string> = {
 async function writeParts(tx: Sql, member: Member, dbId: string, groups: Set<string>, isNew: boolean): Promise<void> {
   const [current] = isNew ? [] : await tx`select invite_code from app.members where id = ${dbId}`;
   const invitedBy = member.invitedBy ? (await idsOf(tx, 'members', 'legacy_id', [member.invitedBy])).get(member.invitedBy) : undefined;
+  // Sub-accounts (BE-393): the owner is kept on every write, since the update rewrites the whole members row
+  const ownerId = member.ownerId ? (await idsOf(tx, 'members', 'legacy_id', [member.ownerId])).get(member.ownerId) : undefined;
+  if (member.ownerId && !ownerId) throw new Error('ไม่พบบัญชีหลัก');
   const [province] = member.preferences?.province ? await tx`select code from app.provinces where code = ${member.preferences.province}` : [];
   const parts = memberToRows(member, {
     id: dbId,
     inviteCode: current && (!member.inviteCode || member.inviteCode === current.invite_code) ? current.invite_code : await freeInviteCode(tx, member.inviteCode),
     invitedBy,
+    ownerId,
     provinceCode: province?.code ?? null,
   });
 
@@ -250,6 +256,18 @@ export const pgMemberRepository: MemberRepository = {
   async findInvitees(id) {
     const rows = await hydrate(sql(), sql()`m.invited_by = (select o.id from app.members o where o.legacy_id = ${id})`);
     return rows.map((row) => rowToMember(row) as Member).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  // The expression matches nameKey (lib/displayName.ts) on tidied names, and the index in migration 0060
+  async isNameTaken(key, exceptId) {
+    const [row] = await sql()`
+      select 1 from app.members
+      where lower(regexp_replace(display_name, '[[:space:]]+', '', 'g')) = ${key} and not is_sample and legacy_id is distinct from ${exceptId ?? null}
+      limit 1`;
+    return Boolean(row);
+  },
+  async findSubAccounts(ownerId) {
+    const rows = await hydrate(sql(), sql()`m.owner_id = (select o.id from app.members o where o.legacy_id = ${ownerId})`);
+    return rows.map((row) => rowToMember(row) as Member).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   },
   async followerIds(id) {
     const rows = await sql()`

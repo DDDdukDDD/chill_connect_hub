@@ -63,6 +63,8 @@ export interface MemberTrust {
   /** Confirmed email, or signed in with LINE, Google or Facebook: enough to post, comment and join */
   identityConfirmed: boolean;
   phoneVerified: boolean;
+  /** A sub-account whose phone check is the main account's (BE-394): nothing to verify here */
+  phoneFromOwner?: boolean;
   /** Codes can reach members on this deployment */
   phoneCheckOn: boolean;
   /** What is still missing before they can open ตี้, challenges and trips; null when nothing is */
@@ -166,6 +168,18 @@ export interface Member {
   inviteCode?: string;
   /** The member whose invite link this account signed up through (set once at sign-up) */
   invitedBy?: string;
+  /**
+   * Sub-account (BE-393): the account that made this one. A sub-account has no email, password or social sign-in;
+   * it is reached only by switching from its owner, and goes when the owner does (lib/members/subAccounts.ts)
+   */
+  ownerId?: string;
+  /**
+   * Sub-accounts, read-only (never stored on the sub-account): what the main account has confirmed. A sub-account uses
+   * the main account's phone and email checks to open ตี้ (owner 2026-11-16), so one number still belongs to one person
+   */
+  ownerChecks?: { emailVerified: boolean; phoneVerifiedAt?: string };
+  /** Owners only: how many accounts they may hold, the main one included. Unset means DEFAULT_ACCOUNT_LIMIT; staff change it */
+  accountLimit?: number;
   /** Places and events the member saved for later (My Hub) */
   savedSpotIds?: string[];
   savedEventIds?: string[];
@@ -192,7 +206,22 @@ export interface PublicMember {
   province?: string;
   /** Their own year of birth: the screens tell a bar ตี้'s age rule before they fill in anything. Only ever sent to themselves */
   birthYear?: number;
+  /** Their own answer from onboarding, so onboarding can start from it (a new sub-account carries the owner's). Only sent to themselves */
+  gender?: MemberPreferences['gender'];
   trust: MemberTrust;
+  /** True for a sub-account (no sign-in of its own: no email, password or provider settings to show) */
+  isSubAccount: boolean;
+}
+
+/** One row of the account switcher (BE-393): name and photo only, never another account's email */
+export interface AccountChoice {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  isOwner: boolean;
+  isCurrent: boolean;
+  /** Suspended or banned accounts are listed but cannot be switched to */
+  available: boolean;
 }
 
 export interface MemberQuery {
@@ -214,6 +243,10 @@ export interface MemberRepository {
   findByInviteCode(code: string): Promise<Member | null>;
   /** Members who signed up with this member's invite link, newest first */
   findInvitees(id: string): Promise<Member[]>;
+  /** Whether another real member (sample accounts aside) already uses a name with this nameKey (lib/displayName.ts) */
+  isNameTaken(key: string, exceptId?: string): Promise<boolean>;
+  /** The sub-accounts this member made, oldest first */
+  findSubAccounts(ownerId: string): Promise<Member[]>;
   /** How many active members follow this member; counted in the database, not by reading every member */
   countFollowers(id: string): Promise<number>;
   /** Ids of the active members who follow this member, from the follows index (for the follower list) */
@@ -242,6 +275,8 @@ export function toPublicMember(member: Member): PublicMember {
     onboarded: Boolean(member.onboardedAt),
     province: member.preferences?.province || undefined,
     birthYear: member.preferences?.birthYear,
+    gender: member.preferences?.gender,
     trust: trustOf(member),
+    isSubAccount: Boolean(member.ownerId),
   };
 }

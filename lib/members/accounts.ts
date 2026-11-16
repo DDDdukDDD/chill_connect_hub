@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { burnPasswordCheck, hashPassword, verifyPasswordHash } from '../passwordHash';
-import { NEW_MEMBER_NAME, reservedNameProblem, tidyDisplayName } from '../displayName';
+import { NEW_MEMBER_NAME, nameKey, reservedNameProblem, tidyDisplayName } from '../displayName';
 import { memberRepository } from './index';
 import { MIN_MEMBER_AGE, cleanPreferences, newConsent } from './preferences';
 import { refreshMemberStatus } from './session';
@@ -23,6 +23,21 @@ export function cleanDisplayName(name: unknown): string {
   const reserved = reservedNameProblem(value);
   if (reserved) throw new MemberAuthError(reserved);
   return value;
+}
+
+export const NAME_TAKEN_MESSAGE = 'ชื่อนี้มีคนใช้แล้ว ลองเพิ่มนามสกุล ชื่อเล่น หรือตัวเลขนะ';
+
+/**
+ * No two members share a name (BE-394, owner 2026-11-16), compared by nameKey. The placeholder "สมาชิกใหม่" is exempt:
+ * everyone who has not finished onboarding carries it. `exceptId`: the member whose own name this may already be.
+ */
+export async function isNameFree(name: string, exceptId?: string): Promise<boolean> {
+  if (tidyDisplayName(name).trim() === NEW_MEMBER_NAME) return true;
+  return !(await memberRepository.isNameTaken(nameKey(name), exceptId));
+}
+
+export async function ensureNameFree(name: string, exceptId?: string): Promise<void> {
+  if (!(await isNameFree(name, exceptId))) throw new MemberAuthError(NAME_TAKEN_MESSAGE, 409);
 }
 
 function statusError(member: Member): MemberAuthError | null {
@@ -55,6 +70,7 @@ export async function registerWithEmail(input: { displayName?: unknown; email: u
     throw new MemberAuthError(`รหัสผ่านต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
   }
   if (await memberRepository.findByEmail(email)) throw new MemberAuthError('อีเมลนี้มีบัญชีอยู่แล้ว ลองเข้าสู่ระบบแทน', 409);
+  await ensureNameFree(displayName);
   const now = new Date().toISOString();
   const member = await memberRepository.create({
     id: `mem_${randomUUID()}`,
@@ -126,9 +142,11 @@ export async function signInWithOAuth(profile: OAuthProfile, options: { consente
     const emailTaken = email ? Boolean(await memberRepository.findByEmail(email)) : false;
     // A provider name that reads as staff is not carried over; onboarding asks for a name anyway
     const providerName = profile.displayName ? tidyDisplayName(profile.displayName).trim().slice(0, 40) : '';
+    // A name someone already uses is not carried over either (BE-394): onboarding asks for one, so sign-in never fails on it
+    const candidate = (reservedNameProblem(providerName) ? '' : providerName) || (email ? email.split('@')[0] : NEW_MEMBER_NAME);
     member = await memberRepository.create({
       id: `mem_${randomUUID()}`,
-      displayName: (reservedNameProblem(providerName) ? '' : providerName) || (email ? email.split('@')[0] : NEW_MEMBER_NAME),
+      displayName: (await isNameFree(candidate)) ? candidate : NEW_MEMBER_NAME,
       // An unverified email that already belongs to someone else is not attached
       email: email && !emailTaken ? email : undefined,
       emailVerified: Boolean(email && !emailTaken && profile.emailVerified),
@@ -153,7 +171,11 @@ export async function signInWithOAuth(profile: OAuthProfile, options: { consente
 
 export async function updateProfile(member: Member, input: { displayName?: unknown; avatarUrl?: unknown }): Promise<Member> {
   const changes: Partial<Member> = {};
-  if (input.displayName !== undefined) changes.displayName = cleanDisplayName(input.displayName);
+  if (input.displayName !== undefined) {
+    changes.displayName = cleanDisplayName(input.displayName);
+    // Only a real change is checked, so an older account that already shares a name can still save its photo
+    if (nameKey(changes.displayName) !== nameKey(member.displayName)) await ensureNameFree(changes.displayName, member.id);
+  }
   if (input.avatarUrl !== undefined) {
     const url = typeof input.avatarUrl === 'string' ? input.avatarUrl.trim() : '';
     // Inline photos come only from a local server's uploads (lib/media/adapters/localStorageAdapter.ts); live members' go to Blob

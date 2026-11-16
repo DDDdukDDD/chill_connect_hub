@@ -167,6 +167,7 @@ export function CampaignDrawsView() {
                             {!winner.announcedAt && winner.status !== 'forfeited' && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">ยังไม่ประกาศ</span>}
                           </p>
                           <p className="text-xs text-slate-600 tabular-nums">{[winner.email, winner.phone].filter(Boolean).join(' · ') || 'ไม่มีอีเมลหรือเบอร์โทร ติดต่อได้ทางแจ้งเตือนเท่านั้น'}</p>
+                          {winner.familyNote && <p className="text-xs font-semibold text-amber-700">{winner.familyNote}</p>}
                           <p className="text-[11px] text-slate-500 tabular-nums">
                             สุ่มเมื่อ {dateTime(winner.drawnAt)} จาก {winner.poolSize.toLocaleString()} สิทธิ์
                             {winner.claimBy && winner.status === 'pending' && ` · ยืนยันภายใน ${dateTime(winner.claimBy)}`}

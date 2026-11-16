@@ -225,7 +225,8 @@ export function publicProfileOf(member: Member, viewer: Member | null) {
     badges: {
       emailVerified: trust.emailVerified,
       // Own badges: a sign-in is not a confirmed email
-      socialSignIn: !trust.emailVerified && trust.identityConfirmed,
+      // A sub-account stands on its owner's identity (BE-393): it gets no badge of its own for that
+      socialSignIn: !trust.emailVerified && member.providers.length > 0,
       phoneVerified: trust.phoneVerified,
       pledged: trust.pledged,
       trusted: trust.level === 'trusted',

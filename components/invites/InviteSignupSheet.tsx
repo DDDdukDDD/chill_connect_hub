@@ -15,9 +15,14 @@ import type { InviteInfo } from '@/lib/social/friendPlans';
  */
 export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInfo; returnTo: string; onClose: () => void }) {
   const isTee = info.kind === 'tee';
+  const isQuest = info.target === 'quest';
   const promises = isTee
     ? ['ลงทะเบียนตี้นี้ต่อได้ทันที', `ไปตี้เดียวกับ ${info.host.name}`]
-    : ['เข้าแผนนี้ทันที', `แชตนัดวันกับ ${info.host.name}${info.goingCount > 1 ? ' และเพื่อนๆ' : ''}`];
+    : isQuest
+      ? ['เข้าร่วมชาเลนจ์นี้ทันที', `คุยในแชตกับ ${info.host.name}${info.goingCount > 1 ? ' และเพื่อนๆ' : ''}`]
+      : ['เข้าแผนนี้ทันที', `แชตนัดวันกับ ${info.host.name}${info.goingCount > 1 ? ' และเพื่อนๆ' : ''}`];
+  // One verb per section (2026-11-16); a post with no place has no name to show
+  const what = isTee ? `ชวนไปตี้ ${info.title}` : isQuest ? `ทำชาเลนจ์ ${info.title} ด้วยกัน` : info.title ? `ไปกันที่ ${info.title}` : 'ชวนไปด้วยกัน';
 
   return (
     <DialogShell onClose={onClose} size="sm" focusField={false} labelledBy="invite-signup-title">
@@ -32,9 +37,9 @@ export function InviteSignupSheet({ info, returnTo, onClose }: { info: InviteInf
         </span>
         <h2 id="invite-signup-title" className="text-lg sm:text-xl font-bold text-slate-900">{info.host.name} รอคำตอบคุณอยู่</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">
-          {isTee ? `ชวนไปตี้ ${info.title}` : `ไปกันที่ ${info.title}`}
+          {what}
           {info.dateLabel && ` · ${info.dateLabel}`}
-          {info.goingCount > 1 && ` · ไปกันแล้ว ${info.goingCount} คน`}
+          {info.goingCount > 1 && ` · ${isQuest ? 'ทำด้วยกันแล้ว' : 'ไปกันแล้ว'} ${info.goingCount} คน`}
         </p>
       </div>
 

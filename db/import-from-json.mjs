@@ -166,7 +166,7 @@ for (const list of Object.values(participantLists)) {
 const memberOf = (legacyId) => memberIds.get(legacyId) ?? null;
 
 const memberParts = [...members, ...sampleGuests.values()].map((m) =>
-  memberToRows(m, { id: memberOf(m.id), inviteCode: inviteCode(m.inviteCode), invitedBy: memberOf(m.invitedBy), provinceCode: provinceOf(m.preferences?.province, `member ${m.id}`) }),
+  memberToRows(m, { id: memberOf(m.id), inviteCode: inviteCode(m.inviteCode), invitedBy: memberOf(m.invitedBy), ownerId: memberOf(m.ownerId), provinceCode: provinceOf(m.preferences?.province, `member ${m.id}`) }),
 );
 const memberRows = memberParts.map((p) => p.member);
 const isSampleMember = new Set(memberRows.filter((m) => m.is_sample).map((m) => m.legacy_id));

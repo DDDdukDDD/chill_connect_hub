@@ -2,6 +2,7 @@ import { db } from '../db';
 import { hasMeetupStarted, isEventEnded } from '../dateUtils';
 import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
+import { FAMILY_ALREADY_IN_MESSAGE, familyAlreadyIn } from '../members/subAccounts';
 import { waitlistStore } from './stores';
 import { notifySeat } from './notifications';
 
@@ -66,6 +67,10 @@ export async function joinWaitlist(member: Member, eventId: string) {
   if (await db.getParticipant(eventId, member.id)) throw new MemberAuthError('คุณเข้าร่วมตี้นี้อยู่แล้ว', 409);
   const mine = await waitlistStore.line(eventId);
   if (!mine.some((e) => e.memberId === member.id)) {
+    // One person, one place in the ตี้ or its line (BE-393)
+    const host = (event as { createdByMemberId?: string }).createdByMemberId;
+    const people = [...(await db.listParticipants(eventId)).map((p) => p.userId), ...mine.map((e) => e.memberId), ...(host ? [host] : [])];
+    if (await familyAlreadyIn(member, people)) throw new MemberAuthError(FAMILY_ALREADY_IN_MESSAGE, 409);
     if (mine.length >= MAX_QUEUE) throw new MemberAuthError('รายชื่อสำรองเต็มแล้ว', 409);
     await waitlistStore.add(eventId, member.id);
   }

@@ -22,7 +22,7 @@ interface SeriesDate {
  * "เลือกวันที่จะไป" on a recurring ตี้ (owner 2026-10-23): each date has its own seats, and members join one date at a
  * time. Joining opens that date's own page, where the ticket, chat and check-in live (lib/social/recurring.ts).
  */
-export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onRequireLogin: (returnTo: string) => void }) {
+export function SeriesDates({ series, onRequireLogin, invite }: { series: EventItem; onRequireLogin: (returnTo: string) => void; /** A friend's ตี้ invitation link, sent with the join */ invite?: string }) {
   const router = useRouter();
   const { member } = useMemberSession();
   const activity = useMyActivity();
@@ -63,7 +63,7 @@ export function SeriesDates({ series, onRequireLogin }: { series: EventItem; onR
     if (!member) return onRequireLogin(returnTo);
     setBusy(true);
     setError('');
-    const result = await activityActions.join(series.id, choice.date);
+    const result = await activityActions.join(series.id, choice.date, invite);
     setBusy(false);
     if (!result.ok) return setError(result.message);
     if (result.status === 'pending') return setDevUrl(result.devVerifyUrl);

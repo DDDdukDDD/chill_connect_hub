@@ -48,8 +48,12 @@ export const UNREAD_KEEP_DAYS = 90;
 export const KEEP_PER_MEMBER = 100;
 
 interface NotificationStore {
-  /** Saves a notice, first removing what `replace` covers, and clears out the member's old ones */
-  add(notice: Omit<StoredNotification, 'read' | 'readAt'>, replace?: NotificationMatch): Promise<void>;
+  /** Saves a notice, first removing what `replace` covers, and clears out the member's old ones. `read`: saved as already read (a record, not news) */
+  add(notice: Omit<StoredNotification, 'read' | 'readAt'> & { read?: boolean }, replace?: NotificationMatch): Promise<void>;
+  /** Who sent the notices that match, newest first, each once (e.g. everyone who invited a member to a ตี้) */
+  actorsOf(match: NotificationMatch): Promise<string[]>;
+  /** The notices that match, newest first, at most `limit` */
+  find(match: NotificationMatch, limit?: number): Promise<StoredNotification[]>;
   /** The same notice from the site to many members in one write (their old ones go at their next new notice) */
   addToMany(memberIds: string[], notice: Pick<StoredNotification, 'type' | 'preview' | 'path'>): Promise<void>;
   exists(match: NotificationMatch): Promise<boolean>;
@@ -78,13 +82,20 @@ const isCurrent = (n: StoredNotification, now: number) =>
 function jsonStore(): NotificationStore {
   const store = createJsonStore<StoredNotification>('notifications');
   return {
-    async add(notice, replace) {
+    async add({ read, ...notice }, replace) {
       await store.update((items) => {
         const now = Date.now();
         const rest = replace ? items.filter((n) => !matches(n, replace)) : items;
         let kept = 0;
-        return [{ ...notice, read: false }, ...rest].filter((n) => n.memberId !== notice.memberId || (isCurrent(n, now) && ++kept <= KEEP_PER_MEMBER));
+        const saved: StoredNotification = read ? { ...notice, read: true, readAt: notice.createdAt } : { ...notice, read: false };
+        return [saved, ...rest].filter((n) => n.memberId !== notice.memberId || (isCurrent(n, now) && ++kept <= KEEP_PER_MEMBER));
       });
+    },
+    async actorsOf(match) {
+      return [...new Set(store.read().filter((n) => matches(n, match)).map((n) => n.actorId))];
+    },
+    async find(match, limit = 50) {
+      return store.read().filter((n) => matches(n, match)).slice(0, limit);
     },
     async addToMany(memberIds, notice) {
       const createdAt = new Date().toISOString();
@@ -136,16 +147,17 @@ const isCurrentSql = (tx: Sql) => tx`(
 
 function postgresStore(): NotificationStore {
   return {
-    async add(notice, replace) {
+    async add({ read, ...notice }, replace) {
       await sql().begin(async (tx) => {
         if (replace) await tx`delete from app.notifications n where ${matchSql(tx, replace)}`;
         await tx`
-          insert into app.notifications (recipient_id, type, actor_id, moment_id, event_id, quest_id, preview, comment_ref, path)
+          insert into app.notifications (recipient_id, type, actor_id, moment_id, event_id, quest_id, preview, comment_ref, path, read_at)
           select r.id, ${notice.type}::text, ${memberRow(tx, notice.actorId)},
             (select id from app.moments where slug = ${notice.momentId ?? null}),
             (select id from app.events where slug = ${notice.eventId ?? null}),
             (select id from app.quests where slug = ${notice.questId ?? null}),
-            ${notice.preview ?? null}::text, ${notice.commentId ?? null}::text, ${notice.path ?? null}::text
+            ${notice.preview ?? null}::text, ${notice.commentId ?? null}::text, ${notice.path ?? null}::text,
+            ${read ? new Date(notice.createdAt) : null}::timestamptz
           from app.members r where r.legacy_id = ${notice.memberId}`;
         // Past their time, or past the most one member keeps
         await tx`
@@ -168,6 +180,31 @@ function postgresStore(): NotificationStore {
       const db = sql();
       const rows = await db`select 1 from app.notifications n where ${matchSql(db, match)} limit 1`;
       return rows.length > 0;
+    },
+    async actorsOf(match) {
+      const db = sql();
+      const rows = await db`
+        select a.legacy_id as actor, max(n.created_at) as at from app.notifications n join app.members a on a.id = n.actor_id
+        where ${matchSql(db, match)} group by a.legacy_id order by at desc limit 50`;
+      return rows.map((r) => r.actor as string);
+    },
+    async find(match, limit = 50) {
+      const db = sql();
+      const rows = await db`
+        select n.id::text, n.type, r.legacy_id as recipient, a.legacy_id as actor, n.preview, n.path, n.created_at, n.read_at
+        from app.notifications n join app.members r on r.id = n.recipient_id left join app.members a on a.id = n.actor_id
+        where ${matchSql(db, match)} order by n.created_at desc limit ${limit}`;
+      return rows.map((r) => ({
+        id: r.id,
+        memberId: r.recipient,
+        type: r.type,
+        actorId: r.actor ?? r.recipient,
+        preview: r.preview ?? undefined,
+        path: r.path ?? undefined,
+        createdAt: new Date(r.created_at).toISOString(),
+        read: Boolean(r.read_at),
+        readAt: r.read_at ? new Date(r.read_at).toISOString() : undefined,
+      }));
     },
     async list(memberId) {
       const db = sql();

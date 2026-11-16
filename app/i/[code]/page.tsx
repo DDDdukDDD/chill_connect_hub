@@ -21,11 +21,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const link = await linkOf(code);
   const info = link ? await inviteInfo(null, link.token) : null;
   if (!link || !info) return { ...PRIVATE_PAGE, title: 'คำชวน' };
-  const going = [info.dateLabel, info.goingCount > 1 ? `ไปกันแล้ว ${info.goingCount} คน` : ''].filter(Boolean).map((part) => `${part} · `).join('');
+  const isQuest = info.target === 'quest';
+  const going = [info.dateLabel, info.goingCount > 1 ? `${isQuest ? 'ทำด้วยกันแล้ว' : 'ไปกันแล้ว'} ${info.goingCount} คน` : ''].filter(Boolean).map((part) => `${part} · `).join('');
+  // The same verb as the page (2026-11-16): ตี้, ชาเลนจ์, a place, or a post with no place to name
+  const what = info.kind === 'tee' ? `ไปตี้ ${info.title}` : isQuest ? `ทำชาเลนจ์ ${info.title} ด้วยกัน` : info.title ? `ไป${info.title}` : 'ไปด้วยกัน';
   return {
     ...pageMetadata({
-      title: `${info.host.name} ชวนคุณไป${info.kind === 'tee' ? `ตี้ ${info.title}` : info.title}`,
-      description: `${going}กดดูแล้วตอบได้เลยว่าไปกันไหม`,
+      title: `${info.host.name} ชวนคุณ${what}`,
+      description: `${going}กดดูแล้วตอบได้เลยว่า${isQuest ? 'ทำด้วยกันไหม' : 'ไปกันไหม'}`,
       path: `/i/${code}`,
       image: info.image,
     }),

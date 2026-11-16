@@ -148,9 +148,34 @@ export async function notifyInvite(recipientId: string, actor: Member, invite: {
   await quietly(() => saveAndPush({ id: newId(), memberId: recipientId, type: 'invite', actorId: actor.id, momentId, eventId, questId, preview: invite.place.slice(0, 80) || undefined, path: invite.path, createdAt: now() }, same));
 }
 
-/** A friend said "ไปกัน": the host is told and led to the plan's chat */
-export async function notifyInviteYes(hostId: string, actor: Member, answer: { place: string; path: string; momentId?: string }): Promise<void> {
-  await quietly(() => saveAndPush({ id: newId(), memberId: hostId, type: 'invite_yes', actorId: actor.id, momentId: answer.momentId, preview: answer.place.slice(0, 80) || undefined, path: answer.path, createdAt: now() }));
+/** A friend said "ไปกัน": the host is told and led to the plan's chat. `questId` on a challenge plan words it "ทำด้วยกัน" */
+export async function notifyInviteYes(hostId: string, actor: Member, answer: { place: string; path: string; momentId?: string; questId?: string }): Promise<void> {
+  await quietly(() => saveAndPush({ id: newId(), memberId: hostId, type: 'invite_yes', actorId: actor.id, momentId: answer.momentId, questId: answer.questId, preview: answer.place.slice(0, 80) || undefined, path: answer.path, createdAt: now() }));
+}
+
+/**
+ * A friend signed up for a ตี้ the member invited them to (2026-11-16): one notice per friend and ตี้, leading to the ตี้.
+ * It carries the ตี้ (eventId), which words it "ลงทะเบียนมาตี้นี้ด้วยแล้ว" rather than the plan chat's line.
+ */
+export async function notifyTeeInviteYes(inviterId: string, actor: Member, eventId: string, title: string): Promise<void> {
+  await quietly(() =>
+    saveAndPush(
+      { id: newId(), memberId: inviterId, type: 'invite_yes', actorId: actor.id, eventId, preview: title.slice(0, 80) || undefined, path: `/community/${encodeURIComponent(eventId)}`, createdAt: now() },
+      { memberId: inviterId, actorId: actor.id, types: ['invite_yes'], eventId }
+    )
+  );
+}
+
+/**
+ * Someone opened a ตี้ invitation from a LINE link (no notice was sent in the app) and is signing up: the invitation is
+ * kept as an already-read 'invite' notice, so the inviter is told when the seat comes, even after the email is confirmed
+ * later (lib/members/activity.ts joinEvent reads who invited from these notices). Nothing new shows in their bell.
+ */
+export async function recordTeeInvite(memberId: string, inviterId: string, eventId: string, title: string): Promise<void> {
+  await quietly(async () => {
+    if (await notificationStore.exists({ memberId, actorId: inviterId, types: ['invite'], eventId })) return;
+    await notificationStore.add({ id: newId(), memberId, type: 'invite', actorId: inviterId, eventId, preview: title.slice(0, 80) || undefined, path: `/community/${encodeURIComponent(eventId)}`, createdAt: now(), read: true });
+  });
 }
 
 /**
@@ -169,7 +194,25 @@ export async function notifyPlan(type: 'plan_soon' | 'plan_after' | 'plan_togeth
 
 const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', invite: 'ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?', friend_going: 'จะไปตี้นี้ ไปด้วยกันไหม?', invite_yes: 'ตอบว่าไปกัน! เปิดแชตนัดวันกันเลย', invite_no: 'รอบนี้ไม่สะดวก ไว้ชวนกันใหม่นะ', plan_soon: 'พรุ่งนี้ไปกันนะ เช็กเวลานัดในแชตอีกที', plan_after: 'ไปมาแล้วเป็นไงบ้าง? โพสต์โมเมนต์ที่นี่แล้วแท็กกันได้เลย', plan_together: 'ไปด้วยกันครบแล้ว! ได้โบนัสไปกับเพื่อน', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
 // A mention in a comment travels as 'tagged' with the comment, but reads as what it is
-const messageOf = (n: { type: NotificationType; commentId?: string }) => (n.type === 'tagged' && n.commentId ? 'พูดถึงคุณในความคิดเห็น' : MESSAGES[n.type]);
+// "ชวนไป" reads the same verb as the page it opens (2026-11-16): ไปกัน for places, อีเวนต์ and posts, ทำด้วยกัน for a
+// challenge, ลงทะเบียนไปด้วย for a ตี้
+const isTeePath = (path?: string) => Boolean(path?.startsWith('/community/'));
+function inviteMessage(n: { type: NotificationType; questId?: string; eventId?: string; momentId?: string; preview?: string; path?: string }): string | null {
+  if (n.type === 'invite') {
+    if (n.questId) return 'ชวนคุณทำชาเลนจ์นี้ด้วยกัน ทำด้วยกันไหม?';
+    if (n.eventId && isTeePath(n.path)) return 'ชวนคุณมาตี้นี้ด้วยกัน ลงทะเบียนไปด้วยไหม?';
+    // A post with no place: no place to name (the post's photo shows beside the notice)
+    if (n.momentId && !n.preview) return 'ชวนคุณไปด้วยกัน ไปกันไหม?';
+    return null;
+  }
+  if (n.type === 'invite_yes') {
+    if (n.eventId && isTeePath(n.path)) return 'ตอบรับคำชวน ลงทะเบียนมาตี้นี้ด้วยแล้ว';
+    if (n.questId) return 'ตอบว่าทำด้วยกัน! คุยกันในแชตได้เลย';
+  }
+  return null;
+}
+const messageOf = (n: { type: NotificationType; commentId?: string; questId?: string; eventId?: string; momentId?: string; preview?: string; path?: string }) =>
+  n.type === 'tagged' && n.commentId ? 'พูดถึงคุณในความคิดเห็น' : inviteMessage(n) ?? MESSAGES[n.type];
 
 /** The same words and destination as the bell (components/NotificationBell.tsx) */
 function pushMessage(n: StoredNotification, actor?: Member): PushMessage {

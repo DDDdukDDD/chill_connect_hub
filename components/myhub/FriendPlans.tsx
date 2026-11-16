@@ -9,9 +9,12 @@ import { DialogShell } from '@/components/auth/DialogShell';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import { openLineShare } from '@/components/moments/lineInvite';
 import { InviteSheet } from '@/components/invites/InviteSheet';
+import FallbackImg from '@/components/FallbackImg';
+import { defaultEventImage } from '@/lib/eventImageResolver';
+import { optimizedImage } from '@/lib/optimizedImage';
 import type { PlanView } from '@/lib/social/friendPlans';
 import { unreadLabel, useChatInbox } from '@/lib/useChatInbox';
-import { PLAN_LEAVE_REASONS, planChatTitle } from '@/lib/social/socialRules';
+import { PLAN_LEAVE_REASONS, POST_PLACE_FALLBACK, planChatTitle } from '@/lib/social/socialRules';
 import { useMemberSession } from '@/lib/useMemberSession';
 
 /**
@@ -170,7 +173,12 @@ function FreeDays({ plan, onChanged, onSetDay, onPickOwn, isBusy, onSaved, isMar
   );
 }
 
-const verb = (plan: PlanView) => (plan.kind === 'quest' ? `ทำชาเลนจ์ ${plan.title}` : `ไป${plan.title}`);
+// A post with no place has no place to name: "ไปด้วยกัน", not "ไปที่ในโพสต์นี้" (2026-11-16)
+const verb = (plan: PlanView) => (plan.kind === 'quest' ? `ทำชาเลนจ์ ${plan.title}` : plan.title === POST_PLACE_FALLBACK ? 'ไปด้วยกัน' : `ไป${plan.title}`);
+/** A cover photo when the place's own picture does not load */
+const planFallback = (plan: PlanView) => optimizedImage(defaultEventImage(undefined, plan.kind === 'fair'), 96);
+/** Who asked: the host, or someone else going on the plan who sent the invitation */
+const askerName = (plan: PlanView) => plan.askedBy?.name ?? plan.host.name;
 
 /** LINE's ready-made message: the plan and a link back to it */
 const lineText = (plan: PlanView) =>
@@ -189,7 +197,7 @@ function People({ plan, max = 4 }: { plan: PlanView; max?: number }) {
 }
 
 function statusLine(plan: PlanView): string {
-  if (plan.isInvited) return `${plan.host.name} ชวนคุณ · รอคุณตอบ`;
+  if (plan.isInvited) return `${askerName(plan)} ชวนคุณ · รอคุณตอบ`;
   const count = `${plan.people.length} คน`;
   const when = plan.isPast ? (plan.wentByMe ? 'ไปมาแล้ว' : `นัดไว้ ${plan.dateLabel}`) : plan.dateLabel ?? 'ยังไม่ได้นัดวัน';
   return [count, when, plan.invitedCount ? `รอตอบ ${plan.invitedCount}` : ''].filter(Boolean).join(' · ');
@@ -238,8 +246,8 @@ function PlanTitle({ plan, size, children }: { plan: PlanView; size: 'sheet' | '
   const inner = (
     <>
       {plan.image ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a small thumb of the place
-        <img src={plan.image} alt="" className={`${thumb} shrink-0 rounded-xl object-cover bg-slate-100`} />
+        // A place's own photo can be a dead link on its website: a cover photo then, never a broken image
+        <FallbackImg src={optimizedImage(plan.image, 96)} fallback={planFallback(plan)} className={`${thumb} shrink-0 rounded-xl object-cover bg-slate-100`} />
       ) : (
         <span className={`${thumb} shrink-0 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500`}>
           <MapPin className="w-5 h-5" aria-hidden="true" />
@@ -346,8 +354,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
           {plan.placeHref ? (
             <Link href={plan.placeHref} className={`shrink-0 rounded-xl ${FOCUS}`} aria-label={`${verb(plan)} ดูรายละเอียด`}>
               {plan.image ? (
-                // eslint-disable-next-line @next/next/no-img-element -- a small thumb of the place
-                <img src={plan.image} alt="" className="w-10 h-10 rounded-xl object-cover bg-slate-100" />
+                <FallbackImg src={optimizedImage(plan.image, 96)} fallback={planFallback(plan)} className="w-10 h-10 rounded-xl object-cover bg-slate-100" />
               ) : (
                 <span className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><MapPin className="w-5 h-5" aria-hidden="true" /></span>
               )}
@@ -516,8 +523,8 @@ function InvitedCard({ plan, onAnswered, onGone }: { plan: PlanView; onAnswered:
       <div className="flex items-center gap-3">
         <People plan={plan} />
         <p className="min-w-0 flex-1 text-sm font-semibold text-slate-900">
-          {plan.host.name} ชวนคุณ{verb(plan)}
-          {plan.people.length > 1 ? ` · ไปกันแล้ว ${plan.people.length} คน` : ''}
+          {askerName(plan)} ชวนคุณ{verb(plan)}
+          {plan.people.length > 1 ? ` · ${plan.kind === 'quest' ? 'ทำด้วยกันแล้ว' : 'ไปกันแล้ว'} ${plan.people.length} คน` : ''}
         </p>
       </div>
       {plan.placeHref && (
@@ -530,7 +537,7 @@ function InvitedCard({ plan, onAnswered, onGone }: { plan: PlanView; onAnswered:
           ไม่สะดวก
         </button>
         <button type="button" onClick={yes} disabled={isBusy} className="h-11 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-sm font-bold text-white cursor-pointer disabled:opacity-60">
-          ไปกัน
+          {plan.kind === 'quest' ? 'ทำด้วยกัน' : 'ไปกัน'}
         </button>
       </div>
       {error && <p role="alert" className="text-[13px] font-medium text-rose-600">{error}</p>}

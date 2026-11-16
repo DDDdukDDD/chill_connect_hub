@@ -48,8 +48,19 @@ const nextConfig: NextConfig = {
       { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] },
     ];
   },
+  // Vercel's free plan counts every new resize (image × width × quality × format) as a "transformation", 5,000 a month
+  // (75% used by 2026-11-16 with no real users yet). Each setting below cuts that count:
   images: {
-    formats: ['image/avif', 'image/webp'],
+    // WebP only: every browser we serve reads it; AVIF beside it made a second copy of every image and width
+    formats: ['image/webp'],
+    // A resized image is kept 31 days instead of Next 16's 4 hours. /public files and uploads send no long Cache-Control,
+    // so with 4 hours the same photo was resized again up to 6 times a day. Uploads get new names, so a stale copy is
+    // only a risk for a /public or partner image replaced under the same name (rename the file in that case).
+    minimumCacheTTL: 2678400,
+    // Only the widths the site asks for (lib/optimizedImage.ts) plus 1920 for full-width photos (app/about); Next's
+    // defaults offered up to 15 widths per image in a srcset
+    imageSizes: [64, 96, 128, 256, 384],
+    deviceSizes: [640, 828, 1080, 1920],
     // 75 for cards, 85 for a moment's own photos (components/moments/MomentPhotos.tsx)
     qualities: [75, 85],
     // Organisers' posters resized for cards (lib/optimizedImage.ts); only these hosts, never any URL

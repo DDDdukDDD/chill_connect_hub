@@ -508,7 +508,17 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   return chrome(
     <>
       {/* Opened from a friend's "ชวนไป": doing it together joins the challenge and a group plan (owner 2026-11-11) */}
-      <InviteBanner className="mt-2" isLoggedIn={isLoggedIn} myId={authMember?.id} onMessage={showToast} />
+      {/* "ไปกัน" joined the challenge too: the page shows it joined, with what to do first */}
+      <InviteBanner
+        className="mt-2"
+        isLoggedIn={isLoggedIn}
+        myId={authMember?.id}
+        onMessage={showToast}
+        onAnswered={() => {
+          void myRewards.refresh();
+          void load().then(() => setJustJoined(true));
+        }}
+      />
 
       {/* Hero: the photo carries the feeling; the facts and the one action sit beside it */}
       <section className="mt-2 grid gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-10 lg:items-center">

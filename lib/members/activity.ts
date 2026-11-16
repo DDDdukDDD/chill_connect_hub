@@ -15,8 +15,11 @@ import { nightlifeAgeMessage, NIGHTLIFE_CATEGORY } from './nightlife';
 import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
-import { notifyFriendsGoing, notifyJoined } from '../social/notifications';
+import { notifyFriendsGoing, notifyJoined, notifyTeeInviteYes } from '../social/notifications';
+import { notificationStore } from '../social/notificationStore';
+import { traceAction } from '../social/actionLog';
 import { pendingJoinsOf, settlePendingJoins } from '../social/pendingJoins';
+import { FAMILY_ALREADY_IN_MESSAGE, familyAlreadyIn } from './subAccounts';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -61,6 +64,11 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
       message: hasConfirmedIdentity(member) ? 'รับคำมั่นของคอมมูนิตี้ก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)' : 'ยืนยันอีเมลก่อนนะ แล้วจะเข้าร่วมตี้ได้ (ดูที่หน้าโปรไฟล์)',
     };
   }
+  // Two accounts of one person never sit in the same ตี้ or trip (BE-393): the 3-person minimum must be 3 people
+  if (isCommunity(event)) {
+    const people = [...(await db.listParticipants(eventId)).map((p) => p.userId), ...(hostOf(event) ? [hostOf(event)!] : [])];
+    if (await familyAlreadyIn(member, people)) return { status: 'not_allowed', message: FAMILY_ALREADY_IN_MESSAGE };
+  }
   const result = await db.atomicJoinEvent(eventId, { userId: member.id, userName: member.displayName, userAvatar: member.avatarUrl });
   if (result.success || result.status === 'already_joined') {
     await leftLineByJoining(eventId, member.id);
@@ -73,9 +81,38 @@ export async function joinEvent(member: Member, eventId: string, date?: string):
   if (result.success && result.status !== 'already_joined' && host) await notifyJoined(host, member, eventId, event.title);
   // Friends hear about a ตี้, the thing that takes people out (not a fair saved to a plan)
   if (result.success && result.status !== 'already_joined' && isCommunity(event)) {
-    notifyFriendsGoing(member, eventId, event.title, host ? [host] : []);
+    const inviters = await tellInviters(member, event, host);
+    notifyFriendsGoing(member, eventId, event.title, [...(host ? [host] : []), ...inviters]);
   }
   return { status: (result.status ?? (result.success ? 'joined' : 'not_found')) as JoinStatus, message: result.message, event: result.updatedEvent ?? event };
+}
+
+/**
+ * "ชวนไป" for a ตี้ (2026-11-16): everyone who invited the member (their invite notices, in the app or kept from a LINE
+ * link) hears that they signed up, and gets the credit (docs/TRACEABILITY.md). The host already has 'joined'. A date of
+ * a recurring ตี้ counts invitations to the ตี้ itself. Returns who was told, so they are not also sent friend_going.
+ */
+async function tellInviters(member: Member, event: EventItem, host: string | undefined): Promise<string[]> {
+  try {
+    const refs = [event.id, ...(event.seriesId ? [event.seriesId] : [])];
+    const ids = new Set<string>();
+    for (const ref of refs) for (const id of await notificationStore.actorsOf({ memberId: member.id, types: ['invite'], eventId: ref })) ids.add(id);
+    ids.delete(member.id);
+    if (host) ids.delete(host);
+    const people = await memberRepository.findByIds([...ids]);
+    const told: string[] = [];
+    for (const inviter of people.values()) {
+      if (inviter.status !== 'active' || inviter.blockedIds?.includes(member.id) || member.blockedIds?.includes(inviter.id)) continue;
+      await notifyTeeInviteYes(inviter.id, member, event.seriesId ?? event.id, event.title);
+      await traceAction(member, 'invite_yes', { type: 'community', ref: event.seriesId ?? event.id }, { type: 'invite', ref: event.seriesId ?? event.id, creditedId: inviter.id });
+      told.push(inviter.id);
+    }
+    return told;
+  } catch (error) {
+    // Telling the inviter never undoes the seat
+    console.error('[join] inviters not told', error);
+    return [];
+  }
 }
 
 export async function leaveEvent(member: Member, eventId: string): Promise<{ event: EventItem | null }> {

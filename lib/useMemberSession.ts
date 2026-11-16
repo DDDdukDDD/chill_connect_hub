@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { turnPushOff } from './appClient';
 import { forgetAll } from './clientMemory';
-import type { HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
+import type { AccountChoice, HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
 
 /**
  * Member session for the public site. The server decides who is signed in via an httpOnly cookie;
@@ -173,10 +173,30 @@ export const memberActions = {
     return json.member as PublicMember;
   },
   changePassword: (currentPassword: string, newPassword: string) => postJson('/api/auth/member/password', { currentPassword, newPassword }),
+  /** Deleting a sub-account leaves the browser signed in as its owner (BE-393); deleting an owner signs out */
   deleteAccount: async () => {
-    await postJson('/api/auth/member/account', { confirm: 'DELETE' }, 'DELETE');
-    await turnPushOff().catch(() => undefined);
-    setState({ member: null });
+    const json = await postJson('/api/auth/member/account', { confirm: 'DELETE' }, 'DELETE');
+    if (!json.member) await turnPushOff().catch(() => undefined);
+    setState({ member: json.member ?? null });
+  },
+  /** The owner and sub-accounts this member can switch between (BE-393) */
+  listAccounts: async () => {
+    const res = await fetch('/api/auth/member/accounts', { cache: 'no-store' });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || 'โหลดรายชื่อบัญชีไม่สำเร็จ');
+    return json as { accounts: AccountChoice[]; canCreate: boolean; max: number };
+  },
+  /** The session moves to that account; the caller reloads the page so nothing of the last account stays on screen */
+  switchAccount: async (memberId: string) => {
+    const json = await postJson('/api/auth/member/switch', { memberId });
+    setState({ isLoaded: true, member: json.member });
+    return json.member as PublicMember;
+  },
+  /** Makes a sub-account and switches to it */
+  createSubAccount: async (input: { displayName: string; consent: boolean }) => {
+    const json = await postJson('/api/auth/member/accounts', input);
+    setState({ isLoaded: true, member: json.member });
+    return json.member as PublicMember;
   },
 };
 

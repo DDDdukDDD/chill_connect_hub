@@ -13,6 +13,7 @@ import { planToken, readInviteToken, teeToken } from './inviteLinks';
 import { inviteLinkStore } from './inviteLinkStore';
 import { inviteCodeOf } from './friends';
 import { notifyInvite, notifyInviteNo, notifyInviteYes, notifyPlan } from './notifications';
+import { notificationStore } from './notificationStore';
 import { joinQuest } from './questJoins';
 import { bangkokDay } from './questPlan';
 import { INVITE_MAX_FRIENDS, PLAN_LEAVE_REASONS, PLAN_TOGETHER_POINTS, POST_PLACE_FALLBACK } from './socialRules';
@@ -58,6 +59,8 @@ export const planIdOfRoom = (roomId: string) => (roomId.startsWith('plan~') ? ro
 const nameOf = (member: Member) => tidyDisplayName(member.displayName).trim() || member.displayName;
 const going = (plan: FriendPlan) => plan.members.filter((m) => m.state === 'going');
 const memberOf = (plan: FriendPlan, memberId: string) => plan.members.find((m) => m.memberId === memberId);
+/** The place's name for a notice, or nothing for a post with no place ("ที่ในโพสต์นี้" reads oddly there) */
+const placeWord = (title: string) => (title === POST_PLACE_FALLBACK ? '' : title);
 
 /** The page of what the plan is for, or the post when it has no page */
 function targetHref(plan: Pick<FriendPlan, 'targetType' | 'targetId' | 'momentId'>): string | undefined {
@@ -141,12 +144,50 @@ async function shareLink(member: Member, path: string, token: string): Promise<s
   }
 }
 
-/** The host's plan for this target that is still ahead (or undated), or a new one (isNew) */
-async function hostPlanFor(member: Member, target: InviteTarget): Promise<{ plan: FriendPlan; isNew: boolean }> {
+const isAhead = (plan: FriendPlan, today: string) => !plan.date || plan.date >= today;
+const isFor = (plan: FriendPlan, target: InviteTarget) =>
+  target.targetId ? plan.targetType === target.type && plan.targetId === target.targetId : Boolean(target.momentId) && plan.momentId === target.momentId;
+
+/**
+ * The plan new invitations go into (2026-11-16: one plan per group, not one per person who asks): the member's own plan
+ * here that is still ahead (or undated); else a plan here they are going on with someone else, so the friend they ask
+ * joins the same group and chat; else a new plan with them as host (isNew).
+ */
+async function planToInviteInto(member: Member, target: InviteTarget, create = true): Promise<{ plan: FriendPlan; isNew: boolean } | null> {
   const today = bangkokDay();
-  const open = (await friendPlanStore.openOfHost(member.id, target.type, target.targetId, target.momentId)).find((p) => !p.date || p.date >= today);
-  if (open) return { plan: open, isNew: false };
+  const own = (await friendPlanStore.openOfHost(member.id, target.type, target.targetId, target.momentId)).find((p) => isAhead(p, today));
+  if (own) return { plan: own, isNew: false };
+  const joined = (await friendPlanStore.ofMember(member.id)).find((p) => p.status !== 'cancelled' && p.hostId !== member.id && memberOf(p, member.id)?.state === 'going' && isAhead(p, today) && isFor(p, target));
+  if (joined) return { plan: joined, isNew: false };
+  if (!create) return null;
   return { plan: await friendPlanStore.create({ hostId: member.id, targetType: target.type, targetId: target.targetId, momentId: target.momentId, title: target.title, image: target.image }), isNew: true };
+}
+
+/** Everyone already in the ตี้ (signed up, or its host): asking them would only ring for nothing */
+async function teePeople(eventId: string, hostId?: string): Promise<Set<string>> {
+  const people = new Set((await db.listParticipants(eventId)).map((p) => p.userId));
+  if (hostId) people.add(hostId);
+  return people;
+}
+
+/** Friends the member already asked to this ตี้ (their invite notice is the record) */
+async function askedToTee(member: Member, eventId: string, friendIds: string[]): Promise<Set<string>> {
+  const asked = new Set<string>();
+  for (const id of friendIds) if (await notificationStore.exists({ memberId: id, actorId: member.id, types: ['invite'], eventId })) asked.add(id);
+  return asked;
+}
+
+/**
+ * Who asked the member into a plan, from their invite notice (its link names the plan): the host, or someone else going
+ * on it (2026-11-16). Undefined when no notice is left (90 days) or the person cannot be shown.
+ */
+async function askerOf(member: Member, plan: FriendPlan): Promise<Member | undefined> {
+  const notices = await notificationStore.find({ memberId: member.id, types: ['invite'] }, 100);
+  const key = `p.${plan.id}`;
+  const notice = notices.find((n) => n.path?.includes(key) || n.path?.includes(encodeURIComponent(key)));
+  if (!notice) return undefined;
+  const asker = await activeHost(notice.actorId, member);
+  return asker && memberOf(plan, asker.id)?.state === 'going' ? asker : undefined;
 }
 
 /** Stops a day plan may hold (components/SmartSpotPlanCard.tsx shows 2 or 3) */
@@ -179,11 +220,16 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const asked = new Set(Array.isArray(input.to) ? input.to.filter((x): x is string => typeof x === 'string') : []);
   const friends = asked.size ? (await taggableFriends(member)).filter((f) => asked.has(f.id)) : [];
 
-  // A ตี้: no plan, the notice and the link say who asked; the friend signs up as usual
+  // A ตี้: no plan, the notice and the link say who asked; the friend signs up as usual. Friends already in the ตี้, or
+  // already asked by this member, are skipped (2026-11-16): the sheet shows them as "อยู่ในตี้แล้ว" / "ชวนแล้ว"
   if (target.type === 'community' && !target.momentId) {
     const token = teeToken(target.targetId!, member.id);
     const link = withToken(target.path, token);
-    const chosen = friends.slice(0, PLAN_MAX_GUESTS);
+    const event = await db.findEventById(target.targetId!);
+    const inTee = await teePeople(target.targetId!, (event as { createdByMemberId?: string } | null)?.createdByMemberId);
+    const open = friends.filter((f) => !inTee.has(f.id));
+    const asked = await askedToTee(member, target.targetId!, open.map((f) => f.id));
+    const chosen = open.filter((f) => !asked.has(f.id)).slice(0, PLAN_MAX_GUESTS);
     await Promise.all(chosen.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
     return { invited: chosen.length, link, share: await shareLink(member, target.path, token) };
   }
@@ -194,7 +240,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
     await recordInvite(member, target.momentId).catch((error) => console.error('invite: count failed', error));
     momentInvites = (await visibleMoment(target.momentId).catch(() => null))?.invitesCount;
   }
-  const held = await hostPlanFor(member, target);
+  const held = (await planToInviteInto(member, target))!;
   let plan = held.plan;
   // A day plan from the place's page: its route opens the new plan's chat (once, when the plan is made)
   if (held.isNew && input.route) {
@@ -211,15 +257,20 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const fresh = friends.filter((f) => !inPlan.has(f.id));
   if (asked.size && fresh.length > room) throw new MemberAuthError(room > 0 ? `แผนนี้ชวนเพิ่มได้อีก ${room} คน` : `แผนนี้มีเพื่อนครบ ${PLAN_MAX_GUESTS} คนแล้ว`, 409);
   await friendPlanStore.setMembers(plan.id, fresh.map((f) => f.id), 'invited');
-  const token = planToken(plan.id);
+  // Someone going on another person's plan asks in their own name: the link says so, and the answer is told to them too
+  const token = planToken(plan.id, plan.hostId === member.id ? undefined : member.id);
   const link = withToken(target.path, token);
-  await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: target.title, path: link, refs: target.refs })));
+  await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: placeWord(target.title), path: link, refs: target.refs })));
   return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: shortLabelOf(plan.date) } : {}), ...(momentInvites !== undefined ? { momentInvites } : {}) };
 }
 
 export interface InviteInfo {
   kind: 'plan' | 'tee';
+  /** Who asked: the plan's host, or someone else going on it who sent this link (2026-11-16) */
   host: { id: string; name: string; avatar: string };
+  /** What it is for, which picks the words: ไปกัน (spot, fair, general post), ทำด้วยกัน (quest), ลงทะเบียน (community) */
+  target: PlanTargetType;
+  /** The place's name, or '' for a post with no place */
   title: string;
   /** The place's picture, for the link preview in LINE */
   image?: string;
@@ -248,18 +299,21 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
   if (read.kind === 'tee') {
     const [host, event] = await Promise.all([activeHost(read.inviterId, reader), db.findEventById(read.eventId)]);
     if (!host || !event) return null;
-    return { kind: 'tee', host: person(host), title: event.title, image: event.image, going: [person(host)], goingCount: 1, isIn: false };
+    return { kind: 'tee', host: person(host), target: 'community', title: event.title, image: event.image, going: [person(host)], goingCount: 1, isIn: false };
   }
   const plan = await friendPlanStore.byId(read.planId);
   if (!plan || plan.status === 'cancelled') return null;
   const host = await activeHost(plan.hostId, reader);
   if (!host) return null;
+  // A link sent by someone else going on the plan names them, while they are still going
+  const sender = read.inviterId && read.inviterId !== host.id && memberOf(plan, read.inviterId)?.state === 'going' ? await activeHost(read.inviterId, reader) : null;
   const people = going(plan);
   const shown = await memberRepository.findByIds(people.slice(0, 5).map((m) => m.memberId));
   return {
     kind: 'plan',
-    host: person(host),
-    title: plan.title,
+    host: person(sender ?? host),
+    target: plan.targetType,
+    title: placeWord(plan.title),
     image: plan.image,
     ...(plan.date && plan.date >= bangkokDay() ? { dateLabel: shortLabelOf(plan.date) } : {}),
     going: people.slice(0, 5).flatMap((m) => (shown.get(m.memberId)?.status === 'active' ? [person(shown.get(m.memberId)!)] : [])),
@@ -284,21 +338,28 @@ export async function answerInvite(member: Member, answer: { token?: unknown; pl
   const read = answer.token !== undefined ? readInviteToken(answer.token) : null;
   const planId = read?.kind === 'plan' ? read.planId : typeof answer.planId === 'string' ? answer.planId : '';
   const plan = planId ? await friendPlanStore.byId(planId) : null;
-  if (plan && !read && memberOf(plan, member.id)?.state !== 'invited') throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
   if (!plan || plan.status === 'cancelled' || plan.hostId === member.id) throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
+  const held = memberOf(plan, member.id);
+  // Already going (a double tap, a second tab, the notice and My Hub both): the answer stands, nothing to repeat
+  if (held?.state === 'going') return plan;
+  if (!read && held?.state !== 'invited') throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
   const host = await activeHost(plan.hostId, member);
   if (!host) throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
-  const held = memberOf(plan, member.id);
-  if (held?.state === 'going') return plan;
   if (!held && plan.members.length - 1 >= PLAN_MAX_GUESTS) throw new MemberAuthError(`แผนนี้มีเพื่อนครบ ${PLAN_MAX_GUESTS} คนแล้ว`, 409);
+  // Who asked: the link's sender, or the invite notice in the app; the host when neither says otherwise
+  const linkSender = read?.kind === 'plan' && read.inviterId && memberOf(plan, read.inviterId)?.state === 'going' ? await activeHost(read.inviterId, member) : null;
+  const asker = linkSender ?? (read ? undefined : await askerOf(member, plan)) ?? host;
   if (plan.targetType === 'quest' && plan.targetId) await joinQuest(member.id, plan.targetId);
   await friendPlanStore.setMembers(plan.id, [member.id], 'going');
-  if (!held && !member.followingIds?.includes(host.id)) await setFollowing(member, host.id, true).catch(() => null);
+  // Came through a link without being asked in the app: follows the friend who sent it, so their posts are in the feed
+  if (!held && !member.followingIds?.includes(asker.id)) await setFollowing(member, asker.id, true).catch(() => null);
   if (plan.momentId) await setSaved(member, plan.momentId, true).catch(() => null);
-  // Credited to the host (docs/TRACEABILITY.md), on the plan's place or challenge so a later visit keeps the credit
+  // Credited to whoever asked (docs/TRACEABILITY.md), on the plan's place or challenge so a later visit keeps the credit
   const traced = plan.targetId && plan.targetType !== 'general' ? { type: plan.targetType === 'quest' ? ('challenge' as const) : plan.targetType, ref: plan.targetId } : { type: 'plan' as const, ref: plan.id };
-  await traceAction(member, 'invite_yes', traced, { type: 'invite', ref: plan.id, creditedId: host.id });
-  await notifyInviteYes(host.id, member, { place: plan.title, path: planChatPath(plan), momentId: plan.momentId });
+  await traceAction(member, 'invite_yes', traced, { type: 'invite', ref: plan.id, creditedId: asker.id });
+  const yes = { place: placeWord(plan.title), path: planChatPath(plan), momentId: plan.momentId, ...(plan.targetType === 'quest' && plan.targetId ? { questId: plan.targetId } : {}) };
+  await notifyInviteYes(host.id, member, yes);
+  if (asker.id !== host.id) await notifyInviteYes(asker.id, member, yes);
   await tellChat(member, plan, plan.targetType === 'quest' ? 'ทำด้วยกันนะ!' : 'ไปด้วยนะ!');
   return (await friendPlanStore.byId(plan.id))!;
 }
@@ -318,9 +379,12 @@ export async function declineInvite(member: Member, answer: { token?: unknown; p
   if (held?.state === 'going') return;
   const host = await activeHost(plan.hostId, member);
   if (!host) throw new MemberAuthError('ไม่พบคำชวนนี้แล้ว', 404);
+  // The friend who asked hears it (the host, unless someone else going on the plan sent the invitation)
+  const linkSender = read?.kind === 'plan' && read.inviterId && memberOf(plan, read.inviterId)?.state === 'going' ? await activeHost(read.inviterId, member) : null;
+  const asker = linkSender ?? (read ? undefined : await askerOf(member, plan)) ?? host;
   if (held) await friendPlanStore.removeMember(plan.id, member.id);
   await friendPlanStore.noteDecline(plan.id);
-  await notifyInviteNo(host.id, member, { place: plan.title, path: planPath(plan), momentId: plan.momentId });
+  await notifyInviteNo(asker.id, member, { place: placeWord(plan.title), path: planPath(plan), momentId: plan.momentId });
 }
 
 export interface PlanPerson {
@@ -348,6 +412,8 @@ export interface PlanView {
   isToday: boolean;
   isHost: boolean;
   host: { id: string; name: string };
+  /** An invitation not answered yet: who asked (the host, or someone else going on the plan, 2026-11-16) */
+  askedBy?: { id: string; name: string };
   /** Everyone going, the host first */
   people: PlanPerson[];
   /** Asked in the app, not answered yet */
@@ -394,6 +460,7 @@ async function viewsOf(member: Member, plans: FriendPlan[]): Promise<PlanView[]>
     const friend = shown.find((p) => p.id !== member.id);
     const range = await fairRange(plan);
     const mine = memberOf(plan, member.id);
+    const asker = mine?.state === 'invited' ? await askerOf(member, plan) : undefined;
     views.push({
       id: plan.id,
       kind: plan.targetType,
@@ -408,6 +475,7 @@ async function viewsOf(member: Member, plans: FriendPlan[]): Promise<PlanView[]>
       isToday: plan.date === today,
       isHost: plan.hostId === member.id,
       host: { id: host.id, name: nameOf(host) },
+      ...(mine?.state === 'invited' ? { askedBy: asker ? { id: asker.id, name: nameOf(asker) } : { id: host.id, name: nameOf(host) } } : {}),
       people: shown,
       invitedCount: plan.members.filter((m) => m.state === 'invited').length,
       isInvited: mine?.state === 'invited',
@@ -434,20 +502,52 @@ export async function plansOf(member: Member): Promise<PlanView[]> {
  * open on, so they can go back to that chat instead of starting over. A post at a place finds plans for the place.
  * A ตี้ has no plans (its sign-up is the plan).
  */
-export async function plansAt(member: Member, input: { type?: unknown; id?: unknown }): Promise<{ id: string; title: string; dateLabel?: string; people: number; inPlan?: string[] }[]> {
+export interface InviteSheetInfo {
+  /** The reader's plans still ahead here ("คุณมีนัดที่นี่แล้ว"); `inPlan` on the one new invitations go into */
+  plans: { id: string; title: string; dateLabel?: string; people: number; inPlan?: string[]; going?: string[] }[];
+  /** The plan new invitations go into, when there is one already (planToInviteInto) */
+  into?: string;
+  /** Friends going on some other plan here, with other people ("มีนัดที่นี่แล้ว" beside their name) */
+  elsewhere: string[];
+  /** A ตี้: friends already signed up (or hosting), and friends this reader already asked */
+  joined: string[];
+  asked: string[];
+}
+
+/** What the ชวนไป sheet needs to show who is where already, so nobody is asked twice (2026-11-16) */
+export async function inviteSheetInfo(member: Member, input: { type?: unknown; id?: unknown }): Promise<InviteSheetInfo> {
+  const empty: InviteSheetInfo = { plans: [], elsewhere: [], joined: [], asked: [] };
   const target = await targetOf(input.type, input.id).catch(() => null);
-  if (!target || (target.type === 'community' && !target.momentId)) return [];
+  if (!target) return empty;
+  const friendIds = (await taggableFriends(member)).map((f) => f.id);
+  if (target.type === 'community' && !target.momentId) {
+    const event = await db.findEventById(target.targetId!);
+    const inTee = await teePeople(target.targetId!, (event as { createdByMemberId?: string } | null)?.createdByMemberId);
+    const joined = friendIds.filter((id) => inTee.has(id));
+    const asked = [...(await askedToTee(member, target.targetId!, friendIds.filter((id) => !inTee.has(id))))];
+    return { ...empty, joined, asked };
+  }
   const today = bangkokDay();
-  const mine = (await friendPlanStore.ofMember(member.id)).filter(
-    (p) =>
-      p.status !== 'cancelled' &&
-      memberOf(p, member.id)?.state === 'going' &&
-      (!p.date || p.date >= today) &&
-      (target.targetId ? p.targetType === target.type && p.targetId === target.targetId : Boolean(target.momentId) && p.momentId === target.momentId)
-  );
-  // The host's own plan is where new invitations land (hostPlanFor): say who is already in it, asked or going
-  const own = new Map(mine.filter((p) => p.hostId === member.id).map((p) => [p.id, p.members.map((m) => m.memberId).filter((id) => id !== member.id)]));
-  return (await viewsOf(member, mine)).map((v) => ({ id: v.id, title: v.title, ...(v.dateLabel ? { dateLabel: v.dateLabel } : {}), people: v.people.length, ...(own.has(v.id) ? { inPlan: own.get(v.id) } : {}) }));
+  const mine = (await friendPlanStore.ofMember(member.id)).filter((p) => p.status !== 'cancelled' && memberOf(p, member.id)?.state === 'going' && isAhead(p, today) && isFor(p, target));
+  const into = (await planToInviteInto(member, target, false))?.plan;
+  const inInto = new Set(into ? into.members.map((m) => m.memberId) : []);
+  const plans = (await viewsOf(member, mine)).map((v) => ({
+    id: v.id,
+    title: v.title,
+    ...(v.dateLabel ? { dateLabel: v.dateLabel } : {}),
+    people: v.people.length,
+    // inPlan: asked or going ("ชวนแล้ว"); going: already in it ("อยู่ในนัดแล้ว")
+    ...(into && v.id === into.id ? { inPlan: [...inInto].filter((id) => id !== member.id), going: going(into).map((m) => m.memberId).filter((id) => id !== member.id) } : {}),
+  }));
+  // Friends with a plan here of their own (going, with other people): shown, still pickable
+  const friends = new Set(friendIds);
+  const elsewhere = new Set<string>();
+  const open = target.targetId ? await friendPlanStore.openAt(target.type, target.targetId, undefined) : await friendPlanStore.openAt('general', undefined, target.momentId);
+  for (const plan of open) {
+    if (plan.id === into?.id || !isAhead(plan, today)) continue;
+    for (const m of going(plan)) if (friends.has(m.memberId) && !inInto.has(m.memberId)) elsewhere.add(m.memberId);
+  }
+  return { plans, ...(into ? { into: into.id } : {}), elsewhere: [...elsewhere], joined: [], asked: [] };
 }
 
 async function myPlan(member: Member, id: string): Promise<FriendPlan> {

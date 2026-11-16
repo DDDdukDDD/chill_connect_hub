@@ -19,6 +19,6 @@ export function openLineShare(text: string): void {
 export async function inviteViaLine(target: InviteTarget, place: string): Promise<boolean> {
   const result = await sendInvites(target);
   if (!result.ok || !result.link) return false;
-  openLineShare(inviteLineText(place, result.link, target.type === 'community'));
+  openLineShare(inviteLineText(place, result.link, target.type));
   return true;
 }

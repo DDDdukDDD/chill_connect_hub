@@ -83,6 +83,11 @@ export interface DrawCampaign {
     name: string;
     email?: string;
     phone?: string;
+    /**
+     * Staff warning (BE-393): the winner is a sub-account (email and phone above are then its owner's), or another
+     * winner of this draw belongs to the same owner. Rewards count per account; staff decide
+     */
+    familyNote?: string;
     code: string;
     status: WinnerStatus;
     poolSize: number;

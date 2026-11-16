@@ -1,28 +1,14 @@
-import { removePlansBy } from '@/lib/social/friendPlans';
 import { NextResponse } from 'next/server';
-import { removeNotificationsOf } from '@/lib/social/notifications';
-import { removeMeetAgainOf } from '@/lib/social/meetAgain';
-import { removeWaitlistOf } from '@/lib/social/waitlist';
-import { removeQuestionsOf } from '@/lib/social/eventQuestions';
-import { deleteMemberUploads } from '@/lib/media/cleanup';
-import { removeReviewsBy } from '@/lib/social/reviews';
-import { marksOf, removeVisitsBy } from '@/lib/social/visits';
-import { removeRedemptionsBy } from '@/lib/social/rewardsLedger';
-import { joinsOf, removeQuestJoinsBy } from '@/lib/social/questJoins';
-import { campaignMemberStore, removeCampaignEntriesBy } from '@/lib/campaigns/members';
-import { removeWinnerEntriesBy, winnerStore } from '@/lib/campaigns/winners';
-import { removeVouchersBy, vouchersOf } from '@/lib/social/questVouchers';
-import { removeFinishesBy } from '@/lib/social/questFinishes';
-import { removeContentReportsBy } from '@/lib/social/contentReports';
-import { removeFairGroupsOf } from '@/lib/social/fairGroups';
-import { removeChatMessagesBy } from '@/lib/social/chat';
-import { db } from '@/lib/db';
-import { recordAudit } from '@/lib/auditLog';
+import { marksOf } from '@/lib/social/visits';
+import { joinsOf } from '@/lib/social/questJoins';
+import { campaignMemberStore } from '@/lib/campaigns/members';
+import { winnerStore } from '@/lib/campaigns/winners';
+import { vouchersOf } from '@/lib/social/questVouchers';
 import { memberRepository, toPublicMember } from '@/lib/members';
 import { exportableAccount } from '@/lib/members/accounts';
+import { deleteMemberAccount } from '@/lib/members/deleteAccount';
 import { momentRepository } from '@/lib/moments';
-import { momentFiles } from '@/lib/moments/service';
-import { clearMemberSessionCookie, getSessionMember, isSameOrigin } from '@/lib/members/session';
+import { clearMemberSessionCookie, getSessionMember, isSameOrigin, refreshMemberStatus, setMemberSessionCookie } from '@/lib/members/session';
 
 // PDPA: download my data (account, consent record, onboarding answers, my moments)
 export async function GET(request: Request) {
@@ -36,44 +22,20 @@ export async function GET(request: Request) {
   );
 }
 
-// PDPA: delete my account and everything it posted. Body { confirm: "DELETE" }
+// PDPA: delete my account and everything it posted. Body { confirm: "DELETE" }. An owner's sub-accounts go with it;
+// deleting a sub-account switches the browser back to its owner (BE-393)
 export async function DELETE(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   if (body?.confirm !== 'DELETE') return NextResponse.json({ success: false, message: 'กรุณายืนยันการลบบัญชี' }, { status: 400 });
-  // PDPA: the member's posts, comments, likes, saves and reports go with the account
-  const { items: ownMoments } = await momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 10_000 });
-  const removedMoments = await momentRepository.removeByAuthor(member.id);
-  const removedComments = await momentRepository.removeCommentsByAuthor(member.id);
-  await removeReviewsBy(member.id);
-  await removeVisitsBy(member.id);
-  await removeRedemptionsBy(member.id);
-  await removeQuestJoinsBy(member.id);
-  await removeCampaignEntriesBy(member.id);
-  await removePlansBy(member.id);
-  await removeWinnerEntriesBy(member.id);
-  await removeVouchersBy(member.id);
-  await removeFinishesBy(member.id);
-  await removeContentReportsBy(member.id);
-  await removeFairGroupsOf(member.id);
-  await removeChatMessagesBy(member.id);
-  await db.removeParticipantEverywhere(member.id);
-  await removeNotificationsOf(member.id);
-  await removeMeetAgainOf(member.id);
-  await removeWaitlistOf(member.id);
-  await removeQuestionsOf(member.id);
-  await memberRepository.remove(member.id);
-  // The photos themselves go too, unless something that remains still shows them
-  const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
-  await deleteMemberUploads(
-    [...ownMoments.flatMap(momentFiles), member.avatarUrl],
-    remaining.flatMap(momentFiles),
-  );
-  // Keep proof that the deletion happened, without keeping who it was
-  recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชีของตัวเอง (โมเมนต์ ${removedMoments} คอมเมนต์ ${removedComments})`, { type: 'member', id: member.id });
-  const response = NextResponse.json({ success: true, removedMoments, removedComments });
-  clearMemberSessionCookie(response);
+  const owner = member.ownerId ? await memberRepository.findFresh(member.ownerId) : null;
+  const { removedMoments, removedComments } = await deleteMemberAccount(member);
+  const backTo = owner ? await refreshMemberStatus(owner) : null;
+  const signedInAs = backTo?.status === 'active' ? backTo : null;
+  const response = NextResponse.json({ success: true, removedMoments, removedComments, member: signedInAs ? toPublicMember(signedInAs) : null });
+  if (signedInAs) setMemberSessionCookie(response, signedInAs);
+  else clearMemberSessionCookie(response);
   return response;
 }

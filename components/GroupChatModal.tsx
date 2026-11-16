@@ -8,9 +8,56 @@ import { Bell, BellOff, Flag, Send, Trash2, X } from 'lucide-react';
 import { EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { markInboxRoomRead, refreshChatInbox } from '@/lib/useChatInbox';
-import { useMemberSession } from '@/lib/useMemberSession';
+import { memberActions, useMemberSession } from '@/lib/useMemberSession';
+import type { PublicMember } from '@/lib/members/types';
 import { ReportSafetyModal } from './ReportSafetyModal';
 import { avatarImage } from '@/lib/optimizedImage';
+
+/**
+ * A member who can read the room but not write yet (email not confirmed, or the pledge not taken; a friend who just
+ * signed up to answer "ไปกัน", 2026-11-16): said calmly before they type, with the one step that is missing, instead of
+ * a refusal after they send.
+ */
+function VerifyToChat({ member }: { member: PublicMember }) {
+  const needsEmail = !member.trust.identityConfirmed;
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [devUrl, setDevUrl] = useState('');
+  const here = typeof window === 'undefined' ? '/myhub' : `${window.location.pathname}${window.location.search}`;
+  const send = async () => {
+    setBusy(true);
+    setNote('');
+    try {
+      const result = await memberActions.sendEmailVerification(here);
+      if (result.alreadyVerified) return window.location.reload();
+      if (result.devVerifyUrl) setDevUrl(result.devVerifyUrl);
+      setNote(result.sent || result.devVerifyUrl ? `ส่งลิงก์ไปที่ ${member.email ?? 'อีเมลของคุณ'} แล้ว กดลิงก์ในอีเมลแล้วกลับมาคุยต่อได้เลย` : 'ระบบส่งอีเมลยังไม่พร้อม ลองใหม่ภายหลังนะ');
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : 'ส่งลิงก์ไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div role="status" className="shrink-0 mx-4 sm:mx-5 mt-2 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+      <p className="text-sm font-semibold text-slate-800">{needsEmail ? 'ยืนยันอีเมลก่อน แล้วคุยในแชตได้เลย' : 'รับคำมั่นของคอมมูนิตี้ก่อน แล้วคุยในแชตได้เลย'}</p>
+      <p className="mt-0.5 text-[13px] text-slate-600">{needsEmail ? 'อ่านข้อความของเพื่อนได้แล้ว อีกขั้นเดียวก็ตอบได้' : 'คำมั่น 4 ข้อ ให้ที่นี่ปลอดภัยสำหรับทุกคน ใช้เวลาไม่ถึงนาที'}</p>
+      {note && <p className="mt-2 text-[13px] font-medium text-slate-700">{note}</p>}
+      {devUrl && <a href={devUrl} className="mt-1 block text-xs font-bold text-[#2563EB] underline break-all">{devUrl}</a>}
+      <div className="mt-2.5">
+        {needsEmail ? (
+          <button type="button" onClick={send} disabled={busy} className="h-9 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-sm font-bold text-white disabled:opacity-60 cursor-pointer">
+            {busy ? 'กำลังส่ง…' : note ? 'ส่งลิงก์อีกครั้ง' : 'ส่งลิงก์ยืนยันอีเมล'}
+          </button>
+        ) : (
+          <Link href={`/onboarding?step=pledge&returnTo=${encodeURIComponent(here)}`} className="inline-flex h-9 px-4 items-center rounded-full bg-slate-900 hover:bg-slate-800 text-sm font-bold text-white">
+            อ่านและรับคำมั่น
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface ChatMessage {
   id: string;
@@ -80,6 +127,8 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
   const lastSeen = useRef('');
   const { member } = useMemberSession();
   const memberId = member?.id;
+  // Reading is open to the room; writing needs a confirmed account (POST /api/chat answers 403 otherwise)
+  const cannotWrite = Boolean(member && (!member.trust.identityConfirmed || !member.trust.pledged));
 
   // Reading the room clears its count in the top bar at once; leaving it reads the inbox again
   useEffect(() => {
@@ -281,7 +330,9 @@ export const GroupChatModal: React.FC<GroupChatModalProps> = ({ isOpen, onClose,
           </p>
         )}
 
-        {state !== 'denied' && (
+        {cannotWrite && state === 'ready' && member && <VerifyToChat member={member} />}
+
+        {state !== 'denied' && !cannotWrite && (
           <form onSubmit={send} className="shrink-0 flex items-center gap-2 px-4 sm:px-5 py-3 border-t border-slate-100 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <label htmlFor="group-chat-input" className="sr-only">ข้อความ</label>
             <input

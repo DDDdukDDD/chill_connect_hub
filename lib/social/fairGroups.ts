@@ -6,6 +6,7 @@ import { tidyDisplayName } from '../displayName';
 import { memberRepository } from '../members';
 import { MemberAuthError } from '../members/accounts';
 import { guardOrganizer } from '../members/submissions';
+import { FAMILY_ALREADY_IN_MESSAGE, familyAlreadyIn } from '../members/subAccounts';
 import type { Member } from '../members/types';
 import { fairGroupStore } from './stores';
 import { guardMemberText } from './textRules';
@@ -97,6 +98,8 @@ export async function joinFairGroup(member: Member, groupId: string): Promise<Fa
   if (!found) throw new MemberAuthError('ไม่พบกลุ่มนี้', 404);
   await requireOpenFair(found.fairId);
   await guardMemberText(member, '', 'กลุ่มในอีเวนต์');
+  // One person, one seat in a group (BE-393)
+  if (await familyAlreadyIn(member, found.memberIds)) throw new MemberAuthError(FAMILY_ALREADY_IN_MESSAGE, 409);
   const outcome = await fairGroupStore.join(groupId, member.id);
   const result = outcome === 'ok' ? await fairGroupById(groupId) : null;
   if (!result) throw new MemberAuthError(outcome === 'full' ? 'กลุ่มนี้เต็มแล้ว' : 'ไม่พบกลุ่มนี้', outcome === 'full' ? 409 : 404);

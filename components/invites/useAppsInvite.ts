@@ -49,7 +49,7 @@ export function useAppsInvite(target: InviteTarget, place: string, onDone: (how:
     const result = await sendInvites(target, [], day);
     setBusy(false);
     if (!result.ok || !result.link) return onError(result.message || 'ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ');
-    const invite = { text: inviteWords(place, target.type === 'community', result.dateLabel), url: `${window.location.origin}${result.link}` };
+    const invite = { text: inviteWords(place, target.type, result.dateLabel), url: `${window.location.origin}${result.link}` };
     settle(await shareNow(invite), invite);
   };
 

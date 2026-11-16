@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, Phone, type LucideIcon
+  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, Phone, ArrowLeftRight, type LucideIcon
 } from 'lucide-react';
+import { AccountSwitcherDialog } from '@/components/auth/AccountSwitcherDialog';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
@@ -189,7 +190,7 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
     {
       done: t.identityConfirmed,
       title: t.emailVerified || !t.identityConfirmed ? 'ยืนยันอีเมล' : 'ยืนยันตัวตน',
-      desc: t.emailVerified ? 'ยืนยันแล้ว' : t.identityConfirmed ? 'ยืนยันผ่านบัญชีโซเชียลที่ใช้เข้าสู่ระบบแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะเข้าร่วมตี้ โพสต์ และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
+      desc: t.emailVerified ? 'ยืนยันแล้ว' : member.isSubAccount ? 'ใช้ตัวตนของบัญชีหลัก' : t.identityConfirmed ? 'ยืนยันผ่านบัญชีโซเชียลที่ใช้เข้าสู่ระบบแล้ว' : t.hasEmail ? 'กดลิงก์ในอีเมลที่เราส่งให้ จึงจะเข้าร่วมตี้ โพสต์ และคอมเมนต์ได้' : 'บัญชีนี้ยังไม่มีอีเมล',
       action: !t.identityConfirmed && t.hasEmail && (
         <button type="button" onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap disabled:opacity-60">
           {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
@@ -206,7 +207,7 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
     ...(t.phoneCheckOn ? [{
       done: t.phoneVerified,
       title: 'ยืนยันเบอร์โทร',
-      desc: t.phoneVerified ? 'ยืนยันแล้ว สร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้' : 'ต้องยืนยันก่อนสร้างตี้ ชาเลนจ์ ทริป หรือกลุ่มในอีเวนต์ เราไม่แสดงเบอร์ให้ใครเห็น',
+      desc: t.phoneFromOwner ? 'ใช้เบอร์ที่ยืนยันกับบัญชีหลัก สร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้' : t.phoneVerified ? 'ยืนยันแล้ว สร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้' : 'ต้องยืนยันก่อนสร้างตี้ ชาเลนจ์ ทริป หรือกลุ่มในอีเวนต์ เราไม่แสดงเบอร์ให้ใครเห็น',
     }] : []),
     {
       done: t.level === 'trusted',
@@ -349,6 +350,7 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const hasPassword = member.loginMethods.includes('email');
   const methods = member.loginMethods.map((m) => ({ email: 'อีเมลและรหัสผ่าน', google: 'Google', facebook: 'Facebook', apple: 'Apple', line: 'LINE' })[m]).join(', ');
 
@@ -373,20 +375,24 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
   return (
     <section id="account" className={trayCard}>
       <SectionTitle>บัญชีของฉัน</SectionTitle>
-      <dl className="space-y-2 text-sm">
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="font-semibold text-slate-500">อีเมล</dt>
-          <dd className="font-bold text-slate-800 break-all">{member.email ?? 'ไม่มี'}</dd>
-        </div>
-        <div className="flex flex-wrap gap-x-2">
-          <dt className="font-semibold text-slate-500">เข้าสู่ระบบด้วย</dt>
-          <dd className="font-bold text-slate-800">{methods || 'ไม่มี'}</dd>
-        </div>
-      </dl>
+      {member.isSubAccount ? (
+        <p className="text-sm font-medium text-slate-600"><PhraseText text="บัญชีย่อย ไม่มีอีเมลหรือรหัสผ่านของตัวเอง เข้าใช้โดยสลับจากบัญชีหลัก" /></p>
+      ) : (
+        <dl className="space-y-2 text-sm">
+          <div className="flex flex-wrap gap-x-2">
+            <dt className="font-semibold text-slate-500">อีเมล</dt>
+            <dd className="font-bold text-slate-800 break-all">{member.email ?? 'ไม่มี'}</dd>
+          </div>
+          <div className="flex flex-wrap gap-x-2">
+            <dt className="font-semibold text-slate-500">เข้าสู่ระบบด้วย</dt>
+            <dd className="font-bold text-slate-800">{methods || 'ไม่มี'}</dd>
+          </div>
+        </dl>
+      )}
       <p className="mt-2 text-sm">
         <a href="/legal?tab=privacy#my-data" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดาวน์โหลดข้อมูลหรือลบบัญชี</a>
       </p>
-      <p className="mt-2 text-xs font-medium text-slate-500">อีเมลของคุณไม่แสดงให้สมาชิกคนอื่นเห็น</p>
+      {!member.isSubAccount && <p className="mt-2 text-xs font-medium text-slate-500">อีเมลของคุณไม่แสดงให้สมาชิกคนอื่นเห็น</p>}
 
       {done && <p className="mt-3 text-sm font-bold text-emerald-700" role="status">เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นถูกออกจากระบบ</p>}
       {open && (
@@ -421,6 +427,11 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
             <ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" />
           </button>
         )}
+        <button type="button" onClick={() => setIsSwitcherOpen(true)} aria-haspopup="dialog" className={ACCOUNT_ROW}>
+          <ArrowLeftRight className="w-4 h-4 text-slate-500" aria-hidden="true" />
+          <span className="flex-1">สลับหรือเพิ่มบัญชี</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" aria-hidden="true" />
+        </button>
         <Link href="/legal?tab=privacy" className={ACCOUNT_ROW}>
           <ShieldCheck className="w-4 h-4 text-slate-500" aria-hidden="true" />
           <span className="flex-1">ข้อมูลและความเป็นส่วนตัว</span>
@@ -431,6 +442,7 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
           <span className="flex-1">ออกจากระบบ</span>
         </button>
       </div>
+      {isSwitcherOpen && <AccountSwitcherDialog onClose={() => setIsSwitcherOpen(false)} />}
     </section>
   );
 }
@@ -522,6 +534,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   // null: the first tab that has something
   const [tab, setTab] = useState<ProfileTab | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [followList, setFollowList] = useState<FollowTab | null>(null);
 
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
@@ -880,6 +893,13 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                       ชวนเพื่อนด้วยตั๋วเพื่อนซี้
                     </button>
                   )}
+                  {/* Accounts like IG (BE-393): switch to another of my accounts, or make one */}
+                  {viewOwn && (
+                    <button type="button" onClick={() => setIsSwitcherOpen(true)} aria-haspopup="dialog" className="w-full inline-flex items-center justify-center gap-1.5 min-h-10 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:underline underline-offset-4 cursor-pointer">
+                      <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
+                      สลับหรือเพิ่มบัญชี
+                    </button>
+                  )}
                   {!profile.isMe && !profile.isSample && isLoggedIn && !profile.viewer?.hasBlocked && (
                     <button
                       type="button"
@@ -1146,6 +1166,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
       {/* Owner only: the invite link (ตั๋วเพื่อนซี้) and friends who signed up with it, opened from the small link */}
       {followList && <FollowListDialog initialTab={followList} onClose={closeFollowList} />}
+      {isSwitcherOpen && <AccountSwitcherDialog onClose={() => setIsSwitcherOpen(false)} />}
 
       {isInviteOpen && (
         <DialogShell onClose={() => setIsInviteOpen(false)} title="ชวนเพื่อนมาไปตี้ด้วยกัน" size="md">

@@ -10,7 +10,7 @@ import { memberActions } from '@/lib/useMemberSession';
 
 /** A ตี้ signed up for before the email was confirmed, and what became of it (BE-392) */
 type Settled = { eventId: string; title: string; outcome: 'joined' | 'waitlist' | 'closed' };
-type State = { status: 'working' } | { status: 'done'; settled: Settled[] } | { status: 'error'; message: string };
+type State = { status: 'working' } | { status: 'done'; settled: Settled[]; needsPledge: boolean } | { status: 'error'; message: string };
 
 const OUTCOME: Record<Settled['outcome'], string> = {
   joined: 'ได้ที่นั่งแล้ว',
@@ -27,13 +27,13 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
     let active = true;
     memberActions
       .confirmEmailVerification(token)
-      .then(({ settled }) => {
+      .then(({ member, settled }) => {
         try {
           sessionStorage.removeItem('cch_dev_verify_url');
         } catch {
           /* storage unavailable */
         }
-        if (active) setState({ status: 'done', settled });
+        if (active) setState({ status: 'done', settled, needsPledge: !member?.trust?.pledged });
       })
       .catch((err) => {
         if (active) setState({ status: 'error', message: err instanceof Error ? err.message : 'ยืนยันอีเมลไม่สำเร็จ' });
@@ -66,7 +66,7 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
               </span>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ยืนยันอีเมลแล้ว</h1>
               <p className="text-sm text-slate-500 font-medium mt-2 mb-6">
-                <PhraseText text="ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว" />
+                <PhraseText text={state.needsPledge ? 'ขอบคุณที่ยืนยันอีเมล' : 'ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว'} />
               </p>
               {state.settled.length > 0 && (
                 <ul className="mb-6 space-y-2 text-left">
@@ -80,7 +80,18 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
                   ))}
                 </ul>
               )}
-              {state.settled.some((item) => item.outcome === 'joined') ? (
+              {state.needsPledge ? (
+                // The pledge is the last step (2026-11-16): straight on to it, then back to what they were doing.
+                // A ตี้ seat that waited for the email is given when the pledge is in (lib/social/pendingJoins.ts)
+                <>
+                  <p className="mb-4 text-sm font-semibold text-slate-700">
+                    <PhraseText text="อีกขั้นเดียว: รับคำมั่น 4 ข้อของคอมมูนิตี้ แล้วคุยในแชตและเข้าร่วมตี้ได้เลย" />
+                  </p>
+                  <Link href={`/onboarding?step=pledge&returnTo=${encodeURIComponent(next || '/myhub')}`} className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
+                    อ่านและรับคำมั่น
+                  </Link>
+                </>
+              ) : state.settled.some((item) => item.outcome === 'joined') ? (
                 <Link href="/myhub" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
                   ดูตารางในมายฮับ
                 </Link>

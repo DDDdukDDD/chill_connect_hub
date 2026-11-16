@@ -6,7 +6,8 @@
  * Members' uploads on Vercel Blob are listed by our own store's host, not `*.blob.vercel-storage.com`, which would
  * resize files from anyone's store on our quota. A new store needs its host here; uploads go to Cloudflare R2 behind
  * our own domains since 2026-11-07 (lib/media/ownMedia.ts).
- * `width` must be one of the optimizer sizes: 96, 128, 256, 384, 640, 750, 828, 1080.
+ * `width` must be one of the optimizer sizes in next.config.ts: 64, 96, 128, 256, 384, 640, 828, 1080 (1920 for a
+ * full-width photo). Each width is a separate resize on Vercel's monthly quota, so reuse these rather than add one.
  */
 export const OPTIMIZED_REMOTE_IMAGES = [
   { hostname: 'media.chillwaa.com', pathname: '/**' },
