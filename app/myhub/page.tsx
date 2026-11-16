@@ -79,7 +79,7 @@ import {
   Ticket,
   Layers,
   Camera,
-  AlertCircle, Plus } from 'lucide-react';
+  AlertCircle, MailCheck, Plus } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -91,12 +91,10 @@ const THAI_MONTH_SHORT = [
   'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
 ];
 
-import {
-  RewardShopItem,
-  REWARD_SHOP_ITEMS,
-} from '@/data/rewardsData';
+import { useRewardCatalog } from '@/lib/useRewardCatalog';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { defaultEventImage } from '@/lib/eventImageResolver';
+import FallbackImg from '@/components/FallbackImg';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -138,6 +136,7 @@ function MyHubContent() {
   const [storedChallenges, setMyChallenges] = useState<ChallengeQuest[]>([]);
   // Points, redeemed rewards and the progress of challenges that count visits come from the account (GET /api/rewards)
   const myRewards = useMyRewards(isLoggedIn);
+  const rewardCatalog = useRewardCatalog();
   const userXp = myRewards.balance;
   const redeemedRewardIds = myRewards.redeemedRewardIds;
   const myChallenges = useMemo(() => withRealProgress(storedChallenges, myRewards.quests), [storedChallenges, myRewards.quests]);
@@ -526,10 +525,11 @@ function MyHubContent() {
   const suggestedEvents = useMemo(
     () =>
       openEvents
-        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id))
+        // A ตี้ waiting for the email (BE-392) is already listed above it
+        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id) && !activity.pendingIds.includes(e.id))
         .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
         .slice(0, 4),
-    [openEvents, hostedIdSet, guestEvents]
+    [openEvents, hostedIdSet, guestEvents, activity.pendingIds]
   );
 
   // Events the member saved but has not joined: they had no place on this page before
@@ -891,6 +891,17 @@ function MyHubContent() {
   const listItems = guestEvents.filter((ev) => !isQuestFarOff(ev) && ev.id !== nextEvent?.id);
   const upcomingTotal = listItems.filter(isUpcomingItem).length;
   const whenCounts = { upcoming: upcomingTotal, past: listItems.length - upcomingTotal };
+  // Opens on the first tab that has something (owner 2026-11-16: it always opened on an empty "กำลังจะมาถึง"):
+  // upcoming, then saved, then past. Once per visit, after the account answered; a ?tab= link keeps its own tab
+  const pickedScheduleTab = useRef(false);
+  const savedTotal = activity.savedEventIds.filter((id) => !activity.joinedIds.includes(id)).length + activity.savedSpotIds.length;
+  useEffect(() => {
+    if (pickedScheduleTab.current || !activity.isLoaded) return;
+    pickedScheduleTab.current = true;
+    if (searchParams.get('tab') || whenCounts.upcoming > 0) return;
+    if (savedTotal > 0) setScheduleWhen('saved');
+    else if (whenCounts.past > 0) setScheduleWhen('past');
+  }, [activity.isLoaded, searchParams, whenCounts.upcoming, whenCounts.past, savedTotal]);
   const listPool = listItems.filter((ev) => isUpcomingItem(ev) === (scheduleWhen === 'upcoming'));
   // Counts are the rows in the list: what is shown above ("กำลังทำอยู่", "ถัดไปของคุณ") is not counted again.
   // A type with no rows has no chip (owner 2026-11-03: "ชาเลนจ์ (0)" read as a wrong count beside the month's 2)
@@ -1001,9 +1012,10 @@ function MyHubContent() {
       <section aria-label="กำลังทำอยู่" className={hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-900">กำลังทำอยู่</h2>
-          {doingChallenges.length > 2 && (
+          {/* The way into all of the member's challenges, whenever there is one (was only past two) */}
+          {doingChallenges.length > 0 && (
             <button type="button" onClick={openMyChallenges} className="py-2 -my-2 text-xs font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer whitespace-nowrap tabular-nums">
-              ดูทั้งหมด {doingChallenges.length}
+              {doingChallenges.length > 2 ? `ดูทั้งหมด ${doingChallenges.length}` : 'ดูทั้งหมด'}
             </button>
           )}
         </div>
@@ -1067,16 +1079,10 @@ function MyHubContent() {
                         <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
                         <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
                       </span>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- a missing picture falls back to the category's own */}
-                      <img
+                      {/* a missing picture falls back to the category's own */}
+                      <FallbackImg
                         src={optimizedImage(ev.image, 128)}
-                        alt=""
-                        onError={(e) => {
-                          const img = e.currentTarget;
-                          if (img.dataset.fallback) return;
-                          img.dataset.fallback = '1';
-                          img.src = defaultEventImage(ev.category);
-                        }}
+                        fallback={defaultEventImage(ev.category)}
                         className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
                       />
                       <span className="min-w-0 flex-1">
@@ -1763,7 +1769,10 @@ function MyHubContent() {
                         {/* The day, a small photo to know the event by, then what it is */}
                         <div className="w-10 shrink-0 text-center">
                           <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
-                          <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_DAY_SHORT[when.getDay()] : ''}</span>
+                          {/* In the month view a day of another month (a challenge's last day) says its month, not its weekday */}
+                          <span className="block text-[11px] font-semibold text-slate-500">
+                            {when ? (scheduleView === 'month' && (when.getMonth() !== calMonth || when.getFullYear() !== calYear) ? THAI_MONTH_SHORT[when.getMonth()] : THAI_DAY_SHORT[when.getDay()]) : ''}
+                          </span>
                         </div>
                         <Link href={detailHref} className="shrink-0" title={`ดูรายละเอียด ${ev.title}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2099,31 +2108,26 @@ function MyHubContent() {
                 {/* Who this hub belongs to, and three real numbers from the account (levels and points return with the challenges work) */}
                 {/* Whose hub this is. A member who runs events also gets the switch to their host side; a guest sees no switch at all */}
                 <div className="space-y-3 text-slate-900">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* The photo opens the member's own profile, as on Instagram */}
-                    <Link href="/profile?id=me" aria-label="ดูโปรไฟล์ของฉัน" className="shrink-0 rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    {/* The photo opens the member's own profile, as on Instagram; "โปรไฟล์" sits under it (owner 2026-11-16:
+                        the photo was too small beside the name, and the link read as part of the XP line) */}
+                    <Link href="/profile?id=me" className="group shrink-0 flex flex-col items-center gap-1 rounded-2xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
                       {hubMember?.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                        <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        <img src={avatarImage(hubMember.avatarUrl)} alt="" className="w-16 h-16 rounded-full object-cover border border-slate-200" />
                       ) : (
-                        <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 text-base font-bold flex items-center justify-center" aria-hidden="true">
+                        <span className="w-16 h-16 rounded-full bg-slate-100 text-slate-600 text-xl font-bold flex items-center justify-center" aria-hidden="true">
                           {nameInitial(hubName)}
                         </span>
                       )}
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 group-hover:underline">โปรไฟล์ ›</span>
                     </Link>
-                    <div className="min-w-0">
+                    <div className="min-w-0 min-h-16 flex flex-col justify-center">
                       <h1 className="text-xl sm:text-2xl lg:text-xl font-bold tracking-tight text-slate-900 truncate">มายฮับของ{hubName ? ` ${hubName}` : 'คุณ'}</h1>
-                      {/* The XP and the way to the challenges, one line under the name like the home greeting (was a box of its own) */}
-                      <button
-                        type="button"
-                        onClick={openMyChallenges}
-                        className="inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline cursor-pointer tabular-nums"
-                      >
-                        {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}ชาเลนจ์ของฉัน ›
-                      </button>
-                      <span className="text-slate-300 mx-1.5" aria-hidden="true">·</span>
-                      <Link href="/profile?id=me" className="inline-flex items-center min-h-11 text-sm font-bold text-slate-600 hover:text-slate-900 hover:underline">
-                        โปรไฟล์ ›
+                      {/* The XP and what it buys, one line under the name (owner 2026-11-15: it said "ชาเลนจ์ของฉัน" and opened
+                          the same view as "กำลังทำอยู่ › ดูทั้งหมด"; each link now has one job) */}
+                      <Link href="/rewards" className="self-start inline-flex items-center min-h-11 text-sm font-bold text-[#6D28D9] hover:text-[#5B21B6] hover:underline tabular-nums">
+                        {myRewards.isLoaded ? `${userXp.toLocaleString()} XP · ` : ''}แลกของรางวัล ›
                       </Link>
                     </div>
                   </div>
@@ -2183,6 +2187,31 @@ function MyHubContent() {
                       <div className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
                         <MyCampaignsSection campaigns={myCampaigns.mine} rewards={myRewards} onOpen={myCampaigns.open} />
                       </div>
+                    )}
+                    {/* ตี้ signed up for before the email was confirmed (BE-392): kept here, no seat yet */}
+                    {hubMainMode === 'calendar' && activity.pending.length > 0 && (
+                      <section aria-label="รอยืนยันอีเมล" className="border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0">
+                        <h2 className="text-base font-bold text-slate-900">รอยืนยันอีเมล</h2>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500">กดลิงก์ในอีเมลแล้วได้ที่นั่งทันที ถ้ายังว่างอยู่</p>
+                        <ul className="mt-1 divide-y divide-slate-100">
+                          {activity.pending.map((event) => (
+                            <li key={event.id}>
+                              <Link href={`/community/${encodeURIComponent(event.id)}`} className="py-2.5 flex items-center gap-3 group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={optimizedImage(event.image || defaultEventImage(event.category), 128)} alt="" className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0" />
+                                <span className="min-w-0 flex-1">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                                    <MailCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                                    รอยืนยันอีเมล
+                                  </span>
+                                  <span className="block text-sm font-bold text-slate-900 line-clamp-1 group-hover:underline">{event.title}</span>
+                                  <span className="block text-xs text-slate-500 truncate">{event.pendingDate ?? event.date}{event.time ? ` · ${event.time}` : ''}</span>
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
                     )}
                     {/* Challenges done by plan: today's task and its stamp, first thing in the schedule (owner 2026-11-07) */}
                     {hubMainMode === 'calendar' && isLoggedIn && <TodayPlans onToast={showToast} />}
@@ -2437,7 +2466,7 @@ function MyHubContent() {
                         </div>
                       ) : (
                         <div className="flex flex-wrap gap-3 sm:gap-4">
-                          {REWARD_SHOP_ITEMS.filter((item) => redeemedRewardIds.includes(item.id)).map((item) => (
+                          {rewardCatalog.filter((item) => redeemedRewardIds.includes(item.id)).map((item) => (
                             <div
                               key={item.id}
                               className="w-full sm:w-auto sm:max-w-[270px] min-h-[105px] bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 flex flex-col justify-between gap-2.5"
@@ -2658,7 +2687,6 @@ function MyHubContent() {
         spotId={selectedSpotForBuddy?.id}
         spotProvince={selectedSpotForBuddy?.province}
         spotDistrict={selectedSpotForBuddy?.district}
-        mode="spot"
         onSuccess={(newTrip: SpotBuddyPostItem) => {
           const newEventId = newTrip.id;
           const updatedSubs = {

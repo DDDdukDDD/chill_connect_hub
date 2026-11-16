@@ -1,5 +1,7 @@
 // data/rewardsData.ts
-// Single source of truth for Community Rewards & Voucher Catalog
+// The rewards catalog's shape and its starting rows: the seed for app.rewards (db/import-from-json.mjs, migration 0058)
+// and the catalog of a clone without a database. Staff edit the live catalog in the admin console (?m=rewards,
+// lib/rewards/catalog.ts), so a change here does not reach the site on its own.
 
 export interface RewardShopItem {
   id: string;
@@ -20,11 +22,24 @@ export interface RewardShopItem {
   /** The photo on the reward's tile: the partner's own picture once they send one (SAMPLE photos from Unsplash for now) */
   image?: string;
   featured?: boolean;
-  /** A prize draw entry instead of a voucher: each member gets their own entry code, and no stock runs out */
-  drawEntry?: { drawLabel: string; prizeCount: number; drawDate?: string };
+  /**
+   * A prize draw entry instead of a voucher: each entry gets its own code, and no stock runs out. A member may hold
+   * up to `maxPerMember` entries (absent = 1), at most `perDay` a day (absent = no daily limit); more entries, more chances
+   */
+  drawEntry?: { drawLabel: string; prizeCount: number; drawDate?: string; perDay?: number; maxPerMember?: number };
   /** Reached only through its campaign's popup, not listed in the shop */
   campaignOnly?: boolean;
+  /** The last day as an ISO date, for the admin form; `validUntil` is how it reads */
+  validUntilDate?: string;
+  /** Staff took it out of the shop; members who redeemed it still see theirs */
+  hidden?: boolean;
 }
+
+/** How many entries of a draw a member may hold, and a day; a voucher is always one each */
+export const entryRulesOf = (item: Pick<RewardShopItem, 'drawEntry'>): { max: number; perDay: number | null } =>
+  item.drawEntry
+    ? { max: Math.max(1, item.drawEntry.maxPerMember ?? 1), perDay: item.drawEntry.perDay && item.drawEntry.perDay > 0 ? item.drawEntry.perDay : null }
+    : { max: 1, perDay: null };
 
 export const REWARD_CATEGORIES = [
   { id: 'all', label: 'ทั้งหมด' },

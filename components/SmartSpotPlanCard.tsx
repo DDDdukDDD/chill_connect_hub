@@ -122,7 +122,7 @@ export const SmartSpotPlanCard: React.FC<SmartSpotPlanCardProps> = ({ currentSpo
         <button
           type="button"
           onClick={() => (isLoggedIn ? setIsInviting(true) : onRequireLogin())}
-          className="flex-1 min-h-11 px-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold cursor-pointer whitespace-nowrap"
+          className="flex-1 min-h-11 px-4 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold cursor-pointer whitespace-nowrap"
         >
           ชวนเพื่อนไปกัน
         </button>

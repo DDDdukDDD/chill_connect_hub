@@ -66,7 +66,6 @@ interface SpotBuddyGatheringModalProps {
   spotProvince?: string;
   spotDistrict?: string;
   onSuccess: (newTrip: SpotBuddyPostItem) => void;
-  mode?: 'spot' | 'fair';
 }
 
 const WHAT_TO_BRING_SUGGESTIONS = [
@@ -98,7 +97,6 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
   spotProvince,
   spotDistrict,
   onSuccess,
-  mode = 'spot',
 }) => {
   const { userProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,35 +142,20 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'fair') {
-        setTitle(`ชวนเดินงาน ${spotTitle}`);
-        setLocationName(spotTitle || '');
-        setMeetingPoint(`จุดนัดพบหน้าเคาน์เตอร์ประชาสัมพันธ์ / ประตูเข้างาน ${spotTitle}`);
-        setStartTime('13:30');
-        setEndTime('17:00');
-        setItinerary([
-          { time: '13:30 น.', title: 'รวมตัวกันหน้าจุดนัดพบ / ลงทะเบียน' },
-          { time: '14:00 น.', title: 'เริ่มเดินชมโซนไฮไลต์ & ชมนิทรรศการ' },
-          { time: '16:30 น.', title: 'แวะพักขา จิบกาแฟ & นั่งคุยแลกเปลี่ยน' },
-        ]);
-        setWhatToBringList(['ถุงผ้าใส่ของ/เอกสาร', 'พาวเวอร์แบงก์', 'รองเท้าผ้าใบเดินสบาย']);
-        setDescription(`<p><strong>ภาพรวมกลุ่มนัดเดินงาน:</strong></p><p>หาเพื่อนเดินดูงานเอ็กซ์โปด้วยกัน ชมโซนไฮไลต์และแลกเปลี่ยนความสนใจแบบสบายๆ ใครมาคนเดียวมาร่วมกลุ่มกันได้เลยครับ</p>`);
-      } else {
-        setTitle(`ชวนไป ${spotTitle}`);
-        setLocationName(spotTitle || '');
-        setMeetingPoint(SPOT_TRIP_MEETING_POINTS[0]);
-        setStartTime('10:00');
-        setEndTime('12:00');
-        setItinerary([
-          { time: '10:00 น.', title: 'รวมตัวกันที่จุดนัดพบ' },
-          { time: '10:15 น.', title: 'เริ่มกิจกรรมหลักร่วมกัน' },
-          { time: '11:30 น.', title: 'นั่งคุยผ่อนคลายก่อนแยกย้าย' },
-        ]);
-        setWhatToBringList(['ขวดน้ำดื่มส่วนตัว']);
-        setMaxParticipants((current) => Math.max(SPOT_TRIP_MIN_PEOPLE, current));
-        setTransportation(SPOT_TRIP_TRANSPORT);
-        setDescription(`<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>`);
-      }
+      setTitle(`ชวนไป ${spotTitle}`);
+      setLocationName(spotTitle || '');
+      setMeetingPoint(SPOT_TRIP_MEETING_POINTS[0]);
+      setStartTime('10:00');
+      setEndTime('12:00');
+      setItinerary([
+        { time: '10:00 น.', title: 'รวมตัวกันที่จุดนัดพบ' },
+        { time: '10:15 น.', title: 'เริ่มกิจกรรมหลักร่วมกัน' },
+        { time: '11:30 น.', title: 'นั่งคุยผ่อนคลายก่อนแยกย้าย' },
+      ]);
+      setWhatToBringList(['ขวดน้ำดื่มส่วนตัว']);
+      setMaxParticipants((current) => Math.max(SPOT_TRIP_MIN_PEOPLE, current));
+      setTransportation(SPOT_TRIP_TRANSPORT);
+      setDescription(`<p><strong>ภาพรวมกิจกรรม:</strong></p><p>ชวนเพื่อนสายเดียวกันไปเที่ยวหรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง ใครมาคนเดียวไม่ต้องเกร็ง ยินดีต้อนรับทุกคนครับ</p>`);
       // Tomorrow, in local time
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
       setDate(`${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`);
@@ -180,15 +163,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       setIsSafetyAccepted(false);
       setErrorMessage(null);
     }
-  }, [isOpen, spotTitle, spotImage, mode]);
+  }, [isOpen, spotTitle, spotImage]);
 
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogBehavior(panelRef, onClose, { active: isOpen, focusField: false });
 
   if (!isOpen) return null;
 
-  // A trip to a place follows the Spot Buddy rules; a fair group is created by the fair page itself
-  const isSpotTrip = mode === 'spot';
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -296,12 +277,12 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       setErrorMessage('กรุณาระบุรายละเอียดตี้อย่างน้อย 15 ตัวอักษร เพื่อให้ข้อมูลครบถ้วน');
       return;
     }
-    const minPeople = isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2;
+    const minPeople = SPOT_TRIP_MIN_PEOPLE;
     if (!maxParticipants || maxParticipants < minPeople || maxParticipants > SPOT_TRIP_MAX_PEOPLE) {
       setErrorMessage(`จำนวนคนที่เปิดรับต้องอยู่ระหว่าง ${minPeople} - ${SPOT_TRIP_MAX_PEOPLE} คน`);
       return;
     }
-    if (isSpotTrip && (startTime < SPOT_TRIP_EARLIEST || endTime > SPOT_TRIP_LATEST || endTime <= startTime)) {
+    if ((startTime < SPOT_TRIP_EARLIEST || endTime > SPOT_TRIP_LATEST || endTime <= startTime)) {
       setErrorMessage(`ทริปชวนเพื่อนนัดได้เฉพาะช่วงกลางวัน ${SPOT_TRIP_EARLIEST} - ${SPOT_TRIP_LATEST} น.`);
       return;
     }
@@ -321,7 +302,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
       participantsCount: 0,
       maxParticipants: maxParticipants || 6,
       description: description.trim(),
-      tag: mode === 'fair' ? 'นัดเดินดูงาน' : 'ตี้ชวนเที่ยว',
+      tag: 'ตี้ชวนเที่ยว',
       meetingPoint: meetingPoint.trim(),
       targetGender: targetGender,
       targetAge: targetAge,
@@ -336,12 +317,6 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
     (async () => {
       try {
         setIsSubmitting(true);
-        // A fair group is saved by the fair page (onSuccess); no community event is created for it
-        if (!isSpotTrip) {
-          onSuccess(newTrip);
-          onClose();
-          return;
-        }
         let createdId = newTrip.id;
 
         try {
@@ -447,13 +422,11 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                {mode === 'fair' ? 'เปิดกลุ่มนัดเดินดูงาน & หาเพื่อนแวะจิบกาแฟ' : 'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
+                {'เปิดวงชวนเพื่อนเที่ยว / สร้างกิจกรรมใหม่'}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              {mode === 'fair'
-                ? 'สร้างกลุ่มนัดหมายเพื่อนร่วมทางเดินชมงานแฟร์ นิทรรศการ และแลกเปลี่ยนความสนใจไปด้วยกัน'
-                : 'ชวนเพื่อนสายเดียวกันไปเที่ยว หรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง'}
+              {'ชวนเพื่อนสายเดียวกันไปเที่ยว หรือเปิดทริปฮีลใจยามว่างด้วยกันอย่างเป็นกันเอง'}
             </p>
           </div>
 
@@ -479,7 +452,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label htmlFor={`${fieldId}-title`} className="text-xs font-bold text-slate-800">
-                    {mode === 'fair' ? 'ชื่อกลุ่มนัดเดินดูงาน' : 'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'}
+                    {'ชื่อตี้ / หัวข้อทริปชวนเพื่อน'}
                   </label>
                   <span className="text-[11px] text-slate-500 font-medium">หัวข้อกระชับ เข้าใจง่าย</span>
                 </div>
@@ -489,7 +462,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={mode === 'fair' ? 'เช่น ชวนดูโซนนิยายแปล & ซื้อหนังสือ, เดินดูโซนดีไซน์แล้วแวะจิบกาแฟ' : 'เช่น วิ่งเช้ารับลมที่สวนเบญจกิติ, จอยบอร์ดเกมคาเฟ่อารีย์'}
+                  placeholder={'เช่น วิ่งเช้ารับลมที่สวนเบญจกิติ, จอยบอร์ดเกมคาเฟ่อารีย์'}
                   className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-medium text-slate-900 focus:bg-white focus:border-[#2563EB] outline-none transition-all"
                 />
               </div>
@@ -527,7 +500,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                   <div className="py-1 px-2.5 rounded-xl bg-white text-slate-700 text-[11px] font-semibold text-center border border-slate-200/90 shadow-2xs">
                     ช่วงเวลา: {startTime} - {endTime} น.
                   </div>
-                  {isSpotTrip && (
+                  {(
                     <p className="text-[11px] text-slate-500">นัดได้เฉพาะกลางวัน {SPOT_TRIP_EARLIEST} - {SPOT_TRIP_LATEST} น. และจบในวันเดียว</p>
                   )}
                 </div>
@@ -548,7 +521,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     type="text"
                     required
                     value={locationName}
-                    readOnly={isSpotTrip}
+                    readOnly
                     onChange={(e) => setLocationName(e.target.value)}
                     placeholder="หรือพิมพ์ระบุสถานที่ เช่น สวนเบญจกิติ / คาเฟ่ More Than Games อารีย์"
                     className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
@@ -562,31 +535,19 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </label>
                     <span className="text-[11px] text-slate-500">เช่น หน้าร้านกาแฟ, หน้าเสาธง</span>
                   </div>
-                  {isSpotTrip ? (
-                    <>
-                      <select
-                        id={`${fieldId}-point`}
-                        value={meetingPoint}
-                        onChange={(e) => setMeetingPoint(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB] cursor-pointer"
-                      >
-                        {SPOT_TRIP_MEETING_POINTS.map((point) => (
-                          <option key={point} value={point}>{point} {spotTitle}</option>
-                        ))}
-                      </select>
-                      <p className="text-[11px] text-slate-500">ทริปชวนเพื่อนนัดเจอกันที่ตัวสถานที่เท่านั้น</p>
-                    </>
-                  ) : (
-                    <input
+                  <>
+                    <select
                       id={`${fieldId}-point`}
-                      type="text"
-                      required
                       value={meetingPoint}
                       onChange={(e) => setMeetingPoint(e.target.value)}
-                      placeholder="เช่น หน้าประตู 1 โซนลานจอดรถ, หน้าบันไดสกายวอล์ค, หน้าร้านกาแฟ"
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB]"
-                    />
-                  )}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-[#2563EB] cursor-pointer"
+                    >
+                      {SPOT_TRIP_MEETING_POINTS.map((point) => (
+                        <option key={point} value={point}>{point} {spotTitle}</option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-500">ทริปชวนเพื่อนนัดเจอกันที่ตัวสถานที่เท่านั้น</p>
+                  </>
                 </div>
               </div>
 
@@ -828,13 +789,13 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     <input
                       id={`${fieldId}-max`}
                       type="number"
-                      min={isSpotTrip ? SPOT_TRIP_MIN_PEOPLE : 2}
+                      min={SPOT_TRIP_MIN_PEOPLE}
                       max={SPOT_TRIP_MAX_PEOPLE}
                       value={maxParticipants}
                       onChange={(e) => setMaxParticipants(Number(e.target.value))}
                       className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 outline-none"
                     />
-                    {isSpotTrip && (
+                    {(
                       <p className="mt-1 text-[11px] text-slate-500">ทริปยืนยันเมื่อครบ {SPOT_TRIP_MIN_PEOPLE} คน รวมคุณ</p>
                     )}
                   </div>
@@ -905,7 +866,7 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
                     </label>
                     {/* Strangers do not share a ride to the first meeting: everyone travels on their own */}
                     <p className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
-                      {isSpotTrip ? SPOT_TRIP_TRANSPORT : transportation}
+                      {SPOT_TRIP_TRANSPORT}
                     </p>
                   </div>
 

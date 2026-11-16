@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { tidyDisplayName } from '../displayName';
+import { tidyDisplayName, withoutSampleHandle } from '../displayName';
 import { momentRepository } from '../moments';
 import { MemberAuthError } from './accounts';
 import { memberRepository } from './index';
@@ -212,7 +212,8 @@ export function publicProfileOf(member: Member, viewer: Member | null) {
   for (const key of PROFILE_TEXT_FIELDS) if (profile[key] && show(key)) about[key] = profile[key];
   return {
     id: member.id,
-    displayName: tidyDisplayName(member.displayName).trim() || member.displayName,
+    // Sample accounts drop their English handle in brackets, as toPublicMember does (TR-003)
+    displayName: ((name: string) => (member.email?.endsWith('@sample.invalid') ? withoutSampleHandle(name) : name))(tidyDisplayName(member.displayName).trim() || member.displayName),
     avatarUrl: member.avatarUrl,
     memberSince: member.createdAt,
     about,

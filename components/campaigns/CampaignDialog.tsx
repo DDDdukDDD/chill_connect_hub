@@ -62,7 +62,8 @@ function WinnerPanel({ win, isBusy, onClaim, resultsHref }: { win: NonNullable<M
  */
 export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnrolling, rewards, onClose, onJoin, onLeave, onClaim, onRedeemPrize }: CampaignDialogProps) {
   const titleId = useId();
-  const { prize, cost, short, entered, ready, percent, done, total } = campaignStanding(campaign, rewards);
+  const { prize, cost, short, entered, entries, maxEntries, todayFull, canAddEntry, ready, percent, done, total } = campaignStanding(campaign, rewards);
+  const perDay = prize?.drawEntry?.perDay;
   // ตี้ and moments count only after these two; joining a campaign does not need them, so it says so here
   const trust = useMemberSession().member?.trust;
   const needsConfirming = Boolean(isLoggedIn && isEnrolled && !entered && trust && (!trust.identityConfirmed || !trust.pledged));
@@ -73,7 +74,9 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
   const facts = [
     ['เปิดถึง', campaignDay(campaign.endDate)],
     ['ประกาศผล', prize?.drawEntry?.drawLabel],
-    ['แลกสิทธิ์', prize ? `${cost.toLocaleString()} XP` : undefined],
+    ['แลกสิทธิ์', prize ? `${cost.toLocaleString()} XP${maxEntries > 1 ? ' ต่อสิทธิ์' : ''}` : undefined],
+    // Several entries allowed (BE-391): more entries, more chances, said before anyone spends
+    ['สิทธิ์ต่อคน', maxEntries > 1 ? `สูงสุด ${maxEntries.toLocaleString()} สิทธิ์${perDay ? ` · วันละ ${perDay}` : ''}` : undefined],
   ].filter((fact): fact is [string, string] => Boolean(fact[1]));
 
   // The same width as a reward popup (components/rewards/RewardDialog.tsx), owner 2026-11-07
@@ -168,14 +171,33 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
             <Link href={resultsHref} className="underline">ดูผลรางวัล</Link>
           </p>
         ) : entered ? (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
-            <span className="min-w-0">
-              <span className="block text-xs font-bold text-slate-500">คุณมีสิทธิ์ลุ้นแล้ว</span>
-              {code && <span className="block font-mono text-lg font-bold text-slate-900 tracking-wider">{code}</span>}
-            </span>
-            <Link href="/rewards?tab=my_vouchers" className="shrink-0 inline-flex items-center min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold">
-              ดูสิทธิ์ของฉัน
-            </Link>
+          <div>
+            <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-slate-500">{entries > 1 ? `คุณมี ${entries.toLocaleString()} สิทธิ์ลุ้นแล้ว` : 'คุณมีสิทธิ์ลุ้นแล้ว'}</span>
+                {code && <span className="block font-mono text-lg font-bold text-slate-900 tracking-wider">{code}</span>}
+              </span>
+              <Link href="/rewards?tab=my_vouchers" className="shrink-0 inline-flex items-center min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold">
+                ดูสิทธิ์ของฉัน
+              </Link>
+            </div>
+            {maxEntries > 1 && live && (
+              ready ? (
+                <button type="button" onClick={onRedeemPrize} className={`${dialogButton.primary} w-full mt-3`}>
+                  แลกเพิ่มอีก 1 สิทธิ์ · {cost.toLocaleString()} XP
+                </button>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500 text-center tabular-nums">
+                  {!canAddEntry && !todayFull
+                    ? `ครบ ${maxEntries.toLocaleString()} สิทธิ์แล้ว ลุ้นได้เต็มที่เลย`
+                    : todayFull
+                      ? 'วันนี้แลกครบแล้ว พรุ่งนี้มาแลกเพิ่มได้อีกนะ'
+                      : short > 0
+                        ? `มีอีก ${short.toLocaleString()} XP ก็แลกเพิ่มได้อีก 1 สิทธิ์`
+                        : `เหลืออีก ${total - done} ชาเลนจ์ ก็แลกเพิ่มได้`}
+                </p>
+              )
+            )}
           </div>
         ) : !live ? (
           <p className="text-sm font-semibold text-slate-600 text-center">แคมเปญนี้ไม่ได้เปิดรับอยู่ตอนนี้</p>

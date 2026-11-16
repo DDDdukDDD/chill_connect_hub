@@ -16,6 +16,7 @@ import { ensureInstance, isSeries, nextDatesOf } from '../social/recurring';
 import { heldSeats, leftLineByJoining, moveQueue } from '../social/waitlist';
 import { attendanceOf } from '../social/attendance';
 import { notifyFriendsGoing, notifyJoined } from '../social/notifications';
+import { pendingJoinsOf, settlePendingJoins } from '../social/pendingJoins';
 
 /**
  * What a member does with events and places: join, cancel, save for later.
@@ -118,6 +119,10 @@ export async function setSaved(member: Member, kind: 'spot' | 'event', id: strin
 
 /** Everything My Hub shows about one member */
 export async function activityOf(member: Member) {
+  // Sign-ups made before the email was confirmed (BE-392): settled here too, for a member who confirmed some other
+  // way (social sign-in) or accepted the pledge after the email
+  await settlePendingJoins(member, joinEvent);
+  const pending = (await pendingJoinsOf(member.id)).map(({ entry, event }) => ({ ...event, pendingAt: entry.at, pendingDate: entry.date }));
   const [participations, all] = await Promise.all([db.listParticipations(member.id), db.listAllEvents()]);
   const byId = new Map(all.map((e) => [e.id, e]));
   const joined = [];
@@ -137,6 +142,9 @@ export async function activityOf(member: Member) {
     joined,
     hosted,
     cancelled,
+    /** ตี้ waiting for the email confirmation: no seat yet */
+    pending,
+    pendingIds: pending.map((e) => e.id),
     joinedIds: [...joinedIds],
     savedSpotIds: member.savedSpotIds ?? [],
     savedEventIds: member.savedEventIds ?? [],

@@ -253,6 +253,7 @@ const rewardRows = rewards.map((r, index) => {
     partner: r.partner ?? '', partner_location: r.partnerLocation ?? '', icon_name: r.iconName ?? '', cost_xp: r.costXp, stock_count: Math.max(0, r.stockCount ?? 0),
     discount_value: r.discountValue ?? '', valid_until: dateOnly(r.validUntil), terms: strings(r.terms), featured: !!r.featured, draw_entry: r.drawEntry ?? null,
     partner_code: r.drawEntry ? null : text(r.voucherCode), active: true, sort_order: index,
+    image: text(r.image), emoji: r.emoji ?? '', campaign_only: !!r.campaignOnly,
   };
 });
 

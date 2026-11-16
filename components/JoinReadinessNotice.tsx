@@ -24,8 +24,17 @@ export function joinBlocker(member: PublicMember | null | undefined, event?: Bar
   return null;
 }
 
-/** `returnTo`: where the email link and the pledge screen bring the member back (this ตี้, ready to join) */
-export function JoinReadinessNotice({ member, event, returnTo }: { member: PublicMember; event?: BarCheckEvent; returnTo: string }) {
+/**
+ * The email is the only thing missing (BE-392): the member may still press join. The ตี้ then waits in My Hub, the
+ * link goes out, and confirming turns it into a seat if one is still free. The join button stays on for this one
+ */
+export const joinWaitsForEmail = (member: PublicMember | null | undefined, event?: BarCheckEvent) => joinBlocker(member, event) === 'email';
+
+/**
+ * `returnTo`: where the email link and the pledge screen bring the member back (this ตี้, ready to join).
+ * `pending`: this ตี้ already waits for the email (`devUrl`: the link on a server without a mailer)
+ */
+export function JoinReadinessNotice({ member, event, returnTo, pending = false, devUrl }: { member: PublicMember; event?: BarCheckEvent; returnTo: string; pending?: boolean; devUrl?: string }) {
   const [state, setState] = useState<{ status: 'idle' | 'sending' | 'sent' | 'error'; message?: string; devUrl?: string }>({ status: 'idle' });
   const blocker = joinBlocker(member, event);
   if (!blocker) return null;
@@ -76,20 +85,34 @@ export function JoinReadinessNotice({ member, event, returnTo }: { member: Publi
     }
   };
 
+  // Before pressing join: say the ตี้ can be kept now. The join itself sends the link, so no second button here
+  if (!pending) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700" role="status">
+        <p className="flex items-center gap-2 font-bold text-slate-900">
+          <MailCheck className="w-4 h-4 text-amber-700" aria-hidden="true" />
+          อีกนิดเดียว ยืนยันอีเมลก่อนนะ
+        </p>
+        <p className="mt-1">
+          สมัครไว้ก่อนได้เลย เราเก็บตี้นี้ไว้ในมายฮับ แล้วส่งลิงก์ไปที่ <strong>{member.email}</strong> กดยืนยันแล้วได้ที่นั่งทันที ถ้ายังว่างอยู่
+        </p>
+      </div>
+    );
+  }
+
+  const link = state.devUrl ?? devUrl;
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700" role="status" aria-live="polite">
       <p className="flex items-center gap-2 font-bold text-slate-900">
         <MailCheck className="w-4 h-4 text-amber-700" aria-hidden="true" />
-        ยืนยันอีเมลก่อนเข้าร่วมตี้
+        เก็บไว้ในมายฮับแล้ว รอยืนยันอีเมล
       </p>
       <p className="mt-1">
-        {state.status === 'sent'
-          ? <>ส่งลิงก์ไปที่ <strong>{member.email}</strong> แล้ว กดลิงก์ในอีเมล แล้วเราจะพากลับมาที่ตี้นี้</>
-          : <>เพื่อให้คนที่จะไปเจอกันมั่นใจว่าเป็นคนจริง เราส่งลิงก์ไปที่ <strong>{member.email}</strong> ตอนสมัครแล้ว</>}
+        กดลิงก์ที่ส่งไปที่ <strong>{member.email}</strong> แล้วได้ที่นั่งทันที ถ้ายังว่างอยู่ ตอนนี้ยังไม่ได้กันที่ไว้ให้ เพื่อให้ทุกคนที่ยืนยันแล้วไปได้ก่อน
       </p>
       {state.status === 'error' && <p className="mt-1 font-semibold text-rose-700" role="alert">{state.message}</p>}
-      {state.devUrl && (
-        <a href={state.devUrl} className="mt-1 block text-xs font-semibold text-[#2563EB] underline break-all">
+      {link && (
+        <a href={link} className="mt-1 block text-xs font-semibold text-[#2563EB] underline break-all">
           (โหมดทดสอบ ไม่มีอีเมลจริง) เปิดลิงก์ยืนยัน
         </a>
       )}
@@ -99,7 +122,7 @@ export function JoinReadinessNotice({ member, event, returnTo }: { member: Publi
         disabled={state.status === 'sending'}
         className="mt-3 inline-flex items-center justify-center px-4 py-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-900 text-sm font-bold disabled:opacity-60 cursor-pointer"
       >
-        {state.status === 'sending' ? 'กำลังส่ง…' : state.status === 'sent' ? 'ส่งลิงก์อีกครั้ง' : 'ส่งลิงก์ยืนยันอีกครั้ง'}
+        {state.status === 'sending' ? 'กำลังส่ง…' : state.status === 'sent' ? 'ส่งแล้ว · ส่งอีกครั้ง' : 'ไม่ได้รับอีเมล? ส่งลิงก์อีกครั้ง'}
       </button>
     </div>
   );

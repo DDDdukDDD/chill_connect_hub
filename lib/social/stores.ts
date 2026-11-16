@@ -334,16 +334,25 @@ export const voucherStore: VoucherStore = USE_POSTGRES ? pgVouchers() : jsonVouc
 
 /* ---------- Rewards spent ---------- */
 
+export interface RedeemLimits {
+  max: number;
+  perDay: number | null;
+  /** When today began in Bangkok, as an ISO time */
+  dayStart: string;
+}
+export type RedeemResult = 'added' | 'duplicate' | 'daily' | 'short';
+
 interface RedemptionStore {
   ofMember(memberId: string): Promise<Redemption[]>;
   countOf(rewardId: string): Promise<number>;
   /** Every entry of one reward, for the prize draw */
   ofReward(rewardId: string): Promise<Redemption[]>;
   /**
-   * Records a redemption only if the member does not have this reward yet and `earnedXp` minus everything already spent
-   * covers the cost. Check and insert happen under one lock per member, so two redemptions at once cannot both pass.
+   * Records a redemption only if the member holds fewer than `limits.max` of this reward, fewer than `limits.perDay`
+   * since `limits.dayStart` (null = no daily limit), and `earnedXp` minus everything already spent covers the cost.
+   * Check and insert happen under one lock per member, so two redemptions at once cannot both pass.
    */
-  add(redemption: Omit<Redemption, 'id' | 'createdAt'>, earnedXp: number): Promise<'added' | 'duplicate' | 'short'>;
+  add(redemption: Omit<Redemption, 'id' | 'createdAt'>, earnedXp: number, limits: RedeemLimits): Promise<RedeemResult>;
   removeBy(memberId: string): Promise<void>;
 }
 
@@ -359,12 +368,17 @@ function jsonRedemptions(): RedemptionStore {
     async ofReward(rewardId) {
       return store.read().filter((r) => r.rewardId === rewardId);
     },
-    async add(redemption, earnedXp) {
-      let result: 'added' | 'duplicate' | 'short' = 'added';
+    async add(redemption, earnedXp, limits) {
+      let result: RedeemResult = 'added';
       await store.update((items) => {
         const mine = items.filter((r) => r.memberId === redemption.memberId);
-        if (mine.some((r) => r.rewardId === redemption.rewardId)) {
+        const held = mine.filter((r) => r.rewardId === redemption.rewardId);
+        if (held.length >= limits.max) {
           result = 'duplicate';
+          return items;
+        }
+        if (limits.perDay !== null && held.filter((r) => r.createdAt >= limits.dayStart).length >= limits.perDay) {
+          result = 'daily';
           return items;
         }
         if (earnedXp - mine.reduce((sum, r) => sum + r.cost, 0) < redemption.cost) {
@@ -403,24 +417,25 @@ function pgRedemptions(): RedemptionStore {
         where w.slug = ${rewardId}`;
       return rows.map((r) => ({ id: r.id, memberId: r.member, rewardId, cost: r.cost_xp, createdAt: iso(r.created_at) }));
     },
-    async add(redemption, earnedXp) {
-      return sql().begin(async (tx) => {
+    async add(redemption, earnedXp, limits) {
+      return sql().begin(async (tx): Promise<RedeemResult> => {
         // One redemption per member at a time: a second request waits here and then sees the first one's spending
         await tx`select pg_advisory_xact_lock(hashtext(${`redeem:${redemption.memberId}`}))`;
         const [spent] = await tx`
           select coalesce(sum(x.cost_xp), 0)::int as total,
-                 bool_or(w.slug = ${redemption.rewardId}) as has_it
+                 count(*) filter (where w.slug = ${redemption.rewardId})::int as held,
+                 count(*) filter (where w.slug = ${redemption.rewardId} and x.created_at >= ${limits.dayStart}::timestamptz)::int as today
           from app.reward_redemptions x join app.rewards w on w.id = x.reward_id
           where x.member_id = ${memberRow(tx, redemption.memberId)}`;
-        if (spent?.has_it) return 'duplicate' as const;
-        if (earnedXp - (spent?.total ?? 0) < redemption.cost) return 'short' as const;
+        if ((spent?.held ?? 0) >= limits.max) return 'duplicate';
+        if (limits.perDay !== null && (spent?.today ?? 0) >= limits.perDay) return 'daily';
+        if (earnedXp - (spent?.total ?? 0) < redemption.cost) return 'short';
         const rows = await tx`
           insert into app.reward_redemptions (reward_id, member_id, cost_xp, voucher_code)
           select w.id, ${memberRow(tx, redemption.memberId)}, ${redemption.cost}, ${randomUUID()}
           from app.rewards w where w.slug = ${redemption.rewardId}
-          on conflict (reward_id, member_id) do nothing
           returning id`;
-        return rows.length > 0 ? ('added' as const) : ('duplicate' as const);
+        return rows.length > 0 ? 'added' : 'duplicate';
       });
     },
     async removeBy(memberId) {
@@ -522,6 +537,62 @@ function pgReviews(): ReviewStore {
 }
 
 export const reviewStore: ReviewStore = USE_POSTGRES ? pgReviews() : jsonReviews();
+
+/* ---------- ตี้ sign-ups waiting for an email confirmation ---------- */
+
+export interface PendingJoin {
+  eventId: string;
+  memberId: string;
+  /** The picked date of a recurring ตี้ */
+  date?: string;
+  at: string;
+}
+
+interface PendingJoinStore {
+  ofMember(memberId: string): Promise<PendingJoin[]>;
+  add(entry: Omit<PendingJoin, 'at'>): Promise<void>;
+  remove(eventId: string, memberId: string): Promise<void>;
+}
+
+function jsonPendingJoins(): PendingJoinStore {
+  const store = createJsonStore<PendingJoin>('pending_joins');
+  return {
+    async ofMember(memberId) {
+      return store.read().filter((p) => p.memberId === memberId);
+    },
+    async add(entry) {
+      await store.update((items) => [...items.filter((p) => !(p.eventId === entry.eventId && p.memberId === entry.memberId)), { ...entry, at: new Date().toISOString() }]);
+    },
+    async remove(eventId, memberId) {
+      await store.update((items) => items.filter((p) => !(p.eventId === eventId && p.memberId === memberId)));
+    },
+  };
+}
+
+function pgPendingJoins(): PendingJoinStore {
+  return {
+    async ofMember(memberId) {
+      const db = sql();
+      const rows = await db`
+        select e.slug, p.meet_date::text, p.created_at from app.pending_joins p join app.events e on e.id = p.event_id
+        where p.member_id = ${memberRow(db, memberId)} order by p.created_at`;
+      return rows.map((r) => ({ eventId: r.slug, memberId, date: r.meet_date ?? undefined, at: iso(r.created_at) }));
+    },
+    async add(entry) {
+      const db = sql();
+      await db`
+        insert into app.pending_joins (event_id, member_id, meet_date)
+        values (${eventRow(db, entry.eventId)}, ${memberRow(db, entry.memberId)}, ${entry.date ?? null}::date)
+        on conflict (event_id, member_id) do update set meet_date = excluded.meet_date, created_at = now()`;
+    },
+    async remove(eventId, memberId) {
+      const db = sql();
+      await db`delete from app.pending_joins where event_id = ${eventRow(db, eventId)} and member_id = ${memberRow(db, memberId)}`;
+    },
+  };
+}
+
+export const pendingJoinStore: PendingJoinStore = USE_POSTGRES ? pgPendingJoins() : jsonPendingJoins();
 
 /* ---------- Waiting list ---------- */
 

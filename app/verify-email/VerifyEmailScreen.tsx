@@ -8,7 +8,15 @@ import { BrandWordmark } from '@/components/BrandWordmark';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { memberActions } from '@/lib/useMemberSession';
 
-type State = { status: 'working' } | { status: 'done' } | { status: 'error'; message: string };
+/** A ตี้ signed up for before the email was confirmed, and what became of it (BE-392) */
+type Settled = { eventId: string; title: string; outcome: 'joined' | 'waitlist' | 'closed' };
+type State = { status: 'working' } | { status: 'done'; settled: Settled[] } | { status: 'error'; message: string };
+
+const OUTCOME: Record<Settled['outcome'], string> = {
+  joined: 'ได้ที่นั่งแล้ว',
+  waitlist: 'เต็มแล้ว ต่อคิวสำรองให้แล้ว',
+  closed: 'ปิดรับไปแล้ว',
+};
 
 /** `next`: where the member was going when they asked for the link (already checked as a same-site path) */
 export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: string }) {
@@ -19,13 +27,13 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
     let active = true;
     memberActions
       .confirmEmailVerification(token)
-      .then(() => {
+      .then(({ settled }) => {
         try {
           sessionStorage.removeItem('cch_dev_verify_url');
         } catch {
           /* storage unavailable */
         }
-        if (active) setState({ status: 'done' });
+        if (active) setState({ status: 'done', settled });
       })
       .catch((err) => {
         if (active) setState({ status: 'error', message: err instanceof Error ? err.message : 'ยืนยันอีเมลไม่สำเร็จ' });
@@ -60,7 +68,23 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
               <p className="text-sm text-slate-500 font-medium mt-2 mb-6">
                 <PhraseText text="ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว" />
               </p>
-              {next ? (
+              {state.settled.length > 0 && (
+                <ul className="mb-6 space-y-2 text-left">
+                  {state.settled.map((item) => (
+                    <li key={item.eventId}>
+                      <Link href={`/community/${encodeURIComponent(item.eventId)}`} className="block rounded-2xl border border-slate-200 px-4 py-3 hover:bg-slate-50">
+                        <span className="block text-sm font-bold text-slate-900 line-clamp-2">{item.title}</span>
+                        <span className={`block text-xs font-semibold ${item.outcome === 'joined' ? 'text-emerald-700' : 'text-slate-500'}`}>{OUTCOME[item.outcome]}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {state.settled.some((item) => item.outcome === 'joined') ? (
+                <Link href="/myhub" className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
+                  ดูตารางในมายฮับ
+                </Link>
+              ) : next ? (
                 <>
                   <Link href={next} className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
                     {next.startsWith('/community/') ? 'กลับไปเข้าร่วมตี้ต่อ' : 'ไปต่อจากที่ค้างไว้'}

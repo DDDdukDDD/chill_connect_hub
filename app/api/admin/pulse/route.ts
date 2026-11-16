@@ -7,7 +7,7 @@ import { listCampaigns } from '@/lib/campaigns/store';
 import { isCampaignLive } from '@/lib/campaigns/types';
 import { pushConfigured } from '@/lib/social/push';
 import { pushStore } from '@/lib/social/pushStore';
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import { findReward } from '@/lib/rewards/catalog';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Recent moments are read newest first and counted; past this many in a week the count shows as "500+"
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     name: c.name,
     endDate: c.endDate,
     enrolled: await campaignMemberStore.countOf(c.id),
-    drawDate: REWARD_SHOP_ITEMS.find((item) => item.id === c.rewardId)?.drawEntry?.drawDate ?? null,
+    drawDate: (await findReward(c.rewardId))?.drawEntry?.drawDate ?? null,
   })));
 
   return NextResponse.json(

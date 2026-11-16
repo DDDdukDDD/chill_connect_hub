@@ -52,6 +52,14 @@ const NEARBY_RADIUS_KM = 15;
  * Synchronous local calculation from curated Thai partners & internal spots
  * Instant 0ms response time, perfect for initial SSR & zero-flash UI
  */
+/** The short line under a café's name; empty when it only repeats the name (many imported descriptions start with it) */
+function specialtyLine(s: LifestyleSpotItem): string {
+  const line = (s.highlights?.[0] || s.description.slice(0, 50)).trim();
+  const name = s.title.trim().toLowerCase();
+  const low = line.toLowerCase();
+  return name.startsWith(low) || low.startsWith(name) ? '' : line;
+}
+
 export function getNearbyDiningSync(
   spot: LifestyleSpotItem,
   limit: number = 6,
@@ -59,7 +67,8 @@ export function getNearbyDiningSync(
 ): NearbyDiningItem[] {
   // pool = the live published catalog when available (imported cafes carry real coordinates)
   const internalCafes = pool.filter(
-    (s) => s.id !== spot.id && (s.category === 'cafe' || s.vibeTags?.some((v) => /กาแฟ|cafe|coffee|อาหาร|จิบกาแฟ/i.test(v)))
+    // Only cafés and restaurants themselves: a gallery with a café inside (BACC) is not "ร้านกาแฟและร้านอร่อย"
+    (s) => s.id !== spot.id && (s.category === 'cafe' || s.category === 'restaurant')
   ).map((s) => ({
     id: `spot-dining-${s.id}`,
     name: s.title,
@@ -71,7 +80,7 @@ export function getNearbyDiningSync(
     reviewsCount: s.reviewsCount || 0,
     openHours: s.openHours || 'ไม่ระบุ',
     priceRange: s.price || 'ไม่ระบุ',
-    specialty: s.highlights?.[0] || s.description.slice(0, 50),
+    specialty: specialtyLine(s),
     latitude: s.latitude,
     longitude: s.longitude,
     province: s.province,

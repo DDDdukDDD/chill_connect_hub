@@ -41,11 +41,18 @@ interface WinnerStore {
 const DAY = 24 * 60 * 60 * 1000;
 const newClaimBy = () => new Date(Date.now() + CLAIM_DAYS * DAY).toISOString();
 
-/** A fair pick: every entry has the same chance, from the system's secure random numbers */
-function pickAtRandom<T>(items: T[], count: number): T[] {
-  const left = [...items];
-  const picked: T[] = [];
-  while (picked.length < count && left.length) picked.push(left.splice(randomInt(left.length), 1)[0]);
+/**
+ * A fair pick: every entry has the same chance, from the system's secure random numbers. A member holding several
+ * entries has as many chances, but once drawn their other entries leave the pool: one member, one prize (BE-391)
+ */
+function pickAtRandom(pool: PoolEntry[], count: number): PoolEntry[] {
+  let left = [...pool];
+  const picked: PoolEntry[] = [];
+  while (picked.length < count && left.length) {
+    const entry = left[randomInt(left.length)];
+    picked.push(entry);
+    left = left.filter((other) => other.memberId !== entry.memberId);
+  }
   return picked;
 }
 

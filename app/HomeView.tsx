@@ -31,7 +31,7 @@ import { fetchAllContentPages } from '@/lib/contentClient';
 import { useMyRewards } from '@/lib/useMyRewards';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { seedMemberSession, useMemberSession, type SessionSeed } from '@/lib/useMemberSession';
-import { REWARD_SHOP_ITEMS } from '@/data/rewardsData';
+import { useRewardCatalog } from '@/lib/useRewardCatalog';
 import { useHomeSpots, getCachedSpotVibeCategory } from '@/lib/usePublishedSpots';
 import { getCommunityEventCategory, getFairEventCategory, type SpotVibeId } from '@/data/masterHub';
 import { feedInterests, rankByInterest } from '@/lib/homeInterests';
@@ -41,6 +41,7 @@ import { TOP_DESTINATIONS } from '@/data/topDestinations';
 import { Toast } from '@/components/Toast';
 import { defaultEventImage } from '@/lib/eventImageResolver';
 import { optimizedImage } from '@/lib/optimizedImage';
+import FallbackImg from '@/components/FallbackImg';
 
 // The member home (its band, feed and plans) loads only for members: visitors used to download and parse it too.
 // A member's page starts the download as it hydrates (`signedIn` from the server), so it is not left waiting.
@@ -332,7 +333,8 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
   // A host is also among the joined, so their own ตี้ comes once
   const myEvents = useMemo(() => [...new Map([...joined, ...hosted].map((e) => [e.id, e])).values()], [joined, hosted]);
   const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
-  const redeemable = REWARD_SHOP_ITEMS.filter((item) => !item.campaignOnly && !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
+  const rewardCatalog = useRewardCatalog();
+  const redeemable = rewardCatalog.filter((item) => !item.hidden && !item.campaignOnly && !myRewards.redeemedRewardIds.includes(item.id) && item.costXp <= myRewards.balance).length;
 
   // Member home feed cards (owner 2026-10-29): what the member picked at onboarding, then what they joined, saved
   // and took part in since, decide which ตี้, challenges, อีเวนต์ and places come first and which kind of card leads
@@ -466,6 +468,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
                       xp: myRewards.balance,
                       enrolled: myCampaigns.mine.some((entry) => entry.campaign.id === item.id),
                       entered: standing.entered,
+                      entries: standing.entries,
                       ready: standing.ready,
                       done: standing.done,
                       total: standing.total,
@@ -659,7 +662,7 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
                             <span className="text-xs font-semibold">{THAI_MONTHS[start.getMonth()]}</span>
                           </span>
                           {/* A dead image link falls back to the default อีเวนต์ photo, never a broken-image icon */}
-                          <img src={optimizedImage(fair.image, 256)} alt="" loading="lazy" onError={(ev) => { const fallback = defaultEventImage(undefined, true); if (!ev.currentTarget.src.endsWith(fallback)) ev.currentTarget.src = fallback; }} className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
+                          <FallbackImg src={optimizedImage(fair.image, 256)} fallback={defaultEventImage(undefined, true)} loading="lazy" className="w-14 h-14 sm:w-32 sm:h-[88px] shrink-0 rounded-xl object-cover bg-slate-200" />
                           <span className="flex-1 min-w-0 grid">
                             <span className="font-semibold text-slate-900 leading-snug line-clamp-2 sm:truncate group-hover:underline">{fair.title}</span>
                             <span className="text-[13px] text-slate-500 truncate">
