@@ -7,6 +7,11 @@
 export const ACHIEVEMENTS_WINDOW_DAYS = 14;
 export const ACHIEVEMENTS_ROW_MAX = 15;
 
+/** Group Circles (round B, owner 2026-11-16): a ตี้ that ended this many days ago or less, with proof of at least this many people, at most this many in the row */
+export const GROUP_CIRCLE_WINDOW_DAYS = 3;
+export const GROUP_CIRCLE_MIN_PEOPLE = 2;
+export const GROUP_CIRCLES_MAX = 2;
+
 /** "ชวนไป": friends one plan can hold besides the host (owner 2026-11-11: up to 15), and sends per member per hour */
 export const INVITE_MAX_FRIENDS = 15;
 export const INVITE_SENDS_PER_HOUR = 30;

@@ -8,6 +8,7 @@ import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
+import { GroupRowCircle } from '@/components/home/GroupCircleView';
 
 const MEMORY_KEY = 'circles';
 
@@ -75,6 +76,7 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
       <ul ref={listRef} onScroll={measure} style={fadeMask(more)} className="sm:[mask-image:var(--row-fade)] flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {lead}
         {items.map((item, index) => {
+          if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} onOpen={() => setOpenAt(index)} />;
           const done = item.kind === 'finish';
           const doing = item.kind === 'doing';
           const name = item.isMe ? (doing ? item.quest.title : 'คุณ') : item.person.name;

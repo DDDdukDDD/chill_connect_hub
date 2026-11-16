@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Check, ChevronLeft, ChevronRight, Loader2, Trophy, Users, X } from 'lucide-react';
-import type { CircleItem } from '@/lib/social/circles';
+import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
+import { GroupCircleBody, plainTeeTitle } from '@/components/home/GroupCircleView';
 import type { CircleAction, CircleDetail } from '@/lib/social/circleActions';
 
 /** A name without its bracket, as the Circle row shows it */
@@ -34,7 +35,8 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
   const detail = details[item.id];
 
   useEffect(() => {
-    if (details[item.id]) return;
+    // A group Circle comes whole with the row (round B); only achievement Circles ask for more
+    if (item.kind === 'group' || details[item.id]) return;
     let active = true;
     fetch(`/api/circles/${encodeURIComponent(item.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -43,7 +45,7 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
     return () => {
       active = false;
     };
-  }, [item.id, details]);
+  }, [item.id, item.kind, details]);
 
   const go = useCallback((step: 1 | -1) => setIndex((i) => Math.min(items.length - 1, Math.max(0, i + step))), [items.length]);
   useEffect(() => {
@@ -90,9 +92,6 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
   };
 
   if (typeof document === 'undefined') return null;
-  const done = item.kind === 'finish';
-  const name = item.isMe ? 'คุณ' : shortName(item.person.name);
-  const picture = detail && detail !== 'error' ? detail.image : item.quest.image;
   const arrow = 'hidden sm:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg hover:bg-white cursor-pointer';
 
   return createPortal(
@@ -112,7 +111,7 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
         data-dialog-shell
         role="dialog"
         aria-modal="true"
-        aria-label={`Circle ของ${name}`}
+        aria-label={item.kind === 'group' ? `Circle ตี้ ${plainTeeTitle(item.tee.title)}` : `Circle ของ${item.isMe ? 'คุณ' : shortName(item.person.name)}`}
         tabIndex={-1}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -126,76 +125,11 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
             ))}
           </div>
         )}
-        <header className="flex items-center gap-3 px-4 pt-3 pb-3">
-          {item.person.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-            <img src={avatarImage(item.person.avatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
-          ) : (
-            <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
-          )}
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
-            <span className="block text-xs text-slate-500">{item.kind === 'doing' ? 'รับชาเลนจ์ไว้แล้ว' : item.timeAgo}</span>
-          </span>
-          <button type="button" onClick={onClose} aria-label="ปิด" className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
-            <X className="w-5 h-5" aria-hidden="true" />
-          </button>
-        </header>
-
-        <div className="px-4">
-          <div className="relative aspect-[4/5] sm:aspect-square w-full rounded-3xl overflow-hidden bg-slate-100">
-            {picture ? (
-              // eslint-disable-next-line @next/next/no-img-element -- post photos and challenge covers come from many hosts
-              <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="w-full h-full flex items-center justify-center">
-                <Trophy className="w-16 h-16 text-slate-300" aria-hidden="true" />
-              </span>
-            )}
-            <span className={`absolute left-3 top-3 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold ${done ? 'bg-[#F59E0B] text-white' : item.kind === 'doing' ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}>
-              {done ? <><Trophy className="w-3.5 h-3.5" aria-hidden="true" />ทำครบแล้ว</> : item.kind === 'doing' ? 'กำลังทำ' : `${item.current}/${item.total}`}
-            </span>
-          </div>
-        </div>
-
-        <div className="px-5 pt-4 pb-6 flex-1 flex flex-col gap-4">
-          <div>
-            <p className="text-lg font-bold text-slate-900 leading-snug">{item.quest.title}</p>
-            <p className="mt-1 text-sm text-slate-600">
-              {done ? `${name}ทำชาเลนจ์นี้ครบแล้ว` : item.kind === 'doing' ? 'คุณรับชาเลนจ์นี้ไว้ ยังไม่ได้โพสต์' : `${name}ทำไปแล้ว ${item.current} จาก ${item.total} ขั้น`}
-            </p>
-            {item.total && item.total > 1 && (
-              <span className="mt-3 flex gap-1.5" aria-hidden="true">
-                {Array.from({ length: item.total }, (_, i) => (
-                  <span key={i} className={`h-2 flex-1 rounded-full ${i < (item.current ?? 0) ? (done ? 'bg-[#F59E0B]' : 'bg-[#7C3AED]') : 'bg-slate-200'}`} />
-                ))}
-              </span>
-            )}
-          </div>
-
-          {detail === undefined && (
-            <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              กำลังโหลด…
-            </p>
-          )}
-          {detail === 'error' && <p className="text-sm text-slate-500">เปิด Circle นี้ไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะ</p>}
-          {detail && detail !== 'error' && (
-            <>
-              {detail.doing && <FriendsDoingLine doing={detail.doing} />}
-              <div className="mt-auto flex flex-col gap-2.5">
-                <MainButton detail={detail} busy={busy} onAct={act} onInvite={() => setInviteOpen(true)} />
-                <Link
-                  href={detail.momentId ? `/moments/${encodeURIComponent(detail.momentId)}` : `/challenges/${encodeURIComponent(detail.quest.id)}`}
-                  onClick={() => detail.momentId && onOpenMoment?.(detail.momentId)}
-                  className="self-center text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
-                >
-                  {detail.momentId ? 'ดูโพสต์' : 'ดูชาเลนจ์'}
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
+        {item.kind === 'group' ? (
+          <GroupCircleBody item={item} onClose={onClose} onOpenMoment={onOpenMoment} />
+        ) : (
+          <AchievementBody item={item} detail={detail} busy={busy} onAct={act} onInvite={() => setInviteOpen(true)} onClose={onClose} onOpenMoment={onOpenMoment} />
+        )}
       </div>
       <Toast message={toast} className="fixed top-6 left-1/2 -translate-x-1/2 z-[100003]" />
       {inviteOpen && detail && detail !== 'error' && (
@@ -203,6 +137,87 @@ export function CircleViewer({ items, start, onClose, onOpenMoment }: { items: C
       )}
     </div>,
     document.body
+  );
+}
+
+/** An achievement Circle opened (round A): the friend, what they did, who else is doing it, one button */
+function AchievementBody({ item, detail, busy, onAct, onInvite, onClose, onOpenMoment }: { item: AchievementCircle; detail: CircleDetail | 'error' | undefined; busy: boolean; onAct: (action: CircleAction) => void; onInvite: () => void; onClose: () => void; onOpenMoment?: (momentId: string) => void }) {
+  const done = item.kind === 'finish';
+  const name = item.isMe ? 'คุณ' : shortName(item.person.name);
+  const picture = detail && detail !== 'error' ? detail.image : item.quest.image;
+  return (
+    <>
+    <header className="flex items-center gap-3 px-4 pt-3 pb-3">
+      {item.person.avatar ? (
+        // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
+        <img src={avatarImage(item.person.avatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+      ) : (
+        <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+      )}
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+        <span className="block text-xs text-slate-500">{item.kind === 'doing' ? 'รับชาเลนจ์ไว้แล้ว' : item.timeAgo}</span>
+      </span>
+      <button type="button" onClick={onClose} aria-label="ปิด" className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
+        <X className="w-5 h-5" aria-hidden="true" />
+      </button>
+    </header>
+
+    <div className="px-4">
+      <div className="relative aspect-[4/5] sm:aspect-square w-full rounded-3xl overflow-hidden bg-slate-100">
+        {picture ? (
+          // eslint-disable-next-line @next/next/no-img-element -- post photos and challenge covers come from many hosts
+          <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="w-full h-full flex items-center justify-center">
+            <Trophy className="w-16 h-16 text-slate-300" aria-hidden="true" />
+          </span>
+        )}
+        <span className={`absolute left-3 top-3 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold ${done ? 'bg-[#F59E0B] text-white' : item.kind === 'doing' ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}>
+          {done ? <><Trophy className="w-3.5 h-3.5" aria-hidden="true" />ทำครบแล้ว</> : item.kind === 'doing' ? 'กำลังทำ' : `${item.current}/${item.total}`}
+        </span>
+      </div>
+    </div>
+
+    <div className="px-5 pt-4 pb-6 flex-1 flex flex-col gap-4">
+      <div>
+        <p className="text-lg font-bold text-slate-900 leading-snug">{item.quest.title}</p>
+        <p className="mt-1 text-sm text-slate-600">
+          {done ? `${name}ทำชาเลนจ์นี้ครบแล้ว` : item.kind === 'doing' ? 'คุณรับชาเลนจ์นี้ไว้ ยังไม่ได้โพสต์' : `${name}ทำไปแล้ว ${item.current} จาก ${item.total} ขั้น`}
+        </p>
+        {item.total && item.total > 1 && (
+          <span className="mt-3 flex gap-1.5" aria-hidden="true">
+            {Array.from({ length: item.total }, (_, i) => (
+              <span key={i} className={`h-2 flex-1 rounded-full ${i < (item.current ?? 0) ? (done ? 'bg-[#F59E0B]' : 'bg-[#7C3AED]') : 'bg-slate-200'}`} />
+            ))}
+          </span>
+        )}
+      </div>
+
+      {detail === undefined && (
+        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+          กำลังโหลด…
+        </p>
+      )}
+      {detail === 'error' && <p className="text-sm text-slate-500">เปิด Circle นี้ไม่ได้ตอนนี้ ลองใหม่อีกครั้งนะ</p>}
+      {detail && detail !== 'error' && (
+        <>
+          {detail.doing && <FriendsDoingLine doing={detail.doing} />}
+          <div className="mt-auto flex flex-col gap-2.5">
+            <MainButton detail={detail} busy={busy} onAct={onAct} onInvite={onInvite} />
+            <Link
+              href={detail.momentId ? `/moments/${encodeURIComponent(detail.momentId)}` : `/challenges/${encodeURIComponent(detail.quest.id)}`}
+              onClick={() => detail.momentId && onOpenMoment?.(detail.momentId)}
+              className="self-center text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline"
+            >
+              {detail.momentId ? 'ดูโพสต์' : 'ดูชาเลนจ์'}
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
+    </>
   );
 }
 

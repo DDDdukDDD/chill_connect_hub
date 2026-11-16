@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
-import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, FRIENDS_GOING_MAX, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -268,8 +268,8 @@ const TOPICS: Topic[] = [
     id: 'achievements',
     title: 'Circles (เซอร์เคิล)',
     summary: 'วงกลมเหนือฟีดหน้าหลัก ตรงที่แอปอื่นมีสตอรี่ ชื่อเรียก Circles หนึ่งวงคือ Circle (เจ้าของ 16 พ.ย. 2569) (เจ้าของ 10 พ.ย. 2569: ไม่ทำสตอรี่ ให้โชว์ว่าใครออกไปทำอะไรสำเร็จ)',
-    updated: '16 พ.ย. 2569 · BE-332, BE-333, BE-398, BE-399',
-    files: ['lib/social/circles.ts', 'lib/social/socialRules.ts', 'components/home/Circles.tsx', 'app/api/circles/route.ts'],
+    updated: '16 พ.ย. 2569 · BE-332, BE-333, BE-398, BE-399, BE-400, BE-401',
+    files: ['lib/social/circles.ts', 'lib/social/groupCircles.ts', 'components/home/GroupCircleView.tsx', 'lib/social/socialRules.ts', 'components/home/Circles.tsx', 'app/api/circles/route.ts'],
     body: (
       <>
         <H>มาจากไหน</H>
@@ -278,6 +278,8 @@ const TOPICS: Topic[] = [
             'ชาเลนจ์ที่ทำครบ (ข้อมูลสาธารณะอยู่แล้วในหน้าชาเลนจ์ "ใครทำอยู่บ้าง")',
             <>โพสต์ที่มี <See id="achievement-line">บรรทัดชาเลนจ์</See> เช่น 2/3</>,
             `นับเฉพาะ ${ACHIEVEMENTS_WINDOW_DAYS} วันล่าสุด`,
+            `Circle กลุ่ม (BE-401): ตี้ที่จบไม่เกิน ${GROUP_CIRCLE_WINDOW_DAYS} วัน ที่มีหลักฐานว่าไปจริงอย่างน้อย ${GROUP_CIRCLE_MIN_PEOPLE} คน (คนจัดเช็กชื่อ ซึ่งนับคนจัดด้วย หรือคนในตี้โพสต์โมเมนต์จากตี้นั้น และเพื่อนในตี้ที่ถูกแท็ก) ไม่เกิน ${GROUP_CIRCLES_MAX} วง ต่อจากวงของเรา`,
+            'Circle กลุ่ม คนที่ไปเห็นทุกคนที่ไป ส่วนเพื่อนเห็นก็ต่อเมื่อติดตามคนที่โพสต์จากตี้นั้น และเห็นหน้าเฉพาะคนที่โพสต์ (การเช็กชื่ออย่างเดียวไม่เปิดเผยชื่อ) กับจำนวนคนทั้งหมด ปุ่มหลัก: คนที่ไป = "รีวิวและเลือกคนที่อยากเจออีก" · เพื่อน = ตี้ถัดไปของคนจัด หรือ "หาตี้แบบนี้"',
             'บนมือถือ ก่อนวงของคน: นัดถัดไป (หรือ "ไปมาแล้ว?" ชวนแชร์โมเมนต์) และแคมเปญที่เข้าร่วมแล้ว ไม่เกิน 2 วง (ที่แลกได้ขึ้นก่อน) แคมเปญที่ยังไม่เข้าร่วมอยู่ในแถบระหว่างโพสต์',
           ]}
         />
