@@ -240,7 +240,7 @@ export interface MomentRepository {
   feedByIds(ids: string[], query: Pick<MomentFeedQuery, 'viewerId' | 'blockedIds'>): Promise<Moment[]>;
   /** Keeps the challenge line on a new post; written on its own, so a database without the column only loses the line */
   setAchievement(id: string, achievement: MomentAchievement): Promise<void>;
-  /** Public posts with a challenge line since this time, newest first (the achievements row on the member home) */
+  /** Public posts with a challenge line since this time, newest first (the Circles on the member home) */
   recentAchievements(since: Date, limit: number): Promise<{ momentId: string; authorId: string; achievement: MomentAchievement; createdAt: string }[]>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;

@@ -62,6 +62,7 @@ Pillar facts every agent needs (data side):
 - `/events` (was `/fairs`, moved 2026-10-25; old links redirect) = `eventType: 'public_venue'`, called **อีเวนต์** on every screen (owner 2026-10-24; it holds fairs, runs, concerts and sports, so not "งานแฟร์") — **no** attendee count, **no** recruitment status.
 - `/spots` = `LifestyleSpotItem` from `data/spotsData.ts` + the published catalog (7 vibe categories).
 - `/challenges` = quests (XP and badges).
+- The row of circles above the member home feed (where other apps put stories) is **Circles**, one item a **Circle** (owner 2026-11-16; Thai เซอร์เคิล). Use these names in code, docs and admin; the row has no on-screen title.
 - No decorative emojis in titles stored in data files; no emojis in `<option>` text.
 
 ---

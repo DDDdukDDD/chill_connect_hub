@@ -27,7 +27,7 @@ import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
 import { AchievementLine } from '@/components/moments/AchievementLine';
-import { AchievementsRow } from '@/components/home/AchievementsRow';
+import { Circles } from '@/components/home/Circles';
 import { useClamped } from '@/components/moments/useClamped';
 import type { HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
@@ -194,7 +194,6 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
             <span className="font-semibold text-slate-900 truncate">{moment.userName}</span>
           </p>
-          <TaggedFriends people={moment.tagged} className="text-xs text-slate-700" />
           <p className="text-xs text-slate-500 truncate">
             {moment.timeAgo}
             {moment.location && ` · ${moment.location}`}
@@ -330,10 +329,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       )}
       {likersOpen && <LikersDialog momentId={moment.id} onClose={() => setLikersOpen(false)} />}
 
-      {moment.caption && (
+      {/* Tagged friends follow the author's name in this line, not under it at the top (owner 2026-11-16) */}
+      {(moment.caption || moment.tagged?.length) && (
         <div>
           <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong> <CaptionText text={moment.caption} mentions={moment.tagged} />
+            <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            {moment.tagged?.length ? <> <TaggedFriends people={moment.tagged} inline className="text-slate-700" /></> : null}
+            {moment.caption && <> <CaptionText text={moment.caption} mentions={moment.tagged} /></>}
           </p>
           {!showWholeCaption && captionCut && (
             <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
@@ -467,7 +469,7 @@ export function PhotoViewer({ images, start, onClose }: { images: string[]; star
 }
 
 export interface HomeMomentFeedProps {
-  /** The first page of สำหรับคุณ and the achievements row, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
+  /** The first page of สำหรับคุณ and the Circles, rendered with the page (app/page.tsx): no placeholders and no second request on arrival */
   start?: HomeFeedStart;
   /** Circles at the front of the top row: the next plan or a ตี้ asking for its moment (MemberLiveHome) */
   rowLead?: React.ReactNode;
@@ -919,7 +921,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     <div ref={topRef} className="scroll-mt-24" onClickCapture={rememberPlace}>
       {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. At the very top since
           2026-11-13 (owner), in place of the next-plan line, which is now its first circle (rowLead) */}
-      {!PERSONAL[sort] && <AchievementsRow initial={start?.achievements} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
+      {!PERSONAL[sort] && <Circles initial={start?.circles} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
 
       {/* The title is for screen readers only (owner 2026-11-13): the tabs already say this is the feed, and the circles sit above */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">

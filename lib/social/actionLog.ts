@@ -14,7 +14,7 @@ import { VIA_COOKIE, VIA_DAYS, parseVia, viaFamily, type ViaFamily } from './via
 
 export type TracedAction = 'join' | 'save' | 'challenge_join' | 'visit' | 'invite_yes' | 'outbound' | 'sponsored_click' | 'signup';
 export type TracedTargetType = 'spot' | 'community' | 'fair' | 'challenge' | 'plan' | 'moment';
-export type TraceSourceType = 'moment' | 'profile' | 'invite' | 'share';
+export type TraceSourceType = 'moment' | 'profile' | 'invite' | 'share' | 'circle';
 export interface TraceSource {
   type: TraceSourceType;
   ref: string;

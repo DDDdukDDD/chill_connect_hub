@@ -1,6 +1,7 @@
 'use client';
 
 import { optimizedImage } from '@/lib/optimizedImage';
+import { DetailBackLink } from '@/components/detail/DetailBackLink';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useOutboundTracking } from '@/lib/social/trackClient';
@@ -637,10 +638,7 @@ export default function FairDetailPage({
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 xl:pb-16">
-        <Link href="/events" className="inline-flex items-center gap-1.5 min-h-10 text-sm font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          อีเวนต์ทั้งหมด
-        </Link>
+        <DetailBackLink href="/events" label="อีเวนต์ทั้งหมด" />
 
         {/* Header, drawn like the challenge page (components/detail/DetailHero.tsx). Fairs show no head count. */}
         {/* Opened from a friend's "ชวนไป" (owner 2026-11-11) */}
