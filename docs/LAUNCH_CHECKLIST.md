@@ -99,9 +99,10 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [ ] `เจ้าของ` **บัญชี Google Play Console** ($25 ครั้งเดียว) บัญชีส่วนตัวที่เปิดใหม่ต้องทดสอบแบบปิดกับคนอย่างน้อย 12 คนต่อเนื่อง 14 วันก่อนขึ้นสโตร์จริง บัญชีองค์กร (ต้องมี D-U-N-S) ไม่ต้อง ถ้าจะทันเปิด 1 ม.ค. ต้องเริ่มทดสอบไม่เกินกลาง ธ.ค.
 - [ ] `ร่วม` **ลองล็อกอินในแอป Android** อีเมล, Google, Facebook, LINE ต้องกลับเข้าแอป ไม่ค้างใน Chrome และการแจ้งเตือนต้องเด้งในชื่อแอป
 - [ ] `Claude` **iPhone (Capacitor)** (BE-404, เจ้าของ 17 พ.ย.: ทำก่อน Android เพราะคนรอบตัวใช้ iPhone หมด) โครงแอปใน `ios-app/` และ build บน GitHub Actions แล้ว ขั้นต่อไปใน [IOS_APP.md](IOS_APP.md) เปลือกที่มีความสามารถของเครื่องจริง (แจ้งเตือนแบบ native, แชร์, กล้อง) ไม่อย่างนั้น Apple ไม่ผ่าน (ข้อ 4.2) ต้องเพิ่ม **Sign in with Apple** (ข้อ 4.8 เพราะมี Google/Facebook/LINE) และเช็กว่าลบบัญชีได้ในแอป เริ่มไม่เกินต้น ธ.ค. เผื่อรีวิวไม่ผ่านรอบแรก
-- [ ] `เจ้าของ` **บัญชี Apple Developer** ($99 ต่อปี) สมัครผ่านแอป Apple Developer บน iPhone แบบบุคคล ด้วย Apple ID chillwaa.official (17 พ.ย. ยังไม่ได้สมัคร อนุมัติมักใช้ 1–2 วัน)
-- [ ] `เจ้าของ` **ส่ง Team ID ให้ Claude** (ไม่ใช่ความลับ) เมื่อหน้า developer.apple.com → Account ขึ้น Membership details
-- [ ] `เจ้าของ` **API key ของ App Store Connect** (App Manager) ใส่ GitHub Secrets เอง: `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_KEY_P8` ห้ามส่งในแชตหรือ git (ขั้นตอนใน IOS_APP.md)
+- [x] `เจ้าของ` **บัญชี Apple Developer** ($99 ต่อปี) แบบบุคคล ด้วย Apple ID chillwaa.official อนุมัติแล้ว 17 พ.ย.
+- [x] `เจ้าของ` **ส่ง Team ID ให้ Claude** ได้แล้ว 17 พ.ย.: `NW64D6UX4Z`
+- [x] `เจ้าของ` **API key ของ App Store Connect** (App Manager) ใส่ GitHub Secrets ครบ 3 ตัวแล้ว 17 พ.ย.
+- [ ] `เจ้าของ` **ลงทะเบียน App ID และสร้างแอปใน App Store Connect** แล้วกด Run workflow ครั้งแรก (ขั้น 4–6 ใน IOS_APP.md)
 - [ ] `Claude` **iPhone ขั้น 1: ส่งขึ้น TestFlight อัตโนมัติ** (ต้องรอ 3 ข้อบน) เพื่อให้เจ้าของและเพื่อนลงแอปลองได้
 - [ ] `Claude` **iPhone ขั้น 2: ล็อกอินในแอป** เปิดหน้าล็อกอินของระบบ iPhone แล้วเด้งกลับแอปผ่าน Universal Link (Google ไม่ยอมให้ล็อกอินในหน้าเว็บที่ฝังในแอป)
 - [ ] `Claude` **iPhone ขั้น 3: Sign in with Apple** (ต้องใช้ key จากบัญชี Apple Developer)

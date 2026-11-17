@@ -1,7 +1,9 @@
 # The iPhone app (ios-app/, docs/IOS_APP.md) built on a cloud Mac, since no one on the team has a Mac.
-# Step 1 (now): an unsigned simulator build, to prove the Xcode project compiles after every change to ios-app/.
-# Step 2 (once the Apple Developer Program is active): a signed build uploaded to TestFlight with the App Store Connect
-# API key kept in repository secrets (APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_KEY_P8).
+# simulator: an unsigned simulator build, to prove the Xcode project compiles after every change to ios-app/.
+# testflight: a signed build uploaded to TestFlight, by hand (Actions -> iOS build -> Run workflow) or on a push to
+# main that changes ios-app/. Signing is cloud-managed by Apple: the archive is built unsigned and Xcode signs it
+# while exporting with the App Store Connect API key from repository secrets (APP_STORE_CONNECT_ISSUER_ID,
+# APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_KEY_P8). No certificate or profile is stored. Build number = run number.
 # macOS minutes count ten times on a private repository, so it runs only when ios-app/ changes or by hand.
 name: iOS build
 
@@ -10,6 +12,11 @@ on:
     branches: [claude, main]
     paths: ['ios-app/**', '.github/workflows/ios-build.yml']
   workflow_dispatch:
+    inputs:
+      testflight:
+        description: Upload to TestFlight
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -40,3 +47,64 @@ jobs:
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build | tail -40
           test "${PIPESTATUS[0]}" -eq 0
+
+  testflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight || github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: simulator
+    runs-on: macos-latest
+    timeout-minutes: 40
+    env:
+      TEAM_ID: NW64D6UX4Z
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ios-app/package-lock.json
+      - name: Install Capacitor
+        run: npm ci --no-audit --no-fund
+      - name: Copy settings and plugins into the Xcode project
+        run: npx cap sync ios
+      - name: Write the API key file
+        env:
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+        run: |
+          test -n "$KEY_ID" && test -n "$ISSUER_ID" && test -n "$KEY_P8" || { echo "App Store Connect secrets are missing"; exit 1; }
+          echo "KEY_PATH=$RUNNER_TEMP/AuthKey_$KEY_ID.p8" >> "$GITHUB_ENV"
+          printf '%s\n' "$KEY_P8" > "$RUNNER_TEMP/AuthKey_$KEY_ID.p8"
+      - name: Archive (unsigned; Apple signs it in the next step)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive | tail -40
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Sign and upload to TestFlight
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" | tail -60
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Remove the API key file
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8

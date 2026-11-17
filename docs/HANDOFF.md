@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-407 · iPhone app: TestFlight upload job, Team ID in the Xcode project (owner 2026-11-17)
+- **What changed:** Apple Developer Program active, Team ID `NW64D6UX4Z` set as `DEVELOPMENT_TEAM` in `ios-app/ios/App/App.xcodeproj`. `.github/workflows/ios-build.yml` has a `testflight` job (after `simulator`): unsigned archive, then Apple cloud signing and upload with the App Store Connect API key from repository secrets. Runs by hand (Run workflow) or on pushes to `main` that change `ios-app/`. Not run yet.
+- **What to do about it:** owner registers the App ID and creates the app in App Store Connect (docs/IOS_APP.md owner steps 4–5), then runs the workflow on `claude`. Read the run log for signing errors (App Manager key may need Admin).
+
+---
+
 ### BE-406 · TAT Data API: key in, data measured, importer waiting for the owner (2026-11-17)
 - **What changed:** docs only. `docs/TAT_IMPORT.md` holds access, TAT's terms reply, the counts (14 upcoming events = no event importer; ~2,300 new attractions and ~2,000–2,500 restaurants with pictures after reading details) and the proposed plan. LAUNCH_CHECKLIST TAT item rewritten.
 - **What to do about it:** each clone adds `TAT_API_KEY` to its own `.env.development.local` (owner has the key). Open decision for the owner: use TAT's text first and write our own vibe text only for recommended places (temples and museums first)? Then build the importer on dev, one region first.
