@@ -103,8 +103,14 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" | tail -60
-          test "${PIPESTATUS[0]}" -eq 0
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" > "$RUNNER_TEMP/export.log" 2>&1 || code=$?
+          tail -60 "$RUNNER_TEMP/export.log"
+          # Error lines become annotations, readable on the public run page without signing in.
+          if [ "${code:-0}" -ne 0 ]; then
+            grep -iE "error|fail|denied|permission|not found|no account|no profile" "$RUNNER_TEMP/export.log" \
+              | tail -10 | while IFS= read -r line; do echo "::error title=Export::${line:0:900}"; done || true
+          fi
+          exit "${code:-0}"
       - name: Remove the API key file
         if: always()
         run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
