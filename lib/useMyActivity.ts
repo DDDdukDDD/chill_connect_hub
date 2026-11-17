@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { EventItem } from '@/data/mockData';
 import { useMemberSession } from './useMemberSession';
+import { offerInstall } from './installOffer';
 
 /**
  * The signed-in member's events and saved places, read from the account (GET /api/auth/member/activity).
@@ -135,6 +136,8 @@ export const activityActions = {
     const res = await post({ action: 'join', eventId, ...(date ? { date } : {}), ...(invite ? { invite } : {}) });
     if (!res.ok) return { ok: false, message: res.json?.message || (res.status === 401 ? 'กรุณาเข้าสู่ระบบก่อน' : 'เข้าร่วมไม่สำเร็จ ลองอีกครั้งนะ'), status: res.json?.status };
     await activityActions.refresh();
+    // A notice now has a reason to arrive (ตี้ changes, chat), so suggest the home screen (lib/installOffer.ts)
+    offerInstall('join');
     return { ok: true, message: res.json.message, status: res.json.status, event: res.json.event, devVerifyUrl: res.json.devVerifyUrl };
   },
 

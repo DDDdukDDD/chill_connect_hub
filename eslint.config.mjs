@@ -21,6 +21,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "scripts/**",
     "scratch/**",
+    // The store app shells (docs/IOS_APP.md, docs/ANDROID_APP.md)
+    "ios-app/**",
+    "android/**",
   ]),
 ]);
 

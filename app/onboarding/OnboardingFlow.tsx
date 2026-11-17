@@ -56,6 +56,7 @@ import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
 import { memberActions, useMemberSession } from '@/lib/useMemberSession';
 import { FIRST_STEP_KEY, type FirstStep } from '@/components/home/onboardingFirstStep';
+import { offerInstall } from '@/lib/installOffer';
 
 /**
  * Onboarding for new members, continuing the landing hero ("คอมมูนิตี้ของคนชอบออกไปใช้ชีวิต").
@@ -984,6 +985,8 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         }
       }
       clearFinishedRun();
+      // Sign-up is done: the next page suggests adding Chillwaa to the home screen (lib/installOffer.ts)
+      if (!preview && !pledgeOnly) offerInstall('signup');
       if (pledgeOnly) router.replace(returnTo || '/profile');
       else router.push(pendingOpen?.href ?? destination);
     } catch (err) {

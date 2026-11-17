@@ -1,0 +1,3 @@
+# The store app shells are built elsewhere (GitHub Actions, Bubblewrap), never by Vercel
+ios-app/
+android/
