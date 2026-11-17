@@ -3,17 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Share } from 'lucide-react';
 import { dialogButton } from '@/components/auth/DialogShell';
-import { canPromptInstall, isInAppBrowser, isIos, isPhone, isStandalone, onInstallPromptChange, promptInstall, readPushStatus, turnPushOff, turnPushOn, type PushStatus } from '@/lib/appClient';
-
-type InstallWay = 'prompt' | 'ios' | 'in-app' | 'menu' | null;
-
-function installWay(): InstallWay {
-  if (isStandalone()) return null;
-  if (isInAppBrowser()) return 'in-app';
-  if (isIos()) return 'ios';
-  if (canPromptInstall()) return 'prompt';
-  return isPhone() ? 'menu' : null;
-}
+import { installWay, isIos, onInstallPromptChange, promptInstall, readPushStatus, turnPushOff, turnPushOn, type InstallWay, type PushStatus } from '@/lib/appClient';
 
 /** ตั้งค่าบัญชี: install Chillwaa on this phone and turn its notifications on or off. Shows only what this device can do. */
 export function AppSettingsCard() {

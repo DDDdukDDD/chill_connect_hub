@@ -32,6 +32,21 @@ export function isInAppBrowser(): boolean {
   return /\bLine\/|FBAN|FBAV|Instagram|musical_ly|TikTok/i.test(navigator.userAgent);
 }
 
+/**
+ * How this device can add Chillwaa to its home screen: the browser's own prompt, the iPhone share steps, another app's
+ * browser (open in Safari or Chrome first), the browser menu, or nothing to do (already installed, or not a phone and
+ * no prompt). Used by the settings card and the install sheet.
+ */
+export type InstallWay = 'prompt' | 'ios' | 'in-app' | 'menu' | null;
+
+export function installWay(): InstallWay {
+  if (isStandalone()) return null;
+  if (isInAppBrowser()) return 'in-app';
+  if (isIos()) return 'ios';
+  if (canPromptInstall()) return 'prompt';
+  return isPhone() ? 'menu' : null;
+}
+
 export function registerServiceWorker(): void {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => undefined);
 }

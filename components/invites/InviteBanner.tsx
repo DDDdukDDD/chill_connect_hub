@@ -7,6 +7,7 @@ import { Loader2, MessageCircle } from 'lucide-react';
 import { MomentAvatar } from '@/components/moments/CommentThread';
 import type { InviteInfo } from '@/lib/social/friendPlans';
 import { POST_PLACE_FALLBACK } from '@/lib/social/socialRules';
+import { offerInstall } from '@/lib/installOffer';
 
 // Only a guest who taps "ไปกัน" needs it (it brings the sign-up buttons)
 const InviteSignupSheet = dynamic(() => import('./InviteSignupSheet').then((m) => m.InviteSignupSheet), { ssr: false });
@@ -117,6 +118,7 @@ export function InviteBanner({
     setInfo({ ...inv, isIn: true, planId: result.json.planId, goingCount: inv.isIn ? inv.goingCount : inv.goingCount + 1 });
     // A challenge is joined with the plan (lib/social/friendPlans.ts answerInvite), so the toast says so (2026-11-16)
     onMessage(onChallenge(inv) ? `เข้าร่วมชาเลนจ์แล้ว ทำไปด้วยกันกับ ${inv.host.name} นะ` : 'ไปกัน! คุยนัดวันกันในแชตได้เลย');
+    offerInstall('invite');
     onAnswered?.();
   };
 

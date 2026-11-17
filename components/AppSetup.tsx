@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { listenForInstallPrompt, registerServiceWorker, syncPushDevice } from '@/lib/appClient';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { InstallSheet } from '@/components/InstallSheet';
 
 /** On every page: the service worker, the browser's install offer, and keeping this device with whoever is signed in */
 export function AppSetup() {
@@ -18,5 +19,5 @@ export function AppSetup() {
     if (memberId) syncPushDevice().catch(() => undefined);
   }, [memberId]);
 
-  return null;
+  return <InstallSheet />;
 }
