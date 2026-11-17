@@ -22,6 +22,8 @@ export interface MomentDraft {
   target: MomentLinkTarget | null;
   taggedIds: string[];
   options: PostOptions;
+  /** The challenge the form was opened for; the server gives the post its line */
+  questId?: string;
 }
 
 export type PostedMoment = { id: string } & Record<string, unknown>;
@@ -164,6 +166,7 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
       targetTitle: target ? target.title : draft.location || undefined,
       taggedIds: draft.taggedIds,
       capture,
+      ...(draft.questId ? { questId: draft.questId } : {}),
     }),
   }).catch(() => null);
   if (!res) throw new PostingError('เชื่อมต่อไม่ได้ ลองอีกครั้งนะ');
@@ -173,7 +176,10 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
 
   // A moment at a place or event is a visit: say so when it counted toward a challenge the member is doing
   let counted: CountedQuest | null = null;
-  if (target && isVisitTarget(target.type)) {
+  // The server's challenge line says it first (a post challenge has no place to ask about)
+  const line = json.moment.achievement as { questId: string; title: string; current: number; total: number } | undefined;
+  if (line?.questId) counted = { questId: line.questId, title: line.title, current: line.current, total: line.total, completed: line.current >= line.total, joined: true };
+  else if (target && isVisitTarget(target.type)) {
     const key = `${target.type}:${target.id}`;
     const get = (url: string) => fetch(url, { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
     const [here, mine] = await Promise.all([get(`/api/visits?targets=${encodeURIComponent(key)}`), get('/api/visits?mine=1')]);

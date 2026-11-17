@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   });
   return NextResponse.json({ success: true, moments, ...(requiresLogin && { requiresLogin }), pagination }, { headers: { 'Cache-Control': 'no-store' } });
 }
-// Create a moment: { caption?, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle? }
+// Create a moment: { caption?, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle?, questId? (the challenge the form was opened for) }
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const caption = typeof input?.caption === 'string' ? input.caption : '';
     await guardPosting(member, 'moment', withoutMentions(caption, await captionMentions(member, caption, [...(Array.isArray(input?.taggedIds) ? input.taggedIds : []), ...(Array.isArray(input?.mentions) ? input.mentions : [])])));
     // The challenge line is worked out once, here (FEED_PLAN step 3.5)
-    const moment = await recordAchievement(member.id, await createMoment(member, input));
+    const moment = await recordAchievement(member.id, await createMoment(member, input), typeof input?.questId === 'string' ? input.questId.slice(0, 100) : undefined);
     await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
     // Posting at the place of a "ไปกัน" plan marks the member as having been (lib/social/friendPlans.ts)
     await notePlanVisit(member, moment).catch((error) => console.error('[moments] plan visit failed', error));

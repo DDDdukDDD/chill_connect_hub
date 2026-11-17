@@ -6,10 +6,14 @@ import { tidyDisplayName } from '../displayName';
 import { taggableFriends, visibleMoment } from '../moments/service';
 import { questMemberStore } from './stores';
 import { joinQuest } from './questJoins';
-import { findQuest } from './circles';
+import { findQuest, questPicture } from './circles';
 import { inviteSheetInfo, sendInvites } from './friendPlans';
 import { traceAction } from './actionLog';
-import { notifyFollowAlong } from './notifications';
+import { notifyCheer, notifyFollowAlong } from './notifications';
+import { notificationStore } from './notificationStore';
+import { progressOf } from './questProgress';
+import { questActionLink } from '../questDisplay';
+import type { ChallengeQuest } from '@/data/mockData';
 
 /**
  * What opening a Circle offers (Circles round A, owner 2026-11-16): see a friend doing a challenge, then do it too.
@@ -56,7 +60,30 @@ export async function friendsDoing(reader: Member | null, questId: string, excep
   };
 }
 
-export type CircleAction = 'together' | 'try' | 'invite';
+export type CircleAction = 'together' | 'try' | 'invite' | 'cheer';
+
+/**
+ * The next thing to do on the reader's own Circle (owner 2026-11-18: sending a result took a detour through the challenge
+ * page). 'post' opens the posting form tied to the challenge right on Home; 'link' goes where the step is done.
+ */
+export type CircleNextStep = { kind: 'post'; label: string; withPlace: boolean } | { kind: 'link'; label: string; href: string };
+
+/** What a challenge asks for next, by how it counts (the same words its page uses) */
+export function nextStepOf(quest: ChallengeQuest): CircleNextStep {
+  const page = `/challenges/${encodeURIComponent(quest.id)}`;
+  const rule = quest.rule;
+  if (quest.plan) return { kind: 'link', label: 'บันทึกวันนี้', href: `${page}#plan` };
+  if (!rule) return { kind: 'link', label: 'บันทึกความคืบหน้า', href: page };
+  if (rule.posts) return { kind: 'post', label: 'โพสต์โมเมนต์', withPlace: Boolean(rule.posts.withPlace) };
+  const action = questActionLink(rule);
+  if (action) return { kind: 'link', ...action };
+  if (rule.asHost) return { kind: 'link', label: 'ตั้งตี้ของฉัน', href: '/community?create=1' };
+  const only = rule.targetTypes.length === 1 ? rule.targetTypes[0] : 'spot';
+  return { kind: 'link', label: only === 'community' ? 'หาตี้ที่นับ' : only === 'fair' ? 'หาอีเวนต์ที่นับ' : 'หาที่ที่นับ', href: `${page}#places` };
+}
+
+/** Who cheered a Circle: one notice per person, keyed by the challenge and, for a posted step, the post */
+const cheerMatch = (personId: string, questId: string, momentId?: string) => ({ memberId: personId, types: ['cheer' as const], questId, ...(momentId ? { momentId } : {}) });
 
 export interface CircleDetail {
   id: string;
@@ -76,8 +103,16 @@ export interface CircleDetail {
   canInvite: boolean;
   invite: 'none' | 'asked' | 'going';
   /** The main button: what this Circle asks the reader to do */
-  cta: CircleAction | 'share_invite' | 'open';
+  cta: Exclude<CircleAction, 'cheer'> | 'share_invite' | 'open';
   doing: FriendsDoing | null;
+  /** The reader's own Circle, not finished: the next step and how far they are (counted the same way as the challenge page) */
+  next?: CircleNextStep;
+  progress?: { current: number; total: number };
+  /** A friend's step or finish can be cheered once (owner 2026-11-18); `cheered` says the reader already did */
+  canCheer: boolean;
+  cheered: boolean;
+  /** On the reader's own step or finish: friends who cheered it, newest first, at most three named */
+  cheers?: { count: number; people: { id: string; name: string; avatar?: string }[] };
 }
 
 interface Parsed {
@@ -135,14 +170,25 @@ export async function circleDetail(reader: Member, id: string): Promise<CircleDe
       : !joined && !finished
         ? parsed.kind === 'step' && canInvite ? 'together' : 'try'
         : canInvite && invite === 'none' && parsed.kind === 'step' ? 'invite' : 'open';
+  // My own Circle on a challenge not finished: the next step, and how far I am (a doing Circle has no number of its own)
+  const mineOpen = isMe && open && !finished;
+  const progress = mineOpen ? (await progressOf(reader.id).catch(() => null))?.quests.find((q) => q.questId === quest.id) : undefined;
+  const cheerKey = cheerMatch(person.id, quest.id, parsed.momentId);
+  const canCheer = !isMe && parsed.kind !== 'doing';
+  const [cheered, cheerers] = await Promise.all([
+    canCheer ? notificationStore.exists({ ...cheerKey, actorId: reader.id }).catch(() => false) : false,
+    isMe && parsed.kind !== 'doing' ? notificationStore.actorsOf(cheerKey).catch((): string[] => []) : ([] as string[]),
+  ]);
+  const cheerPeople = cheerers.length ? [...(await memberRepository.findByIds(cheerers.slice(0, 3))).values()].filter((p) => p.status === 'active') : [];
+  const picture = questPicture(quest);
   return {
     id,
     kind: parsed.kind,
     person: { id: person.id, name: tidyDisplayName(person.displayName).trim() || person.displayName, ...(person.avatarUrl ? { avatar: person.avatarUrl } : {}) },
     isMe,
-    quest: { id: quest.id, title: quest.title, ...(quest.image ? { image: quest.image } : {}), open },
+    quest: { id: quest.id, title: quest.title, ...(picture ? { image: picture } : {}), open },
     ...(parsed.current !== undefined ? { current: parsed.current, total: parsed.total } : {}),
-    ...(parsed.image || quest.image ? { image: parsed.image || quest.image } : {}),
+    ...(parsed.image || picture ? { image: parsed.image || picture } : {}),
     ...(parsed.momentId ? { momentId: parsed.momentId } : {}),
     joined,
     finished,
@@ -150,6 +196,13 @@ export async function circleDetail(reader: Member, id: string): Promise<CircleDe
     invite,
     cta,
     doing: await friendsDoing(reader, quest.id, [person.id]),
+    ...(mineOpen ? { next: nextStepOf(quest) } : {}),
+    ...(progress && progress.total > 0 ? { progress: { current: progress.current, total: progress.total } } : {}),
+    canCheer,
+    cheered: Boolean(cheered),
+    ...(isMe && parsed.kind !== 'doing'
+      ? { cheers: { count: cheerers.length, people: cheerPeople.map((p) => ({ id: p.id, name: tidyDisplayName(p.displayName).trim() || p.displayName, ...(p.avatarUrl ? { avatar: p.avatarUrl } : {}) })) } }
+      : {}),
   };
 }
 
@@ -160,6 +213,12 @@ export async function circleDetail(reader: Member, id: string): Promise<CircleDe
  */
 export async function circleAct(reader: Member, id: string, action: CircleAction): Promise<{ detail: CircleDetail; message: string }> {
   const before = await circleDetail(reader, id);
+  // "ชื่นชม" (owner 2026-11-18): once per friend's step or finish, also after the challenge closed; the friend hears who
+  if (action === 'cheer') {
+    if (!before.canCheer) throw new MemberAuthError('ทำรายการนี้ไม่ได้', 400);
+    if (!before.cheered) await notifyCheer(before.person.id, reader, before.quest, before.momentId);
+    return { detail: { ...before, cheered: true }, message: `ส่งคำชื่นชมให้${shortName(before.person.name)}แล้ว` };
+  }
   if (before.isMe || !before.quest.open) throw new MemberAuthError('ทำรายการนี้ไม่ได้', 400);
   const source = { type: 'circle' as const, ref: id, creditedId: before.person.id };
   const join = async () => {

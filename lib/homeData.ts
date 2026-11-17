@@ -8,6 +8,7 @@ import type { Member } from './members/types';
 import type { FeedItem } from './moments/service';
 import type { CircleItem } from './social/circles';
 import { visitsOf } from './social/visits';
+import { momentRepository } from './moments';
 
 /**
  * What the member home needs beyond the public lists, read on the server with the page instead of four requests
@@ -23,6 +24,11 @@ export type MemberHomeData = {
   /** Place and อีเวนต์ kinds saved with the onboarding answers: the feed cards lead with them */
   spotVibes: string[];
   fairCategories: string[];
+  /**
+   * ตี้ the member already posted a moment from (newest 100 posts): the "ไปมาแล้ว? แชร์" circle stops asking on every
+   * device, not only the one it was posted from (owner 2026-11-18)
+   */
+  postedTeeIds: string[];
   /** The first page of สำหรับคุณ and Circles, rendered with the page so the feed is there on arrival instead of after a second request */
   feedStart?: HomeFeedStart;
 };
@@ -39,7 +45,11 @@ export const sizedImage = <T extends { image?: string }>(item: T): T =>
   item.image ? { ...item, image: optimizedImage(item.image, HOME_CARD_WIDTH) } : item;
 
 export async function memberHomeData(member: Member, upcoming: EventItem[]): Promise<MemberHomeData> {
-  const [spots, visits] = await Promise.all([homeSpotsFor(member), visitsOf(member.id)]);
+  const [spots, visits, posts] = await Promise.all([
+    homeSpotsFor(member),
+    visitsOf(member.id),
+    momentRepository.query({ statuses: ['published', 'hidden'], authorId: member.id, sort: 'newest', page: 1, limit: 100 }).then((r) => r.items).catch(() => []),
+  ]);
   const have = new Set(upcoming.map((event) => event.id));
   const fairIds = [...new Set([...(member.savedEventIds ?? []), ...visits.filter((v) => v.targetType === 'fair').map((v) => v.targetId)])]
     .filter((id) => !have.has(id))
@@ -52,5 +62,6 @@ export async function memberHomeData(member: Member, upcoming: EventItem[]): Pro
     goals: member.preferences?.goals ?? [],
     spotVibes: member.preferences?.interests?.spotVibes ?? [],
     fairCategories: member.preferences?.interests?.fairCategories ?? [],
+    postedTeeIds: [...new Set(posts.filter((m) => m.targetType === 'community' && m.targetId).map((m) => m.targetId as string))],
   };
 }

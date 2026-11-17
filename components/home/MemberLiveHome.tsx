@@ -25,6 +25,8 @@ import type { HomeFeedStart } from '@/lib/homeData';
 export interface MemberLiveHomeProps {
   /** The feed's first page and Circles from the server (app/page.tsx) */
   feedStart?: HomeFeedStart;
+  /** ตี้ the member already posted a moment from (server): the "ไปมาแล้ว?" circle does not ask for them on any device */
+  postedTeeIds?: string[];
   name: string;
   /** The running campaigns (server, homeCampaigns()); shown again with the member's own progress */
   campaigns?: Campaign[];
@@ -172,7 +174,8 @@ function Greeting({ name, now, xp, layout }: MemberLiveHomeProps & { layout: 'ro
   );
 }
 
-// The "แชร์โมเมนต์" line hides for a ตี้ once a moment was posted from it, on this device
+// The "ไปมาแล้ว?" circle hides for a ตี้ once a moment was posted from it: the server says so on every device
+// (postedTeeIds); this device remembers it at once, until the next page load brings the server's list
 const SHARED_KEY = 'home-shared-moments';
 function readShared(): string[] {
   try {
@@ -204,8 +207,11 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
   const now = useMinuteClock(props.now);
   // The home is drawn in the browser only (no server render), so the device's memory can be read at once
   const [storedShared] = useState(readShared);
+  // The server knows every ตี้ already posted from (any device, any way of posting); this device's memory covers the
+  // moments between a post and the next page load
+  const posted = props.postedTeeIds ?? [];
   const justBack = props.mine
-    .filter((event) => event.eventType !== 'public_venue' && !storedShared.includes(event.id) && !props.sharedIds.includes(event.id))
+    .filter((event) => event.eventType !== 'public_venue' && !posted.includes(event.id) && !storedShared.includes(event.id) && !props.sharedIds.includes(event.id))
     .map((event) => ({ event, end: meetupTimes(event)?.end ?? parseEventEndDateToTimestamp(event.date) }))
     .filter(({ end }) => end <= now && now - end <= SHARE_WINDOW_MS)
     .sort((a, b) => b.end - a.end)[0]?.event;

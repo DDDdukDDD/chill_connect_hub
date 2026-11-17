@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import type { CircleItem } from '@/lib/social/circles';
@@ -19,15 +19,34 @@ const MEMORY_KEY = 'circles';
  * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
  * too. Nothing shows until someone has achieved something.
  */
-export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[]; /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */ lead?: React.ReactNode; /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */ onOpenMoment?: (momentId: string) => void }) {
+export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }: {
+  initial?: CircleItem[];
+  /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */
+  lead?: React.ReactNode;
+  /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */
+  onOpenMoment?: (momentId: string) => void;
+  /** "โพสต์โมเมนต์" on my own Circle: the feed opens its posting form tied to that challenge */
+  onPost?: (quest: { id: string; title: string; withPlace?: boolean }) => void;
+  /** Goes up after the member posted: the row is asked again, so a new step shows */
+  refreshKey?: number;
+}) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<CircleItem[]>(() => initial ?? recall<CircleItem[]>(MEMORY_KEY) ?? []);
   const [openAt, setOpenAt] = useState<number | null>(null);
-  useEffect(() => {
-    if (initial) {
-      remember(MEMORY_KEY, initial);
-      return;
-    }
+  // Circles opened on this device get a grey ring and move behind the new ones (owner 2026-11-18: no way to tell what
+  // was new). The order is set when the row loads, never while the member taps through it. The member home is drawn in
+  // the browser only (MemberLiveHome), so the device's memory can be read at once
+  const [seen, setSeen] = useState<string[]>(readSeen);
+  const [seenAtLoad, setSeenAtLoad] = useState<string[]>(readSeen);
+  const ordered = useMemo(() => {
+    const mine = items.filter((item) => item.kind !== 'group' && item.isMe);
+    const others = items.filter((item) => !(item.kind !== 'group' && item.isMe));
+    return [...mine, ...others.filter((item) => !seenAtLoad.includes(item.id)), ...others.filter((item) => seenAtLoad.includes(item.id))];
+  }, [items, seenAtLoad]);
+  const markSeen = useCallback((id: string) => setSeen((now) => (now.includes(id) ? now : rememberSeen(id))), []);
+  // Asked again after something changed it: a join or a cheer in the viewer, or a post
+  const [stale, setStale] = useState(0);
+  const load = useCallback(() => {
     let active = true;
     fetch('/api/circles', { cache: 'no-store' })
       .then((res) => res.json())
@@ -35,12 +54,21 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
         if (!active || !Array.isArray(json?.items)) return;
         remember(MEMORY_KEY, json.items);
         setItems(json.items);
+        setSeenAtLoad(readSeen());
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [initial]);
+  }, []);
+  useEffect(() => {
+    if (initial && refreshKey === 0 && stale === 0) {
+      remember(MEMORY_KEY, initial);
+      return;
+    }
+    return load();
+  }, [initial, refreshKey, stale, load]);
+  const open = (index: number) => setOpenAt(index);
   // Computers have no swipe: ‹ › appear on the side that has more circles (owner 2026-11-13)
   const listRef = useRef<HTMLUListElement>(null);
   const [more, setMore] = useState({ left: false, right: false });
@@ -75,33 +103,41 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
       {/* The row fades out at the side that has more (2026-11-14): a circle cut in half at the feed edge looked like a mistake */}
       <ul ref={listRef} onScroll={measure} style={fadeMask(more)} className="sm:[mask-image:var(--row-fade)] flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {lead}
-        {items.map((item, index) => {
-          if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} onOpen={() => setOpenAt(index)} />;
+        {ordered.map((item, index) => {
+          // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
+          const faded = !(item.kind !== 'group' && item.isMe) && seen.includes(item.id);
+          if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
           const done = item.kind === 'finish';
           const doing = item.kind === 'doing';
-          const name = item.isMe ? (doing ? item.quest.title : 'คุณ') : item.person.name;
-          // My challenges show their own picture, so three of them read as three things to do, not my face three times
-          const picture = doing ? item.quest.image || item.person.avatar : item.person.avatar;
+          // My own Circles show the challenge (picture and title) in every state, so "Road to ATM…" stays itself after its
+          // first step instead of turning into "คุณ" (2026-11-18 walk); friends' Circles show the friend
+          const name = item.isMe ? item.quest.title : item.person.name;
+          const picture = item.isMe ? item.quest.image || item.person.avatar : item.person.avatar;
           // The badge in words: "2/3" alone says nothing to someone new (owner 2026-11-13)
           const meaning = doing
-            ? `คุณรับชาเลนจ์ ${item.quest.title} ไว้ ยังไม่ได้โพสต์`
+            ? `ชาเลนจ์ที่คุณทำอยู่: ${item.quest.title}`
             : done
-              ? `${name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
-              : `${name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
+              ? `${item.isMe ? 'คุณ' : name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
+              : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
+          const ring = faded ? 'bg-slate-200' : done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]';
           return (
             <li key={item.id} className="shrink-0 w-[80px]">
               <button
                 type="button"
-                onClick={() => setOpenAt(index)}
+                onClick={() => open(index)}
                 aria-label={meaning}
                 title={meaning}
                 className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
-                <span className={`relative rounded-full p-[3px] ${done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]'}`}>
+                <span className={`relative rounded-full p-[3px] ${ring}`}>
                   <span className="block rounded-full bg-white p-[2px]">
                     {picture ? (
                       // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
                       <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+                    ) : doing ? (
+                      <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                        <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
+                      </span>
                     ) : (
                       <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
                     )}
@@ -113,7 +149,7 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
                     {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
                   </span>
                 </span>
-                <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">
+                <span className={`w-full truncate text-center text-xs font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
                   {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
                   {name.replace(/\s*\(.*$/, '') || name}
                 </span>
@@ -122,9 +158,47 @@ export function Circles({ initial, onOpenMoment, lead }: { initial?: CircleItem[
           );
         })}
       </ul>
-      {openAt !== null && items[openAt] && <CircleViewer items={items} start={openAt} onClose={() => setOpenAt(null)} onOpenMoment={onOpenMoment} />}
+      {openAt !== null && ordered[openAt] && (
+        <CircleViewer
+          items={ordered}
+          start={openAt}
+          onSeen={markSeen}
+          onClose={(changed) => {
+            setOpenAt(null);
+            if (changed) setStale((n) => n + 1);
+          }}
+          onOpenMoment={onOpenMoment}
+          onPost={
+            onPost &&
+            ((quest) => {
+              setOpenAt(null);
+              onPost(quest);
+            })
+          }
+        />
+      )}
     </section>
   );
+}
+
+// Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again
+const SEEN_KEY = 'circles-seen';
+function readSeen(): string[] {
+  try {
+    const ids = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]');
+    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function rememberSeen(id: string): string[] {
+  const ids = [...readSeen().filter((other) => other !== id), id].slice(-200);
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify(ids));
+  } catch {
+    // Private mode: the ring just stays coloured
+  }
+  return ids;
 }
 
 /** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment, a campaign */

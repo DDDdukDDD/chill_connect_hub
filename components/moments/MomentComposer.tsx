@@ -54,6 +54,11 @@ export interface MomentComposerInitial {
   clipFile?: File;
   /** Friends tagged from the start (a "ไปกัน" plan's day-after link); the server keeps only real friends */
   tagged?: TagFriend[];
+  /**
+   * The challenge the form was opened for (a Circle's "โพสต์โมเมนต์", the challenge page; owner 2026-11-18): the form says
+   * the post counts for it, and the server gives the post that challenge's line. `withPlace`: it counts only with a place.
+   */
+  quest?: { id: string; title: string; withPlace?: boolean };
 }
 
 /** What the author closes on a post */
@@ -154,7 +159,9 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
   // Something is filled in: a tap outside the form must not throw it away
   const hasDraft = Boolean(caption.trim() || photos.length > 0 || clip || customLocation.trim() || tagged.length > 0);
   const placeChosen = Boolean(linkedTarget || customLocation.trim());
-  const leave = () => (hasDraft ? setConfirmDiscard(true) : onClose());
+  // Opened for a challenge that counts posts (a Circle's "โพสต์โมเมนต์", the challenge page)
+  const forQuest = initial?.quest;
+  const leave =() => (hasDraft ? setConfirmDiscard(true) : onClose());
 
   // Esc closes the form; a draft asks first
   const panelRef = useRef<HTMLDivElement>(null);
@@ -330,6 +337,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       target: linkedTarget,
       taggedIds: [...new Set([...tagged.map((friend) => friend.id), ...mention.mentions.map((m) => m.id)])],
       options,
+      ...(forQuest ? { questId: forQuest.id } : {}),
     };
     // The photo links must outlive the form: the background job still reads them, and they go with the page
     photoUrls.current = [];
@@ -354,7 +362,11 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-slate-900 truncate">{linkedTarget?.title ?? (customLocation.trim() || 'เพิ่มสถานที่')}</span>
               {linkedTarget && <span className="block text-xs font-medium text-slate-600 truncate">{[LINK_TYPE_LABELS[linkedTarget.type], linkedTarget.location].filter(Boolean).join(' · ')}</span>}
-              {!placeChosen && <span className="block text-xs font-medium text-slate-500">ไม่บังคับ แต่ถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย</span>}
+              {!placeChosen && (
+                <span className={`block text-xs font-medium ${forQuest?.withPlace ? 'text-[#B45309]' : 'text-slate-500'}`}>
+                  {forQuest?.withPlace ? 'ใส่สถานที่ด้วยนะ ชาเลนจ์นี้นับโพสต์ที่มีสถานที่' : 'ไม่บังคับ แต่ถ้าที่นั่นอยู่ในชาเลนจ์ ระบบจะนับให้เลย'}
+                </span>
+              )}
             </span>
             {!placeChosen && <ChevronRight className="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true" />}
           </button>
@@ -372,12 +384,17 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             </button>
           )}
         </div>
-        {linkedQuest && (
+        {linkedQuest ? (
           <p className="pb-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
             <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
             <span className="min-w-0 line-clamp-2">ที่นี่นับในชาเลนจ์ {linkedQuest.title}</span>
           </p>
-        )}
+        ) : forQuest && (!forQuest.withPlace || placeChosen) ? (
+          <p className="pb-2 flex items-start gap-1.5 text-xs font-bold text-[#5B21B6] leading-relaxed">
+            <Trophy className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="min-w-0 line-clamp-2">โพสต์นี้นับในชาเลนจ์ {forQuest.title}</span>
+          </p>
+        ) : null}
         {linkedQuest && linkedTarget && (linkedTarget.type === 'spot' || linkedTarget.type === 'fair') && (
           <p className="pb-2 text-xs text-slate-600 leading-relaxed">
             โพสต์ตอนอยู่ที่นี่ แล้วกดอนุญาตตำแหน่ง รูปจะนับทันที ถ้าไม่ได้อยู่ที่นี่ ทีมงานจะตรวจรูปภายใน 24 ชม.
@@ -429,6 +446,12 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             </div>
             <div className="p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-3 overflow-y-auto">
               {linkedTarget && <p className="text-sm font-medium text-slate-600 truncate">จาก {linkedTarget.title}</p>}
+              {forQuest && !linkedTarget && (
+                <p className="flex items-start gap-1.5 text-sm font-bold text-[#5B21B6]">
+                  <Trophy className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                  <span className="min-w-0 line-clamp-2">สำหรับชาเลนจ์ {forQuest.title}</span>
+                </p>
+              )}
               {isPreparing ? (
                 <p role="status" className="py-10 text-center text-sm font-semibold text-slate-600">กำลังเปิดไฟล์…</p>
               ) : (
