@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-416 · Sign in with Apple turned on; key read in any pasted shape; page headers clear the iPhone status bar (2026-11-18)
+- **What changed:**
+  - Apple sign-in is configured: Services ID `com.chillwaa.web` (= `APPLE_CLIENT_ID`), return URL `https://www.chillwaa.com/api/auth/member/oauth/apple/callback`, key with Sign in with Apple on App ID `com.chillwaa.app`. The four `APPLE_*` env values are on Vercel Production only (Apple accepts no localhost or preview domain).
+  - The first live try failed with `DECODER routines::unsupported`: the pasted `APPLE_PRIVATE_KEY` had lost its line breaks. `applePrivateKeyPem()` in `lib/members/oauth.ts` now rebuilds the PEM from real breaks, `\n`, spaces, quotes or the bare base64 body.
+  - The headers of `/login`, `/legal`, `/verify-email`, `/reset-password` and `/campaigns/results` (pages without the main Navbar) now pad by `env(safe-area-inset-top)`, so in the store app they no longer sit under the status bar.
+  - `memberActions.loginWith` returns `Promise<boolean>` in the store app (`false` = the sheet was closed); `AuthPanel` and `QuickSignup` re-enable their buttons then, instead of spinning until a reload.
+- **What to do about it:** a new standalone page with its own header must pad the top the same way. Still open for App Review: revoking the Apple token on account delete (see `docs/IOS_APP.md`).
+
 ### BE-415 · Two icon copies missed by BE-413 (2026-11-18)
 - **What changed:** `public/apple-touch-icon.png` (iOS asks for it by path; `app/layout.tsx` lists it) and `public/brand-logo.png` (512 icon, JSON-LD logo, share image in `app/opengraph-image.tsx`) were still the old icon. Both are now copies of `app/apple-icon.png` and `public/icons/icon-512.png`.
 - **What to do about it:** keep these two in step when the icon changes again.

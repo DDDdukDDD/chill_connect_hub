@@ -106,6 +106,19 @@ function decodeJwtPayload(token: unknown): Record<string, unknown> {
   return JSON.parse(Buffer.from(part, 'base64url').toString('utf-8'));
 }
 
+/**
+ * Rebuilds the .p8 key as a clean PEM whatever way it was pasted into the env: with real line breaks, with `\n`,
+ * on one line with spaces where the breaks were, wrapped in quotes, or as the base64 body alone.
+ * A key whose breaks were lost fails in OpenSSL with "DECODER routines::unsupported".
+ */
+export function applePrivateKeyPem(raw: string): string {
+  const body = raw
+    .replace(/\\n/g, '\n')
+    .replace(/-----(BEGIN|END)[A-Z ]*-----/g, '')
+    .replace(/["'\s]/g, '');
+  return `-----BEGIN PRIVATE KEY-----\n${(body.match(/.{1,64}/g) ?? []).join('\n')}\n-----END PRIVATE KEY-----\n`;
+}
+
 /** Apple's client secret is a short-lived ES256 JWT signed with the team's private key */
 function appleClientSecret(): string {
   const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: process.env.APPLE_KEY_ID })).toString('base64url');
@@ -117,7 +130,7 @@ function appleClientSecret(): string {
     aud: 'https://appleid.apple.com',
     sub: process.env.APPLE_CLIENT_ID,
   })).toString('base64url');
-  const key = process.env.APPLE_PRIVATE_KEY!.replace(/\\n/g, '\n');
+  const key = applePrivateKeyPem(process.env.APPLE_PRIVATE_KEY!);
   const signature = cryptoSign('sha256', Buffer.from(`${header}.${payload}`), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url');
   return `${header}.${payload}.${signature}`;
 }
