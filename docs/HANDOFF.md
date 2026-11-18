@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-417 · iPhone: typing in a popup field zoomed the app past the screen edges (owner 2026-11-18)
+- **What changed:** iOS zooms into any field whose text is under 16px when it is tapped and keeps that zoom after the popup closes, so the app stayed wider than the screen. About 60 files use `text-xs`/`text-sm`/`text-[11-13px]` fields. `app/globals.css` now gives fields 16px only on iOS (`@supports (-webkit-touch-callout: none)`): text inputs, textarea, select and `contenteditable`, but not checkboxes, ranges or fields marked `text-lg` and larger. Pinch zoom still works; desktop and Android keep the designed sizes.
+- **What to do about it:** on iPhone and iPad, fields show slightly larger text than in the design. Check on a real iPhone after merge (the store app loads the live site, so no new TestFlight build is needed).
+
+---
+
 ### BE-416 · Sign in with Apple turned on; key read in any pasted shape; page headers clear the iPhone status bar (2026-11-18)
 - **What changed:**
   - Apple sign-in is configured: Services ID `com.chillwaa.web` (= `APPLE_CLIENT_ID`), return URL `https://www.chillwaa.com/api/auth/member/oauth/apple/callback`, key with Sign in with Apple on App ID `com.chillwaa.app`. The four `APPLE_*` env values are on Vercel Production only (Apple accepts no localhost or preview domain).
