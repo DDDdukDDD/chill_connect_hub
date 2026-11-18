@@ -13,6 +13,7 @@ import { isEventEnded } from '@/lib/dateUtils';
 import { AdminDrawer, Field, FormSection, InertPreview, PREVIEW_PLACEHOLDER_IMAGE, PreviewModeToggle, QualityPanel, fieldInputClass } from './AdminDrawer';
 import { AdminStatus, AdminStatusChip, adminButton } from './AdminUI';
 import { handleAdminUnauthorized } from './adminAuthUtils';
+import { HostPicker } from './HostPicker';
 
 const VENUE_OPTIONS = [
   { id: '', label: 'ไม่ระบุ' },
@@ -136,6 +137,9 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
   const [error, setError] = useState<string | null>(null);
   // Fixed once per drawer so the preview stays pure across renders
   const [openedAt] = useState(() => Date.now());
+  // The member account running the ตี้ (check-ins, list, chat); sent only when a new one is picked
+  const currentHostId = (event as { createdByMemberId?: string } | null)?.createdByMemberId;
+  const [hostAccount, setHostAccount] = useState<{ id: string; displayName: string; email?: string } | null>(null);
 
   const set = <K extends keyof EventForm>(key: K) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((current) => ({ ...current, [key]: e.target.value }));
@@ -162,9 +166,10 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
     setIsSaving(true);
     setError(null);
     try {
+      const host = hostAccount && hostAccount.id !== currentHostId ? { createdByMemberId: hostAccount.id } : {};
       const body = isNew
-        ? { action: 'create', eventData: { ...fields, approvalStatus: approvalStatus ?? 'pending' } }
-        : { action: 'update_fields', id: event!.id, updatedFields: fields };
+        ? { action: 'create', eventData: { ...fields, ...host, approvalStatus: approvalStatus ?? 'pending' } }
+        : { action: 'update_fields', id: event!.id, updatedFields: { ...fields, ...host } };
       const res = await fetch('/api/admin/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
@@ -248,10 +253,16 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
         <Field label="ป้ายหมวดที่แสดง:" htmlFor="event-tag" hint="เว้นว่างได้ ระบบใช้ชื่อหมวด">
           <input id="event-tag" value={form.tag} onChange={set('tag')} className={fieldInputClass} />
         </Field>
-        <Field label={isCommunity ? 'ผู้จัด (โฮสต์):' : 'ผู้จัดอย่างเป็นทางการ:'} htmlFor="event-host" wide
-          hint={isCommunity ? undefined : 'บังคับสำหรับอีเวนต์ เช่น สมาคมผู้จัดพิมพ์ฯ (PUBAT)'}>
+        <Field label={isCommunity ? 'ชื่อผู้จัดที่แสดง:' : 'ผู้จัดอย่างเป็นทางการ:'} htmlFor="event-host" wide
+          hint={isCommunity ? 'ชื่อที่คนเห็นบนหน้าตี้ เช่น ทีม Chillwaa' : 'บังคับสำหรับอีเวนต์ เช่น สมาคมผู้จัดพิมพ์ฯ (PUBAT)'}>
           <input id="event-host" value={form.hostName} onChange={set('hostName')} className={fieldInputClass} />
         </Field>
+        {isCommunity && (
+          <Field label="บัญชีโฮสต์ (สแกนเช็กอิน):" htmlFor="event-host-account" wide
+            hint="บัญชีสมาชิกที่สแกนบัตรผู้เข้าร่วม ดูรายชื่อ และดูแลแชตตี้ ต้องมีทุกตี้ที่ทีมงานสร้าง เปลี่ยนได้ แต่ลบออกไม่ได้">
+            <HostPicker inputId="event-host-account" currentId={currentHostId} value={hostAccount} onChange={setHostAccount} />
+          </Field>
+        )}
       </FormSection>
 
       <FormSection title="วันและเวลา" hint={isRecurring ? 'ตี้นี้จัดประจำ: ตารางนัดประจำแก้จากหน้าเว็บของผู้จัด' : undefined}>
