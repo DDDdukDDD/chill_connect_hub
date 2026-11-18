@@ -438,12 +438,13 @@ export const pgMomentRepository: MomentRepository = {
     const db = sql();
     await db`update app.moments set achievement = ${db.json(achievement as never)} where slug = ${id}`;
   },
-  async recentAchievements(since, limit) {
+  async recentAchievements(since, limit, authorIds) {
     const db = sql();
     const rows = await db`
       select m.slug, a.legacy_id as author, m.achievement, m.created_at
       from app.moments m join app.members a on a.id = m.author_id
       where ${publicRule(db)} and m.achievement is not null and m.created_at >= ${since}
+        ${authorIds ? db`and a.legacy_id = any(${db.array(authorIds)}::text[])` : db``}
       order by m.created_at desc limit ${limit}`;
     return rows.map((r) => ({ momentId: String(r.slug), authorId: String(r.author), achievement: r.achievement, createdAt: new Date(r.created_at).toISOString() }));
   },

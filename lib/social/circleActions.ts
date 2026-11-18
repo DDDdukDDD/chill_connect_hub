@@ -6,7 +6,7 @@ import { tidyDisplayName } from '../displayName';
 import { taggableFriends, visibleMoment } from '../moments/service';
 import { questMemberStore } from './stores';
 import { joinQuest } from './questJoins';
-import { findQuest, questPicture } from './circles';
+import { circleItems, findQuest, questPicture, type ChallengeCircle, type ChallengeCircleDetail } from './circles';
 import { inviteSheetInfo, sendInvites } from './friendPlans';
 import { traceAction } from './actionLog';
 import { notifyCheer, notifyFollowAlong } from './notifications';
@@ -243,4 +243,24 @@ export async function circleAct(reader: Member, id: string, action: CircleAction
     message = (await ask()) ? `ชวน${shortName(before.person.name)}แล้ว` : `${shortName(before.person.name)}อยู่ในนัดนี้แล้ว`;
   }
   return { detail: await circleDetail(reader, id), message };
+}
+
+/**
+ * A friends-on-one-challenge Circle opened (`c:<questId>`, Circles at scale 2026-11-18): the reader's place in the
+ * challenge and which of these friends they already cheered. Who is in it comes from the reader's own Circles list, so
+ * nobody shows here who would not show in the row. Cheering and joining go through each person's own Circle id.
+ */
+export async function challengeCircleDetail(reader: Member, id: string): Promise<ChallengeCircleDetail> {
+  const questId = id.slice(2);
+  const group = (await circleItems(reader)).find((item): item is ChallengeCircle => item.kind === 'challenge' && item.id === id);
+  const quest = group ? await findQuest(questId) : null;
+  if (!group || !quest) throw new MemberAuthError('ไม่พบ Circle นี้', 404);
+  const [joins, finishes] = await Promise.all([questMemberStore.joins({ memberId: reader.id, questId: quest.id }), questMemberStore.finishes({ memberId: reader.id, questId: quest.id })]);
+  const cheered = await Promise.all(
+    group.people.map(async (person) => {
+      const done = await notificationStore.exists({ ...cheerMatch(person.person.id, quest.id, person.momentId), actorId: reader.id }).catch(() => false);
+      return done ? person.id : null;
+    })
+  );
+  return { id, open: quest.status !== 'ended', joined: joins.length > 0, finished: finishes.length > 0, cheered: cheered.filter((c): c is string => c !== null) };
 }

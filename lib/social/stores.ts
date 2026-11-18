@@ -131,7 +131,8 @@ interface QuestMemberStore {
   joinCounts(): Promise<Map<string, number>>;
   join(memberId: string, questId: string): Promise<void>;
   leave(memberId: string, questId: string): Promise<void>;
-  finishes(filter?: { memberId?: string; questId?: string }): Promise<QuestFinish[]>;
+  /** memberIds + since: Circles reads only the reader's friends (2026-11-18, Circles at scale) */
+  finishes(filter?: { memberId?: string; questId?: string; memberIds?: string[]; since?: string }): Promise<QuestFinish[]>;
   /** Records the finishes not recorded yet and returns those */
   recordFinishes(memberId: string, questIds: string[]): Promise<string[]>;
   removeBy(memberId: string): Promise<void>;
@@ -160,7 +161,8 @@ function jsonQuestMembers(): QuestMemberStore {
       await joins.update((items) => items.filter((j) => !(j.memberId === memberId && j.questId === questId)));
     },
     async finishes(filter) {
-      return finishes.read().filter((f) => fits(f, filter));
+      const ids = filter?.memberIds ? new Set(filter.memberIds) : null;
+      return finishes.read().filter((f) => fits(f, filter) && (!ids || ids.has(f.memberId)) && (!filter?.since || f.finishedAt >= filter.since));
     },
     async recordFinishes(memberId, questIds) {
       const known = new Set(finishes.read().filter((f) => f.memberId === memberId).map((f) => f.questId));
@@ -215,6 +217,8 @@ function pgQuestMembers(): QuestMemberStore {
         select m.legacy_id as member, q.slug as quest, p.finished_at
         from app.quest_participants p join app.members m on m.id = p.member_id join app.quests q on q.id = p.quest_id
         where p.finished_at is not null ${where(db, filter)}
+          ${filter?.memberIds ? db`and m.legacy_id = any(${db.array(filter.memberIds)}::text[])` : db``}
+          ${filter?.since ? db`and p.finished_at >= ${filter.since}` : db``}
         order by p.finished_at desc`;
       return rows.map((r) => ({ memberId: r.member, questId: r.quest, finishedAt: iso(r.finished_at) }));
     },

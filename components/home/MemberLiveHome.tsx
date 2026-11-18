@@ -1,5 +1,6 @@
 'use client';
 
+import { SHARE_ASK_DAYS } from '@/lib/social/socialRules';
 import React, { useEffect, useState } from 'react';
 import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
@@ -194,7 +195,7 @@ function rememberShared(id: string) {
 }
 
 // A ตี้ that ended this long ago or less still asks for its moment
-const SHARE_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
+const SHARE_WINDOW_MS = SHARE_ASK_DAYS * 24 * 60 * 60 * 1000;
 // Test-login ตี้ carry a "[ตัวอย่าง]" tag in the title (as MeetupTile)
 const plainTitle = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 

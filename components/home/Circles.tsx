@@ -2,13 +2,19 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
-import type { CircleItem } from '@/lib/social/circles';
+import { ChevronLeft, ChevronRight, LayoutGrid, Trophy } from 'lucide-react';
+import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
 import { GroupRowCircle } from '@/components/home/GroupCircleView';
+import { ChallengeRowCircle } from '@/components/home/ChallengeCircleView';
+import { AllCirclesSheet } from '@/components/home/AllCirclesSheet';
+import { ACHIEVEMENTS_ROW_MAX } from '@/lib/social/socialRules';
+
+/** The reader's own Circle: first, never greyed (a type check only; lib/social/circles.ts is server code) */
+export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish' || item.kind === 'step' || item.kind === 'doing') && item.isMe;
 
 const MEMORY_KEY = 'circles';
 
@@ -39,8 +45,8 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   const [seen, setSeen] = useState<string[]>(readSeen);
   const [seenAtLoad, setSeenAtLoad] = useState<string[]>(readSeen);
   const ordered = useMemo(() => {
-    const mine = items.filter((item) => item.kind !== 'group' && item.isMe);
-    const others = items.filter((item) => !(item.kind !== 'group' && item.isMe));
+    const mine = items.filter(isOwnCircle);
+    const others = items.filter((item) => !isOwnCircle(item));
     return [...mine, ...others.filter((item) => !seenAtLoad.includes(item.id)), ...others.filter((item) => seenAtLoad.includes(item.id))];
   }, [items, seenAtLoad]);
   const markSeen = useCallback((id: string) => setSeen((now) => (now.includes(id) ? now : rememberSeen(id))), []);
@@ -69,6 +75,9 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
     return load();
   }, [initial, refreshKey, stale, load]);
   const open = (index: number) => setOpenAt(index);
+  // Past ACHIEVEMENTS_ROW_MAX the row ends with "ดูทั้งหมด" (Circles at scale, owner 2026-11-18): a list of every Circle
+  const [allOpen, setAllOpen] = useState(false);
+  const shown = ordered.length > ACHIEVEMENTS_ROW_MAX ? ordered.slice(0, ACHIEVEMENTS_ROW_MAX) : ordered;
   // Computers have no swipe: ‹ › appear on the side that has more circles (owner 2026-11-13)
   const listRef = useRef<HTMLUListElement>(null);
   const [more, setMore] = useState({ left: false, right: false });
@@ -103,61 +112,41 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
       {/* The row fades out at the side that has more (2026-11-14): a circle cut in half at the feed edge looked like a mistake */}
       <ul ref={listRef} onScroll={measure} style={fadeMask(more)} className="sm:[mask-image:var(--row-fade)] flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {lead}
-        {ordered.map((item, index) => {
+        {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
-          const faded = !(item.kind !== 'group' && item.isMe) && seen.includes(item.id);
+          const faded = !isOwnCircle(item) && seen.includes(item.id);
           if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
-          const done = item.kind === 'finish';
-          const doing = item.kind === 'doing';
-          // My own Circles show the challenge (picture and title) in every state, so "Road to ATM…" stays itself after its
-          // first step instead of turning into "คุณ" (2026-11-18 walk); friends' Circles show the friend
-          const name = item.isMe ? item.quest.title : item.person.name;
-          const picture = item.isMe ? item.quest.image || item.person.avatar : item.person.avatar;
-          // The badge in words: "2/3" alone says nothing to someone new (owner 2026-11-13)
-          const meaning = doing
-            ? `ชาเลนจ์ที่คุณทำอยู่: ${item.quest.title}`
-            : done
-              ? `${item.isMe ? 'คุณ' : name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
-              : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
-          const ring = faded ? 'bg-slate-200' : done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]';
-          return (
-            <li key={item.id} className="shrink-0 w-[80px]">
-              <button
-                type="button"
-                onClick={() => open(index)}
-                aria-label={meaning}
-                title={meaning}
-                className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
-              >
-                <span className={`relative rounded-full p-[3px] ${ring}`}>
-                  <span className="block rounded-full bg-white p-[2px]">
-                    {picture ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                      <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
-                    ) : doing ? (
-                      <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                        <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
-                      </span>
-                    ) : (
-                      <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
-                    )}
-                  </span>
-                  <span
-                    className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
-                    aria-hidden="true"
-                  >
-                    {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
-                  </span>
-                </span>
-                <span className={`w-full truncate text-center text-xs font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
-                  {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
-                  {name.replace(/\s*\(.*$/, '') || name}
-                </span>
-              </button>
-            </li>
-          );
+          if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
+          return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
         })}
+        {shown.length < ordered.length && (
+          <Circle
+            onClick={() => setAllOpen(true)}
+            label={`ดู Circles ทั้งหมด ${ordered.length} อัน`}
+            ring="from-slate-300 to-slate-200"
+            fallback={<LayoutGrid className="w-7 h-7 text-slate-600" aria-hidden="true" />}
+            badge={`+${ordered.length - shown.length}`}
+            badgeClass="bg-slate-700 text-white"
+            name="ดูทั้งหมด"
+          />
+        )}
       </ul>
+      {allOpen && (
+        <AllCirclesSheet
+          items={ordered}
+          render={(item, index) => {
+            const faded = !isOwnCircle(item) && seen.includes(item.id);
+            const pick = () => {
+              setAllOpen(false);
+              open(index);
+            };
+            if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={pick} />;
+            if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={pick} />;
+            return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={pick} />;
+          }}
+          onClose={() => setAllOpen(false)}
+        />
+      )}
       {openAt !== null && ordered[openAt] && (
         <CircleViewer
           items={ordered}
@@ -179,6 +168,59 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
       )}
     </section>
   );
+}
+
+/** A person's Circle in the row: a finish (gold), a step (violet, "2/3"), or my own challenge in progress (blue) */
+function AchievementRowCircle({ item, seen: faded, onOpen }: { item: AchievementCircle; seen: boolean; onOpen: () => void }) {
+    const done = item.kind === 'finish';
+    const doing = item.kind === 'doing';
+    // My own Circles show the challenge (picture and title) in every state, so "Road to ATM…" stays itself after its
+    // first step instead of turning into "คุณ" (2026-11-18 walk); friends' Circles show the friend
+    const name = item.isMe ? item.quest.title : item.person.name;
+    const picture = item.isMe ? item.quest.image || item.person.avatar : item.person.avatar;
+    // The badge in words: "2/3" alone says nothing to someone new (owner 2026-11-13)
+    const meaning = doing
+      ? `ชาเลนจ์ที่คุณทำอยู่: ${item.quest.title}`
+      : done
+        ? `${item.isMe ? 'คุณ' : name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
+        : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
+    const ring = faded ? 'bg-slate-200' : done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]';
+    return (
+      <li className="shrink-0 w-[80px]">
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={meaning}
+          title={meaning}
+          className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+        >
+          <span className={`relative rounded-full p-[3px] ${ring}`}>
+            <span className="block rounded-full bg-white p-[2px]">
+              {picture ? (
+                // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
+                <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+              ) : doing ? (
+                <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
+                </span>
+              ) : (
+                <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+              )}
+            </span>
+            <span
+              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
+              aria-hidden="true"
+            >
+              {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
+            </span>
+          </span>
+          <span className={`w-full truncate text-center text-xs font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
+            {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
+            {name.replace(/\s*\(.*$/, '') || name}
+          </span>
+        </button>
+      </li>
+    );
 }
 
 // Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again

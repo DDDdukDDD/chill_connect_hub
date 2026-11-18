@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, Check, ChevronLeft, ChevronRight, HandHeart, Loader2, Trophy, Users, X } from 'lucide-react';
 import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { GroupCircleBody, plainTeeTitle } from '@/components/home/GroupCircleView';
+import { ChallengeCircleBody } from '@/components/home/ChallengeCircleView';
 import type { CircleAction, CircleDetail } from '@/lib/social/circleActions';
 import { useDialogBehavior, dialogButton } from '@/components/auth/DialogShell';
 import { InviteSheet } from '@/components/invites/InviteSheet';
@@ -44,7 +45,8 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row)
   const asked = useRef(new Set<string>());
   const fetchDetail = useCallback((circle: CircleItem | undefined) => {
-    if (!circle || circle.kind === 'group' || asked.current.has(circle.id)) return;
+    // Group and friends-on-one-challenge Circles load their own detail
+    if (!circle || circle.kind === 'group' || circle.kind === 'challenge' || asked.current.has(circle.id)) return;
     asked.current.add(circle.id);
     fetch(`/api/circles/${encodeURIComponent(circle.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -116,6 +118,21 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
     }
   };
 
+  // A friends-on-one-challenge Circle: cheer or join one friend's own Circle; true when it worked
+  const actOn = async (circleId: string, action: 'cheer' | 'try'): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/circles/${encodeURIComponent(circleId)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+      const json = await res.json().catch(() => null);
+      if (!json?.success) throw new Error(json?.message || 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
+      if (action !== 'cheer') changed.current = true;
+      showToast(json.message);
+      return true;
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
+      return false;
+    }
+  };
+
   if (typeof document === 'undefined') return null;
   const arrow = 'hidden sm:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg hover:bg-white cursor-pointer';
 
@@ -136,14 +153,18 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
         data-dialog-shell
         role="dialog"
         aria-modal="true"
-        aria-label={item.kind === 'group' ? `Circle ตี้ ${plainTeeTitle(item.tee.title)}` : `Circle ของ${item.isMe ? 'คุณ' : shortName(item.person.name)}`}
+        aria-label={item.kind === 'group' ? `Circle ตี้ ${plainTeeTitle(item.tee.title)}` : item.kind === 'challenge' ? `Circle เพื่อน ${item.people.length} คน ชาเลนจ์ ${item.quest.title}` : `Circle ของ${item.isMe ? 'คุณ' : shortName(item.person.name)}`}
         tabIndex={-1}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className="relative w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-[440px] bg-white sm:rounded-[32px] overflow-y-auto flex flex-col focus:outline-hidden"
+        className="relative w-full h-full pt-[env(safe-area-inset-top)] sm:pt-0 sm:h-auto sm:max-h-[92vh] sm:max-w-[440px] bg-white sm:rounded-[32px] overflow-y-auto flex flex-col focus:outline-hidden"
       >
         {/* Which Circle of how many: thin bars like a row of pages, never a countdown */}
-        {items.length > 1 && (
+        {/* Past 20 the bars get too thin to read ("ดูทั้งหมด" opens up to 60): a count instead */}
+        {items.length > 20 && (
+          <p className="px-4 pt-3 text-xs font-bold text-slate-500 tabular-nums" aria-hidden="true">{index + 1} / {items.length}</p>
+        )}
+        {items.length > 1 && items.length <= 20 && (
           <div className="flex gap-1 px-4 pt-3" aria-hidden="true">
             {items.map((other, i) => (
               <span key={other.id} className={`h-1 flex-1 rounded-full ${i === index ? 'bg-slate-900' : 'bg-slate-200'}`} />
@@ -152,6 +173,8 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
         )}
         {item.kind === 'group' ? (
           <GroupCircleBody item={item} onClose={close} onOpenMoment={onOpenMoment} />
+        ) : item.kind === 'challenge' ? (
+          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onOpenMoment={onOpenMoment} />
         ) : (
           <AchievementBody
             item={item}
