@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { RING_FRIENDS } from '@/components/home/circleLook';
 import Link from 'next/link';
 import { Check, HandHeart, Loader2, Trophy, Users, X } from 'lucide-react';
 import type { AchievementCircle, ChallengeCircle, ChallengeCircleDetail } from '@/lib/social/circles';
@@ -33,7 +34,7 @@ export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: Chall
         title={meaning}
         className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       >
-        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : 'bg-linear-to-tr from-[#7C3AED] via-[#C084FC] to-[#FBBF24]'}`}>
+        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : `bg-linear-to-tr ${RING_FRIENDS}`}`}>
           <span className="block rounded-full bg-white p-[2px]">
             {item.quest.image ? (
               // eslint-disable-next-line @next/next/no-img-element -- challenge covers come from many hosts
@@ -48,7 +49,7 @@ export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: Chall
           <span className="absolute -top-1 -right-2 flex -space-x-2" aria-hidden="true">
             {faces.map((face) => <Face key={face.id} circle={face} size="w-6 h-6 text-[10px]" />)}
           </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white bg-[#7C3AED] text-white text-[11px] font-bold tabular-nums whitespace-nowrap" aria-hidden="true">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white bg-[#1D4ED8] text-white text-[11px] font-bold tabular-nums whitespace-nowrap" aria-hidden="true">
             <Users className="w-3 h-3" />
             {item.people.length}
           </span>

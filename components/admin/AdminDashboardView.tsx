@@ -8,6 +8,7 @@ import type { AdminModuleFilters, AdminModuleId, AdminNavigate } from './AdminSi
 import { useAdminSession } from './AdminAuthGate';
 import { RetentionPanel } from './RetentionPanel';
 import { BringersPanel } from './BringersPanel';
+import { CirclesStatsPanel } from './CirclesStatsPanel';
 import { handleAdminUnauthorized } from './adminAuthUtils';
 
 interface QueueItem {
@@ -237,6 +238,9 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
 
       {/* Who brings people out (docs/TRACEABILITY.md): the base for finding creators and a later creator share */}
       <BringersPanel />
+
+      {/* Which Circles people open and act on (BE-420): keep the kinds that work */}
+      <CirclesStatsPanel />
 
       {/* Is the community alive: the content above is workload, this is whether people use the site */}
       <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">

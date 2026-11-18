@@ -12,16 +12,18 @@ import { GroupRowCircle } from '@/components/home/GroupCircleView';
 import { ChallengeRowCircle } from '@/components/home/ChallengeCircleView';
 import { AllCirclesSheet } from '@/components/home/AllCirclesSheet';
 import { ACHIEVEMENTS_ROW_MAX } from '@/lib/social/socialRules';
+import { BADGE_MINE, NAME_MINE, RING_FRIENDS, RING_MINE } from '@/components/home/circleLook';
 
 /** The reader's own Circle: first, never greyed (a type check only; lib/social/circles.ts is server code) */
 export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish' || item.kind === 'step' || item.kind === 'doing') && item.isMe;
 
 const MEMORY_KEY = 'circles';
 
+
 /**
  * Circles (one is a Circle; owner 2026-11-16) above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
- * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
- * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
+ * achieved what). Rings: orange for mine, blue for friends (RING_MINE / RING_FRIENDS); the badge says a finish (gold
+ * trophy), a step ("2/3") or my own challenge taken on but not posted for yet ("ทำอยู่").
  * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
  * too. Nothing shows until someone has achieved something.
  */
@@ -115,9 +117,12 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
         {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
           const faded = !isOwnCircle(item) && seen.includes(item.id);
-          if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
-          if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
-          return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
+          // A thin line between my own Circles and friends' (option A)
+          const divider = index > 0 && isOwnCircle(shown[index - 1]) && !isOwnCircle(item) ? (
+            <li key={`divider-${item.id}`} aria-hidden="true" className="shrink-0 self-start mt-[14px] w-px h-11 bg-slate-200" />
+          ) : null;
+          if (divider) return [divider, rowCircle(item, faded, () => open(index))];
+          return rowCircle(item, faded, () => open(index));
         })}
         {shown.length < ordered.length && (
           <Circle
@@ -170,7 +175,13 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   );
 }
 
-/** A person's Circle in the row: a finish (gold), a step (violet, "2/3"), or my own challenge in progress (blue) */
+function rowCircle(item: CircleItem, faded: boolean, onOpen: () => void) {
+  if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+  if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+  return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+}
+
+/** A person's Circle in the row: orange when it is mine, blue for a friend; the badge says finished (trophy), "2/3" or "ทำอยู่" */
 function AchievementRowCircle({ item, seen: faded, onOpen }: { item: AchievementCircle; seen: boolean; onOpen: () => void }) {
     const done = item.kind === 'finish';
     const doing = item.kind === 'doing';
@@ -184,7 +195,8 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
       : done
         ? `${item.isMe ? 'คุณ' : name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
         : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
-    const ring = faded ? 'bg-slate-200' : done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]';
+    const ring = faded ? 'bg-slate-200' : `bg-linear-to-tr ${item.isMe ? RING_MINE : RING_FRIENDS}`;
+    const badge = item.isMe ? BADGE_MINE : done ? 'bg-[#F59E0B] text-white' : 'bg-[#1D4ED8] text-white';
     return (
       <li className="shrink-0 w-[80px]">
         <button
@@ -200,21 +212,22 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
                 // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
                 <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
               ) : doing ? (
-                <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
+                <span className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
+                  <Trophy className="w-7 h-7 text-[#C2410C]" aria-hidden="true" />
                 </span>
               ) : (
                 <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
               )}
             </span>
             <span
-              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
+              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badge}`}
               aria-hidden="true"
             >
               {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
             </span>
           </span>
-          <span className={`w-full truncate text-center text-xs font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
+          {/* My own show the challenge's name on up to two lines (option A: "ป้ายยาที่โปรด…" was cut off); friends show the name */}
+          <span className={`w-full text-center text-xs ${item.isMe ? `line-clamp-2 leading-tight ${NAME_MINE}` : `truncate font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`}`} aria-hidden="true">
             {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
             {name.replace(/\s*\(.*$/, '') || name}
           </span>
@@ -244,7 +257,7 @@ function rememberSeen(id: string): string[] {
 }
 
 /** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment, a campaign */
-export function Circle({ href, onClick, label, image, fallback, fit = 'cover', ring, badge, badgeClass, name, className = '' }: {
+export function Circle({ href, onClick, label, image, fallback, fit = 'cover', ring, badge, badgeClass, name, mine = false, className = '' }: {
   href?: string;
   onClick?: () => void;
   label: string;
@@ -258,6 +271,8 @@ export function Circle({ href, onClick, label, image, fallback, fit = 'cover', r
   badge: React.ReactNode;
   badgeClass: string;
   name: string;
+  /** One of mine (option A): the name in the orange of my own Circles */
+  mine?: boolean;
   className?: string;
 }) {
   const body = (
@@ -275,7 +290,7 @@ export function Circle({ href, onClick, label, image, fallback, fit = 'cover', r
           {badge}
         </span>
       </span>
-      <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">{name}</span>
+      <span className={`w-full truncate text-center text-xs ${mine ? NAME_MINE : 'font-medium text-slate-700'}`} aria-hidden="true">{name}</span>
     </>
   );
   const look = 'group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]';

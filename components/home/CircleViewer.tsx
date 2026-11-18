@@ -41,6 +41,14 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   const detail = details[item.id];
 
   useEffect(() => onSeen?.(item.id), [item.id, onSeen]);
+  // Admin Circles numbers (BE-420): this Circle opened, and posts opened from it; never waited on
+  useEffect(() => countCircle(item.id, item.kind, 'open'), [item.id, item.kind]);
+  const openMoment = onOpenMoment
+    ? (momentId: string) => {
+        countCircle(item.id, item.kind, 'view_post');
+        onOpenMoment(momentId);
+      }
+    : undefined;
 
   // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row)
   const asked = useRef(new Set<string>());
@@ -92,9 +100,18 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   };
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (nextTimer.current) clearTimeout(nextTimer.current);
   }, []);
+  // A cheer sent moves on to the next Circle after a beat, so cheering several friends is tap, tap (owner 2026-11-18);
+  // it stays put if the reader moved meanwhile or this was the last one
+  const advanceAfterCheer = (from: number) => {
+    if (from >= items.length - 1) return;
+    if (nextTimer.current) clearTimeout(nextTimer.current);
+    nextTimer.current = setTimeout(() => setIndex((i) => (i === from ? i + 1 : i)), 900);
+  };
   const showToast = (message: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
@@ -110,6 +127,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
       if (!json?.success) throw new Error(json?.message || 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
       setDetails((all) => ({ ...all, [item.id]: json.detail as CircleDetail }));
       if (action !== 'cheer') changed.current = true;
+      else advanceAfterCheer(index);
       showToast(json.message);
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
@@ -172,9 +190,9 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
           </div>
         )}
         {item.kind === 'group' ? (
-          <GroupCircleBody item={item} onClose={close} onOpenMoment={onOpenMoment} />
+          <GroupCircleBody item={item} onClose={close} onOpenMoment={openMoment} />
         ) : item.kind === 'challenge' ? (
-          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onOpenMoment={onOpenMoment} />
+          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onOpenMoment={openMoment} />
         ) : (
           <AchievementBody
             item={item}
@@ -184,7 +202,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
             onRetry={retry}
             onInvite={() => setInviteOpen(true)}
             onClose={close}
-            onOpenMoment={onOpenMoment}
+            onOpenMoment={openMoment}
             onPost={onPost}
           />
         )}
@@ -196,6 +214,10 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
     </div>,
     document.body
   );
+}
+
+function countCircle(id: string, kind: string, event: 'open' | 'view_post') {
+  fetch('/api/circles/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, kind, event }), keepalive: true }).catch(() => undefined);
 }
 
 /** The few words under the title: what this Circle says happened, or for my own, where I am */
@@ -213,7 +235,9 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
   const done = item.kind === 'finish';
   const ready = detail && detail !== 'error' ? detail : undefined;
   const name = item.isMe ? 'คุณ' : shortName(item.person.name);
-  const picture = ready ? ready.image : item.quest.image;
+  // A finish may show a real moment instead of the cover (BE-419): wait for it rather than flash the cover first
+  const waiting = !ready && detail !== 'error' && item.kind === 'finish' && !item.momentId;
+  const picture = ready ? ready.image : waiting ? undefined : item.quest.image;
   // My own doing Circle shows how far I am, once known
   const progress = item.kind === 'doing' ? ready?.progress : item.total ? { current: item.current ?? 0, total: item.total } : undefined;
   const barColor = done ? 'bg-[#F59E0B]' : item.kind === 'doing' ? 'bg-[#2563EB]' : 'bg-[#7C3AED]';
@@ -240,6 +264,8 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
           {picture ? (
             // eslint-disable-next-line @next/next/no-img-element -- post photos and challenge covers come from many hosts
             <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
+          ) : waiting ? (
+            <span className="block w-full h-full bg-slate-100 animate-pulse" aria-hidden="true" />
           ) : (
             <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
               <Trophy className="w-16 h-16 text-[#7C3AED]/40" aria-hidden="true" />
@@ -255,6 +281,8 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
         <div>
           <p className="text-lg font-bold text-slate-900 leading-snug">{item.quest.title}</p>
           <p className="mt-1 text-sm text-slate-600">{statusLine(item, ready, name)}</p>
+          {/* The moment in the picture, in a line: their caption, or whose post they liked (owner 2026-11-18) */}
+          {ready?.momentNote && <p className="mt-1 text-[13px] text-slate-500 truncate">{ready.momentNote}</p>}
           {progress && progress.total > 1 && (
             <span className="mt-3 flex gap-1.5" aria-hidden="true">
               {Array.from({ length: progress.total }, (_, i) => (

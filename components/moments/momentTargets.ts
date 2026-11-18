@@ -3,11 +3,12 @@ import { optimizedImage } from '@/lib/optimizedImage';
 
 /** Where a moment came from, in its pillar's colors, and what the reader can do there (Home feed, /moments, /moments/[id]).
  *   is the pillar's dark text colour, for a line without a box */
+/** `verb` opens a feed post's header: "มายด์ ไปตี้ <title>" (owner 2026-11-18, option B) */
 export const MOMENT_TARGETS = {
-  spot: { label: 'สถานที่', go: 'ไปที่นี่บ้าง', Icon: MapPin, box: 'bg-[#EBF3ED] text-[#2D5A3C]', ink: 'text-[#2D5A3C]', icon: 'text-[#4A7C59]', base: '/spots' },
-  fair: { label: 'อีเวนต์', go: 'ดูงานนี้', Icon: Tent, box: 'bg-[#EEF4FA] text-[#1F3D5C]', ink: 'text-[#1F3D5C]', icon: 'text-[#2B527A]', base: '/events' },
-  community: { label: 'ตี้', go: 'ดูตี้นี้', Icon: Users, box: 'bg-[#FFF4EE] text-[#C2410C]', ink: 'text-[#C2410C]', icon: 'text-[#F26430]', base: '/community' },
-  challenge: { label: 'ชาเลนจ์', go: 'ทำชาเลนจ์นี้', Icon: Flag, box: 'bg-[#F5F3FF] text-[#6D28D9]', ink: 'text-[#6D28D9]', icon: 'text-[#7C3AED]', base: '/challenges' },
+  spot: { label: 'สถานที่', verb: 'ไปที่', go: 'ไปที่นี่บ้าง', Icon: MapPin, box: 'bg-[#EBF3ED] text-[#2D5A3C]', ink: 'text-[#2D5A3C]', icon: 'text-[#4A7C59]', base: '/spots' },
+  fair: { label: 'อีเวนต์', verb: 'ไปงาน', go: 'ดูงานนี้', Icon: Tent, box: 'bg-[#EEF4FA] text-[#1F3D5C]', ink: 'text-[#1F3D5C]', icon: 'text-[#2B527A]', base: '/events' },
+  community: { label: 'ตี้', verb: 'ไปตี้', go: 'ดูตี้นี้', Icon: Users, box: 'bg-[#FFF4EE] text-[#C2410C]', ink: 'text-[#C2410C]', icon: 'text-[#F26430]', base: '/community' },
+  challenge: { label: 'ชาเลนจ์', verb: 'ทำชาเลนจ์', go: 'ทำชาเลนจ์นี้', Icon: Flag, box: 'bg-[#F5F3FF] text-[#6D28D9]', ink: 'text-[#6D28D9]', icon: 'text-[#7C3AED]', base: '/challenges' },
 } as const;
 
 export type MomentTargetKey = keyof typeof MOMENT_TARGETS;

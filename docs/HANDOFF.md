@@ -20,6 +20,40 @@ Item template:
 
 ---
 
+### BE-421 · Circles row: orange for mine, blue for friends, a line between (owner 2026-11-18, option A)
+- **What changed:** the row had seven ring colours (pink share, orange next plan, yellow campaign, blue doing, violet step, gold finish, green group, violet-gold friends on one challenge). Now two (`components/home/circleLook.ts`): orange `RING_MINE` for the reader's own Circles (share, next plan, campaigns, own challenges; badges `BADGE_MINE`, names in dark orange) and blue `RING_FRIENDS` for friends (finish keeps the gold trophy badge, steps, groups and friends-on-one-challenge badges are dark blue). A thin line sits between the reader's own challenge Circles and the first friend. The reader's own challenge names wrap to two lines instead of "ป้ายยาที่โปรด…"; one joined campaign is named "แคมเปญ" (two keep their prize words). Opened friend Circles still go grey. Admin topic Circles updated.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
+### BE-420 · Circles: no cover flash, cheer moves on, numbers in admin (owner 2026-11-18)
+- **What changed:**
+  - A finish Circle no longer shows the challenge cover for a moment before its real moment (BE-419) loads: a plain grey box waits instead (`CircleViewer`).
+  - After "ชื่นชม" the viewer moves to the next Circle after 0.9 s, unless the reader moved already or it was the last one.
+  - Numbers: new `app.circle_events` (migration 0063, granted to `app_runtime`), one row per Bangkok day, member, Circle kind and event, so people not taps. Opens and "ดูโพสต์" come from `POST /api/circles/events` (always 204); the buttons are counted in `POST /api/circles/:id`. `/admin` shows them in "Circles ได้ผลไหม" (`CirclesStatsPanel`, `GET /api/admin/circles`, 7/14/30 days, each action as a share of opens). Rows older than 180 days (`CIRCLE_EVENTS_KEEP_DAYS` in `socialRules.ts`) are dropped now and then. Not counted yet: taps on the reader's own share, next-plan and campaign Circles, which open other pages. API.md and the admin topic Circles updated.
+  - Drafts for one ring colour per group and short labels under the reader's own Circles wait for the owner's pick (not built).
+- **What to do about it:** live needs migration 0063 before the numbers fill (`! npm run db:migrate`); without it nothing breaks, events are just not kept. Checked on dev: three opens in a day count once, bad input is dropped, a cheer is counted; test rows and the test cheer were removed. The admin panel was not opened signed in.
+
+---
+
+### BE-419 · Circles: a finished challenge shows a real moment, not the cover (owner 2026-11-18)
+- **What changed:** an opened finish Circle (`f:`) used the challenge cover. `finishMoment` in `lib/social/circleActions.ts` now picks, in order: the person's own public post that counted toward the challenge (newest); for a challenge done by liking (`rule.actions.kind: 'like'`), the public post they liked last before finishing (new `momentRepository.lastLikedBefore`, left out when its author and the reader block each other); else the cover. `CircleDetail.momentNote` adds one line under the title in `CircleViewer`: the caption's first line in quotes, or "กดใจโมเมนต์ของ <name>" ("ของคุณ" for the reader's own post). Post Circles (`s:`) get the caption line too. API.md and the admin topic Circles updated. No migration.
+- **What to do about it:** nothing. Checked on dev through `GET /api/circles/:id`: post Circles carry their caption, a like-challenge finish carries the liked post and its line.
+
+---
+
+### BE-418 · Home feed: the post says what they went out and did, first line (owner 2026-11-18, option B)
+- **What changed:** the owner picked option B of four drafts. A post tied to a ตี้, place, อีเวนต์ or challenge now opens "<name> ไปตี้ / ไปที่ / ไปงาน / ทำชาเลนจ์ <title>" (title links, in the pillar colour; `verb` added to `MOMENT_TARGETS`). The check-in line under it stays as before (time · location), with the location left out when it only repeats the title. The slim line under the caption keeps only what it still offers and the go link ("เสาร์นี้ · เหลือ 3 ที่ · ขอไปด้วย →"), no second copy of the name. Only the Home feed (`HomeMomentFeed`); `/moments` and the moment page are unchanged by owner choice.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
+### BE-417 · iPhone: typing in a popup field zoomed the app past the screen edges (owner 2026-11-18)
+- **What changed:** iOS zooms into any field whose text is under 16px when it is tapped and keeps that zoom after the popup closes, so the app stayed wider than the screen. About 60 files use `text-xs`/`text-sm`/`text-[11-13px]` fields. `app/globals.css` now gives fields 16px only on iOS (`@supports (-webkit-touch-callout: none)`): text inputs, textarea, select and `contenteditable`, but not checkboxes, ranges or fields marked `text-lg` and larger. Pinch zoom still works; desktop and Android keep the designed sizes.
+- **What to do about it:** on iPhone and iPad, fields show slightly larger text than in the design. Check on a real iPhone after merge (the store app loads the live site, so no new TestFlight build is needed).
+
+---
+
 ### BE-416 · Sign in with Apple turned on; key read in any pasted shape; page headers clear the iPhone status bar (2026-11-18)
 - **What changed:**
   - Apple sign-in is configured: Services ID `com.chillwaa.web` (= `APPLE_CLIENT_ID`), return URL `https://www.chillwaa.com/api/auth/member/oauth/apple/callback`, key with Sign in with Apple on App ID `com.chillwaa.app`. The four `APPLE_*` env values are on Vercel Production only (Apple accepts no localhost or preview domain).

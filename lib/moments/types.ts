@@ -242,6 +242,8 @@ export interface MomentRepository {
   setAchievement(id: string, achievement: MomentAchievement): Promise<void>;
   /** Public posts with a challenge line since this time, newest first (the Circles on the member home) */
   recentAchievements(since: Date, limit: number, authorIds?: string[]): Promise<{ momentId: string; authorId: string; achievement: MomentAchievement; createdAt: string }[]>;
+  /** The public post the member liked last, at or before this time (a finished "like" challenge's Circle shows it) */
+  lastLikedBefore(memberId: string, before: Date): Promise<string | null>;
   /** Notes that the member had these posts on screen (moment ids) */
   markSeen(viewerId: string, ids: string[]): Promise<void>;
   /** Viewer-days of a post (one member counts once a day, not the author): in all, and in the last 7 days */
