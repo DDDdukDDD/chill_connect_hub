@@ -20,6 +20,24 @@ Item template:
 
 ---
 
+### BE-419 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
+- **What changed:** the ชวนไป sheet offers "วันอื่น" (a calendar) beside เสาร์นี้ / อาทิตย์นี้, and once a day is picked an optional "กี่โมง". The plan chat's day picker (My Hub) sets or clears the time too. `POST /api/invites` takes `time` with `day`; `PATCH /api/plans/{id}` takes `time` (left out keeps it, `''`/`null` clears it); `PlanView.time`; every `dateLabel` reads "ส. 22 พ.ย. 18:30 น." (`planDayLabel` in `lib/social/friendPlans.ts`).
+- **What to do about it:** run **migration 0063** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
+
+### BE-418 · Staff-made ตี้ get a host account (owner 2026-11-18)
+- **What changed:** the ATM 5K run (seeded with only `hostName: 'ทีม Chillwaa'`) had no `createdByMemberId`, so nobody could scan tickets. The admin ตี้ editor has "บัญชีโฮสต์ (สแกนเช็กอิน)": search a member and pick them; `/api/admin/events` `create` / `update_fields` accept `createdByMemberId` (active member, ตี้ only, set or changed, never cleared). That account checks people in, sees the list and leads the chat; `hostName` stays the shown name. The moderation list marks ตี้ with no host account in red. `db/seed-atmbkk-2026.mjs` takes `HOST_MEMBER_ID`.
+- **What to do about it:** set a host account on every staff-made ตี้ still ahead (the remaining ATM runs first). Searching needs `members.manage`.
+
+### BE-417 · Circles: no strangers' faces, hot challenges and "หาเพื่อน" instead; pictures mend; Chillwaa notices show the app icon (owner 2026-11-18)
+- **What changed:**
+  - The fill of the site's newest Circles for readers with few friend Circles is gone (`CIRCLES_FILL_BELOW` removed): a new member saw strangers as if followed.
+  - A reader following fewer than `CIRCLES_SUGGEST_BELOW` (5) people gets up to `CIRCLES_HOT_MAX` (2) hot challenges at the end of the row (`h:<questId>`, `ChallengeCircle.suggested.total`, orange ring, challenge picture only; opened: recent people on it, each with ติดตาม) and a "หาเพื่อน" Circle (`findPeople` on `GET /api/circles` and `HomeFeedStart`) that opens `FollowRow`.
+  - A circle picture that fails to load tries the original file once, then the fallback icon (`CircleImage` in `components/home/Circles.tsx`): own challenge pictures showed a broken "?" on the first home after an Apple sign-up on iPad. Root cause not found; the links load fine.
+  - Notifications from Chillwaa itself carry `actorAvatar: '/icons/icon-192.png'` (was `''`).
+- **What to do about it:** check on a fresh iPad sign-up that the "?" no longer shows.
+
+---
+
 ### BE-416 · Sign in with Apple turned on; key read in any pasted shape; page headers clear the iPhone status bar (2026-11-18)
 - **What changed:**
   - Apple sign-in is configured: Services ID `com.chillwaa.web` (= `APPLE_CLIENT_ID`), return URL `https://www.chillwaa.com/api/auth/member/oauth/apple/callback`, key with Sign in with Apple on App ID `com.chillwaa.app`. The four `APPLE_*` env values are on Vercel Production only (Apple accepts no localhost or preview domain).
