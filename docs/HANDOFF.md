@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-423 · TAT attractions in the dev database (owner 2026-11-18)
+- **What changed:** `db/import-tat-attractions.ts` + `lib/scrapers/tatDataApi.ts` (and `categorize` exported from `tourismDirectory.ts`). On dev: 1,642 new attractions from TAT as drafts with credit, 346 existing places filled in where TAT knows more, nothing removed. Details, numbers and rules in [TAT_IMPORT.md](TAT_IMPORT.md) "Import run".
+- **What to do about it:** staff approve on dev; nothing reaches live until a promote step copies pictures to R2 (not built yet). The importer and the earlier Gemini script (`db/import-tat.mjs`, never committed) do the same job; keep this one.
+
+---
+
+### BE-422 · Next.js 16.4.6 (2026-11-19)
+- **What changed:** Next.js and eslint-config-next 16.4.3 → 16.4.6 for the moderate advisory on `'use cache'` root params; `npm audit` now 0. Production build passed against the dev database.
+- **What to do about it:** nothing; reinstall packages after pulling.
+
+---
+
 ### BE-421 · Circles row: orange for mine, blue for friends, a line between (owner 2026-11-18, option A)
 - **What changed:** the row had seven ring colours (pink share, orange next plan, yellow campaign, blue doing, violet step, gold finish, green group, violet-gold friends on one challenge). Now two (`components/home/circleLook.ts`): orange `RING_MINE` for the reader's own Circles (share, next plan, campaigns, own challenges; badges `BADGE_MINE`, names in dark orange) and blue `RING_FRIENDS` for friends (finish keeps the gold trophy badge, steps, groups and friends-on-one-challenge badges are dark blue). A thin line sits between the reader's own challenge Circles and the first friend. The reader's own challenge names wrap to two lines instead of "ป้ายยาที่โปรด…"; one joined campaign is named "แคมเปญ" (two keep their prize words). Opened friend Circles still go grey. Admin topic Circles updated.
 - **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.

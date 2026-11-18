@@ -65,3 +65,6 @@ next-env.d.ts
 # Runtime uploads (local dev; production uses Vercel Blob)
 /public/uploads/
 /data/pending_joins.json
+
+# TAT importer cache (db/import-tat-attractions.ts)
+/data/.tat-cache/

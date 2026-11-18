@@ -161,7 +161,7 @@ export function categoryFromName(title: string): LifestyleSpotItem['category'] |
 }
 
 // The place name is more specific than the source's broad types ("ศิลปะและวัฒนธรรม"), so it is tried first
-function categorize(title: string, typeNames: string[], isRestaurant: boolean): LifestyleSpotItem['category'] {
+export function categorize(title: string, typeNames: string[], isRestaurant: boolean): LifestyleSpotItem['category'] {
   if (isRestaurant) return 'cafe';
   // "น้ำตกวชิรธาร (อุทยานแห่งชาติดอยอินทนนท์)": the park in parentheses says nothing about the place itself
   const coreTitle = title.replace(/\([^)]*\)/g, ' ');
