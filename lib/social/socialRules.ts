@@ -77,3 +77,6 @@ export const planChatTitle = (plan: { isQuest: boolean; title: string; others?: 
 
 /** Whether a plan's chat title depends on who reads it (planChatTitle's `others`) */
 export const planTitleNamesPeople = (plan: { isQuest: boolean; title: string }) => !plan.isQuest && plan.title === POST_PLACE_FALLBACK;
+
+/** Circles numbers (BE-420): days app.circle_events keeps (lib/social/circleStats.ts) */
+export const CIRCLE_EVENTS_KEEP_DAYS = 180;

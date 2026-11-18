@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
-import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FILL_BELOW, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FILL_BELOW, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -317,6 +317,8 @@ const TOPICS: Topic[] = [
           items={[
             'เปิดเต็มจอบนมือถือ เป็นหน้าต่างบนคอม: รูปโมเมนต์ (ดูข้อถัดไป) หรือรูปชาเลนจ์ ชื่อชาเลนจ์ ทำไปแล้วกี่ขั้น และบรรทัด "เพื่อนกี่คนทำอยู่" (เพื่อน = คนที่เราติดตาม ชื่อขึ้นก่อน ยอดรวมตามหลัง ใช้บรรทัดเดียวกันในหน้าชาเลนจ์)',
             'รูปในวงที่เปิด: โมเมนต์จริงก่อนรูปชาเลนจ์ (เจ้าของ 2026-11-18) วงที่มาจากโพสต์ใช้รูปโพสต์นั้น วงทำครบ: 1) โพสต์สาธารณะของคนนั้นที่นับให้ชาเลนจ์นี้ (ล่าสุด) 2) ชาเลนจ์แบบกดใจ: โพสต์สาธารณะที่เขากดใจล่าสุดก่อนทำครบ พร้อมบรรทัด "กดใจโมเมนต์ของ…" (ไม่โชว์ถ้าเจ้าของโพสต์กับคนดูบล็อกกัน) 3) ไม่มีทั้งสองอย่าง ใช้รูปชาเลนจ์ ใต้ชื่อชาเลนจ์มีแคปชันบรรทัดแรกของโพสต์นั้น',
+            'กด "ชื่นชม" แล้ว เลื่อนไปวงถัดไปเองหลังครู่หนึ่ง (ไม่เลื่อนถ้าเราปัดไปเองแล้ว หรือเป็นวงสุดท้าย) ไล่ชื่นชมเพื่อนหลายคนได้เร็ว',
+            'ตัวเลข "Circles ได้ผลไหม" ในหน้าแรกของแอดมิน: คนที่เปิดดูแต่ละแบบของวง และคนที่กดชื่นชม ลองทำบ้าง ทำด้วยกัน ชวน หรือดูโพสต์ นับคนละครั้งต่อวัน เก็บไว้ ' + CIRCLE_EVENTS_KEEP_DAYS + ' วัน',
             'วงของเราที่ยังไม่ครบ: ปุ่มหลักคือขั้นถัดไปตามวิธีนับของชาเลนจ์ นับโพสต์ = "โพสต์โมเมนต์" (เปิดฟอร์มในหน้าหลักเลย) · แผน = "บันทึกวันนี้" · ภารกิจแรก (กดใจ ติดตาม บันทึก ลงชื่อ) = ไปหน้าที่ทำได้ · ตั้งตี้ = "ตั้งตี้ของฉัน" · ไปตี้/อีเวนต์/ที่เที่ยว = "หาตี้ที่นับ" / "หาอีเวนต์ที่นับ" / "หาที่ที่นับ" (หน้าชาเลนจ์กางรายการและเลื่อนไปให้) ปุ่มรองคือ "ชวนเพื่อนมาทำด้วย"',
             'วงของเราที่ครบแล้ว: "ชวนเพื่อนมาทำด้วย" และเห็นว่าใครชื่นชมเราบ้าง',
             'วงเพื่อนที่กำลังทำ และติดตามกันสองฝ่าย: "ทำด้วยกัน" = เข้าร่วม + ส่งคำชวนไปกันให้เพื่อน (เพื่อนเป็นคนตอบรับเสมอ)',
