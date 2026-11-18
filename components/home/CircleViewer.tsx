@@ -133,6 +133,20 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
     }
   };
 
+  // A hot challenge's person followed: the row is asked again on close, so their Circles show
+  const followMember = async (memberId: string, name: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/members/${encodeURIComponent(memberId)}/actions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'follow' }) });
+      if (!res.ok) throw new Error();
+      changed.current = true;
+      showToast(`ติดตาม${name}แล้ว`);
+      return true;
+    } catch {
+      showToast('ติดตามไม่สำเร็จ กรุณาลองใหม่');
+      return false;
+    }
+  };
+
   if (typeof document === 'undefined') return null;
   const arrow = 'hidden sm:flex absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg hover:bg-white cursor-pointer';
 
@@ -153,7 +167,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
         data-dialog-shell
         role="dialog"
         aria-modal="true"
-        aria-label={item.kind === 'group' ? `Circle ตี้ ${plainTeeTitle(item.tee.title)}` : item.kind === 'challenge' ? `Circle เพื่อน ${item.people.length} คน ชาเลนจ์ ${item.quest.title}` : `Circle ของ${item.isMe ? 'คุณ' : shortName(item.person.name)}`}
+        aria-label={item.kind === 'group' ? `Circle ตี้ ${plainTeeTitle(item.tee.title)}` : item.kind === 'challenge' ? (item.suggested ? `Circle ชาเลนจ์กำลังฮิต ${item.quest.title}` : `Circle เพื่อน ${item.people.length} คน ชาเลนจ์ ${item.quest.title}`) : `Circle ของ${item.isMe ? 'คุณ' : shortName(item.person.name)}`}
         tabIndex={-1}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -174,7 +188,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
         {item.kind === 'group' ? (
           <GroupCircleBody item={item} onClose={close} onOpenMoment={onOpenMoment} />
         ) : item.kind === 'challenge' ? (
-          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onOpenMoment={onOpenMoment} />
+          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onFollow={followMember} onOpenMoment={onOpenMoment} />
         ) : (
           <AchievementBody
             item={item}

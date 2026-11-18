@@ -2,10 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, LayoutGrid, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, Trophy, UserPlus } from 'lucide-react';
+import { DialogShell } from '@/components/auth/DialogShell';
+import { FollowRow } from '@/components/home/onboardingFirstStep';
 import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
-import { avatarImage } from '@/lib/optimizedImage';
+import { avatarImage, safeImageSrc } from '@/lib/optimizedImage';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
 import { GroupRowCircle } from '@/components/home/GroupCircleView';
@@ -17,6 +19,7 @@ import { ACHIEVEMENTS_ROW_MAX } from '@/lib/social/socialRules';
 export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish' || item.kind === 'step' || item.kind === 'doing') && item.isMe;
 
 const MEMORY_KEY = 'circles';
+const FIND_PEOPLE_KEY = 'circles-find-people';
 
 /**
  * Circles (one is a Circle; owner 2026-11-16) above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
@@ -25,8 +28,10 @@ const MEMORY_KEY = 'circles';
  * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
  * too. Nothing shows until someone has achieved something.
  */
-export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }: {
+export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead, refreshKey = 0 }: {
   initial?: CircleItem[];
+  /** The row ends with "หาเพื่อน" (the reader follows few people; GET /api/circles `findPeople`) */
+  initialFindPeople?: boolean;
   /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */
   lead?: React.ReactNode;
   /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */
@@ -38,6 +43,9 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
 }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<CircleItem[]>(() => initial ?? recall<CircleItem[]>(MEMORY_KEY) ?? []);
+  const [findPeople, setFindPeople] = useState<boolean>(() => initialFindPeople ?? recall<boolean>(FIND_PEOPLE_KEY) ?? false);
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const followedHere = useRef(false);
   const [openAt, setOpenAt] = useState<number | null>(null);
   // Circles opened on this device get a grey ring and move behind the new ones (owner 2026-11-18: no way to tell what
   // was new). The order is set when the row loads, never while the member taps through it. The member home is drawn in
@@ -59,7 +67,9 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
       .then((json) => {
         if (!active || !Array.isArray(json?.items)) return;
         remember(MEMORY_KEY, json.items);
+        remember(FIND_PEOPLE_KEY, Boolean(json.findPeople));
         setItems(json.items);
+        setFindPeople(Boolean(json.findPeople));
         setSeenAtLoad(readSeen());
       })
       .catch(() => undefined);
@@ -70,10 +80,11 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   useEffect(() => {
     if (initial && refreshKey === 0 && stale === 0) {
       remember(MEMORY_KEY, initial);
+      remember(FIND_PEOPLE_KEY, Boolean(initialFindPeople));
       return;
     }
     return load();
-  }, [initial, refreshKey, stale, load]);
+  }, [initial, initialFindPeople, refreshKey, stale, load]);
   const open = (index: number) => setOpenAt(index);
   // Past ACHIEVEMENTS_ROW_MAX the row ends with "ดูทั้งหมด" (Circles at scale, owner 2026-11-18): a list of every Circle
   const [allOpen, setAllOpen] = useState(false);
@@ -94,7 +105,7 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   const page = (direction: 1 | -1) => listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: 'smooth' });
   const arrow = 'hidden sm:flex absolute top-[30px] z-10 w-9 h-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-700 hover:bg-slate-50 cursor-pointer';
 
-  if (items.length === 0 && !lead) return null;
+  if (items.length === 0 && !lead && !findPeople) return null;
   // At the very top of home (owner 2026-11-13): the circles speak for themselves, so the label is for screen readers only
   return (
     <section aria-labelledby="circles-heading" className="relative mb-3">
@@ -130,7 +141,36 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
             name="ดูทั้งหมด"
           />
         )}
+        {/* A reader following few people (owner 2026-11-18): people worth following, so the row fills with real friends */}
+        {findPeople && (
+          <Circle
+            onClick={() => setPeopleOpen(true)}
+            label="หาคนน่าติดตาม"
+            ring="from-[#2563EB] to-[#93C5FD]"
+            fallback={<UserPlus className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />}
+            badge={<UserPlus className="w-3 h-3" />}
+            badgeClass="bg-[#2563EB] text-white"
+            name="หาเพื่อน"
+          />
+        )}
       </ul>
+      {peopleOpen && (
+        <DialogShell
+          onClose={() => {
+            setPeopleOpen(false);
+            // Someone followed: the row is asked again, so their Circles show
+            if (followedHere.current) {
+              followedHere.current = false;
+              setStale((n) => n + 1);
+            }
+          }}
+          title="เพื่อนๆ ที่น่าติดตาม"
+          size="sm"
+        >
+          <p className="mb-4 text-sm text-slate-600">ติดตามแล้ว ชาเลนจ์และโมเมนต์ของเขาจะขึ้นใน Circles ของคุณ</p>
+          <FollowRow layout="list" onFollowed={() => (followedHere.current = true)} emptyText="ยังไม่มีคนแนะนำตอนนี้ ลองดูโมเมนต์ในฟีดแล้วกดติดตามคนที่ชอบได้เลย" />
+        </DialogShell>
+      )}
       {allOpen && (
         <AllCirclesSheet
           items={ordered}
@@ -196,16 +236,21 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         >
           <span className={`relative rounded-full p-[3px] ${ring}`}>
             <span className="block rounded-full bg-white p-[2px]">
-              {picture ? (
-                // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
-              ) : doing ? (
-                <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
-                </span>
-              ) : (
-                <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
-              )}
+              <CircleImage
+                key={picture}
+                src={picture ? avatarImage(picture) : undefined}
+                original={picture}
+                className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]"
+                fallback={
+                  doing ? (
+                    <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
+                      <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
+                    </span>
+                  ) : (
+                    <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+                  )
+                }
+              />
             </span>
             <span
               className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
@@ -221,6 +266,21 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         </button>
       </li>
     );
+}
+
+/**
+ * A circle's picture that mends itself. The first home after an Apple sign-up drew the challenge pictures as broken
+ * "?" boxes on iPad, while the same links loaded fine a moment later (owner 2026-11-18). A failed load tries the
+ * original file once, and then shows the fallback rather than a broken image.
+ */
+function CircleImage({ src, original, className, fallback }: { src?: string; original?: string; className: string; fallback: React.ReactNode }) {
+  const retry = safeImageSrc(original);
+  const [current, setCurrent] = useState(src);
+  if (!current) return <>{fallback}</>;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- member avatars and challenge covers come from uploads or providers
+    <img src={current} alt="" className={className} onError={() => setCurrent(current !== retry && retry ? retry : undefined)} />
+  );
 }
 
 // Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again

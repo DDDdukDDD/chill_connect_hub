@@ -21,8 +21,8 @@ export async function GET(request: Request, context: Context) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   try {
     const id = decodeURIComponent((await context.params).id);
-    // c:<questId>: friends on one challenge; its buttons act on each person's own Circle id
-    const detail = id.startsWith('c:') ? await challengeCircleDetail(member, id) : await circleDetail(member, id);
+    // c:<questId> friends on one challenge, h:<questId> a hot challenge; their buttons act on each person's own Circle id
+    const detail = /^[ch]:/.test(id) ?await challengeCircleDetail(member, id) : await circleDetail(member, id);
     return NextResponse.json({ success: true, detail }, { headers: NO_STORE });
   } catch (error) {
     return failure(error, 'GET /api/circles/[id]');

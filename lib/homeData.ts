@@ -33,7 +33,7 @@ export type MemberHomeData = {
   feedStart?: HomeFeedStart;
 };
 
-export type HomeFeedStart = { items: FeedItem[]; hasNext: boolean; nextCursor?: string; circles: CircleItem[] };
+export type HomeFeedStart = { items: FeedItem[]; hasNext: boolean; nextCursor?: string; circles: CircleItem[]; findPeople?: boolean };
 
 /**
  * The member home's cards show `image` as it comes (MemberLiveHome, JourneyBand), and the sample events point at
