@@ -103,8 +103,10 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [x] `เจ้าของ` **บัญชี Apple Developer** ($99 ต่อปี) แบบบุคคล ด้วย Apple ID chillwaa.official อนุมัติแล้ว 17 พ.ย.
 - [x] `เจ้าของ` **ส่ง Team ID ให้ Claude** ได้แล้ว 17 พ.ย.: `NW64D6UX4Z`
 - [x] `เจ้าของ` **API key ของ App Store Connect** (App Manager) ใส่ GitHub Secrets ครบ 3 ตัวแล้ว 17 พ.ย.
-- [ ] `เจ้าของ` **ลงทะเบียน App ID และสร้างแอปใน App Store Connect** แล้วกด Run workflow ครั้งแรก (ขั้น 4–6 ใน IOS_APP.md)
-- [ ] `Claude` **iPhone ขั้น 1: ส่งขึ้น TestFlight อัตโนมัติ** (ต้องรอ 3 ข้อบน) เพื่อให้เจ้าของและเพื่อนลงแอปลองได้
+- [x] `เจ้าของ` **ลงทะเบียน App ID และสร้างแอปใน App Store Connect** แล้วกด Run workflow ครั้งแรก (ขั้น 4–6 ใน IOS_APP.md) เปลี่ยนเป็น key แบบ Admin แล้ว
+- [x] `Claude` **iPhone ขั้น 1: ส่งขึ้น TestFlight อัตโนมัติ** build 6 และ 7 ขึ้น TestFlight แล้ว 18 พ.ย.
+- [ ] `ร่วม` **ลองแอปจาก TestFlight บน iPhone จริง** สร้างกลุ่ม Internal Testing ใส่ build ล่าสุด แล้วลองเปิดแอป ล็อกอิน และหน้าออฟไลน์
+- [ ] `Claude` **build ด้วย Xcode 27 (iOS 27 SDK) ก่อนเม.ย. 2570** (คำเตือน 90725 จาก Apple) workflow เลือก Xcode ตัวใหม่สุดบนเครื่อง GitHub ให้แล้ว ดูบรรทัด `xcodebuild -version` ใน log ว่าเป็น 27 ถ้ายังไม่ใช่ เปลี่ยน `runs-on` เป็นเครื่อง macOS รุ่นที่มี Xcode 27
 - [ ] `Claude` **iPhone ขั้น 2: ล็อกอินในแอป** เปิดหน้าล็อกอินของระบบ iPhone แล้วเด้งกลับแอปผ่าน Universal Link (Google ไม่ยอมให้ล็อกอินในหน้าเว็บที่ฝังในแอป)
 - [ ] `Claude` **iPhone ขั้น 3: Sign in with Apple** (ต้องใช้ key จากบัญชี Apple Developer)
 - [ ] `Claude` **iPhone ขั้น 4: แจ้งเตือนแบบ native (APNs)** แก้ฐานข้อมูล ให้เจ้าของดูก่อนรัน migration บน live
