@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-419 · Circles: a finished challenge shows a real moment, not the cover (owner 2026-11-18)
+- **What changed:** an opened finish Circle (`f:`) used the challenge cover. `finishMoment` in `lib/social/circleActions.ts` now picks, in order: the person's own public post that counted toward the challenge (newest); for a challenge done by liking (`rule.actions.kind: 'like'`), the public post they liked last before finishing (new `momentRepository.lastLikedBefore`, left out when its author and the reader block each other); else the cover. `CircleDetail.momentNote` adds one line under the title in `CircleViewer`: the caption's first line in quotes, or "กดใจโมเมนต์ของ <name>" ("ของคุณ" for the reader's own post). Post Circles (`s:`) get the caption line too. API.md and the admin topic Circles updated. No migration.
+- **What to do about it:** nothing. Checked on dev through `GET /api/circles/:id`: post Circles carry their caption, a like-challenge finish carries the liked post and its line.
+
+---
+
+### BE-418 · Home feed: the post says what they went out and did, first line (owner 2026-11-18, option B)
+- **What changed:** the owner picked option B of four drafts. A post tied to a ตี้, place, อีเวนต์ or challenge now opens "<name> ไปตี้ / ไปที่ / ไปงาน / ทำชาเลนจ์ <title>" (title links, in the pillar colour; `verb` added to `MOMENT_TARGETS`). The check-in line under it stays as before (time · location), with the location left out when it only repeats the title. The slim line under the caption keeps only what it still offers and the go link ("เสาร์นี้ · เหลือ 3 ที่ · ขอไปด้วย →"), no second copy of the name. Only the Home feed (`HomeMomentFeed`); `/moments` and the moment page are unchanged by owner choice.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
 ### BE-417 · iPhone: typing in a popup field zoomed the app past the screen edges (owner 2026-11-18)
 - **What changed:** iOS zooms into any field whose text is under 16px when it is tapped and keeps that zoom after the popup closes, so the app stayed wider than the screen. About 60 files use `text-xs`/`text-sm`/`text-[11-13px]` fields. `app/globals.css` now gives fields 16px only on iOS (`@supports (-webkit-touch-callout: none)`): text inputs, textarea, select and `contenteditable`, but not checkboxes, ranges or fields marked `text-lg` and larger. Pinch zoom still works; desktop and Android keep the designed sizes.
 - **What to do about it:** on iPhone and iPad, fields show slightly larger text than in the design. Check on a real iPhone after merge (the store app loads the live site, so no new TestFlight build is needed).

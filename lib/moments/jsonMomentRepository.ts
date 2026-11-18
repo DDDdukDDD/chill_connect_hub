@@ -263,6 +263,11 @@ export const jsonMomentRepository: MomentRepository = {
       .slice(0, limit)
       .map((m) => ({ momentId: m.id, authorId: m.authorId as string, achievement: m.achievement!, createdAt: m.createdAt }));
   },
+  async lastLikedBefore(memberId) {
+    // No database: likes carry no time, so the newest post the member liked
+    const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
+    return items.find((m) => m.likedBy.includes(memberId))?.id ?? null;
+  },
   async markSeen(viewerId, ids) {
     const seen = seenByMember.get(viewerId) ?? new Map<string, number>();
     for (const id of ids) seen.set(id, Date.now());

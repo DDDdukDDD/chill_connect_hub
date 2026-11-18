@@ -255,6 +255,8 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
         <div>
           <p className="text-lg font-bold text-slate-900 leading-snug">{item.quest.title}</p>
           <p className="mt-1 text-sm text-slate-600">{statusLine(item, ready, name)}</p>
+          {/* The moment in the picture, in a line: their caption, or whose post they liked (owner 2026-11-18) */}
+          {ready?.momentNote && <p className="mt-1 text-[13px] text-slate-500 truncate">{ready.momentNote}</p>}
           {progress && progress.total > 1 && (
             <span className="mt-3 flex gap-1.5" aria-hidden="true">
               {Array.from({ length: progress.total }, (_, i) => (
