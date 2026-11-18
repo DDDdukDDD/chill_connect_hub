@@ -97,7 +97,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
       {/* No right column (owner 2026-11-14): it only showed on wide screens, and the feed's cards and the circles above it
           already suggest what to do next on every screen. From xl a third track as wide as the left keeps the feed in the
           middle; it holds people to follow (PeopleRail) */}
-      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] 2xl:grid-cols-[300px_minmax(0,1fr)_300px] lg:gap-14 xl:gap-10 2xl:gap-14">
+      {/* Phones: one track that can shrink to the screen (minmax 0), so a wide row in the feed never widens the page */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] 2xl:grid-cols-[300px_minmax(0,1fr)_300px] lg:gap-14 xl:gap-10 2xl:gap-14">
         <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
               one slim line when there is something to do next. Laptops have both beside the feed */}
