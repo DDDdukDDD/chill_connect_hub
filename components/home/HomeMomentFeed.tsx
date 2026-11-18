@@ -953,7 +953,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             <X className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         ) : (
-        <div className="flex items-center gap-0.5 shrink-0" role="group" aria-label="เลือกโมเมนต์">
+        // On a narrow phone (or larger text) the tabs scroll inside the row instead of pushing the page wider
+        <div className="flex items-center gap-0.5 min-w-0 max-w-full overflow-x-auto no-scrollbar [&>button]:shrink-0" role="group" aria-label="เลือกโมเมนต์">
           {TABS.map(([value, label]) => (
             <button
               key={value}

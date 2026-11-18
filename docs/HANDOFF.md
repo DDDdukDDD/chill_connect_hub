@@ -20,6 +20,26 @@ Item template:
 
 ---
 
+### BE-416 · Sign in with Apple turned on; key read in any pasted shape; page headers clear the iPhone status bar (2026-11-18)
+- **What changed:**
+  - Apple sign-in is configured: Services ID `com.chillwaa.web` (= `APPLE_CLIENT_ID`), return URL `https://www.chillwaa.com/api/auth/member/oauth/apple/callback`, key with Sign in with Apple on App ID `com.chillwaa.app`. The four `APPLE_*` env values are on Vercel Production only (Apple accepts no localhost or preview domain).
+  - The first live try failed with `DECODER routines::unsupported`: the pasted `APPLE_PRIVATE_KEY` had lost its line breaks. `applePrivateKeyPem()` in `lib/members/oauth.ts` now rebuilds the PEM from real breaks, `\n`, spaces, quotes or the bare base64 body.
+  - The headers of `/login`, `/legal`, `/verify-email`, `/reset-password` and `/campaigns/results` (pages without the main Navbar) now pad by `env(safe-area-inset-top)`, so in the store app they no longer sit under the status bar.
+  - `memberActions.loginWith` returns `Promise<boolean>` in the store app (`false` = the sheet was closed); `AuthPanel` and `QuickSignup` re-enable their buttons then, instead of spinning until a reload.
+- **What to do about it:** a new standalone page with its own header must pad the top the same way. Still open for App Review: revoking the Apple token on account delete (see `docs/IOS_APP.md`).
+
+### BE-415 · Two icon copies missed by BE-413 (2026-11-18)
+- **What changed:** `public/apple-touch-icon.png` (iOS asks for it by path; `app/layout.tsx` lists it) and `public/brand-logo.png` (512 icon, JSON-LD logo, share image in `app/opengraph-image.tsx`) were still the old icon. Both are now copies of `app/apple-icon.png` and `public/icons/icon-512.png`.
+- **What to do about it:** keep these two in step when the icon changes again.
+
+---
+
+### BE-414 · Home feed wider than the phone in the iPhone store app (owner 2026-11-18)
+- **What changed:** the right side of the home feed was cut off and the page could be dragged sideways. `MemberLiveHome` gives phones one `minmax(0,1fr)` track, the feed tabs in `HomeMomentFeed` scroll inside their row, and `app/globals.css` sets `overflow-x: hidden` on `html` (iOS ignores it on body alone) with `clip` on body so sticky headers still work.
+- **What to do about it:** the page no longer pans on any screen, but a too-wide element elsewhere is now cut off instead, so it is still a bug to fix where it is. Not yet checked on other pages or a real device.
+
+---
+
 ### BE-413 · New app icon: bigger, brighter C (owner 2026-11-18)
 - **What changed:** the owner picked the "สดใส" icon from four drafts: orange gradient background, the logo's C in white with its green tail, a yellow sun for the dot, slightly tilted, two sparkles; the C now fills about 75% of the icon instead of 55%. Made from the paths in `public/brand-logo.svg` (the logo itself is unchanged) and written to every icon: iOS `AppIcon-512@2x.png` (1024, no alpha), `app/apple-icon.png`, `app/icon.png`, `app/favicon.ico` (16/32/48), `public/favicon.png`, `public/icons/icon-192/512.png`, `maskable-512.png` (inside the 80% circle), `badge-96.png` (white silhouette, same tilt), Android `mipmap-*/ic_launcher.png` and `ic_maskable.png`, `android/store_icon.png`. File names and sizes are the same, so no code change.
 - **What to do about it:** the iPhone icon changes with the next TestFlight build (comes with BE-412). Phones that installed the web app keep the old icon until it is reinstalled. Android: the next TWA build picks up the new mipmaps.

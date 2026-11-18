@@ -39,7 +39,7 @@ export function QuickSignup({
   const loginHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
   const start = (provider: (typeof PROVIDERS)[number]['id']) => {
     setBusy(true);
-    session.loginWith(provider, returnTo, true);
+    session.loginWith(provider, returnTo, true)?.then((leaving) => { if (!leaving) setBusy(false); });
   };
   const inPlace = (open?: () => void) => (e: React.MouseEvent) => {
     if (!open) return;
