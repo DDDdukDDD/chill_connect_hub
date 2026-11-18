@@ -3,7 +3,7 @@ import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { QuestJoinError } from '@/lib/social/questJoins';
 import { isRateLimited } from '@/lib/rateLimit';
-import { circleAct, circleDetail, type CircleAction } from '@/lib/social/circleActions';
+import { challengeCircleDetail, circleAct, circleDetail, type CircleAction } from '@/lib/social/circleActions';
 
 type Context = { params: Promise<{ id: string }> };
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
@@ -20,7 +20,9 @@ export async function GET(request: Request, context: Context) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   try {
-    const detail = await circleDetail(member, decodeURIComponent((await context.params).id));
+    const id = decodeURIComponent((await context.params).id);
+    // c:<questId>: friends on one challenge; its buttons act on each person's own Circle id
+    const detail = id.startsWith('c:') ? await challengeCircleDetail(member, id) : await circleDetail(member, id);
     return NextResponse.json({ success: true, detail }, { headers: NO_STORE });
   } catch (error) {
     return failure(error, 'GET /api/circles/[id]');

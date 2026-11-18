@@ -35,8 +35,13 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ios-app/package-lock.json
-      - name: Xcode in use
-        run: xcodebuild -version
+      - name: Use the newest released Xcode on the runner
+        # Apple warning 90725: from April 2027 uploads need the iOS 27 SDK (Xcode 27). macos-latest can default to an
+        # older Xcode, so pick the highest non-beta one installed and print it.
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | grep -Eiv 'beta|rc|release_candidate' | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
       - name: Install Capacitor
         run: npm ci --no-audit --no-fund
       - name: Copy settings and plugins into the Xcode project
@@ -67,6 +72,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ios-app/package-lock.json
+      - name: Use the newest released Xcode on the runner
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | grep -Eiv 'beta|rc|release_candidate' | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
       - name: Install Capacitor
         run: npm ci --no-audit --no-fund
       - name: Copy settings and plugins into the Xcode project

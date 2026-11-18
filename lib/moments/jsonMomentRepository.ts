@@ -256,10 +256,10 @@ export const jsonMomentRepository: MomentRepository = {
   async setAchievement(id, achievement) {
     await jsonMomentRepository.mutate(id, (m) => ({ ...m, achievement }));
   },
-  async recentAchievements(since, limit) {
+  async recentAchievements(since, limit, authorIds) {
     const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
     return items
-      .filter((m) => m.achievement && m.authorId && Date.parse(m.createdAt) >= since.getTime())
+      .filter((m) => m.achievement && m.authorId && Date.parse(m.createdAt) >= since.getTime() && (!authorIds || authorIds.includes(m.authorId)))
       .slice(0, limit)
       .map((m) => ({ momentId: m.id, authorId: m.authorId as string, achievement: m.achievement!, createdAt: m.createdAt }));
   },

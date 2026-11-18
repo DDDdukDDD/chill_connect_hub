@@ -6,6 +6,33 @@
 /** Circles: how far back the row looks, and how many circles it shows */
 export const ACHIEVEMENTS_WINDOW_DAYS = 14;
 export const ACHIEVEMENTS_ROW_MAX = 15;
+/** The reader's own Circles (doing, step and finish together): friends must still show on a phone (2026-11-18) */
+export const CIRCLES_OWN_MAX = 3;
+/**
+ * Circles at scale (owner 2026-11-18): the order of friends' Circles. Closeness points per thing done together, each
+ * with a cap, read over the last CLOSENESS_WINDOW_DAYS (chats count while both are in the room). lib/social/closeness.ts
+ */
+export const CLOSENESS_WINDOW_DAYS = 180;
+export const CLOSENESS_POINTS = {
+  tee: 3, teeMax: 9,
+  plan: 3, planMax: 9,
+  chat: 2, chatMax: 4,
+  comment: 1, commentMax: 4,
+  like: 0.5, likeMax: 3,
+  mutual: 3,
+} as const;
+/** Freshness points added to closeness: a Circle from today beats a closer friend's from last week */
+export const CIRCLES_FRESH_POINTS = [{ hours: 24, points: 4 }, { hours: 72, points: 2 }, { hours: 168, points: 1 }] as const;
+/** 2+ friends on the same challenge become one Circle "เพื่อน N คน" */
+export const CIRCLES_GROUP_MIN = 2;
+/** A reader with fewer friend Circles than this gets the site's newest Circles of other people after them */
+export const CIRCLES_FILL_BELOW = 6;
+/** The friends asked for at most (the first of the follow list when a reader follows more) */
+export const CIRCLES_FOLLOWING_MAX = 1000;
+/** Circles sent to the browser: the row shows ACHIEVEMENTS_ROW_MAX, "ดูทั้งหมด" opens the rest */
+export const CIRCLES_LIST_MAX = 60;
+/** "ไปมาแล้ว?": a ตี้ that ended this many days ago or less still asks for its moment */
+export const SHARE_ASK_DAYS = 2;
 
 /** Group Circles (round B, owner 2026-11-16): a ตี้ that ended this many days ago or less, with proof of at least this many people, at most this many in the row */
 export const GROUP_CIRCLE_WINDOW_DAYS = 3;

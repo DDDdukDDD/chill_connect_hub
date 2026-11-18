@@ -478,7 +478,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             {/* On a phone the clip shrinks above the comments, whole and still playing; a tap on it closes them */}
             {commentsOpen && <button type="button" aria-label="ปิดความคิดเห็น" tabIndex={-1} onClick={() => setCommentsOpen(false)} className="absolute inset-0 z-[5] cursor-default lg:hidden" />}
             {isFull && (
-              <button type="button" onClick={leaveFull} aria-label="ออกจากเต็มจอ" className="absolute top-3 left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white">
+              <button type="button" onClick={leaveFull} aria-label="ออกจากเต็มจอ" className="absolute top-[max(0.75rem,env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             )}
