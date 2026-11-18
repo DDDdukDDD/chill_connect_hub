@@ -107,7 +107,8 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [x] `Claude` **iPhone ขั้น 1: ส่งขึ้น TestFlight อัตโนมัติ** build 6 และ 7 ขึ้น TestFlight แล้ว 18 พ.ย.
 - [ ] `ร่วม` **ลองแอปจาก TestFlight บน iPhone จริง** สร้างกลุ่ม Internal Testing ใส่ build ล่าสุด แล้วลองเปิดแอป ล็อกอิน และหน้าออฟไลน์
 - [ ] `Claude` **build ด้วย Xcode 27 (iOS 27 SDK) ก่อนเม.ย. 2570** (คำเตือน 90725 จาก Apple) workflow เลือก Xcode ตัวใหม่สุดบนเครื่อง GitHub ให้แล้ว ดูบรรทัด `xcodebuild -version` ใน log ว่าเป็น 27 ถ้ายังไม่ใช่ เปลี่ยน `runs-on` เป็นเครื่อง macOS รุ่นที่มี Xcode 27
-- [ ] `Claude` **iPhone ขั้น 2: ล็อกอินในแอป** เปิดหน้าล็อกอินของระบบ iPhone แล้วเด้งกลับแอปผ่าน Universal Link (Google ไม่ยอมให้ล็อกอินในหน้าเว็บที่ฝังในแอป)
+- [x] `Claude` **iPhone ขั้น 2: ล็อกอินในแอป** (BE-411 สร้างแล้ว 18 พ.ย. ใช้หน้าต่างล็อกอินของระบบ แล้วกลับแอปด้วย chillwaa:// แทน Universal Link)
+- [ ] `ร่วม` **ลองล็อกอิน LINE, Google, Facebook ในแอป iPhone และ iPad** หลัง merge และ build TestFlight ใหม่
 - [ ] `Claude` **iPhone ขั้น 3: Sign in with Apple** (ต้องใช้ key จากบัญชี Apple Developer)
 - [ ] `Claude` **iPhone ขั้น 4: แจ้งเตือนแบบ native (APNs)** แก้ฐานข้อมูล ให้เจ้าของดูก่อนรัน migration บน live
 - [ ] `เจ้าของ` **Android: merge `claude` → `main` แล้วใส่ `ANDROID_CERT_SHA256` บน Vercel** (ค่า fingerprint ใน ANDROID_APP.md) แล้วสร้างไฟล์แอปด้วย `npx @bubblewrap/cli@1.24.1 build`
