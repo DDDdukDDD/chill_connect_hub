@@ -239,7 +239,7 @@ export function AuthPanel({ initialView = 'login', returnTo, onAuthenticated, on
   const social = (provider: OAuthProvider) => {
     setBusy(true);
     // The sign-up screen says under these buttons that signing up confirms age and terms; the server records which screen it was
-    session.loginWith(provider, returnTo, view === 'signup');
+    session.loginWith(provider, returnTo, view === 'signup')?.then((leaving) => { if (!leaving) setBusy(false); });
   };
 
   const handleLogin = (e: React.FormEvent) => {

@@ -42,7 +42,7 @@ export function ResetPasswordScreen({ token }: { token: string }) {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
-      <header className="px-4 sm:px-8 py-4 border-b border-[#E8E2D8] bg-white/80">
+      <header className="px-4 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 border-b border-[#E8E2D8] bg-white/80">
         <Link href="/" className="group inline-flex items-center gap-2">
           <BrandLogo size="sm" />
           <BrandWordmark sizeClass="text-base sm:text-lg" />

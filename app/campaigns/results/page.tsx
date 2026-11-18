@@ -23,7 +23,7 @@ export default async function CampaignResultsPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-slate-900 font-sans flex flex-col">
-      <header className="px-4 sm:px-8 py-4 flex items-center justify-between gap-3 border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
+      <header className="px-4 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 flex items-center justify-between gap-3 border-b border-[#E8E2D8] bg-white/80 backdrop-blur-md">
         <Link href="/" className="group flex items-center gap-2 min-w-0">
           <BrandLogo size="sm" />
           <BrandWordmark sizeClass="text-base sm:text-lg" />
