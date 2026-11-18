@@ -771,7 +771,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
 
             {/* Seeing my page as others do: one bar, one way back */}
             {own && previewPublic && (
-              <div className="sticky top-16 z-20 mt-4 flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white px-4 py-3">
+              <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 mt-4 flex items-center justify-between gap-3 rounded-2xl bg-slate-900 text-white px-4 py-3">
                 <p className="text-sm font-bold">นี่คือโปรไฟล์ที่คนอื่นเห็น</p>
                 <button type="button" onClick={() => setPreviewPublic(false)} className="inline-flex items-center min-h-9 px-3.5 rounded-full bg-white/15 hover:bg-white/25 text-sm font-bold cursor-pointer whitespace-nowrap">
                   กลับไปแก้ไข

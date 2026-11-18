@@ -432,7 +432,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
         aria-modal="true"
         aria-labelledby="create-moment-title"
         className={`focus:outline-hidden bg-white w-full flex flex-col overflow-hidden sm:rounded-3xl shadow-2xl sm:border border-slate-200/90 ${
-          isWide ? 'h-dvh sm:portrait:h-[min(94dvh,1080px)] sm:portrait:max-w-2xl sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : step === 'details' ? 'h-dvh sm:portrait:h-auto sm:portrait:max-h-[92dvh] sm:portrait:max-w-lg sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
+          isWide ? 'h-dvh pt-[env(safe-area-inset-top)] sm:pt-0 sm:portrait:h-[min(94dvh,1080px)] sm:portrait:max-w-2xl sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : step === 'details' ? 'h-dvh pt-[env(safe-area-inset-top)] sm:pt-0 sm:portrait:h-auto sm:portrait:max-h-[92dvh] sm:portrait:max-w-lg sm:landscape:h-[min(92dvh,820px)] sm:landscape:max-w-5xl' : 'max-h-[92dvh] rounded-t-3xl sm:max-w-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
       >

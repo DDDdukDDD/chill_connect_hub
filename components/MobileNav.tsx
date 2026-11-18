@@ -43,7 +43,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     // Every width below the top bar's links (xl), so no screen is left without a menu (owner 2026-11-01)
     // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones.
     // On short screens (a phone or folded phone turned sideways, 416 high) icon and label sit side by side, so the bar takes ~45 px, not ~70
-    <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] z-40 xl:hidden">
+    <div className="fixed bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)_-_0.75rem))] left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] z-40 xl:hidden">
       {actionBar && (
         <div
           aria-hidden={!heroActionsGone}
