@@ -7,7 +7,7 @@ import { circleAct, circleDetail, type CircleAction } from '@/lib/social/circleA
 
 type Context = { params: Promise<{ id: string }> };
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
-const ACTIONS: CircleAction[] = ['together', 'try', 'invite'];
+const ACTIONS: CircleAction[] = ['together', 'try', 'invite', 'cheer'];
 
 function failure(error: unknown, where: string) {
   if (error instanceof MemberAuthError || error instanceof QuestJoinError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
@@ -27,7 +27,7 @@ export async function GET(request: Request, context: Context) {
   }
 }
 
-/** POST /api/circles/:id { action: 'together' | 'try' | 'invite' }: the Circle's main button */
+/** POST /api/circles/:id { action: 'together' | 'try' | 'invite' | 'cheer' }: the Circle's buttons */
 export async function POST(request: Request, context: Context) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);

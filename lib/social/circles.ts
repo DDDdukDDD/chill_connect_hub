@@ -53,6 +53,12 @@ export async function findQuest(id: string) {
   return row ? db.findQuestById(String(row.slug)) : null;
 }
 
+/** A challenge's picture as its page shows it: many official challenges carry only the badge cover (owner 2026-11-18: Sound Bath opened with no picture) */
+export const questPicture = (quest: { image?: string; badgeCoverImg?: string }): string | undefined => quest.badgeCoverImg || quest.image || undefined;
+
+/** A new step or finish shows in Circles at once on this server, instead of after the minute the list is kept */
+export const forgetCircles = () => cacheManager.invalidateTag('achievements');
+
 /** Everyone's achievements in the window, the same for every reader: read at most once a minute */
 const everyone = () =>
   cacheManager.getOrSet(
@@ -65,20 +71,20 @@ const everyone = () =>
         momentRepository.recentAchievements(new Date(since), 200).catch(() => []),
       ]);
       // A post's line counts only while its challenge can be seen (not a draft), under the challenge's own id
-      const live = new Map<string, { id: string; title: string }>();
+      const live = new Map<string, { id: string; title: string; image?: string }>();
       for (const id of new Set(steps.map((s) => s.achievement.questId))) {
         const quest = await findQuest(id);
-        if (quest && quest.status !== 'draft') live.set(id, { id: quest.id, title: quest.title });
+        if (quest && quest.status !== 'draft') live.set(id, { id: quest.id, title: quest.title, image: questPicture(quest) });
       }
-      const titles = new Map<string, string>();
+      const titles = new Map<string, { id: string; title: string; image?: string }>();
       for (const id of new Set(finishes.map((f) => f.questId))) {
         const quest = await db.findQuestById(id);
-        if (quest) titles.set(id, quest.title);
+        if (quest && quest.status !== 'draft') titles.set(id, { id, title: quest.title, image: questPicture(quest) });
       }
       return [
         ...finishes.flatMap((f): Raw[] =>
           titles.has(f.questId)
-            ? [{ id: `f:${f.questId}:${f.memberId}`, memberId: f.memberId, kind: 'finish', quest: { id: f.questId, title: titles.get(f.questId) as string }, href: `/challenges/${encodeURIComponent(f.questId)}`, at: f.finishedAt }]
+            ? [{ id: `f:${f.questId}:${f.memberId}`, memberId: f.memberId, kind: 'finish', quest: titles.get(f.questId)!, href: `/challenges/${encodeURIComponent(f.questId)}`, at: f.finishedAt }]
             : []
         ),
         ...steps.filter((s) => live.has(s.achievement.questId)).map((s): Raw => ({
@@ -97,18 +103,23 @@ const everyone = () =>
     { ttlMs: 60_000, tags: ['achievements'] }
   );
 
-/** The reader's own "doing" circles: the newest challenges they joined and have not finished, still open */
-const DOING_MAX = 3;
-async function doingOf(memberId: string): Promise<Raw[]> {
+/**
+ * The reader's own "doing" circles: the newest challenges they joined and have not finished, still open. The challenge
+ * that already has the reader's step or finish circle is left out; the others stay (2026-11-18: one posted step used to
+ * hide every other challenge they were on).
+ */
+// The reader's own Circles, doing and step together, stop at three: friends must still show on a phone (2026-11-18 walk)
+const OWN_MAX = 3;
+async function doingOf(memberId: string, shown: Set<string>, max: number): Promise<Raw[]> {
   const [joins, finishes] = await Promise.all([joinsOf(memberId), questMemberStore.finishes({ memberId })]);
   const done = new Set(finishes.map((f) => f.questId));
-  const open = joins.filter((join) => !done.has(join.questId)).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt));
+  const open = joins.filter((join) => !done.has(join.questId) && !shown.has(join.questId)).sort((a, b) => b.joinedAt.localeCompare(a.joinedAt));
   const items: Raw[] = [];
   for (const join of open) {
-    if (items.length >= DOING_MAX) break;
+    if (items.length >= max) break;
     const quest = await db.findQuestById(join.questId);
-    if (!quest || quest.status === 'ended') continue;
-    items.push({ id: `d:${join.questId}:${memberId}`, memberId, kind: 'doing', quest: { id: join.questId, title: quest.title, image: quest.image }, href: `/challenges/${encodeURIComponent(join.questId)}`, at: join.joinedAt });
+    if (!quest || quest.status === 'ended' || quest.status === 'draft') continue;
+    items.push({ id: `d:${join.questId}:${memberId}`, memberId, kind: 'doing', quest: { id: join.questId, title: quest.title, image: questPicture(quest) }, href: `/challenges/${encodeURIComponent(join.questId)}`, at: join.joinedAt });
   }
   return items;
 }
@@ -124,7 +135,7 @@ export async function circleItems(viewer: Member): Promise<CircleItem[]> {
     if (better) best.set(item.memberId, item);
   }
   const [doing, groups] = await Promise.all([
-    best.has(viewer.id) ? [] : doingOf(viewer.id).catch((): Raw[] => []),
+    doingOf(viewer.id, new Set(best.has(viewer.id) ? [best.get(viewer.id)!.quest.id] : []), best.has(viewer.id) ? OWN_MAX - 1 : OWN_MAX).catch((): Raw[] => []),
     groupCircles(viewer).catch((error): GroupCircle[] => {
       console.error('groupCircles failed:', error);
       return [];

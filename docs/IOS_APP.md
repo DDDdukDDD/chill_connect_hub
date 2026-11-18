@@ -18,13 +18,16 @@ Capacitor 8's CLI needs Node 22; this computer has Node 20, so run it as `npx -y
 
 ## Owner steps
 
-1. **Join the Apple Developer Program** ($99/year): Apple Developer app on the iPhone → Account → Enroll, as an Individual, with the chillwaa.official Apple ID. Done when developer.apple.com → Account shows Membership details with a Team ID.
-2. **App Store Connect API key** (lets GitHub upload to TestFlight): appstoreconnect.apple.com → Users and Access → Integrations → App Store Connect API → generate, role App Manager. Keep the Issuer ID, the Key ID and the `.p8` file (it downloads only once). Put them in GitHub → the repository → Settings → Secrets and variables → Actions as `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_KEY_P8` (the file's whole text). Never in chat or git.
-3. Send the Team ID (not a secret).
+1. ~~**Join the Apple Developer Program**~~ Done 2026-11-17 (Individual, chillwaa.official Apple ID).
+2. ~~**App Store Connect API key**~~ Done 2026-11-17: Team key "GitHub Actions" (App Manager), the three secrets are in GitHub.
+3. ~~Send the Team ID~~ Done: **Team ID `NW64D6UX4Z`** (not a secret; used for signing and for `APPLE_TEAM_ID`).
+4. **Register the App ID:** developer.apple.com → Account → Certificates, Identifiers & Profiles → Identifiers → **+** → App IDs → App → Description `Chillwaa`, Bundle ID **Explicit** `com.chillwaa.app`. Tick **Associated Domains**, **Push Notifications** and **Sign In with Apple** (needed in steps 2–4 below; ticking them now saves a second visit) → Continue → Register.
+5. **Create the app in App Store Connect:** appstoreconnect.apple.com → Apps → **+** → New App → iOS, name `Chillwaa` (if taken: `Chillwaa: ชวนเพื่อนไปเที่ยว` or similar, the name can change later), primary language Thai, bundle ID `com.chillwaa.app`, SKU `chillwaa-ios`, full access. TestFlight uploads fail until this exists.
+6. **Run the first build:** github.com → the repository → Actions → **iOS build** → Run workflow → branch `claude` → Run. About 15 minutes; the build then shows in App Store Connect → the app → TestFlight after Apple processes it (another 5–30 minutes).
 
 ## Still to build (in this order)
 
-1. **Signed build to TestFlight** (needs steps 1–3): add the signing and upload job to `ios-build.yml` (fastlane or `xcodebuild -allowProvisioningUpdates` with the API key, cloud-managed signing), push entitlement `aps-environment`.
+1. **Signed build to TestFlight** (BE-407, built, first run waits on owner steps 4–6): job `testflight` in `ios-build.yml`. The archive is built unsigned, then `xcodebuild -exportArchive -allowProvisioningUpdates` with the API key lets Apple sign it with a cloud-managed distribution certificate and uploads it; nothing to keep in secrets except the key. Build number = the workflow run number. Runs by hand, or on a push to `main` that changes `ios-app/`. If Apple refuses cloud signing for an App Manager key ("Cloud signing permission error"), make a new key with the **Admin** role and replace the two key secrets. Push entitlement `aps-environment` comes with step 4.
 2. **Social sign-in inside the app.** Google refuses sign-in inside an embedded web view (`disallowed_useragent`), and Facebook and LINE are unreliable there. The app must open sign-in in the system sheet (`ASWebAuthenticationSession`, via `@capacitor/browser` or a small plugin) and come back through a Universal Link (`/.well-known/apple-app-site-association`, entitlement `applinks:www.chillwaa.com`) that hands the session to the web view.
 3. **Sign in with Apple** (App Review 4.8, required because Google, Facebook and LINE are offered): a new provider beside the others in `app/api/auth/member/oauth/[provider]`, needs a Services ID and a key from the developer account.
 4. **Native push** (App Review 4.2 wants more than a website): `@capacitor/push-notifications` is installed; the site must register the APNs token when it runs inside the app (`Capacitor.isNativePlatform()`), the server must store it beside web push subscriptions and send through APNs (an APNs `.p8` key from the developer account).

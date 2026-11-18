@@ -67,6 +67,17 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const [notedProgress, setNotedProgress] = useState(0);
   // The list of what counts folds to one line, like นับในชาเลนจ์ on a ตี้ page (owner 2026-11-08: closed at first)
   const [targetsOpen, setTargetsOpen] = useState(false);
+  // Arriving for the places (a Circle's "หาที่ที่นับ", 2026-11-18): open the list and bring the copy that is showing
+  // into view (the page has one beside the hero on computers and one after the rules on phones)
+  useEffect(() => {
+    if (window.location.hash !== '#places') return;
+    const timer = setTimeout(() => {
+      setTargetsOpen(true);
+      const target = [document.getElementById('places-wide'), document.getElementById('places')].find((el) => el && el.offsetParent !== null);
+      target?.scrollIntoView({ block: 'start' });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -229,7 +240,8 @@ export default function ChallengeDetailPage({ initialDetail = null }: { initialD
   const isHostQuest = Boolean(quest.rule?.asHost);
   // A starter challenge counts posts (QuestRule.posts): its next step is the posting form, not a list of places
   const isPostQuest = Boolean(quest.rule?.posts);
-  const postHref = '/?share=general:';
+  // Tied to this challenge (owner 2026-11-18): the form says the post counts for it and the post gets its line
+  const postHref = `/?share=general:&quest=${encodeURIComponent(quest.id)}&questTitle=${encodeURIComponent(quest.title)}${quest.rule?.posts?.withPlace ? '&withPlace=1' : ''}`;
   // A first-step challenge (QuestRule.actions): its next step is the page where it is done
   const actionLink = questActionLink(quest.rule);
   const memories = earned ? detail.mine?.memories ?? [] : [];

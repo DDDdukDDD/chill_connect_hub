@@ -36,7 +36,7 @@ export function groupMeaning(item: GroupCircle) {
 /** The group's picture: the newest post from the ตี้, else its cover */
 const coverOf = (item: GroupCircle) => item.photos[0]?.url || item.tee.image;
 
-export function GroupRowCircle({ item, onOpen }: { item: GroupCircle; onOpen: () => void }) {
+export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCircle; onOpen: () => void; /** Opened before on this device: grey ring */ seen?: boolean }) {
   const picture = coverOf(item);
   const meaning = groupMeaning(item);
   return (
@@ -48,7 +48,7 @@ export function GroupRowCircle({ item, onOpen }: { item: GroupCircle; onOpen: ()
         title={meaning}
         className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       >
-        <span className="relative rounded-full p-[3px] bg-linear-to-tr from-[#059669] to-[#6EE7B7]">
+        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : 'bg-linear-to-tr from-[#059669] to-[#6EE7B7]'}`}>
           <span className="block rounded-full bg-white p-[2px]">
             {picture ? (
               // eslint-disable-next-line @next/next/no-img-element -- post photos and ตี้ covers come from many hosts

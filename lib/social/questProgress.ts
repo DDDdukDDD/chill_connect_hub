@@ -289,7 +289,13 @@ export interface QuestProgress {
   /** The member joined it; only then is the reward theirs */
   joined: boolean;
   rewardPoints: number;
+  /** A challenge that counts posts and is still counting for this member: posts from `since` count, with a place if asked */
+  posts?: { since: string; withPlace: boolean };
 }
+
+/** Whether a published post counts toward a post challenge (the same test the count uses) */
+export const postCounts = (posts: { since: string; withPlace: boolean }, m: Pick<Moment, 'createdAt' | 'targetType' | 'targetId' | 'location'>) =>
+  m.createdAt >= posts.since && (!posts.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim()));
 
 /**
  * Whether one visit counts toward a challenge: the target matches the rule, the evidence is strong enough, and it
@@ -471,9 +477,10 @@ export async function progressOf(memberId: string) {
     }
     if (quest.rule.posts) {
       const join = joinList.find((item) => item.questId === quest.id);
-      const fits = (m: Moment) => m.createdAt >= (join?.joinedAt ?? '') && (!quest.rule.posts?.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim()));
-      const current = finishedIds.has(quest.id) ? quest.rule.count : join && newEnough(quest.rule) ? Math.min(quest.rule.count, (await myPosts()).filter(fits).length) : 0;
-      quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0 });
+      const posts = { since: join?.joinedAt ?? '', withPlace: Boolean(quest.rule.posts.withPlace) };
+      const counting = !finishedIds.has(quest.id) && Boolean(join) && newEnough(quest.rule);
+      const current = finishedIds.has(quest.id) ? quest.rule.count : counting ? Math.min(quest.rule.count, (await myPosts()).filter((m) => postCounts(posts, m)).length) : 0;
+      quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0, ...(counting ? { posts } : {}) });
       continue;
     }
     const counted: Visit[] = [];

@@ -604,6 +604,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [isBusy, setIsBusy] = useState(false);
   const [sharing, setSharing] = useState<FeedItem | null>(null);
   const [inviting, setInviting] = useState<FeedItem | null>(null);
+  const [circlesVersion, setCirclesVersion] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
   // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
   useEffect(() => flushSeen, []);
@@ -616,7 +617,10 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     if (!share) return;
     const [type, ...rest] = share.split(':');
     const withId = params.get('with');
-    setComposerInitial(shareInitial(type, rest.join(':'), params.get('title') ?? '', params.get('location') ?? '', withId ? { id: withId, name: params.get('withName') ?? '' } : undefined));
+    // Opened for a challenge that counts posts (the challenge page's "โพสต์โมเมนต์"): &quest=<id>&questTitle=…&withPlace=1
+    const questId = params.get('quest');
+    const quest = questId ? { id: questId, title: params.get('questTitle') ?? '', withPlace: params.get('withPlace') === '1' } : undefined;
+    setComposerInitial({ ...shareInitial(type, rest.join(':'), params.get('title') ?? '', params.get('location') ?? '', withId ? { id: withId, name: params.get('withName') ?? '' } : undefined), ...(quest ? { quest } : {}) });
     setIsComposerOpen(true);
     window.history.replaceState(null, '', window.location.pathname);
   }, []);
@@ -921,7 +925,19 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     <div ref={topRef} className="scroll-mt-24" onClickCapture={rememberPlace}>
       {/* Friends out living, where other apps put stories (owner 2026-11-10); on the main tabs only. At the very top since
           2026-11-13 (owner), in place of the next-plan line, which is now its first circle (rowLead) */}
-      {!PERSONAL[sort] && <Circles initial={start?.circles} lead={rowLead} onOpenMoment={(id) => loadedView === sort && saveReturn(id)} />}
+      {!PERSONAL[sort] && (
+        <Circles
+          initial={start?.circles}
+          lead={rowLead}
+          refreshKey={circlesVersion}
+          onOpenMoment={(id) => loadedView === sort && saveReturn(id)}
+          onPost={(quest) => {
+            // A Circle's "โพสต์โมเมนต์" opens the form right here, tied to its challenge (owner 2026-11-18)
+            setComposerInitial({ quest });
+            setIsComposerOpen(true);
+          }}
+        />
+      )}
 
       {/* The title is for screen readers only (owner 2026-11-13): the tabs already say this is the feed, and the circles sit above */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -1057,6 +1073,8 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             setComposerInitial(null);
             // The progress card says โพสต์แล้ว; the member keeps their place in the feed, like Instagram
             if (countedQuest) setCounted(countedQuest);
+            // A post can be a challenge step: the Circles row asks again so the new step shows
+            setCirclesVersion((v) => v + 1);
             onPosted?.();
           }}
         />
