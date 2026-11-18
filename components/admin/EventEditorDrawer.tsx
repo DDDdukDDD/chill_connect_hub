@@ -45,10 +45,12 @@ interface EventForm {
   venueTag: string;
   price: string;
   image: string;
+  galleryImages: string;
   officialUrl: string;
 }
 
 function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
+  const mainImage = event?.image ?? '';
   return {
     title: event?.title ?? '',
     category: event?.category ?? 'chill',
@@ -68,13 +70,20 @@ function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
     hostName: event?.hostName ?? '',
     venueTag: event?.venueTag ?? '',
     price: event?.price ?? '',
-    image: event?.image ?? '',
+    image: mainImage,
+    galleryImages: (event?.galleryImages ?? []).filter((img) => img && img !== mainImage).join('\n'),
     officialUrl: event?.externalUrl || event?.sourceUrl || event?.link || '',
   };
 }
 
 function toEventFields(form: EventForm, isCommunity: boolean, groupName: string): Partial<AdminEventItem> {
   const officialUrl = form.officialUrl.trim();
+  const mainImage = form.image.trim();
+  const extraImages = form.galleryImages
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && line !== mainImage);
+  const galleryImages = [...new Set([mainImage, ...extraImages].filter(Boolean))];
   const common: Partial<AdminEventItem> = {
     title: form.title.trim(),
     category: form.category,
@@ -87,7 +96,8 @@ function toEventFields(form: EventForm, isCommunity: boolean, groupName: string)
     location: form.location.trim(),
     hostName: form.hostName.trim(),
     price: form.price.trim() || undefined,
-    image: form.image.trim(),
+    image: mainImage,
+    galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
   };
   if (isCommunity) {
     return {
@@ -344,6 +354,9 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
       <FormSection title="รูป & รายละเอียด">
         <Field label="รูปหลัก (URL):" htmlFor="event-image" wide>
           <input id="event-image" value={form.image} onChange={set('image')} placeholder="https://..." className={fieldInputClass} />
+        </Field>
+        <Field label="รูปเพิ่มเติมในแกลเลอรี (บรรทัดละ 1 URL):" htmlFor="event-gallery" wide hint="แสดงเมื่อกดปุ่ม 'รูปทั้งหมด' บนหน้ารายละเอียด">
+          <textarea id="event-gallery" rows={3} value={form.galleryImages} onChange={set('galleryImages')} placeholder="https://..." className={fieldInputClass} />
         </Field>
         <div className="sm:col-span-2">
           <p className="block text-[11px] sm:text-xs font-semibold text-slate-500 mb-1.5">รายละเอียด (อย่างน้อย 15 ตัวอักษร):</p>

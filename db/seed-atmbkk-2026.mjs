@@ -99,7 +99,7 @@ const QUESTS = [
       total: 1,
       startDate: '2026-11-29',
       endDate: '2026-11-30',
-      image: '/images/campaigns/atmbkk/marathon.jpg',
+      image: '/images/campaigns/challenges/atmbkk-finisher.jpg',
       brandReward: {
         type: 'hub_central',
         title: 'เหรียญ ATMBKK 2026 Finisher',
@@ -173,6 +173,12 @@ const MEETUPS = [
     maxParticipants: 8,
     price: 'ฟรี',
     image: '/images/campaigns/atmbkk/benchakitti.jpg',
+    galleryImages: [
+      '/images/campaigns/atmbkk/benchakitti.jpg',
+      '/images/campaigns/atmbkk/lumphini.jpg',
+      '/images/campaigns/atmbkk/marathon.jpg',
+      '/images/campaigns/bkk-lifestyle/ari-cafe.jpg',
+    ],
     description: 'นัดวิ่งเบาๆ เพซ 6:30–7:30 คุยกันรู้เรื่อง 5 กิโลเมตร ไม่เน้นเร็ว เน้นยืดเส้นและเช็กความพร้อมก่อนวันแข่งจริง ใครซ้อมคนเดียวเหงาๆ มาจอยกันได้ครับ',
     targetGender: 'all',
     targetAge: 'ไม่จำกัดอายุ',
@@ -210,6 +216,12 @@ const MEETUPS = [
     maxParticipants: 10,
     price: 'ฟรี',
     image: '/images/campaigns/atmbkk/lumphini.jpg',
+    galleryImages: [
+      '/images/campaigns/atmbkk/lumphini.jpg',
+      '/images/campaigns/bkk-lifestyle/ari-cafe.jpg',
+      '/images/campaigns/atmbkk/benchakitti.jpg',
+      '/images/campaigns/atmbkk/marathon.jpg',
+    ],
     description: 'ซ้อมวิ่งเก็บระยะรอบสวนลุม 2–4 รอบตามความไหวของแต่ละคน แยกเพซได้ เสร็จแล้วเดินไปกินน้ำเต้าหู้หรือกาแฟแถวหลังสวนด้วยกัน',
     targetGender: 'all',
     targetAge: 'ไม่จำกัดอายุ',
@@ -247,6 +259,12 @@ const MEETUPS = [
     maxParticipants: 8,
     price: 'ฟรี',
     image: '/images/campaigns/atmbkk/rotfai.jpg',
+    galleryImages: [
+      '/images/campaigns/atmbkk/rotfai.jpg',
+      '/images/campaigns/atmbkk/benchakitti.jpg',
+      '/images/campaigns/atmbkk/lumphini.jpg',
+      '/images/campaigns/atmbkk/marathon.jpg',
+    ],
     description: 'วิ่งประคองขาช่วงโค้งสุดท้ายก่อนวันแข่ง 5–7 กิโลเมตร อากาศตอนเช้าต้นไม้ร่มรื่น เหมาะกับคนซ้อมระยะ 10K และ 21K',
     targetGender: 'all',
     targetAge: 'ไม่จำกัดอายุ',
@@ -276,4 +294,26 @@ for (const eventData of MEETUPS) {
     continue;
   }
   console.log(`meetup created: ${eventData.title} (placeId=${eventData.placeId ?? 'none'})`);
+}
+
+// 3. Fix cover image & gallery for Amazing Thailand Marathon Bangkok 2026 (/events)
+const fairRes = await adminFetch('/api/admin/events?type=public_venue&q=Amazing+Thailand+Marathon&limit=10');
+const atmbkk = (fairRes.data?.events ?? []).find((e) => e.title.includes('Amazing Thailand Marathon Bangkok 2026'));
+if (atmbkk) {
+  const up = await adminFetch('/api/admin/events', 'POST', {
+    action: 'update_fields',
+    id: atmbkk.id,
+    updatedFields: {
+      image: '/images/campaigns/atmbkk/marathon.jpg',
+      galleryImages: [
+        '/images/campaigns/atmbkk/marathon.jpg',
+        '/images/campaigns/atmbkk/benchakitti.jpg',
+        '/images/campaigns/atmbkk/lumphini.jpg',
+        '/images/campaigns/atmbkk/rotfai.jpg',
+      ],
+    },
+  });
+  console.log(`ATMBKK 2026 event image updated: ${up.data?.success ? 'ok' : up.data?.error}`);
+} else {
+  console.log('ATMBKK 2026 event not found in public_venue');
 }
