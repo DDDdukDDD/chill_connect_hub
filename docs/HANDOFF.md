@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-421 · Circles row: orange for mine, blue for friends, a line between (owner 2026-11-18, option A)
+- **What changed:** the row had seven ring colours (pink share, orange next plan, yellow campaign, blue doing, violet step, gold finish, green group, violet-gold friends on one challenge). Now two (`components/home/circleLook.ts`): orange `RING_MINE` for the reader's own Circles (share, next plan, campaigns, own challenges; badges `BADGE_MINE`, names in dark orange) and blue `RING_FRIENDS` for friends (finish keeps the gold trophy badge, steps, groups and friends-on-one-challenge badges are dark blue). A thin line sits between the reader's own challenge Circles and the first friend. The reader's own challenge names wrap to two lines instead of "ป้ายยาที่โปรด…"; one joined campaign is named "แคมเปญ" (two keep their prize words). Opened friend Circles still go grey. Admin topic Circles updated.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
 ### BE-420 · Circles: no cover flash, cheer moves on, numbers in admin (owner 2026-11-18)
 - **What changed:**
   - A finish Circle no longer shows the challenge cover for a moment before its real moment (BE-419) loads: a plain grey box waits instead (`CircleViewer`).

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Users, X } from 'lucide-react';
 import type { GroupCircle } from '@/lib/social/groupCircles';
+import { RING_FRIENDS } from '@/components/home/circleLook';
 import { dialogButton } from '@/components/auth/DialogShell';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { nameInitial } from '@/lib/displayName';
@@ -48,7 +49,7 @@ export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCirc
         title={meaning}
         className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       >
-        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : 'bg-linear-to-tr from-[#059669] to-[#6EE7B7]'}`}>
+        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : `bg-linear-to-tr ${RING_FRIENDS}`}`}>
           <span className="block rounded-full bg-white p-[2px]">
             {picture ? (
               // eslint-disable-next-line @next/next/no-img-element -- post photos and ตี้ covers come from many hosts
@@ -59,7 +60,7 @@ export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCirc
               </span>
             )}
           </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap bg-[#059669] text-white" aria-hidden="true">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap bg-[#1D4ED8] text-white" aria-hidden="true">
             <Users className="w-3 h-3" />
             {item.count}
           </span>

@@ -13,6 +13,7 @@ import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import { nameInitial } from '@/lib/displayName';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
 import { Circle } from '@/components/home/Circles';
+import { BADGE_MINE, RING_MINE } from '@/components/home/circleLook';
 import { FollowRow } from '@/components/home/onboardingFirstStep';
 import { FOOTER_LINKS } from '@/components/SiteFooter';
 import { HomeMomentFeed, type FeedView, type ShareRequest } from '@/components/home/HomeMomentFeed';
@@ -224,10 +225,11 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
         onClick={() => props.onShare({ type: 'community', id: justBack.id, title: justBack.title, location: justBack.location })}
         label={`ไปมาแล้ว? แชร์โมเมนต์จาก ${plainTitle(justBack.title)}`}
         image={justBack.image || FALLBACK_IMAGE}
-        ring="from-[#F43F5E] to-[#FDA4AF]"
+        ring={RING_MINE}
         badge={<><Camera className="w-3 h-3" />แชร์</>}
-        badgeClass="bg-[#F43F5E] text-white"
+        badgeClass={BADGE_MINE}
         name="ไปมาแล้ว?"
+        mine
       />
     );
   }
@@ -238,10 +240,11 @@ function UpNextCircle(props: MemberLiveHomeProps & { sharedIds: string[]; onShar
       href={eventHref(next)}
       label={`นัดถัดไป ${awayLabel(next, now) ?? dayLine(next)} ${plainTitle(next.title)}`}
       image={next.image || FALLBACK_IMAGE}
-      ring="from-[#EA580C] to-[#FDBA74]"
+      ring={RING_MINE}
       badge={shortAwayLabel(next, now) ?? dayLine(next)}
-      badgeClass="bg-[#EA580C] text-white"
+      badgeClass={BADGE_MINE}
       name="นัดถัดไป"
+      mine
       className="lg:hidden"
     />
   );
@@ -270,9 +273,10 @@ function prizeWords(headline: string): string {
 
 function CampaignCircles({ campaigns, campaignMemberOf, onOpenCampaign }: MemberLiveHomeProps) {
   if (!campaigns || !campaignMemberOf || !onOpenCampaign) return null;
+  const joined = joinedCampaigns(campaigns, campaignMemberOf).slice(0, MAX_CAMPAIGN_CIRCLES);
   return (
     <>
-      {joinedCampaigns(campaigns, campaignMemberOf).slice(0, MAX_CAMPAIGN_CIRCLES).map(({ campaign, member }) => {
+      {joined.map(({ campaign, member }) => {
         const badge = member.entered ? 'รอลุ้น' : member.ready ? 'แลกได้' : `${member.done}/${member.total}`;
         const state = member.entered ? 'แลกสิทธิ์แล้ว รอประกาศผล' : member.ready ? 'ครบแล้ว แลกสิทธิ์ลุ้นได้' : `ทำแล้ว ${member.done} จาก ${member.total} ขั้น`;
         return (
@@ -283,10 +287,12 @@ function CampaignCircles({ campaigns, campaignMemberOf, onOpenCampaign }: Member
             image={campaign.prizeImage ? optimizedImage(campaign.prizeImage, 128) : undefined}
             fallback={<Gift className="w-7 h-7 text-[#D97706]" aria-hidden="true" />}
             fit="contain"
-            ring="from-[#EAB308] to-[#FDE047]"
+            ring={RING_MINE}
             badge={badge}
-            badgeClass="bg-[#FFF0B3] text-[#92400E]"
-            name={prizeWords(campaign.headline)}
+            badgeClass={BADGE_MINE}
+            // One campaign: just "แคมเปญ" (option A: prize words were cut off); two: the prize tells them apart
+            name={joined.length > 1 ? prizeWords(campaign.headline) : 'แคมเปญ'}
+            mine
             className="lg:hidden"
           />
         );
