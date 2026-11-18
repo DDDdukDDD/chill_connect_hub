@@ -20,6 +20,18 @@ Item template:
 
 ---
 
+### BE-413 · New app icon: bigger, brighter C (owner 2026-11-18)
+- **What changed:** the owner picked the "สดใส" icon from four drafts: orange gradient background, the logo's C in white with its green tail, a yellow sun for the dot, slightly tilted, two sparkles; the C now fills about 75% of the icon instead of 55%. Made from the paths in `public/brand-logo.svg` (the logo itself is unchanged) and written to every icon: iOS `AppIcon-512@2x.png` (1024, no alpha), `app/apple-icon.png`, `app/icon.png`, `app/favicon.ico` (16/32/48), `public/favicon.png`, `public/icons/icon-192/512.png`, `maskable-512.png` (inside the 80% circle), `badge-96.png` (white silhouette, same tilt), Android `mipmap-*/ic_launcher.png` and `ic_maskable.png`, `android/store_icon.png`. File names and sizes are the same, so no code change.
+- **What to do about it:** the iPhone icon changes with the next TestFlight build (comes with BE-412). Phones that installed the web app keep the old icon until it is reinstalled. Android: the next TWA build picks up the new mipmaps.
+
+---
+
+### BE-412 · Store app: the WebAuth plugin was never registered (owner 2026-11-18)
+- **What changed:** on TestFlight 1.0 (12) social sign-in still left for Safari. `SceneDelegate.swift` builds the window itself with a plain `CAPBridgeViewController()`, so `Main.storyboard` (and the `MainViewController` set there in BE-411) was never used, `WebAuth` was not registered, and `lib/nativeAuth.ts` fell back to the web flow. The scene now makes `MainViewController()`. No web change: the live site already carries the BE-411 code.
+- **What to do about it:** merge to `main` (the iOS workflow uploads a new TestFlight build), update the app in TestFlight, close and reopen it, then sign in with LINE, Google and Facebook. The sign-in should open as a sheet over the app (iOS first asks "Chillwaa wants to use chillwaa.com to sign in"), not in Safari.
+
+---
+
 ### BE-411 · Store app: LINE, Google and Facebook sign-in in the system sheet (owner 2026-11-18)
 - **What changed:** iPad test: social sign-in left the app for Safari and failed with "ลิงก์เข้าสู่ระบบหมดอายุ" (the state cookie was in the app, the callback in Safari). Inside the app, `loginWith` (`lib/useMemberSession.ts`) now calls `lib/nativeAuth.ts`: the native `WebAuth` plugin (`ios-app/ios/App/App/WebAuthPlugin.swift`, registered in `MainViewController.swift`) opens the start route with `app=<sha256 of a verifier>` in `ASWebAuthenticationSession`; the callback sends the sheet to `chillwaa://auth?t=<signed 2-minute code>` instead of setting a cookie; the page posts the code and verifier to `POST /api/auth/member/app-session`, which sets the session in the app (`lib/members/appAuth.ts`). Browsers and older app builds keep the old flow. Inviters of new members are attached at the trade, from the app's invite cookie. API.md and IOS_APP.md updated.
 - **What to do about it:** merge, then run the iOS workflow with TestFlight on (a new app build is needed: new Swift files and storyboard class). Checked on dev: all trade cases (valid, wrong verifier, expired, old session version, other site, off-site next) and the app/web failure redirects; the success path needs real provider keys, so it is first seen on a phone.
