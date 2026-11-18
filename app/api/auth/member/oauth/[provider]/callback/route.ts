@@ -3,6 +3,7 @@ import { MemberAuthError, signInWithOAuth } from '@/lib/members/accounts';
 import { fetchOAuthProfile, isOAuthProvider } from '@/lib/members/oauth';
 import { applySignupChecks } from '@/lib/members/safety';
 import { readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
+import { appErrorUrl, appHandoffUrl } from '@/lib/members/appAuth';
 import { readCookie } from '@/lib/adminSession';
 import { INVITE_COOKIE, attachInviter } from '@/lib/social/friends';
 import { loginErrorPath, oauthCallbackUrl, OAUTH_STATE_COOKIE, safeReturnTo } from '../../shared';
@@ -14,6 +15,8 @@ interface StatePayload {
   nonce: string;
   returnTo: string;
   consented?: boolean;
+  /** Started by the store app: sha256 of its verifier (lib/members/appAuth.ts) */
+  app?: string;
   exp: number;
 }
 
@@ -22,11 +25,12 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
   const returnTo = safeReturnTo(stored?.returnTo);
   const redirect = (path: string) => {
     // 303 so a POST callback (Apple) becomes a GET of the page
-    const response = NextResponse.redirect(new URL(path, request.url), 303);
+    // The store app's sheet: hand back to the app (chillwaa://), never to a page inside the sheet
+    const response = NextResponse.redirect(path.startsWith('chillwaa://') ? path : new URL(path, request.url), 303);
     response.cookies.set(OAUTH_STATE_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'none', path: '/api/auth/member/oauth', maxAge: 0 });
     return response;
   };
-  const fail = (message: string) => redirect(loginErrorPath(returnTo, message));
+  const fail = (message: string) => redirect(stored?.app ? appErrorUrl(message) : loginErrorPath(returnTo, message));
 
   if (!isOAuthProvider(provider)) return fail('ไม่รู้จักช่องทางเข้าสู่ระบบนี้');
   if (params.get('error')) return fail('ยกเลิกการเข้าสู่ระบบ');
@@ -45,15 +49,15 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       appleUser: params.get('user'),
     });
     const { member, created } = await signInWithOAuth(profile, { consented: Boolean(stored.consented) });
-    if (created) {
-      await applySignupChecks(member);
-      await attachInviter(member, readCookie(request, INVITE_COOKIE));
-    }
+    if (created) await applySignupChecks(member);
+    const next = created || (!member.onboardedAt && !member.pledgeAcceptedAt) ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}` : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`;
+    // The store app: no session in the sheet (it has its own cookies); the app's web view trades the code for one,
+    // and attaches the inviter from its own invite cookie
+    if (stored.app) return redirect(appHandoffUrl(member, created, next, stored.app));
+    if (created) await attachInviter(member, readCookie(request, INVITE_COOKIE));
     // New members, and members who left onboarding part way, finish it first, then continue to where they were heading.
     // Someone who came in through an invitation accepted the pledge only; My Hub asks them the rest softly (2026-11-12)
-    const response = redirect(created || (!member.onboardedAt && !member.pledgeAcceptedAt)
-      ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
-      : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`);
+    const response = redirect(next);
     setMemberSessionCookie(response, member);
     if (created) response.cookies.delete(INVITE_COOKIE);
     return response;

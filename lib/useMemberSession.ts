@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { turnPushOff } from './appClient';
 import { forgetAll } from './clientMemory';
+import { canSignInNatively, signInNatively } from './nativeAuth';
 import type { AccountChoice, HostApplication, LoginMethod, MemberPreferences, MemberProfile, OAuthProvider, PublicMember } from './members/types';
 
 /**
@@ -109,6 +110,18 @@ export const memberActions = {
   /** Full-page redirect to the provider; comes back to `returnTo` (new members via /onboarding) */
   /** Pass `consented: true` only when the member ticked the age and terms boxes on the sign-up screen */
   loginWith: (provider: OAuthProvider, returnTo: string = window.location.pathname + window.location.search, consented = false) => {
+    // The store app: the system sign-in sheet, then a full load of where to go so every part sees the new session
+    // (lib/nativeAuth.ts). A failure lands on /login with its message, like the web flow; closing the sheet does nothing
+    if (canSignInNatively()) {
+      signInNatively(provider, returnTo, consented)
+        .then((next) => next && window.location.assign(next))
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่';
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load, as the web flow's redirect
+          window.location.assign(`/login?auth_error=${encodeURIComponent(message)}&returnTo=${encodeURIComponent(returnTo)}`);
+        });
+      return;
+    }
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API route that redirects off-site
     window.location.href = `/api/auth/member/oauth/${provider}?returnTo=${encodeURIComponent(returnTo)}${consented ? '&consent=1' : ''}`;
   },
