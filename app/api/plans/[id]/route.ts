@@ -23,7 +23,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     if ('freeDays' in body) return NextResponse.json({ success: true, plan: await setFreeDays(member, id, body.freeDays) });
     if (!('date' in body)) return NextResponse.json({ success: false, message: 'Invalid request' }, { status: 400 });
-    return NextResponse.json({ success: true, plan: await setPlanDate(member, id, body.date) });
+    // `time` ("HH:MM", '' or null clears) is optional; left out, the plan keeps its time
+    return NextResponse.json({ success: true, plan: await setPlanDate(member, id, body.date, 'time' in body ? body.time : undefined) });
   } catch (error) {
     if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     console.error('[plans] update failed', error);

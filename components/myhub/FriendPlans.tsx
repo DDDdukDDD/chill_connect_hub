@@ -207,9 +207,12 @@ function statusLine(plan: PlanView): string {
  * Picking the day. "ยังไม่แน่ใจวัน" sits here, with the day, not in a menu (owner 2026-11-12). `strong`: saving is the
  * screen's blue button (the plan sheet); above the chat it is dark, since sending a message is the chat's.
  */
-function DayPicker({ plan, isBusy, strong, onSave, onCancel }: { plan: PlanView; isBusy: boolean; strong: boolean; onSave: (date: string | null) => void; onCancel: () => void }) {
+function DayPicker({ plan, isBusy, strong, onSave, onCancel }: { plan: PlanView; isBusy: boolean; strong: boolean; onSave: (date: string | null, time?: string) => void; onCancel: () => void }) {
   const [day, setDay] = useState(plan.date ?? '');
+  // The meeting time on that day (owner 2026-11-18), optional; empty sends '' so a time set before is cleared
+  const [time, setTime] = useState(plan.time ?? '');
   const id = `plan-day-${plan.id}-${strong ? 'sheet' : 'chat'}`;
+  const unchanged = day === plan.date && time === (plan.time ?? '');
   return (
     <div className="space-y-2.5">
       <label htmlFor={id} className={`block ${SECTION_LABEL}`}>{plan.date ? 'เปลี่ยนเป็นวันไหน' : 'ไปวันไหน'}</label>
@@ -222,6 +225,26 @@ function DayPicker({ plan, isBusy, strong, onSave, onCancel }: { plan: PlanView;
         onChange={(e) => setDay(e.target.value)}
         className="w-full h-11 px-3 rounded-xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
       />
+      {day && (
+        <div className="flex items-center gap-3">
+          <label htmlFor={`${id}-time`} className={`shrink-0 ${SECTION_LABEL}`}>กี่โมง</label>
+          <input
+            id={`${id}-time`}
+            type="time"
+            step={900}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="h-11 px-3 rounded-xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
+          />
+          {time ? (
+            <button type="button" onClick={() => setTime('')} className={`${LINK} underline underline-offset-4 decoration-slate-300`}>
+              ไม่ระบุเวลา
+            </button>
+          ) : (
+            <span className="text-[13px] text-slate-500">ไม่บังคับ</span>
+          )}
+        </div>
+      )}
       {plan.date && (
         <button type="button" onClick={() => onSave(null)} disabled={isBusy} className={`${LINK} -ml-3 underline underline-offset-4 decoration-slate-300`}>
           ยังไม่แน่ใจวัน ล้างวันนัดไว้ก่อน
@@ -231,7 +254,7 @@ function DayPicker({ plan, isBusy, strong, onSave, onCancel }: { plan: PlanView;
         <button type="button" onClick={onCancel} className={`${QUIET} h-11 text-sm`}>
           ยกเลิก
         </button>
-        <button type="button" onClick={() => onSave(day)} disabled={!day || day === plan.date || isBusy} className={`${strong ? PRIMARY : SECONDARY} h-11 text-sm`}>
+        <button type="button" onClick={() => onSave(day, time)} disabled={!day || unchanged || isBusy} className={`${strong ? PRIMARY : SECONDARY} h-11 text-sm`}>
           {isBusy && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
           {isBusy ? 'กำลังบันทึก…' : 'บันทึกวันนัด'}
         </button>
@@ -326,10 +349,11 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
-  const save = async (date: string | null) => {
+  const save = async (date: string | null, time?: string) => {
     setIsBusy(true);
     setError('');
-    const result = await patchPlan(plan.id, { date });
+    // A time is sent only with a day; '' clears one set before
+    const result = await patchPlan(plan.id, date && time !== undefined && (time || plan.time) ? { date, time } : { date });
     setIsBusy(false);
     if (!result.ok || !result.plan) return setError(result.message || 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ');
     setIsPicking(false);
@@ -376,7 +400,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
             </button>
           )}
         </div>
-        {isPicking && <DayPicker key={plan.date ?? ''} plan={plan} isBusy={isBusy} strong={false} onSave={(d) => void save(d)} onCancel={() => setIsPicking(false)} />}
+        {isPicking && <DayPicker key={`${plan.date ?? ''}${plan.time ?? ''}`} plan={plan} isBusy={isBusy} strong={false} onSave={(d, t) => void save(d, t)} onCancel={() => setIsPicking(false)} />}
         {errorLine}
       </div>
     );
@@ -422,7 +446,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
       <section aria-labelledby={`plan-when-${plan.id}`} className="space-y-2">
         <h3 id={`plan-when-${plan.id}`} className={SECTION_LABEL}>วันนัด</h3>
         {isPicking ? (
-          <DayPicker key={plan.date ?? ''} plan={plan} isBusy={isBusy} strong onSave={(d) => void save(d)} onCancel={() => setIsPicking(false)} />
+          <DayPicker key={`${plan.date ?? ''}${plan.time ?? ''}`} plan={plan} isBusy={isBusy} strong onSave={(d, t) => void save(d, t)} onCancel={() => setIsPicking(false)} />
         ) : plan.date ? (
           <div className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
             <CalendarDays className="w-5 h-5 shrink-0 text-slate-500" aria-hidden="true" />
