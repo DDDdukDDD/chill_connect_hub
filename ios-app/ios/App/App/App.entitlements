@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Native push (iPhone step 4, BE-428). "production": every build goes to TestFlight / the App Store, which use the
+     production APNs; the cloud workflow signs the archive with this file before Apple re-signs it (ios-build.yml). -->
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

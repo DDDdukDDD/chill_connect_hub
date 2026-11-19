@@ -234,5 +234,17 @@ export async function fetchOAuthProfile(
     email: typeof claims.email === 'string' ? claims.email : undefined,
     emailVerified: claims.email_verified === true || claims.email_verified === 'true',
     displayName,
+    // Kept (encrypted) so that deleting the account can revoke it (lib/members/appleTokens.ts, BE-427)
+    refreshToken: typeof tokens.refresh_token === 'string' ? tokens.refresh_token : undefined,
   };
+}
+
+/** Tells Apple to end this app's access for the member (https://appleid.apple.com/auth/revoke); throws when refused */
+export async function revokeAppleRefreshToken(refreshToken: string): Promise<void> {
+  await postForm('https://appleid.apple.com/auth/revoke', {
+    client_id: process.env.APPLE_CLIENT_ID!,
+    client_secret: appleClientSecret(),
+    token: refreshToken,
+    token_type_hint: 'refresh_token',
+  });
 }
