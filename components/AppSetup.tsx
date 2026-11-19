@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { listenForInstallPrompt, registerServiceWorker, syncPushDevice } from '@/lib/appClient';
+import { listenForInstallPrompt, listenForNativePushTaps, registerServiceWorker, syncPushDevice, installNativeShareSheet } from '@/lib/appClient';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { InstallSheet } from '@/components/InstallSheet';
 
@@ -12,6 +12,9 @@ export function AppSetup() {
 
   useEffect(() => {
     registerServiceWorker();
+    // The iPhone store app: a tapped notification opens its page (BE-428)
+    listenForNativePushTaps();
+    installNativeShareSheet();
     return listenForInstallPrompt();
   }, []);
 
