@@ -104,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // (owner 2026-11-01). Shown before the session is known too, so the bar does not shift when it loads.
   const topLinks = [
     { label: 'หน้าหลัก', href: '/', match: ['/'] },
-    { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
+    { label: 'กิจกรรม', href: '/this-week', match: ['/this-week', '/community', '/events', '/spots'] },
     // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13)
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
