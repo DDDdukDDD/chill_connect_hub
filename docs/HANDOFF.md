@@ -20,6 +20,28 @@ Item template:
 
 ---
 
+### BE-431 · Places paging, admin places payload, RLS on two tables (tester TR-030..034, 2026-11-19)
+- **What changed:**
+  - **TR-032** `GET /api/spots`: chain branches were filtered out after paging, so on dev page 1 (20 chains) came back empty and `totalCount` counted them. New `excludeChains` in `SpotQueryParams`, applied in `filterSpots` (`lib/db/queryEngine.ts`) before paging; the route sets it when there is no `q`. Dev: page 1 now 20 places, 0 chains, total 2,695 → 2,179; a `q=Starbucks` search still finds branches.
+  - **TR-033** `/api/admin/spots`: `GET` is always one page (no `page` = page 1, `limit` default 20, at most 200); the unpaged mode sent the whole list, 14 MB on dev (6,535 places), over Vercel's 4.5 MB response cap. A page of 20 is 27.5 KB. `POST` actions return only the changed `spot`, no longer `spots: getAllSpots()` (no screen read it). Every admin screen already asked with `page`; the map reads `/api/admin/coverage`.
+  - **TR-030** `set_publication` scopes: `osm` covers `osm-` and `osmb-`, new `tat` (`tat-`), `imported` covers `ttd-`/`tat-`/`osm-`/`osmb-`, `curated` is everything else.
+  - **TR-031 / TR-034**: migration **0065** turns on and forces RLS with the `runtime_all` policy on `app.circle_events` and `app.apple_tokens`. Dev: `db/verify-security.mjs` passes "RLS on and forced on all 78 tables".
+- **What to do about it:** run **0065 on live** with 0064 (`! npm run db:migrate`). `docs/API.md` updated for both places endpoints.
+
+---
+
+### BE-430 · Emails ready for real members; owner steps for Resend and @chillwaa.com mail (2026-11-19)
+- **What changed:** `lib/members/mailer.ts`: one email layout for all three messages (logo and name on top, title, one blue button, the link written out for when the button does not work, a footer saying where it came from and that the team never asks for passwords, OTP or money); a viewport tag so phones do not shrink it; the greeting never doubles "คุณ", adds a space before a Latin name and drops the bracket part; the plain-text copies carry the same footer. `sendMail` has an 8 s timeout, sends `reply_to` from the new optional `MAIL_REPLY_TO`, and logs what Resend answered when it refuses. New `docs/EMAIL.md`: Cloudflare Email Routing for privacy@/hello@ (the domain has no MX today, so mail to @chillwaa.com reaches no one), Resend domain on Cloudflare DNS (records on `send.` and `resend._domainkey`, DMARC), the three Vercel values, and the check before removing `SKIP_EMAIL_VERIFICATION`.
+- **What to do about it:** owner steps in `docs/EMAIL.md`. Checked: tsc + lint; the verify and reset emails rendered and looked at 390 px (phone) and 1000 px. Not seen in a real mail app yet (Gmail, Outlook, Apple Mail), which comes with the first real send.
+
+---
+
+### BE-429 · Store app: push and share found no plugin (owner, TestFlight build 16, 2026-11-19)
+- **What changed:** turning on notifications in the app showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ" without iOS ever asking. `lib/appClient.ts` read the plugins from `Capacitor.Plugins` only, which is empty in our pages (the site does not bundle `@capacitor/core`), so push fell back to web push, which the app's web view lacks. `capPlugin()` now falls back to `Capacitor.registerPlugin`, as `lib/nativeAuth.ts` does for WebAuth; the share sheet uses it too. The web branch of `turnPushOn` returns `unsupported` / `needs-install` instead of throwing where there is no web push.
+- **What to do about it:** web only, no new app build: merge to `main`, wait for the Vercel deploy, then in the app turn on แจ้งเตือนบนเครื่องนี้ again; iOS should now ask.
+
+---
+
 ### BE-428 · iPhone app: native push (APNs), native share sheet, "ลบบัญชี" easy to find (2026-11-19)
 - **What changed:**
   - **Push:** inside the store app the settings switch "แจ้งเตือนบนเครื่องนี้" asks iOS through Capacitor PushNotifications (`lib/appClient.ts`: `readPushStatus` / `turnPushOn` / `turnPushOff` / `syncPushDevice` have a native branch; the token is remembered in localStorage). `POST /api/push { apns }` saves it in `app.push_subscriptions` as endpoint `apns:<token>` (p256dh/auth `-`, no migration; the 10-devices cap, delete with the account and the admin count all apply). `sendPush` sends `apns:` devices through `lib/social/apns.ts` (HTTP/2, ES256 provider token cached 40 min, collapse id = tag, 24 h expiry; 410/BadDeviceToken/Unregistered forget the device) and the rest through web push. `pushConfigured` is true with either key set. `listenForNativePushTaps` (in `AppSetup`) opens a tapped notice's `url` (site paths only).

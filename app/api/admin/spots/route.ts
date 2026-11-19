@@ -24,6 +24,9 @@ const MUTABLE_SPOT_FIELDS = new Set<keyof LifestyleSpotItem>([
   'sourceUrl', 'zone', 'contact', 'entryFee', 'meetupAllowed', 'wikiMonthlyViews',
 ]);
 
+/** The admin list sends one page at a time (TR-033); the biggest page anyone may ask for */
+const MAX_PAGE_SIZE = 200;
+
 async function getAllSpots(): Promise<LifestyleSpotItem[]> {
   const firstPage = await db.findSpots({ page: 1, limit: 100, includeDrafts: true });
   const spots = [...firstPage.items];
@@ -120,13 +123,14 @@ export async function GET(request: Request) {
     const distinctProvinces = new Set(allSpots.map((s) => s.province)).size;
     const withImageStatus = (spot: LifestyleSpotItem) => ({ ...spot, imageStatus: getImageStatus(spot.image) });
 
-    // Paginated mode (admin Spots module); without `page` the full filtered list is returned
-    const pageParam = searchParams.get('page');
-    const page = pageParam ? paginateArray(filtered, Number.parseInt(pageParam, 10) || 1, Number.parseInt(searchParams.get('limit') || '', 10) || 20) : null;
+    // Always one page (TR-033): the whole list was 14 MB with the imported places, over Vercel's 4.5 MB response cap.
+    // No `page` = page 1; at most MAX_PAGE_SIZE per page. The map reads its points from /api/admin/coverage
+    const requestedLimit = Number.parseInt(searchParams.get('limit') || '', 10) || 20;
+    const page = paginateArray(filtered, Number.parseInt(searchParams.get('page') || '', 10) || 1, Math.min(Math.max(requestedLimit, 1), MAX_PAGE_SIZE));
 
     return NextResponse.json({
       success: true,
-      spots: (page ? page.items : filtered).map(withImageStatus),
+      spots: page.items.map(withImageStatus),
       totalCount: allSpots.length,
       filteredCount: filtered.length,
       draftCount,
@@ -135,16 +139,14 @@ export async function GET(request: Request) {
       brokenImagesCount,
       uncheckedImagesCount,
       distinctProvinces,
-      ...(page && {
-        pagination: {
-          totalCount: page.totalCount,
-          page: page.page,
-          limit: page.limit,
-          totalPages: page.totalPages,
-          hasNextPage: page.hasNextPage,
-          hasPrevPage: page.hasPrevPage,
-        },
-      }),
+      pagination: {
+        totalCount: page.totalCount,
+        page: page.page,
+        limit: page.limit,
+        totalPages: page.totalPages,
+        hasNextPage: page.hasNextPage,
+        hasPrevPage: page.hasPrevPage,
+      },
     });
   } catch (error) {
     console.error('Error fetching admin spots:', error);
@@ -183,7 +185,6 @@ export async function POST(request: Request) {
         success: true,
         message: `สแกนและเติมรูปภาพความละเอียดสูงสำเร็จ ${fixedCount} รายการ`,
         fixedCount,
-        spots: await getAllSpots(),
       });
     }
 
@@ -234,7 +235,6 @@ export async function POST(request: Request) {
         success: true,
         message: 'เพิ่มข้อมูลสถานที่ใหม่เรียบร้อยแล้ว',
         spot: savedSpot,
-        spots: await getAllSpots(),
       });
     }
 
@@ -264,7 +264,6 @@ export async function POST(request: Request) {
         success: true,
         message: 'อัปเดตข้อมูลสถานที่เรียบร้อยแล้ว',
         spot: updatedSpot,
-        spots: await getAllSpots(),
       });
     }
 
@@ -293,20 +292,24 @@ export async function POST(request: Request) {
 
     // Action 4: Delete Spot
     // Action: publish or unpublish many spots in one write, by explicit ids or by origin
-    // scopes: 'tourism_directory' (id "ttd-…"), 'osm' (id "osm-…"), 'imported' (both), 'curated' (everything else)
+    // scopes: 'tourism_directory' (id "ttd-…"), 'osm' (OSM landmarks "osm-…" and venues "osmb-…", BE-424),
+    // 'tat' (TAT Data API "tat-…", BE-423), 'imported' (all of these), 'curated' (everything else; TR-030)
     if (action === 'set_publication') {
       const { spotIds, scope, status } = body as { spotIds?: unknown; scope?: unknown; status?: unknown };
       if (status !== 'published' && status !== 'draft') {
         return NextResponse.json({ success: false, error: 'status must be published or draft' }, { status: 400 });
       }
+      const isOsm = (id: string) => id.startsWith('osm-') || id.startsWith('osmb-');
+      const isImported = (id: string) => id.startsWith('ttd-') || id.startsWith('tat-') || isOsm(id);
       const scopeMatchers: Record<string, (id: string) => boolean> = {
         tourism_directory: (id) => id.startsWith('ttd-'),
-        osm: (id) => id.startsWith('osm-'),
-        imported: (id) => id.startsWith('ttd-') || id.startsWith('osm-'),
-        curated: (id) => !id.startsWith('ttd-') && !id.startsWith('osm-'),
+        osm: isOsm,
+        tat: (id) => id.startsWith('tat-'),
+        imported: isImported,
+        curated: (id) => !isImported(id),
       };
       if (scope !== undefined && (typeof scope !== 'string' || !scopeMatchers[scope])) {
-        return NextResponse.json({ success: false, error: 'scope must be tourism_directory, osm, imported or curated' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'scope must be tourism_directory, osm, tat, imported or curated' }, { status: 400 });
       }
       const ids = Array.isArray(spotIds) ? spotIds.filter((id): id is string => typeof id === 'string') : null;
       if (!ids && !scope) {
@@ -369,7 +372,6 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         message: 'ลบสถานที่ออกจากระบบเรียบร้อยแล้ว',
-        spots: await getAllSpots(),
       });
     }
 
