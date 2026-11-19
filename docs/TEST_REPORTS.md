@@ -435,8 +435,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   - `scope: 'curated'` ต้องไม่รวม `osmb-` และ `tat-`
 - **Actual:** `scopeMatchers` เช็กเฉพาะ `id.startsWith('ttd-')` และ `id.startsWith('osm-')` ทำให้ `scope: 'osm'` และ `'imported'` ข้าม `osmb-` กับ `tat-` ทั้งหมด ขณะที่ `scope: 'curated'` (`!ttd- && !osm-`) เหมารวม draft ของ `tat-` และสาขาเชน `osmb-` เข้าไปด้วย
 - **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 302–307)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** BE-431: `osm` รวม `osm-` และ `osmb-`, เพิ่ม scope `tat`, `imported` รวม `ttd-` `tat-` `osm-` `osmb-` และ `curated` คือที่เหลือทั้งหมด
 
 ### TR-031 · `db/migrations/0063_circle_events.sql`: ตาราง `app.circle_events` ยังไม่ได้เปิด Row Level Security (RLS)
 - **Severity:** Medium
@@ -447,8 +447,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ตาราง `app.circle_events` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ตามมาตรฐานความปลอดภัยของฐานข้อมูลในโปรเจกต์
 - **Actual:** `0063_circle_events.sql` มีเฉพาะ `create table`, `create index` และ `grant` แต่ยังไม่ได้เปิด RLS และไม่ได้สร้าง policy
 - **Evidence:** `db/migrations/0063_circle_events.sql` (บรรทัด 1–12) เทียบกับ `db/migrations/0059_pending_joins.sql` (บรรทัด 13–15)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** BE-431: migration 0065 เปิดและบังคับ RLS พร้อม policy `runtime_all` บน `app.circle_events` (รันบน dev แล้ว `db/verify-security.mjs` ผ่าน 78/78 ตาราง; live ต้องรัน 0065)
 
 ### TR-032 · `GET /api/spots`: กรอง `chainBrand` หลังแบ่งหน้า ทำให้หน้าแรกๆ คืนรายการว่าง `[]` (`0.1 KB`) และ `totalCount` นับรวมสาขาเชน
 - **Severity:** High
@@ -459,8 +459,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** คืนรายชื่อสถานที่ท่องเที่ยว/คาเฟ่ที่ไม่ใช่สาขาเชนจำนวน 20 รายการ และ `pagination.totalCount` ไม่นับรวมสาขาเชนที่ซ่อนจากหน้าหลัก
 - **Actual:** `app/api/spots/route.ts` เรียก `db.findSpots({ page, limit })` ก่อนแล้วค่อย `.filter((spot) => !spot.chainBrand)` ทีหลัง เนื่องจากสาขาเชน 516 แห่งอยู่ช่วงบนของลำดับ หน้าแรกจึงได้สาขาเชนล้วนแล้วถูกกรองทิ้งหมด เหลือ `spots: []` (`0.1 KB`) และ `totalCount` ยังนับรวมสาขาเชน
 - **Evidence:** `app/api/spots/route.ts` (บรรทัด 49–65) — ผลทดสอบจริงบน dev server `GET /api/spots?limit=20` ตอบกลับ `200` ขนาด `0.1 KB` (`spots: []`)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** BE-431: เพิ่ม `excludeChains` ใน `filterSpots` กรองสาขาเชนก่อนแบ่งหน้า บน dev หน้าแรกได้ 20 รายการ ไม่มีสาขาเชน และ `totalCount` ลดจาก 2,695 เหลือ 2,179 ค้นด้วย `q` ยังเจอสาขาเชนตามเดิม
 
 ### TR-033 · `/api/admin/spots`: Response ใหญ่ถึง `14.2 MB` เกินลิมิต Vercel Serverless (`4.5 MB`) และกิน Supabase Egress สูงมาก
 - **Severity:** High
@@ -472,8 +472,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `GET /api/admin/spots` แบ่งหน้า (pagination) และส่งเฉพาะฟิลด์ที่ตารางต้องใช้ให้อยู่ในขนาดที่ปลอดภัยต่อลิมิต Vercel Serverless (`4.5 MB`) และ `action: 'update'` ส่งเฉพาะ `updatedSpot` กลับ (ไม่ส่ง `spots: await getAllSpots()` ทั้งหมด)
 - **Actual:** `GET /api/admin/spots` ตอบกลับขนาด `14,156.9 KB` (~14.2 MB) และ `action: 'update'` ยังเรียก `spots: await getAllSpots()` ส่งกลับทั้งก้อนทุกครั้งที่แก้ไข 1 สถานที่ ซึ่งจะพังด้วย `FUNCTION_PAYLOAD_TOO_LARGE` บน Vercel Production ทันทีที่โปรโมตข้อมูล TAT/OSM ขึ้นเว็บจริง
 - **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 260–268) — วัดขนาดจริงบน dev server ได้ `14,156.9 KB`
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** BE-431: GET แบ่งหน้าเสมอ (ไม่ส่ง `page` = หน้า 1, ค่าเริ่มต้น 20 สูงสุด 200 รายการ) หน้าละ 20 รายการหนัก 27.5 KB บน dev (ทั้งก้อนเดิม 14 MB) และ POST ทุกแบบส่งกลับเฉพาะ `spot` ที่แก้ ไม่ส่ง `spots` ทั้งหมดแล้ว หน้าแอดมินทุกจุดส่ง `page` อยู่แล้ว ไม่กระทบหน้าจอ
 
 ### TR-034 · `db/migrations/0064_apple_tokens.sql`: ตาราง `app.apple_tokens` ยังไม่ได้เปิด Row Level Security (RLS)
 - **Severity:** Medium
@@ -484,8 +484,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ตาราง `app.apple_tokens` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ครบเหมือนตารางอื่น (76/78 ตารางผ่านแล้ว)
 - **Actual:** `app.apple_tokens` มี `relrowsecurity = false` และ `relforcerowsecurity = false` ทำให้ `db/verify-security.mjs` ไม่ผ่าน (พร้อมกับ `app.circle_events` ใน `TR-031`)
 - **Evidence:** `db/migrations/0064_apple_tokens.sql` (บรรทัด 1–9) — ตรวจจาก `pg_class` บน dev DB: `apple_tokens(rls=false,force=false)`
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** BE-431: migration 0065 เปิดและบังคับ RLS พร้อม policy `runtime_all` บน `app.apple_tokens` (dev ผ่าน 78/78 ตาราง; live ต้องรัน 0065 พร้อม 0064)
 
 ---
 
