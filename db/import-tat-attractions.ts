@@ -33,8 +33,17 @@ const TAT_IMAGE = /^https:\/\/dmc\.tatdataapi\.io\//;
 const STOCK_IMAGE = /unsplash|placeholder|picsum|\/images\/onboarding\//i;
 const UNKNOWN = /ไม่ระบุ/;
 
-// Tags out, then any stray < or > too (CodeQL: a single pass can leave "<script" from nested tags)
-const plainLength = (text?: string) => (text || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().length;
+/** How much readable text there is: counts what sits outside <…>, without rebuilding the string (CodeQL flags tag-stripping regexes) */
+function plainLength(text?: string): number {
+  let count = 0;
+  let inTag = false;
+  for (const char of (text || '').trim()) {
+    if (char === '<') inTag = true;
+    else if (char === '>') inTag = false;
+    else if (!inTag) count += 1;
+  }
+  return count;
+}
 const isTatRecord = (spot: LifestyleSpotItem) => spot.id.startsWith('tat-') || Boolean(spot.sourceUrl?.startsWith('https://tatdataapi.io/'));
 
 function readJson<T>(file: string): T | null {
