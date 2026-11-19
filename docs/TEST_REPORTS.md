@@ -66,7 +66,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Actual:** `components/PosterPhoto.tsx` (ที่ใช้ใน `FairTile.tsx` และ `MeetupTile.tsx`) ไม่มี `onError` fallback ทำให้ `<img>` แสดงไอคอนรูปแตกบนพื้นสีเทา (`naturalWidth === 0`)
 - **Evidence:** `components/PosterPhoto.tsx` (บรรทัด 40–51) และ `components/FairTile.tsx` (บรรทัด 104)
   - **Re-test (2026-11-06 on `3745704`):** รูปที่เพิ่งโหลดหลังเลื่อนหน้าจอเปลี่ยนเป็น `PHOTO_STAND_IN` แล้ว แต่การ์ดชุดแรกที่อยู่ใน SSR HTML ของ `/events` (เช่น `/events/live-agg-50cd344c700e3fcf18fe` รูป `one-fight-night-49-6abf6cd60c539-l.png` และ `/events/live-agg-15c758f2787260a944cd` รูป `one-lumpinee-178-6ab4b8f1c402f-l.jpg`) โหลดล้มเหลว (HTTP 404) เสร็จก่อนที่ React จะ hydrate ทำให้ `onError` ไม่ถูกเรียก และใน `useEffect` (`components/PosterPhoto.tsx` บรรทัด 37–40) เช็กแค่ `if (ref.current?.complete) measure(ref.current)` ซึ่งทำเฉพาะกรณี `img.naturalWidth > 0` แต่ไม่ได้เรียก `setFailedSrc(src)` เมื่อ `ref.current.complete && ref.current.naturalWidth === 0` ทำให้ 2 การ์ดนี้ยังแสดงไอคอนรูปแตก (`naturalWidth === 0`)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** 13f8949 PosterPhoto และ MeetupTile ใช้รูปสำรองเมื่อโหลดรูปไม่ได้ ตรวจแล้วโดยบังคับลิงก์เสียบน /events · c9fee5a (BE-289) รูปใน SSR ที่โหลดไม่ได้ก่อน hydrate: `useEffect` เช็ก `complete && naturalWidth === 0` แล้วเปลี่ยนเป็นรูปสำรอง · BE-390 ใช้วิธีเดียวกันกับรูปที่เหลือ (`components/FallbackImg.tsx`: EventDateList, แถวอีเวนต์หน้าแรก, ตี้แนะนำใน My Hub)
 
 ### TR-003 · `/moments` และ `/moments/[id]`: ชื่อผู้โพสต์แสดงชื่อบัญชีภาษาอังกฤษในวงเล็บต่อท้ายชื่อไทย เช่น `คุณกี้ (Kee_Explorer)`
@@ -179,7 +179,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดชื่อผู้โพสต์ (ทั้งบนหัวโพสต์และหน้าแคปชัน) รวมถึงรูปและชื่อคนคอมเมนต์ (เมื่อมี `authorId`) ต้องพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนหน้า `/moments/[id]` (`MomentDetailView.tsx`)
 - **Actual:** บนฟีดหลัก ลิงก์ `/profile?id=...` ครอบเฉพาะรูป Avatar บนหัวโพสต์ ส่วนชื่อผู้โพสต์ (`moment.userName`) เป็น `<span>` / `<strong>` ธรรมดา และใน `CommentThread` ทั้ง `<MomentAvatar>` และชื่อคนคอมเมนต์ยังไม่ได้ครอบด้วย `<Link>` แม้มี `comment.authorId` ส่งมาแล้ว
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 188–197, 351) และ `components/moments/CommentThread.tsx` (บรรทัด 120–125)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `b333c13` (BE-425): ชื่อผู้โพสต์บนหัวโพสต์และหน้าแคปชันเป็นลิงก์ไปโปรไฟล์ รูปและชื่อคนคอมเมนต์ก็เป็นลิงก์เมื่อมี `authorId` (คอมเมนต์ตัวอย่างไม่มี จึงยังเป็นข้อความธรรมดา) ฐานข้อมูล dev ไม่มีคอมเมนต์จากสมาชิกจริง ช่วยลองคอมเมนต์ด้วยบัญชีทดสอบแล้วกดชื่อ
 
 ### TR-011 · `MomentComposer`: ปุ่มปิด (`X`) มุมขวาบนข้ามการเตือน `confirmDiscard` ทำให้รูปและข้อความที่พิมพ์ค้างไว้หายทันที
@@ -193,7 +193,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ระบบต้องเรียก `leave()` เพื่อเปิดหน้าต่างยืนยัน `ทิ้งโพสต์` (`confirmDiscard`) เหมือนตอนกดปุ่ม `Esc` เพื่อกันผู้ใช้เผลอทำข้อมูลที่พิมพ์/เลือกรูปไว้หาย
 - **Actual:** ปุ่มปิด `aria-label="ปิด"` เรียก `onClose` โดยตรงแทน `leave` ทำให้หน้าต่างปิดทันทีและข้อมูล draft หายทั้งหมดโดยไม่ถามยืนยัน
 - **Evidence:** `components/moments/MomentComposer.tsx` (บรรทัด 164 ประกาศ `leave` และบรรทัด 443 ผูก `onClick={onClose}`)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `b333c13` (BE-425): ปุ่ม X เรียก `leave()` แล้ว ถ้ามีร่างจะถาม "ทิ้งโพสต์" เหมือนกด Esc
 
 ### TR-012 · `SiteSearch`: ช่องค้นหาหลักบน Navbar ค้นหาคน/เพื่อน (สมาชิก) และ `#แฮชแท็ก` โมเมนต์ไม่ได้
@@ -230,7 +230,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** แท็บหลัก `สำหรับคุณ` และ `ติดตาม` ควรตรวจและแจ้งเตือนเมื่อมีโพสต์ใหม่ (หรือรีเฟรชได้ง่าย) และการแตะแท็บ `หน้าหลัก` ซ้ำขณะที่อยู่หน้า `/` ควรเลื่อนกลับขึ้นบนสุดและรีเฟรชฟีดเหมือนแอปโซเชียลทั่วไป
 - **Actual:** `useEffect` ที่เช็กโพสต์ใหม่ทุก `NEW_CHECK_MS` ทำงานเฉพาะเมื่อ `sort === 'all'` (`ล่าสุด`) เท่านั้น และปุ่ม `หน้าหลัก` ใน `MobileNav` เป็น `<Link href="/">` ธรรมดาที่กดซ้ำแล้วไม่เลื่อนขึ้นบนสุดหรือรีเฟรชฟีด
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 708–723) และ `components/MobileNav.tsx` (บรรทัด 63–79)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `b333c13` (BE-425): กด หน้าหลัก ซ้ำบนหน้า `/` (แถบล่างบนมือถือและเมนูบนคอม) จะเลื่อนขึ้นบนสุดและรีเฟรชแท็บที่ดูอยู่ แถบ "โมเมนต์ใหม่" ขึ้นในแท็บ ติดตาม ด้วยแล้ว ส่วนแท็บ สำหรับคุณ ตั้งใจไม่ใส่ เพราะเรียงตามคะแนน คำว่า "ใหม่ N รายการ" จึงไม่มีความหมาย ใช้กด หน้าหลัก ซ้ำเพื่อรีเฟรชแทน ตรวจในเบราว์เซอร์แล้ว scrollY 2500 → 0
 
 ### TR-015 · `/` (ฟีดโมเมนต์): โพสต์รูปภาพไม่มีลิงก์เปิดหน้าโพสต์เต็ม (`/moments/[id]`) จากเวลาโพสต์ (`timeAgo`)
@@ -243,7 +243,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดที่เวลาโพสต์ (`timeAgo`) สามารถเปิดหน้าโพสต์เต็ม `/moments/[id]` ได้โดยตรง (เหมือนมาตรฐาน IG/X/Threads และสอดคล้องกับโพสต์คลิปที่เปิด `/moments/[id]` ได้)
 - **Actual:** กดที่รูปจะเปิด `PhotoViewer` (Lightbox) ส่วน `moment.timeAgo` เป็นข้อความธรรมดา ไม่มีลิงก์ไป `/moments/[id]`
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 212–215, 270–274)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `b333c13` (BE-425): เวลาโพสต์เป็นลิงก์ไป `/moments/[id]`
 
 ### TR-016 · `/profile`: ยังไม่มีแท็บ "ที่ถูกแท็ก" สำหรับรวมโมเมนต์ที่เพื่อนแท็กสมาชิกไว้
@@ -281,7 +281,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มี `onError` fallback หรือใช้ `FallbackImg` / placeholder ที่สะอาดตาตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
 - **Actual:** `<img>` ใน `MomentPhotos.tsx` ไม่มี `onError` handler จึงแสดงไอคอนรูปแตกของเบราว์เซอร์เมื่อโหลดรูปไม่สำเร็จ
 - **Evidence:** `components/moments/MomentPhotos.tsx` (บรรทัด 108–115)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `b333c13` (BE-425): ถ้ารูปย่อโหลดไม่ได้ จะลองโหลดไฟล์ต้นฉบับอีกครั้ง ถ้ายังไม่ได้จะแสดงพื้นสีเทาพร้อมไอคอนและคำว่า "โหลดรูปไม่ได้" ตรวจในเบราว์เซอร์แล้ว
 
 ### TR-019 · `/` (หน้าแรกสมาชิก): `MemberLiveHome` โหลดแบบ `ssr: false` ทำให้เห็น Skeleton กระพริบตอนเปิดหน้าแรกทั้งที่เซิร์ฟเวอร์ส่ง `feedStart` มาแล้ว
@@ -319,7 +319,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `GroupCircleBody` ต้องรีเซ็ต `shown` กลับเป็น `0` (แสดงรูปแรกของตี้ B พร้อมไฮไลต์ thumbnail แรก) เหมือน `ChallengeCircleBody` ที่ใส่ `key={item.id}`
 - **Actual:** `CircleViewer.tsx` เรนเดอร์ `<GroupCircleBody item={item} ... />` โดยไม่มี `key={item.id}` ทำให้ state `shown` จากตี้ A ค้างไปที่ตี้ B (กรอบไฮไลต์ thumbnail หายหากตี้ B มีรูปน้อยกว่า หรือเปิดข้ามไปรูปหลังทันที)
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 192–195) และ `components/home/GroupCircleView.tsx` (บรรทัด 87–89)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): ใส่ `key={item.id}` ให้ `GroupCircleBody` ปัดไปตี้ถัดไปแล้วกลับมารูปแรก
 
 ### TR-022 · `CircleViewer`: เปิด `InviteSheet` จากใน Circle แล้วกด `Esc` ปิดทั้ง `InviteSheet` และ `CircleViewer` พร้อมกัน
@@ -345,7 +345,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มีเส้นคั่นแนวตั้ง (`w-px h-11 bg-slate-200`) แยกกลุ่มวงสีส้มของฉันออกจากวงสีน้ำเงินของเพื่อน
 - **Actual:** เงื่อนไขสร้าง `divider` ใน `Circles.tsx` เช็กเฉพาะ `index > 0 && isOwnCircle(shown[index - 1]) && !isOwnCircle(item)` โดยไม่นับ `lead` ทำให้ไม่มีเส้นคั่นเมื่อวงสีส้มทั้งหมดมาจาก `lead`
 - **Evidence:** `components/home/Circles.tsx` (บรรทัด 116–125)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): วง lead (นัดถัดไป, แคมเปญ) นับเป็นของฉัน ถ้ามีวง lead แล้วตามด้วยวงเพื่อนจะมีเส้นคั่น ถ้า lead ไม่แสดงอะไร เส้นจะเป็นอันแรกของแถวและซ่อนด้วย `first:hidden` บนจอใหญ่ (`lg`) วง lead ไปอยู่คอลัมน์ซ้าย เส้นนี้จึงซ่อนด้วย
 
 ### TR-024 · `GroupCircleView`: ขาด `safe-area-inset-bottom` ใน `GroupCircleBody` และ `GroupRowCircle` ไม่หรี่สีชื่อเมื่อดูแล้ว (`seen`)
@@ -358,7 +358,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `GroupCircleBody` ควรใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` เหมือน `AchievementBody` และ `ChallengeCircleBody`, และ `GroupRowCircle` ควรหรี่สีชื่อเป็น `text-slate-500` เมื่อ `seen === true`
 - **Actual:** `GroupCircleBody` ใช้ `pb-6` คงที่ (ไม่เผื่อ `safe-area-inset-bottom`) และ `GroupRowCircle` ใช้ `text-slate-700` ตลอดแม้ `seen === true`
 - **Evidence:** `components/home/GroupCircleView.tsx` (บรรทัด 68 และ 152) เทียบกับ `components/home/CircleViewer.tsx` (บรรทัด 280) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 57, 140)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): `GroupCircleBody` ใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` และชื่อใต้ `GroupRowCircle` เป็น `text-slate-500` เมื่อดูแล้ว
 
 ### TR-025 · `CircleViewer` และ `ChallengeCircleView`: กดชื่อหรือรูปเพื่อนในหน้าต่าง Circle เพื่อไปหน้าโปรไฟล์ไม่ได้
@@ -371,7 +371,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดรูปหรือชื่อเพื่อน (ที่ไม่ใช่ `isMe`) ควรพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนบนฟีดและหน้าโพสต์
 - **Actual:** รูปและชื่อเพื่อนในหัวการ์ด `AchievementBody` และแถวเพื่อนใน `ChallengeCircleBody` ไม่ได้ครอบด้วย `<Link>`
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 246–256) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 153–164)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): รูปและชื่อเพื่อนในหัว `AchievementBody` และในรายชื่อ `ChallengeCircleBody` เป็นลิงก์ `/profile?id=` (ไม่ใส่ให้ตัวเอง) ลองแล้วบน dev ทั้งมือถือและจอใหญ่
 
 ### TR-026 · `CircleViewer`: ไม่ได้ prefetch วงกลุ่มเพื่อน (`kind === 'challenge'`) ล่วงหน้า ทำให้ปัดเข้าแล้วต้องรอโหลดทุกครั้ง
@@ -384,7 +384,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ควร prefetch `/api/circles/[id]` ของวงถัดไปที่เป็น `challenge` ล่วงหน้าเหมือนวงเดี่ยว เพื่อไม่ให้ค้าง `"กำลังโหลด…"` และล็อกปุ่ม `"ชื่นชม"` ทุกครั้งที่ปัดเข้า
 - **Actual:** `fetchDetail` ใน `CircleViewer.tsx` ข้าม `circle.kind === 'challenge'` และให้ `ChallengeCircleBody` fetch เองตอน mount เท่านั้น
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 55–67) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 79–85)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): `CircleViewer` โหลด detail ของวงกลุ่มเพื่อนล่วงหน้าเหมือนวงอื่น (เก็บแยกเป็น `challengeDetails`) `ChallengeCircleBody` รับ `detail` / `onDetail` / `onRetry` จาก viewer แทนการ fetch เอง การชื่นชมหรือเข้าร่วมจึงยังอยู่เมื่อปัดออกแล้วกลับมา ยังไม่ได้ลองในเบราว์เซอร์: ใน dev ไม่มีสมาชิกที่มีวงแบบนี้
 
 ### TR-027 · `ChallengeCircleView`: ตัวอักษรย่อบนรูปเพื่อนมุมขวาบนใช้ `text-[10px]` ต่ำกว่าขั้นต่ำ `11px` ของ `DESIGN_SYSTEM.md`
@@ -396,7 +396,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ไม่มีตัวอักษรขนาดเล็กกว่า `11px` (`text-[11px]`) ตาม `DESIGN_SYSTEM.md` หัวข้อ 6
 - **Actual:** `ChallengeRowCircle` ส่ง `size="w-6 h-6 text-[10px]"` ให้ `<Face>`
 - **Evidence:** `components/home/ChallengeCircleView.tsx` (บรรทัด 50)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): เปลี่ยนเป็น `text-[11px]`
 
 ### TR-028 · `Circles`: รูปภาพในแถวและหน้าต่าง Circles ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
@@ -408,7 +408,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** เปลี่ยนเป็นรูปสำรองหรือตัวอักษรย่อ/ไอคอนตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
 - **Actual:** `<img>` ใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx` และ `GroupCircleView.tsx` ไม่มี `onError` handler
 - **Evidence:** `components/home/Circles.tsx` (บรรทัด 213, 284), `components/home/CircleViewer.tsx` (บรรทัด 249, 266, 338), `components/home/ChallengeCircleView.tsx` (บรรทัด 41, 68, 131) และ `components/home/GroupCircleView.tsx` (บรรทัด 56, 79, 121, 145)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): คอมโพเนนต์ใหม่ `components/ImgOr.tsx` (เหมือน `FallbackImg` แต่ fallback เป็น element) ใช้กับทุกรูปใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx`, `GroupCircleView.tsx`: รูปคนเสียแสดงตัวอักษรย่อ รูปปกเสียแสดงไอคอนบนพื้นสีเดิม
 
 ### TR-029 · `scripts/smoke.mjs`: ยังเรียก `/api/achievements` ซึ่งถูกเปลี่ยนชื่อเป็น `/api/circles` แล้ว
@@ -419,8 +419,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   1. รัน `npm run dev` แล้วรัน `npm run smoke`
 - **Expected:** สคริปต์ smoke test ตรวจแถว Circles ผ่าน `/api/circles` ได้สำเร็จ
 - **Actual:** `scripts/smoke.mjs` บรรทัด 89 ยังเรียก `A.call('/api/achievements')` ซึ่งถูกลบและเปลี่ยนเป็น `app/api/circles/route.ts` แล้ว ทำให้เช็ก `home row shows the challenge A took on` ไม่ผ่าน
-- **Evidence:** `scripts/smoke.mjs` (บรรทัด 89)
-- **Status:** Ready to re-test
+- **Evidence:** `scripts/smoke.mjs` (บรรทัด 89) (Re-test: รัน `npm run smoke` จริงกับ dev server `http://localhost:3000` บน `f5508b1` — `ok home row shows the challenge A took on` ผ่านแล้ว)
+- **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): `scripts/smoke.mjs` เรียก `/api/circles` แล้ว
 
 ---
