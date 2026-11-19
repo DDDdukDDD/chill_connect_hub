@@ -319,8 +319,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `GroupCircleBody` ต้องรีเซ็ต `shown` กลับเป็น `0` (แสดงรูปแรกของตี้ B พร้อมไฮไลต์ thumbnail แรก) เหมือน `ChallengeCircleBody` ที่ใส่ `key={item.id}`
 - **Actual:** `CircleViewer.tsx` เรนเดอร์ `<GroupCircleBody item={item} ... />` โดยไม่มี `key={item.id}` ทำให้ state `shown` จากตี้ A ค้างไปที่ตี้ B (กรอบไฮไลต์ thumbnail หายหากตี้ B มีรูปน้อยกว่า หรือเปิดข้ามไปรูปหลังทันที)
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 192–195) และ `components/home/GroupCircleView.tsx` (บรรทัด 87–89)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): ใส่ `key={item.id}` ให้ `GroupCircleBody` ปัดไปตี้ถัดไปแล้วกลับมารูปแรก
 
 ### TR-022 · `CircleViewer`: เปิด `InviteSheet` จากใน Circle แล้วกด `Esc` ปิดทั้ง `InviteSheet` และ `CircleViewer` พร้อมกัน
 - **Severity:** Medium
@@ -332,8 +332,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กด `Esc` ครั้งแรกควรปิดเฉพาะ `InviteSheet` ที่อยู่ชั้นบนสุด โดยยังคงเปิด `CircleViewer` ไว้ด้านหลัง
 - **Actual:** `CircleViewer` ผูก `useDialogBehavior(panelRef, close)` ไว้ตลอดเวลาโดยไม่ได้ระงับตอน `inviteOpen === true` (ต่างจาก `ArrowLeft`/`ArrowRight` ที่เช็ก `if (inviteOpen) return;`) ทำให้ `Esc` ปิดทั้ง `InviteSheet` และ `CircleViewer` ทิ้งพร้อมกัน
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 38, 81, 211–213)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** ไม่ใช่บั๊ก: `useDialogBehavior` ปิดเฉพาะ `[data-dialog-shell]` ที่อยู่บนสุด และ `InviteSheet` (ผ่าน `DialogShell`) portal ไปท้าย `<body>` จึงอยู่บนสุด ลองในเบราว์เซอร์จริง (dev, 1280x800) แล้ว: Esc ครั้งแรกปิดแค่ `InviteSheet` (dialog 2 → 1) ครั้งที่สองจึงปิด `CircleViewer` (1 → 0) ไม่ต้องแก้
 
 ### TR-023 · `Circles`: เส้นคั่นระหว่างวงของฉัน (ส้ม) กับวงเพื่อน (น้ำเงิน) หายไปเมื่อมีเฉพาะวง `lead` (นัดถัดไป/แคมเปญ)
 - **Severity:** Low
@@ -345,8 +345,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มีเส้นคั่นแนวตั้ง (`w-px h-11 bg-slate-200`) แยกกลุ่มวงสีส้มของฉันออกจากวงสีน้ำเงินของเพื่อน
 - **Actual:** เงื่อนไขสร้าง `divider` ใน `Circles.tsx` เช็กเฉพาะ `index > 0 && isOwnCircle(shown[index - 1]) && !isOwnCircle(item)` โดยไม่นับ `lead` ทำให้ไม่มีเส้นคั่นเมื่อวงสีส้มทั้งหมดมาจาก `lead`
 - **Evidence:** `components/home/Circles.tsx` (บรรทัด 116–125)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): วง lead (นัดถัดไป, แคมเปญ) นับเป็นของฉัน ถ้ามีวง lead แล้วตามด้วยวงเพื่อนจะมีเส้นคั่น ถ้า lead ไม่แสดงอะไร เส้นจะเป็นอันแรกของแถวและซ่อนด้วย `first:hidden` บนจอใหญ่ (`lg`) วง lead ไปอยู่คอลัมน์ซ้าย เส้นนี้จึงซ่อนด้วย
 
 ### TR-024 · `GroupCircleView`: ขาด `safe-area-inset-bottom` ใน `GroupCircleBody` และ `GroupRowCircle` ไม่หรี่สีชื่อเมื่อดูแล้ว (`seen`)
 - **Severity:** Medium
@@ -358,8 +358,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `GroupCircleBody` ควรใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` เหมือน `AchievementBody` และ `ChallengeCircleBody`, และ `GroupRowCircle` ควรหรี่สีชื่อเป็น `text-slate-500` เมื่อ `seen === true`
 - **Actual:** `GroupCircleBody` ใช้ `pb-6` คงที่ (ไม่เผื่อ `safe-area-inset-bottom`) และ `GroupRowCircle` ใช้ `text-slate-700` ตลอดแม้ `seen === true`
 - **Evidence:** `components/home/GroupCircleView.tsx` (บรรทัด 68 และ 152) เทียบกับ `components/home/CircleViewer.tsx` (บรรทัด 280) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 57, 140)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): `GroupCircleBody` ใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` และชื่อใต้ `GroupRowCircle` เป็น `text-slate-500` เมื่อดูแล้ว
 
 ### TR-025 · `CircleViewer` และ `ChallengeCircleView`: กดชื่อหรือรูปเพื่อนในหน้าต่าง Circle เพื่อไปหน้าโปรไฟล์ไม่ได้
 - **Severity:** Low
@@ -371,8 +371,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดรูปหรือชื่อเพื่อน (ที่ไม่ใช่ `isMe`) ควรพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนบนฟีดและหน้าโพสต์
 - **Actual:** รูปและชื่อเพื่อนในหัวการ์ด `AchievementBody` และแถวเพื่อนใน `ChallengeCircleBody` ไม่ได้ครอบด้วย `<Link>`
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 246–256) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 153–164)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): รูปและชื่อเพื่อนในหัว `AchievementBody` และในรายชื่อ `ChallengeCircleBody` เป็นลิงก์ `/profile?id=` (ไม่ใส่ให้ตัวเอง) ลองแล้วบน dev ทั้งมือถือและจอใหญ่
 
 ### TR-026 · `CircleViewer`: ไม่ได้ prefetch วงกลุ่มเพื่อน (`kind === 'challenge'`) ล่วงหน้า ทำให้ปัดเข้าแล้วต้องรอโหลดทุกครั้ง
 - **Severity:** Low
@@ -384,8 +384,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ควร prefetch `/api/circles/[id]` ของวงถัดไปที่เป็น `challenge` ล่วงหน้าเหมือนวงเดี่ยว เพื่อไม่ให้ค้าง `"กำลังโหลด…"` และล็อกปุ่ม `"ชื่นชม"` ทุกครั้งที่ปัดเข้า
 - **Actual:** `fetchDetail` ใน `CircleViewer.tsx` ข้าม `circle.kind === 'challenge'` และให้ `ChallengeCircleBody` fetch เองตอน mount เท่านั้น
 - **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 55–67) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 79–85)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): `CircleViewer` โหลด detail ของวงกลุ่มเพื่อนล่วงหน้าเหมือนวงอื่น (เก็บแยกเป็น `challengeDetails`) `ChallengeCircleBody` รับ `detail` / `onDetail` / `onRetry` จาก viewer แทนการ fetch เอง การชื่นชมหรือเข้าร่วมจึงยังอยู่เมื่อปัดออกแล้วกลับมา ยังไม่ได้ลองในเบราว์เซอร์: ใน dev ไม่มีสมาชิกที่มีวงแบบนี้
 
 ### TR-027 · `ChallengeCircleView`: ตัวอักษรย่อบนรูปเพื่อนมุมขวาบนใช้ `text-[10px]` ต่ำกว่าขั้นต่ำ `11px` ของ `DESIGN_SYSTEM.md`
 - **Severity:** Low
@@ -396,8 +396,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ไม่มีตัวอักษรขนาดเล็กกว่า `11px` (`text-[11px]`) ตาม `DESIGN_SYSTEM.md` หัวข้อ 6
 - **Actual:** `ChallengeRowCircle` ส่ง `size="w-6 h-6 text-[10px]"` ให้ `<Face>`
 - **Evidence:** `components/home/ChallengeCircleView.tsx` (บรรทัด 50)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): เปลี่ยนเป็น `text-[11px]`
 
 ### TR-028 · `Circles`: รูปภาพในแถวและหน้าต่าง Circles ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
 - **Severity:** Medium
@@ -408,8 +408,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** เปลี่ยนเป็นรูปสำรองหรือตัวอักษรย่อ/ไอคอนตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
 - **Actual:** `<img>` ใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx` และ `GroupCircleView.tsx` ไม่มี `onError` handler
 - **Evidence:** `components/home/Circles.tsx` (บรรทัด 213, 284), `components/home/CircleViewer.tsx` (บรรทัด 249, 266, 338), `components/home/ChallengeCircleView.tsx` (บรรทัด 41, 68, 131) และ `components/home/GroupCircleView.tsx` (บรรทัด 56, 79, 121, 145)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): คอมโพเนนต์ใหม่ `components/ImgOr.tsx` (เหมือน `FallbackImg` แต่ fallback เป็น element) ใช้กับทุกรูปใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx`, `GroupCircleView.tsx`: รูปคนเสียแสดงตัวอักษรย่อ รูปปกเสียแสดงไอคอนบนพื้นสีเดิม
 
 ### TR-029 · `scripts/smoke.mjs`: ยังเรียก `/api/achievements` ซึ่งถูกเปลี่ยนชื่อเป็น `/api/circles` แล้ว
 - **Severity:** Medium
@@ -420,8 +420,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** สคริปต์ smoke test ตรวจแถว Circles ผ่าน `/api/circles` ได้สำเร็จ
 - **Actual:** `scripts/smoke.mjs` บรรทัด 89 ยังเรียก `A.call('/api/achievements')` ซึ่งถูกลบและเปลี่ยนเป็น `app/api/circles/route.ts` แล้ว ทำให้เช็ก `home row shows the challenge A took on` ไม่ผ่าน
 - **Evidence:** `scripts/smoke.mjs` (บรรทัด 89)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `c314120` (BE-426): `scripts/smoke.mjs` เรียก `/api/circles` แล้ว
 
 ---
 

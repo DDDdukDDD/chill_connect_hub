@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-426 · Circles fixes from the tester (TR-021..029, 2026-11-19)
+- **What changed:** `GroupCircleBody` gets `key={item.id}`, so a picked photo no longer carries over to the next group (TR-021). `CircleViewer` now loads a friends-on-one-challenge Circle's detail ahead of a swipe like the others; `ChallengeCircleBody` takes `detail` / `onDetail` / `onRetry` instead of fetching itself (TR-026). Friends' faces and names in an opened Circle link to `/profile?id=` (TR-025). The row puts a divider after the lead Circles (next plan, campaigns) when friends follow; it hides when the lead draws nothing (`first:hidden`) and on `lg`, where the lead moves to the left column (TR-023). Group Circles: safe-area bottom padding, a grey name once seen (TR-024). Initials 11px (TR-027). New `components/ImgOr.tsx` (an image that becomes an element, initials or an icon, when its link is bad) on every Circles image (TR-028). `scripts/smoke.mjs` calls `/api/circles` (TR-029).
+- **What to do about it:** TR-022 is not a bug (Esc closes only the top dialog; checked in a browser) and is marked Needs owner with the reason. Friends-on-one-challenge and group Circles were not seen in a browser: the dev member with the most follows has none.
+
+---
+
 ### BE-425 · Feed basics: names open profiles, time opens the post, หน้าหลัก again refreshes (tester TR-010..020, 2026-11-19)
 - **What changed:** in the feed, the author's name (header and before the caption) links to `/profile?id=` like the avatar, and the post time links to `/moments/[id]`. `CommentThread` links the commenter's avatar and name when the comment has an `authorId`. Tapping หน้าหลัก while on `/` (phone bar and desktop nav) scrolls to the top and refreshes the view being read: `lib/homeAgain.ts` fires `chillwaa:home-again`, `HomeMomentFeed` listens. The new-posts banner also runs on ติดตาม (สำหรับคุณ stays without it, it is ranked). `MomentPhotos` tries the original once when the resized photo fails, then shows "โหลดรูปไม่ได้" on a tint. The composer's X asks before throwing a draft away, like Esc (TR-011).
 - **What to do about it:** TR-010/011/014/015/018 are Ready to re-test. TR-012/013/016/017/019/020 are Needs owner, each listed in LAUNCH_CHECKLIST (feed comments stay as they are: owner 2026-11-19). Comment profile links were not seen in a browser: the dev database has no member comments.
