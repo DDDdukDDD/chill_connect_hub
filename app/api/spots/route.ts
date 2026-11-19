@@ -59,7 +59,8 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        spots: result.items.map(publicSpot),
+        // Chain branches come up only when searched for, as meeting points and moment tags (BE-424)
+        spots: (searchQuery ? result.items : result.items.filter((spot) => !spot.chainBrand)).map(publicSpot),
         pagination: {
           totalCount: result.totalCount,
           page: result.page,

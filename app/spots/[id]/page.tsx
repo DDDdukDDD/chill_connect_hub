@@ -13,13 +13,15 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const spot = await getPublicSpot(decodeURIComponent((await params).id));
   if (!spot) return { title: 'ที่เที่ยว' };
-  return pageMetadata({
+  const meta = pageMetadata({
     title: `${spot.title} (${spot.province})`,
     description: metaDescription(`${spot.categoryLabel} · ${[spot.district, spot.province].filter(Boolean).join(', ')} · ${metaDescription([spot.vibeIntro, spot.description].filter(Boolean).join(' '), 300)}`),
     path: `/spots/${encodeURIComponent(spot.id)}`,
     image: spot.image,
     type: 'article',
   });
+  // A chain branch is a meeting point, not a page worth finding (BE-424)
+  return spot.chainBrand ? { ...meta, robots: { index: false, follow: true } } : meta;
 }
 
 // The place is read here so its name, area, hours and description are in the server HTML

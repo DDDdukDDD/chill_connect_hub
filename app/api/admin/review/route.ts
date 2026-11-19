@@ -11,6 +11,7 @@ import { isThaiCoordinate } from '@/lib/scrapers/tourismDirectory';
 import { LifestyleSpotItem, MOCK_SPOTS } from '@/data/spotsData';
 import type { ChallengeQuest } from '@/data/mockData';
 import { parseQuestDate } from '@/lib/questLifecycle';
+import { LACKS_PHOTO_ERROR, lacksOwnPhoto } from '@/lib/spotPhotoRule';
 
 /**
  * Unified review queue: everything waiting for a decision, across pillars.
@@ -220,6 +221,12 @@ export async function POST(request: Request) {
   const unpinned = action === 'approve' ? spots.filter((spot) => !isThaiCoordinate(spot.latitude, spot.longitude)) : [];
   if (unpinned.length) {
     return NextResponse.json({ success: false, error: `สถานที่ "${unpinned[0].title}" ยังไม่มีพิกัด กด "แก้ไข" เพื่อปักหมุดก่อนอนุมัติ` }, { status: 400 });
+  }
+
+  // OSM cafés and bars go live only with a real photo of their own (lib/spotPhotoRule.ts)
+  const noPhoto = action === 'approve' ? spots.filter((spot) => lacksOwnPhoto(spot)) : [];
+  if (noPhoto.length) {
+    return NextResponse.json({ success: false, error: `"${noPhoto[0].title}": ${LACKS_PHOTO_ERROR}${noPhoto.length > 1 ? ` (และอีก ${noPhoto.length - 1} แห่ง)` : ''}` }, { status: 400 });
   }
 
   // Moderators may decide community meetups only; fairs, spots and challenges need content.edit

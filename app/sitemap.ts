@@ -80,7 +80,8 @@ async function allPublishedSpots(): Promise<LifestyleSpotItem[]> {
   const spots: LifestyleSpotItem[] = [];
   for (let p = 1; ; p++) {
     const res = await db.findSpots({ page: p, limit: 100 });
-    spots.push(...res.items.filter((s) => s.publicationStatus !== 'draft'));
+    // Chain branches stay out of search engines (BE-424)
+    spots.push(...res.items.filter((s) => s.publicationStatus !== 'draft' && !s.chainBrand));
     if (p >= res.totalPages) return spots;
   }
 }
