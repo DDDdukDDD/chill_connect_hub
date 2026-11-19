@@ -423,6 +423,33 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): `scripts/smoke.mjs` เรียก `/api/circles` แล้ว
 
+### TR-030 · `app/api/admin/spots`: `scopeMatchers` ใน `set_publication` ไม่รู้จัก prefix `osmb-` และ `tat-` ทำให้ `scope: 'curated'` เหมารวมสถานที่นำเข้าใหม่
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `f5508b1`), 2026-11-19
+- **Page and screen:** `/api/admin/spots` (`action: 'set_publication'`)
+- **Steps:**
+  1. ตรวจสอบ `scopeMatchers` ใน `app/api/admin/spots/route.ts` หลังมีการนำเข้าสถานที่ `tat-` (BE-423) และ `osmb-` (BE-424)
+- **Expected:**
+  - `scope: 'osm'` ควรรวมทั้ง `osm-` และ `osmb-`
+  - `scope: 'imported'` ควรรวมทั้ง `ttd-`, `osm-`, `osmb-` และ `tat-`
+  - `scope: 'curated'` ต้องไม่รวม `osmb-` และ `tat-`
+- **Actual:** `scopeMatchers` เช็กเฉพาะ `id.startsWith('ttd-')` และ `id.startsWith('osm-')` ทำให้ `scope: 'osm'` และ `'imported'` ข้าม `osmb-` กับ `tat-` ทั้งหมด ขณะที่ `scope: 'curated'` (`!ttd- && !osm-`) เหมารวม draft ของ `tat-` และสาขาเชน `osmb-` เข้าไปด้วย
+- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 302–307)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-031 · `db/migrations/0063_circle_events.sql`: ตาราง `app.circle_events` ยังไม่ได้เปิด Row Level Security (RLS)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `f5508b1`), 2026-11-19
+- **Page and screen:** Database schema (`app.circle_events`, `npm run db:verify`)
+- **Steps:**
+  1. ตรวจสอบไฟล์ migration `db/migrations/0063_circle_events.sql` เทียบกับตารางอื่นใน schema `app` (เช่น `0059_pending_joins.sql`)
+- **Expected:** ตาราง `app.circle_events` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ตามมาตรฐานความปลอดภัยของฐานข้อมูลในโปรเจกต์
+- **Actual:** `0063_circle_events.sql` มีเฉพาะ `create table`, `create index` และ `grant` แต่ยังไม่ได้เปิด RLS และไม่ได้สร้าง policy
+- **Evidence:** `db/migrations/0063_circle_events.sql` (บรรทัด 1–12) เทียบกับ `db/migrations/0059_pending_joins.sql` (บรรทัด 13–15)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
 ---
 
 ## Fixed
