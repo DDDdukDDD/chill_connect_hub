@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-432 · Store app push: listeners before register, the failing step on screen, signed-app entitlement check (owner 2026-11-19)
+- **What changed:** after BE-429 the switch still showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ". `nativeToken` (`lib/appClient.ts`) now waits for both listeners to be added before `register()` (adding one is async in Capacitor, so a token iOS sent back quickly was lost and the call timed out), and reads Capacitor's `{ error }` objects. Every native step throws with its name (`permission:`, `ios:`, `timeout:`, `register:`, `save: HTTP n`), and `AppSettingsCard` shows it in small print under the message as "รหัสปัญหา: …". `ios-build.yml` gains "Check the signed app keeps push": the archive is exported once to a local .ipa with Apple's signing and the signed app's entitlements are read; the run fails if `aps-environment` is missing, and notes its value if kept.
+- **What to do about it:** merge to `main` (web fix goes live; the iOS workflow uploads a build and runs the new check: see the run page notice). Then in the app try the switch again; if it still fails, the "รหัสปัญหา" line says which step.
+
+---
+
 ### BE-431 · Places paging, admin places payload, RLS on two tables (tester TR-030..034, 2026-11-19)
 - **What changed:**
   - **TR-032** `GET /api/spots`: chain branches were filtered out after paging, so on dev page 1 (20 chains) came back empty and `totalCount` counted them. New `excludeChains` in `SpotQueryParams`, applied in `filterSpots` (`lib/db/queryEngine.ts`) before paging; the route sets it when there is no `q`. Dev: page 1 now 20 places, 0 chains, total 2,695 → 2,179; a `q=Starbucks` search still finds branches.

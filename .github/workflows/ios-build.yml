@@ -104,6 +104,32 @@ jobs:
           codesign --force --sign - --entitlements ios/App/App/App.entitlements --generate-entitlement-der "$APP"
           codesign -d --entitlements :- "$APP" 2>/dev/null | tee "$RUNNER_TEMP/entitlements.plist"
           grep -q "aps-environment" "$RUNNER_TEMP/entitlements.plist" || { echo "::error title=Entitlements::aps-environment missing from the archived app"; exit 1; }
+      # Proof that Apple's signing kept push (BE-432): sign the same archive into a local .ipa first and read the
+      # entitlements of the signed app. The ad-hoc step above only shows what went in, not what came out.
+      - name: Check the signed app keeps push
+        run: |
+          cat > "$RUNNER_TEMP/CheckOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>export</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/CheckOptions.plist" -exportPath "$RUNNER_TEMP/check" \
+            -allowProvisioningUpdates -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" > "$RUNNER_TEMP/check.log" 2>&1 || { tail -40 "$RUNNER_TEMP/check.log"; exit 1; }
+          cd "$RUNNER_TEMP/check" && unzip -q -o ./*.ipa
+          codesign -d --entitlements :- Payload/App.app 2>/dev/null | tee "$RUNNER_TEMP/signed-entitlements.plist"
+          if grep -q "aps-environment" "$RUNNER_TEMP/signed-entitlements.plist"; then
+            echo "::notice title=Push entitlement::kept in the signed app ($(grep -A1 aps-environment "$RUNNER_TEMP/signed-entitlements.plist" | tail -1 | sed 's/<[^>]*>//g' | xargs))"
+          else
+            echo "::error title=Push entitlement::missing from the app Apple signed: native push cannot work"; exit 1
+          fi
       - name: Sign and upload to TestFlight
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST

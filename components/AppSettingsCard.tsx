@@ -11,6 +11,7 @@ export function AppSettingsCard() {
   const [push, setPush] = useState<PushStatus | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [failReason, setFailReason] = useState('');
   const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -35,8 +36,10 @@ export function AppSettingsCard() {
       } else {
         setPush(await turnPushOn());
       }
-    } catch {
+    } catch (error) {
+      // The step that failed (permission, ios, timeout, register, save) in small print, so a report can say which
       setFailed(true);
+      setFailReason(error instanceof Error ? error.message.slice(0, 160) : '');
     } finally {
       setIsBusy(false);
     }
@@ -101,7 +104,12 @@ export function AppSettingsCard() {
         </div>
       )}
       {push === 'denied' && <p className="mt-4 text-sm font-medium text-slate-600">เครื่องนี้ปิดการแจ้งเตือนของ Chillwaa ไว้ เปิดได้ที่การตั้งค่าของมือถือหรือเบราว์เซอร์</p>}
-      {failed && <p role="alert" className="mt-2 text-xs font-bold text-rose-600">ตั้งค่าการแจ้งเตือนไม่สำเร็จ ลองอีกครั้งนะ</p>}
+      {failed && (
+        <div role="alert" className="mt-2">
+          <p className="text-xs font-bold text-rose-600">ตั้งค่าการแจ้งเตือนไม่สำเร็จ ลองอีกครั้งนะ</p>
+          {failReason && <p className="mt-0.5 text-[11px] text-slate-500 break-words">รหัสปัญหา: {failReason}</p>}
+        </div>
+      )}
     </section>
   );
 }

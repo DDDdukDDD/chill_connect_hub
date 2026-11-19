@@ -152,23 +152,30 @@ const storeApnsToken = (token: string | null) => {
   }
 };
 
-/** Asks iOS for this install's device token; resolves with it, or throws when iOS refuses */
+/** Capacitor reports errors as `{ error: "…" }` or `{ message }`, not always as Error */
+const errorText = (error: unknown) =>
+  error instanceof Error ? error.message : typeof error === 'object' && error ? String((error as { error?: unknown; message?: unknown }).error ?? (error as { message?: unknown }).message ?? JSON.stringify(error)) : String(error);
+
+/**
+ * Asks iOS for this install's device token; resolves with it, or throws when iOS refuses. The listeners are in place
+ * before `register()` (Capacitor's order): adding one is async, and a token iOS hands over before that is lost.
+ * Errors start with the step, shown under the switch so a failure can be told apart (BE-432).
+ */
 async function nativeToken(plugin: NativePushPlugin): Promise<string> {
-  const handles: { remove(): Promise<void> }[] = [];
+  let settle: { resolve: (token: string) => void; reject: (error: Error) => void } | null = null;
+  const result = new Promise<string>((resolve, reject) => (settle = { resolve, reject }));
+  const handles = await Promise.all([
+    plugin.addListener('registration', (token) => settle?.resolve(token.value.toLowerCase())),
+    plugin.addListener('registrationError', (error) => settle?.reject(new Error(`ios: ${errorText(error)}`))),
+  ]);
+  const timer = setTimeout(() => settle?.reject(new Error('timeout: iOS gave no device token in 15 s')), 15000);
   try {
-    return await new Promise<string>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('no device token')), 15000);
-      void plugin.addListener('registration', (token) => {
-        clearTimeout(timer);
-        resolve(token.value.toLowerCase());
-      }).then((handle) => handles.push(handle));
-      void plugin.addListener('registrationError', (error) => {
-        clearTimeout(timer);
-        reject(error instanceof Error ? error : new Error('registration failed'));
-      }).then((handle) => handles.push(handle));
-      plugin.register().catch(reject);
+    await plugin.register().catch((error: unknown) => {
+      throw new Error(`register: ${errorText(error)}`);
     });
+    return await result;
   } finally {
+    clearTimeout(timer);
     handles.forEach((handle) => void handle.remove());
   }
 }
@@ -245,12 +252,14 @@ const saveOnServer = (subscription: PushSubscription) =>
 export async function turnPushOn(): Promise<PushStatus> {
   const native = nativePush();
   if (native) {
-    const { receive } = await native.requestPermissions();
+    const { receive } = await native.requestPermissions().catch((error: unknown) => {
+      throw new Error(`permission: ${errorText(error)}`);
+    });
     if (receive === 'denied') return 'denied';
     if (receive !== 'granted') return 'off';
     const token = await nativeToken(native);
     const res = await saveApnsToken(token);
-    if (!res.ok) throw new Error('push not saved');
+    if (!res.ok) throw new Error(`save: HTTP ${res.status}`);
     storeApnsToken(token);
     return 'on';
   }
