@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-430 · Emails ready for real members; owner steps for Resend and @chillwaa.com mail (2026-11-19)
+- **What changed:** `lib/members/mailer.ts`: one email layout for all three messages (logo and name on top, title, one blue button, the link written out for when the button does not work, a footer saying where it came from and that the team never asks for passwords, OTP or money); a viewport tag so phones do not shrink it; the greeting never doubles "คุณ", adds a space before a Latin name and drops the bracket part; the plain-text copies carry the same footer. `sendMail` has an 8 s timeout, sends `reply_to` from the new optional `MAIL_REPLY_TO`, and logs what Resend answered when it refuses. New `docs/EMAIL.md`: Cloudflare Email Routing for privacy@/hello@ (the domain has no MX today, so mail to @chillwaa.com reaches no one), Resend domain on Cloudflare DNS (records on `send.` and `resend._domainkey`, DMARC), the three Vercel values, and the check before removing `SKIP_EMAIL_VERIFICATION`.
+- **What to do about it:** owner steps in `docs/EMAIL.md`. Checked: tsc + lint; the verify and reset emails rendered and looked at 390 px (phone) and 1000 px. Not seen in a real mail app yet (Gmail, Outlook, Apple Mail), which comes with the first real send.
+
+---
+
 ### BE-429 · Store app: push and share found no plugin (owner, TestFlight build 16, 2026-11-19)
 - **What changed:** turning on notifications in the app showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ" without iOS ever asking. `lib/appClient.ts` read the plugins from `Capacitor.Plugins` only, which is empty in our pages (the site does not bundle `@capacitor/core`), so push fell back to web push, which the app's web view lacks. `capPlugin()` now falls back to `Capacitor.registerPlugin`, as `lib/nativeAuth.ts` does for WebAuth; the share sheet uses it too. The web branch of `turnPushOn` returns `unsupported` / `needs-install` instead of throwing where there is no web push.
 - **What to do about it:** web only, no new app build: merge to `main`, wait for the Vercel deploy, then in the app turn on แจ้งเตือนบนเครื่องนี้ again; iOS should now ask.
