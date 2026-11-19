@@ -249,6 +249,7 @@ export function filterSpots(
     searchQuery,
     hasImageOnly = false,
     includeDrafts = false,
+    excludeChains = false,
     suggestedBy,
     sortBy = 'popular',
   } = params;
@@ -258,6 +259,7 @@ export function filterSpots(
     if (!includeDrafts && spot.publicationStatus === 'draft') {
       return false;
     }
+    if (excludeChains && spot.chainBrand) return false;
 
     // 1. Category filter
     if (category && category !== 'all' && spot.category !== category) {
