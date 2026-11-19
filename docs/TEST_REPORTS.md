@@ -168,6 +168,147 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Status:** Confirmed fixed
 - **Fix:** 13f8949 แก้ title และเปลี่ยนเป็นภาษาไทย รวมคำว่า MyHub ใน FairDetailView
 
+### TR-010 · `/` และ `CommentThread`: กดชื่อผู้โพสต์และรูป/ชื่อคนคอมเมนต์เพื่อเข้าโปรไฟล์ไม่ได้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก) และทุกหน้าที่มี `CommentThread`, 390x844 และ 1280x800
+- **Steps:**
+  1. เข้าสู่ระบบแล้วเปิดหน้าหลัก `/` (ฟีดโมเมนต์)
+  2. ลองกดที่ชื่อผู้โพสต์บนหัวโพสต์ และชื่อผู้โพสต์หน้าแคปชัน
+  3. เปิดคอมเมนต์ของโพสต์ แล้วลองกดที่รูป Avatar หรือชื่อของคนคอมเมนต์
+- **Expected:** กดชื่อผู้โพสต์ (ทั้งบนหัวโพสต์และหน้าแคปชัน) รวมถึงรูปและชื่อคนคอมเมนต์ (เมื่อมี `authorId`) ต้องพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนหน้า `/moments/[id]` (`MomentDetailView.tsx`)
+- **Actual:** บนฟีดหลัก ลิงก์ `/profile?id=...` ครอบเฉพาะรูป Avatar บนหัวโพสต์ ส่วนชื่อผู้โพสต์ (`moment.userName`) เป็น `<span>` / `<strong>` ธรรมดา และใน `CommentThread` ทั้ง `<MomentAvatar>` และชื่อคนคอมเมนต์ยังไม่ได้ครอบด้วย `<Link>` แม้มี `comment.authorId` ส่งมาแล้ว
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 188–197, 351) และ `components/moments/CommentThread.tsx` (บรรทัด 120–125)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-011 · `MomentComposer`: ปุ่มปิด (`X`) มุมขวาบนข้ามการเตือน `confirmDiscard` ทำให้รูปและข้อความที่พิมพ์ค้างไว้หายทันที
+- **Severity:** High
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (หน้าต่าง `แชร์โมเมนต์`), 390x844 และ 1280x800
+- **Steps:**
+  1. กดเปิดหน้าต่าง `แชร์โมเมนต์` จากหน้าหลัก `/`
+  2. เลือกรูปหรือพิมพ์ข้อความค้างไว้ (`hasDraft === true`)
+  3. กดปุ่มปิด (`X`) มุมขวาบนของหน้าต่าง
+- **Expected:** ระบบต้องเรียก `leave()` เพื่อเปิดหน้าต่างยืนยัน `ทิ้งโพสต์` (`confirmDiscard`) เหมือนตอนกดปุ่ม `Esc` เพื่อกันผู้ใช้เผลอทำข้อมูลที่พิมพ์/เลือกรูปไว้หาย
+- **Actual:** ปุ่มปิด `aria-label="ปิด"` เรียก `onClose` โดยตรงแทน `leave` ทำให้หน้าต่างปิดทันทีและข้อมูล draft หายทั้งหมดโดยไม่ถามยืนยัน
+- **Evidence:** `components/moments/MomentComposer.tsx` (บรรทัด 164 ประกาศ `leave` และบรรทัด 443 ผูก `onClick={onClose}`)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-012 · `SiteSearch`: ช่องค้นหาหลักบน Navbar ค้นหาคน/เพื่อน (สมาชิก) และ `#แฮชแท็ก` โมเมนต์ไม่ได้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** ทุกหน้า (Navbar `SiteSearch`), 390x844 และ 1280x800
+- **Steps:**
+  1. พิมพ์ชื่อสมาชิก/เพื่อน หรือ `#แฮชแท็ก` ลงในช่องค้นหาบน Navbar แล้วกด Enter
+- **Expected:** สามารถค้นหาสมาชิก/เพื่อนตามชื่อเพื่อกดติดตาม และค้นหาโมเมนต์หรือ `#แฮชแท็ก` จากช่องค้นหาหลักได้ ซึ่งเป็นพื้นฐานสำคัญของ Social Platform
+- **Actual:** `SiteSearch` ค้นหาเฉพาะ `['meetups', 'fairs', 'spots']` ผ่าน `/api/discover/counts` และยังไม่มีช่องทางค้นหาสมาชิกตามชื่อในระบบ (นอกจากส่งลิงก์โปรไฟล์ตรงๆ)
+- **Evidence:** `components/discover/SiteSearch.tsx` (บรรทัด 16–27) และ `app/api/members/` (มีเฉพาะ `friends`, `follows`, `suggested`)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-013 · `/` (ฟีดโมเมนต์): เมนู `⋯` บนโพสต์คนอื่นยังไม่มีตัวเลือกเอาแท็กตัวเองออก (`isTaggedMe`), เลิกติดตาม และไม่สนใจโพสต์นี้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` แล้วกดปุ่มเมนู `⋯` บนโพสต์ของสมาชิกคนอื่น (รวมถึงโพสต์ที่เพื่อนแท็กเราไว้)
+- **Expected:** มีตัวเลือกพื้นฐานในการจัดการความสัมพันธ์และฟีดจากโพสต์ได้ทันที ได้แก่ เอาแท็กตัวเองออก (เมื่อ `moment.isTaggedMe` เป็นจริง), เลิกติดตาม (เมื่อติดตามอยู่แล้ว) และไม่สนใจ/ซ่อนโพสต์นี้เพื่อส่งสัญญาณให้ฟีด `สำหรับคุณ`
+- **Actual:** `menuItems` ของโพสต์คนอื่นมีเพียง `คัดลอกลิงก์` และ `รายงานโพสต์นี้` เท่านั้น แม้ฝั่งเซิร์ฟเวอร์จะส่ง `isTaggedMe` มาใน `FeedItem` แล้วก็ตาม
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 169–179) และ `lib/moments/service.ts` (บรรทัด 126)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-014 · `/` และ `MobileNav`: แถบ "โมเมนต์ใหม่" ทำงานเฉพาะแท็บ `ล่าสุด` และแตะแท็บ "หน้าหลัก" ซ้ำยังไม่เลื่อนขึ้นบนสุดพร้อมรีเฟรช
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก) และ `MobileNav`, 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` บนแท็บเริ่มต้น `สำหรับคุณ` (`foryou`) หรือแท็บ `ติดตาม` (`following`) แล้วรอให้มีโพสต์ใหม่เข้ามา
+  2. บนมือถือ เลื่อนฟีดลงไปด้านล่างแล้วแตะปุ่ม `หน้าหลัก` ใน `MobileNav` ซ้ำอีกครั้ง
+- **Expected:** แท็บหลัก `สำหรับคุณ` และ `ติดตาม` ควรตรวจและแจ้งเตือนเมื่อมีโพสต์ใหม่ (หรือรีเฟรชได้ง่าย) และการแตะแท็บ `หน้าหลัก` ซ้ำขณะที่อยู่หน้า `/` ควรเลื่อนกลับขึ้นบนสุดและรีเฟรชฟีดเหมือนแอปโซเชียลทั่วไป
+- **Actual:** `useEffect` ที่เช็กโพสต์ใหม่ทุก `NEW_CHECK_MS` ทำงานเฉพาะเมื่อ `sort === 'all'` (`ล่าสุด`) เท่านั้น และปุ่ม `หน้าหลัก` ใน `MobileNav` เป็น `<Link href="/">` ธรรมดาที่กดซ้ำแล้วไม่เลื่อนขึ้นบนสุดหรือรีเฟรชฟีด
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 708–723) และ `components/MobileNav.tsx` (บรรทัด 63–79)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-015 · `/` (ฟีดโมเมนต์): โพสต์รูปภาพไม่มีลิงก์เปิดหน้าโพสต์เต็ม (`/moments/[id]`) จากเวลาโพสต์ (`timeAgo`)
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` แล้วดูโพสต์ที่เป็นรูปภาพ
+  2. ลองกดที่รูปภาพและเวลาโพสต์ (`moment.timeAgo`)
+- **Expected:** กดที่เวลาโพสต์ (`timeAgo`) สามารถเปิดหน้าโพสต์เต็ม `/moments/[id]` ได้โดยตรง (เหมือนมาตรฐาน IG/X/Threads และสอดคล้องกับโพสต์คลิปที่เปิด `/moments/[id]` ได้)
+- **Actual:** กดที่รูปจะเปิด `PhotoViewer` (Lightbox) ส่วน `moment.timeAgo` เป็นข้อความธรรมดา ไม่มีลิงก์ไป `/moments/[id]`
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 212–215, 270–274)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-016 · `/profile`: ยังไม่มีแท็บ "ที่ถูกแท็ก" สำหรับรวมโมเมนต์ที่เพื่อนแท็กสมาชิกไว้
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/profile`, 390x844 และ 1280x800
+- **Steps:**
+  1. ให้เพื่อนโพสต์โมเมนต์แล้วแท็กบัญชีของเรา
+  2. เปิดหน้าโปรไฟล์ `/profile` แล้วดูแท็บเนื้อหาทั้งหมด
+- **Expected:** มีแท็บสำหรับดูโมเมนต์ที่ถูกแท็ก (Tagged) เพื่อรวมความทรงจำที่เพื่อนแชร์ร่วมกันไว้ในโปรไฟล์
+- **Actual:** `ProfileTab` มีเพียง `'moments' | 'went' | 'hosted' | 'challenges'` ยังไม่มีแท็บโมเมนต์ที่ถูกแท็ก
+- **Evidence:** `app/profile/ProfileScreen.tsx` (`type ProfileTab`)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-017 · `/` (ฟีดโมเมนต์): คอมเมนต์ขยายแบบ Inline ทั้งหมดในฟีด และยังแก้ไขคอมเมนต์/แท็กเพื่อน-สถานที่หลังโพสต์ไม่ได้
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. กดดูความคิดเห็นทั้งหมดบนโพสต์ที่มีคอมเมนต์จำนวนมากในฟีดหน้าหลัก
+  2. ลองแก้ไขคอมเมนต์ของตัวเอง หรือกด `แก้ไขโพสต์` เพื่อแก้แท็กเพื่อน/สถานที่
+- **Expected:** เมื่อโพสต์มีคอมเมนต์เยอะควรจำกัดความยาวในฟีดหรือเปิดเป็น Bottom Sheet/Dialog เพื่อไม่ให้ฟีดยาวหลุดจังหวะ และรองรับการแก้ไขคอมเมนต์รวมถึงแท็กเพื่อน/สถานที่หลังโพสต์ได้
+- **Actual:** `shownComments` กางคอมเมนต์ทั้งหมดลงในฟีดแบบ Inline, `CommentThread` ทำได้เฉพาะลบคอมเมนต์ (แก้ไขไม่ได้) และหน้าต่าง `แก้ไขโพสต์` ใน `HomeMomentFeed` แก้ได้เฉพาะแคปชัน รูป และ `PostOptions`
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 132, 382–411, 1134–1158) และ `components/moments/CommentThread.tsx` (บรรทัด 92–95)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-018 · `MomentPhotos`: รูปในโพสต์โมเมนต์ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` และ `/moments/[id]`, 390x844 และ 1280x800
+- **Steps:**
+  1. แสดงโพสต์โมเมนต์ที่ URL รูปภาพต้นทางไม่สามารถโหลดได้ (เช่น HTTP 404 หรือไฟล์หาย)
+- **Expected:** มี `onError` fallback หรือใช้ `FallbackImg` / placeholder ที่สะอาดตาตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
+- **Actual:** `<img>` ใน `MomentPhotos.tsx` ไม่มี `onError` handler จึงแสดงไอคอนรูปแตกของเบราว์เซอร์เมื่อโหลดรูปไม่สำเร็จ
+- **Evidence:** `components/moments/MomentPhotos.tsx` (บรรทัด 108–115)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-019 · `/` (หน้าแรกสมาชิก): `MemberLiveHome` โหลดแบบ `ssr: false` ทำให้เห็น Skeleton กระพริบตอนเปิดหน้าแรกทั้งที่เซิร์ฟเวอร์ส่ง `feedStart` มาแล้ว
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (สมาชิกที่เข้าสู่ระบบแล้ว), 390x844 และ 1280x800
+- **Steps:**
+  1. เข้าสู่ระบบแล้วเปิดหรือรีเฟรชหน้าหลัก `/`
+- **Expected:** เมื่อ `app/page.tsx` ดึง `memberData` และ `feedStart` จากเซิร์ฟเวอร์มาพร้อมหน้าเว็บแล้ว ฟีดหน้าแรกควรแสดงผลได้ทันทีโดยไม่กระพริบเป็น `MemberHomeSkeleton`
+- **Actual:** `app/HomeView.tsx` โหลด `MemberLiveHome` ด้วย `dynamic(loadMemberHome, { ssr: false, loading: () => <MemberHomeSkeleton /> })` ทำให้สมาชิกเห็น Skeleton ชั่วคราวทุกครั้งที่โหลดหน้าจนกว่า JS chunk จะโหลดและ hydrate เสร็จ
+- **Evidence:** `app/page.tsx` (บรรทัด 32–36, 57) และ `app/HomeView.tsx` (บรรทัด 48–49)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-020 · ฟีด `สำหรับคุณ` (`forYou.ts`) และ `เพื่อนๆ ที่น่าติดตาม`: คะแนนยังไม่นับ `invitesCount`/`sharesCount` และรายชื่อแนะนำยังไม่มี Social Proof
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิกและแถบ `เพื่อนๆ ที่น่าติดตาม`), 390x844 และ 1280x800
+- **Steps:**
+  1. ตรวจสอบสูตรคำนวณคะแนน Engagement ใน `lib/moments/forYou.ts`
+  2. ดูบล็อก `เพื่อนๆ ที่น่าติดตาม` ในฟีดและแถบขวา (`PeopleRail`)
+- **Expected:** สูตรจัดอันดับ `สำหรับคุณ` ควรให้น้ำหนัก `invitesCount` (ชวนเพื่อนไป) และ `sharesCount` ซึ่งสะท้อนการพาคนออกไปใช้ชีวิตจริงได้ตรงที่สุด และรายชื่อ `เพื่อนๆ ที่น่าติดตาม` ควรมีบริบทความเชื่อมโยงที่ปลอดภัยต่อความเป็นส่วนตัว (เช่น เพื่อนที่ติดตามเหมือนกัน) เพื่อช่วยตัดสินใจกดติดตาม
+- **Actual:** `scoreParts` คิดเฉพาะ `saves * 4 + comments * 2 + likes * 1` โดยไม่รวม `invitesCount`/`sharesCount` และ `FollowRow` แสดงเฉพาะชื่อและจำนวน `N โมเมนต์`
+- **Evidence:** `lib/moments/forYou.ts` (บรรทัด 98–99) และ `components/home/onboardingFirstStep.tsx` (บรรทัด 106–110)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
 ---
 
 ## Fixed
