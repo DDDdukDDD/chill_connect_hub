@@ -113,14 +113,21 @@ type NativePushPlugin = {
   addListener(event: 'registrationError', listener: (error: unknown) => void): Promise<{ remove(): Promise<void> }>;
   addListener(event: 'pushNotificationActionPerformed', listener: (action: { notification: { data?: Record<string, unknown> } }) => void): Promise<{ remove(): Promise<void> }>;
 };
-type CapacitorGlobal = { isNativePlatform?: () => boolean; isPluginAvailable?: (name: string) => boolean; Plugins?: Record<string, unknown> };
+type CapacitorGlobal = { isNativePlatform?: () => boolean; isPluginAvailable?: (name: string) => boolean; Plugins?: Record<string, unknown>; registerPlugin?: (name: string) => unknown };
 
-function nativePush(): NativePushPlugin | null {
+/**
+ * A native plugin of the store app, as lib/nativeAuth.ts finds WebAuth. The site does not bundle @capacitor/core, so
+ * `Capacitor.Plugins` is empty in its pages: `registerPlugin` (from the app's injected bridge) makes the proxy.
+ * Reading `Plugins` alone found nothing, so push fell back to web push and failed (owner, build 16, 2026-11-19).
+ */
+function capPlugin<T>(name: string): T | null {
   if (typeof window === 'undefined') return null;
   const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  if (!cap?.isNativePlatform?.() || !cap.isPluginAvailable?.('PushNotifications')) return null;
-  return (cap.Plugins?.PushNotifications as NativePushPlugin | undefined) ?? null;
+  if (!cap?.isNativePlatform?.() || !cap.isPluginAvailable?.(name)) return null;
+  return ((cap.Plugins?.[name] as T | undefined) ?? (cap.registerPlugin?.(name) as T | undefined)) || null;
 }
+
+const nativePush = () => capPlugin<NativePushPlugin>('PushNotifications');
 
 /** Inside the store app: no install sheet or "add to home screen", it already is an app */
 export const isStoreApp = () => {
@@ -175,10 +182,7 @@ type NativeSharePlugin = { share(options: { title?: string; text?: string; url?:
  * that share keep their code. A closed sheet becomes an AbortError, which every caller already treats as "no".
  */
 export function installNativeShareSheet(): void {
-  if (typeof window === 'undefined') return;
-  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  if (!cap?.isNativePlatform?.() || !cap.isPluginAvailable?.('Share')) return;
-  const plugin = cap.Plugins?.Share as NativeSharePlugin | undefined;
+  const plugin = capPlugin<NativeSharePlugin>('Share');
   if (!plugin) return;
   const share = async (data: ShareData = {}) => {
     try {
@@ -250,6 +254,8 @@ export async function turnPushOn(): Promise<PushStatus> {
     storeApnsToken(token);
     return 'on';
   }
+  // No web push here (an app web view without the plugin, an old browser): say so instead of failing
+  if (!pushSupported()) return isIos() && !isStandalone() ? 'needs-install' : 'unsupported';
   // First, while the tap still counts: Safari refuses to ask later
   const permission = await Notification.requestPermission();
   if (permission === 'denied') return 'denied';

@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-429 · Store app: push and share found no plugin (owner, TestFlight build 16, 2026-11-19)
+- **What changed:** turning on notifications in the app showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ" without iOS ever asking. `lib/appClient.ts` read the plugins from `Capacitor.Plugins` only, which is empty in our pages (the site does not bundle `@capacitor/core`), so push fell back to web push, which the app's web view lacks. `capPlugin()` now falls back to `Capacitor.registerPlugin`, as `lib/nativeAuth.ts` does for WebAuth; the share sheet uses it too. The web branch of `turnPushOn` returns `unsupported` / `needs-install` instead of throwing where there is no web push.
+- **What to do about it:** web only, no new app build: merge to `main`, wait for the Vercel deploy, then in the app turn on แจ้งเตือนบนเครื่องนี้ again; iOS should now ask.
+
+---
+
 ### BE-428 · iPhone app: native push (APNs), native share sheet, "ลบบัญชี" easy to find (2026-11-19)
 - **What changed:**
   - **Push:** inside the store app the settings switch "แจ้งเตือนบนเครื่องนี้" asks iOS through Capacitor PushNotifications (`lib/appClient.ts`: `readPushStatus` / `turnPushOn` / `turnPushOff` / `syncPushDevice` have a native branch; the token is remembered in localStorage). `POST /api/push { apns }` saves it in `app.push_subscriptions` as endpoint `apns:<token>` (p256dh/auth `-`, no migration; the 10-devices cap, delete with the account and the admin count all apply). `sendPush` sends `apns:` devices through `lib/social/apns.ts` (HTTP/2, ES256 provider token cached 40 min, collapse id = tag, 24 h expiry; 410/BadDeviceToken/Unregistered forget the device) and the rest through web push. `pushConfigured` is true with either key set. `listenForNativePushTaps` (in `AppSetup`) opens a tapped notice's `url` (site paths only).
