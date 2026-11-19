@@ -68,3 +68,5 @@ next-env.d.ts
 
 # TAT importer cache (db/import-tat-attractions.ts)
 /data/.tat-cache/
+# OSM venue importer cache (db/import-osm-venues.ts)
+/data/.osm-cache/

@@ -124,6 +124,10 @@ Returns published spots only (drafts hidden).
 
 Response `200`: `{ success: true, spots: LifestyleSpotItem[], pagination: Pagination }`. Cache: `s-maxage=60`.
 
+**Chain branches** (since 2026-11-19, BE-424): places with `chainBrand` (Starbucks, Café Amazon…, ids `osmb-…`) come back only when `q` is given, so place pickers find them; without `q` they are left out of `spots` (`pagination` still counts them). They have no photo (`image: ""`), curation tier `hidden`, and never appear in `/api/spots/browse`, home picks, nearby dining or the sitemap. Their `/spots/[id]` page is `noindex`.
+
+**OSM venues** (ids `osmb-…`, `sourceName: "OpenStreetMap"`, must show the credit): `image` may be `""`; show "no photo yet", never a stock photo. Ones without `chainBrand` stay drafts until staff add a real photo.
+
 Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพฯ"`).
 
 **Optional fields on imported spots** (all optional; curated spots usually lack them):

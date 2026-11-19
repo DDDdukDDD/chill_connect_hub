@@ -20,6 +20,19 @@ Item template:
 
 ---
 
+### BE-424 · Bangkok cafés, bars and galleries from OpenStreetMap in the dev database (owner 2026-11-19)
+- **Why:** our places were mostly temples (live: temples 26%, temples + old town + museums ~45%, no nightlife). TAT is no help for cafés: about 77 in Bangkok by name, and a sample of 20 had 2 with pictures.
+- **What changed:**
+  - `db/import-osm-venues.ts` + `lib/scrapers/osmVenues.ts`: OSM cafés, bakeries, ice cream, tea, bars, pubs, nightclubs, galleries and arts centres for one province (default Bangkok), dev only. On dev: 2,030 new drafts (cafe 1,404, bar 582, art 44), id `osmb-<n|w|r><osm id>`, credited "OpenStreetMap" with the OSM link. 456 have hours, 413 a phone or link, all have a district (from OSM district outlines when the tags do not say). Left out: names under 5 characters and 47 we already had.
+  - **Chain branches** (owner 2026-11-19: "คนไปเยอะ" but they would bury the independents): 516 on dev, `chainBrand` set, **published without a photo**, curation override `hidden`. They are meeting points and moment tags only: found by `GET /api/spots?q=` (moment place picker, ตี้ form), left out of `/api/spots` without `q`, `/spots` browsing and search (`lib/spotBrowse.ts` catalog), home picks, nearby dining and the sitemap; their page is `noindex`. Named by the nearest mall within 200 m, else the road, else the district ("Starbucks สาขาสยามพารากอน"); 81 names still repeat within a district.
+  - **Shared utility:** `resolveSpotImage` / `resolveSpotGallery` (`lib/spotImageResolver.ts`) now return no stock photo for `osmb-` places, and `DetailHero` shows "ยังไม่มีรูปของที่นี่" on a tint when the image is empty.
+  - The description says only what the tags say ("คาเฟ่ในย่านบางรัก มี Wi-Fi และที่นั่งด้านนอก"); no vibe text yet, it is written when a place gets its photo.
+  - **No photo, no publish** (owner option 1, `lib/spotPhotoRule.ts`): an `osmb-` place cannot be published while it has no real photo of its own (stock photos do not count). Review-queue approve refuses it, bulk publish skips it and says how many, editing it to published returns an error, "เติมรูปอัตโนมัติ" leaves it alone. Topic "ที่เที่ยวที่นำเข้า" added to the admin logic page.
+  - Place matching moved from the TAT importer into `lib/scrapers/placeMatch.ts` (same behaviour for TAT); venues match only on a close place with an overlapping name, as cafés sit side by side and share names across branches.
+- **What to do about it:** nothing reaches live. The 2,030 drafts sit in the review queue with TAT's 1,642. A running `next dev` keeps its old place list until restarted. Next: a way to add photos (staff upload, or a member moment at the place, which needs the terms and an opt-in first: see LAUNCH_CHECKLIST), then the promote step to live. Checked on dev: `?q=Starbucks` finds branches (tier hidden), a branch page has `noindex` and the no-photo header, no stock photo.
+
+---
+
 ### BE-423 · TAT attractions in the dev database (owner 2026-11-18)
 - **What changed:** `db/import-tat-attractions.ts` + `lib/scrapers/tatDataApi.ts` (and `categorize` exported from `tourismDirectory.ts`). On dev: 1,642 new attractions from TAT as drafts with credit, 346 existing places filled in where TAT knows more, nothing removed. Details, numbers and rules in [TAT_IMPORT.md](TAT_IMPORT.md) "Import run".
 - **What to do about it:** staff approve on dev; nothing reaches live until a promote step copies pictures to R2 (not built yet). The importer and the earlier Gemini script (`db/import-tat.mjs`, never committed) do the same job; keep this one.
