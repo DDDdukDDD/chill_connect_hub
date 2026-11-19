@@ -8,6 +8,7 @@ import { getSpotVibeCategory } from '@/lib/spotVibe';
 import { isThaiCoordinate } from '@/lib/contentQuality';
 import { coordinatesMapUrl, defaultSpotCategoryLabel } from '@/lib/spotCategories';
 import { autoEnrichSpotImages } from '@/lib/spotImageResolver';
+import { LACKS_PHOTO_ERROR, isOsmVenue, lacksOwnPhoto } from '@/lib/spotPhotoRule';
 import { recomputeCuration, setCurationOverride } from '@/lib/spotCurationStore';
 import { CURATION_TIER_LABEL, type CurationTier } from '@/lib/spotCuration';
 
@@ -42,6 +43,7 @@ function getSpotValidationError(spot: Partial<LifestyleSpotItem>): string | null
   if (typeof spot.description !== 'string' || spot.description.trim().length < 15) return 'รายละเอียดต้องมีอย่างน้อย 15 ตัวอักษร';
   if (typeof spot.openHours !== 'string' || !spot.openHours.trim()) return 'กรุณาระบุเวลาเปิดให้บริการ';
   if (!isThaiCoordinate(Number(spot.latitude), Number(spot.longitude))) return 'พิกัดต้องอยู่ในประเทศไทย';
+  if (spot.publicationStatus === 'published' && typeof spot.id === 'string' && lacksOwnPhoto({ id: spot.id, image: spot.image || '' })) return LACKS_PHOTO_ERROR;
   return null;
 }
 
@@ -173,7 +175,8 @@ export async function POST(request: Request) {
     // Action 1: Auto Enrich Missing Images
     if (action === 'auto_enrich_images') {
       const allSpots = await getAllSpots();
-      const { enrichedSpots, fixedCount } = autoEnrichSpotImages(allSpots);
+      // Stock photos would pass for an OSM café's own, so those wait for a real one (lib/spotPhotoRule.ts)
+      const { enrichedSpots, fixedCount } = autoEnrichSpotImages(allSpots.filter((spot) => !isOsmVenue(spot)));
       await db.bulkUpdateSpots(enrichedSpots);
       recordAudit(actor, 'spot.auto_enrich_images', `เติมรูปอัตโนมัติ ${fixedCount} สถานที่`);
       return NextResponse.json({
@@ -311,9 +314,12 @@ export async function POST(request: Request) {
       }
       const idSet = ids ? new Set(ids) : null;
       const inScope = typeof scope === 'string' ? scopeMatchers[scope] : () => true;
-      const targets = (await getAllSpots()).filter((spot) =>
+      const chosen = (await getAllSpots()).filter((spot) =>
         (!idSet || idSet.has(spot.id)) && inScope(spot.id) && spot.publicationStatus !== status
       );
+      // OSM cafés and bars without a real photo stay drafts (lib/spotPhotoRule.ts)
+      const targets = status === 'published' ? chosen.filter((spot) => !lacksOwnPhoto(spot)) : chosen;
+      const skippedNoPhoto = chosen.length - targets.length;
       const updated = await db.bulkUpdateSpots(targets.map((spot) => ({ id: spot.id, publicationStatus: status })));
       // Newly published places are scored with the rest
       if (status === 'published' && updated > 0) await recomputeCuration();
@@ -328,7 +334,8 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         updated,
-        message: `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่`,
+        skippedNoPhoto,
+        message: `${status === 'published' ? 'เผยแพร่' : 'ซ่อนเป็นร่าง'} ${updated} สถานที่${skippedNoPhoto ? ` (ข้ามร้านที่ยังไม่มีรูปจริง ${skippedNoPhoto} แห่ง)` : ''}`,
       });
     }
 

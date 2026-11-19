@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { RING_FRIENDS } from '@/components/home/circleLook';
+import ImgOr from '@/components/ImgOr';
 import Link from 'next/link';
 import { Check, HandHeart, Loader2, Trophy, Users, X } from 'lucide-react';
 import type { AchievementCircle, ChallengeCircle, ChallengeCircleDetail } from '@/lib/social/circles';
@@ -25,6 +26,11 @@ export function challengeMeaning(item: ChallengeCircle) {
 export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: ChallengeCircle; onOpen: () => void; seen?: boolean }) {
   const meaning = challengeMeaning(item);
   const faces = item.people.slice(0, 2);
+  const rowFallback = (
+    <span className="w-16 h-16 rounded-full bg-violet-50 flex items-center justify-center">
+      <Trophy className="w-7 h-7 text-[#7C3AED]" aria-hidden="true" />
+    </span>
+  );
   return (
     <li className="shrink-0 w-[80px]">
       <button
@@ -37,17 +43,14 @@ export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: Chall
         <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : `bg-linear-to-tr ${RING_FRIENDS}`}`}>
           <span className="block rounded-full bg-white p-[2px]">
             {item.quest.image ? (
-              // eslint-disable-next-line @next/next/no-img-element -- challenge covers come from many hosts
-              <img src={optimizedImage(item.quest.image, 128)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+              <ImgOr src={optimizedImage(item.quest.image, 128)} fallback={rowFallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
             ) : (
-              <span className="w-16 h-16 rounded-full bg-violet-50 flex items-center justify-center">
-                <Trophy className="w-7 h-7 text-[#7C3AED]" aria-hidden="true" />
-              </span>
+              rowFallback
             )}
           </span>
           {/* Two friends' faces on the picture's corner: the Circle is about them, the picture says which challenge */}
           <span className="absolute -top-1 -right-2 flex -space-x-2" aria-hidden="true">
-            {faces.map((face) => <Face key={face.id} circle={face} size="w-6 h-6 text-[10px]" />)}
+            {faces.map((face) => <Face key={face.id} circle={face} size="w-6 h-6 text-[11px]" />)}
           </span>
           <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white bg-[#1D4ED8] text-white text-[11px] font-bold tabular-nums whitespace-nowrap" aria-hidden="true">
             <Users className="w-3 h-3" />
@@ -63,30 +66,18 @@ export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: Chall
 }
 
 function Face({ circle, size }: { circle: AchievementCircle; size: string }) {
-  return circle.person.avatar ? (
-    // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={avatarImage(circle.person.avatar)} alt="" className={`${size} rounded-full object-cover border-2 border-white bg-slate-100`} />
-  ) : (
-    <span className={`${size} rounded-full border-2 border-white bg-slate-200 font-bold text-slate-700 flex items-center justify-center`}>{nameInitial(circle.person.name)}</span>
-  );
+  const initials = <span className={`${size} rounded-full border-2 border-white bg-slate-200 font-bold text-slate-700 flex items-center justify-center`}>{nameInitial(circle.person.name)}</span>;
+  return circle.person.avatar ? <ImgOr src={avatarImage(circle.person.avatar)} fallback={initials} className={`${size} rounded-full object-cover border-2 border-white bg-slate-100`} /> : initials;
 }
 
 type Act = (circleId: string, action: 'cheer' | 'try') => Promise<boolean>;
 
-export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { item: ChallengeCircle; onClose: () => void; onAct: Act; onOpenMoment?: (momentId: string) => void }) {
-  const [detail, setDetail] = useState<ChallengeCircleDetail | 'error' | undefined>(undefined);
+/**
+ * The opened Circle. Its detail is loaded by CircleViewer, ahead of a swipe like every other Circle (TR-026);
+ * `onDetail` keeps a cheer or a join there, so swiping away and back still shows it.
+ */
+export function ChallengeCircleBody({ item, detail, onDetail, onRetry, onClose, onAct, onOpenMoment }: { item: ChallengeCircle; detail: ChallengeCircleDetail | 'error' | undefined; onDetail: (detail: ChallengeCircleDetail) => void; onRetry: () => void; onClose: () => void; onAct: Act; onOpenMoment?: (momentId: string) => void }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const load = useCallback(() => {
-    fetch(`/api/circles/${encodeURIComponent(item.id)}`, { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((json) => setDetail(json?.success ? (json.detail as ChallengeCircleDetail) : 'error'))
-      .catch(() => setDetail('error'));
-  }, [item.id]);
-  useEffect(load, [load]);
-  const retry = () => {
-    setDetail(undefined);
-    load();
-  };
   const ready = detail && detail !== 'error' ? detail : undefined;
 
   const run = async (circleId: string, action: 'cheer' | 'try') => {
@@ -95,7 +86,7 @@ export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { it
     const ok = await onAct(circleId, action);
     setBusy(null);
     if (!ok || !ready) return;
-    setDetail(action === 'cheer' ? { ...ready, cheered: [...ready.cheered, circleId] } : { ...ready, joined: true });
+    onDetail(action === 'cheer' ? { ...ready, cheered: [...ready.cheered, circleId] } : { ...ready, joined: true });
   };
 
   const status = (circle: AchievementCircle) => (circle.kind === 'finish' ? 'ทำครบแล้ว' : `ทำไปแล้ว ${circle.current} จาก ${circle.total} ขั้น`);
@@ -108,6 +99,11 @@ export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { it
         : ready.joined
           ? 'คุณทำชาเลนจ์นี้อยู่ด้วย'
           : null;
+  const coverFallback = (
+    <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
+      <Trophy className="w-14 h-14 text-[#7C3AED]/40" aria-hidden="true" />
+    </span>
+  );
 
   return (
     <>
@@ -127,12 +123,9 @@ export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { it
       <div className="px-4">
         <div className="relative aspect-[16/9] w-full rounded-3xl overflow-hidden bg-slate-100">
           {item.quest.image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- challenge covers come from many hosts
-            <img src={optimizedImage(item.quest.image, 828)} alt="" className="w-full h-full object-cover" />
+            <ImgOr src={optimizedImage(item.quest.image, 828)} fallback={coverFallback} className="w-full h-full object-cover" />
           ) : (
-            <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
-              <Trophy className="w-14 h-14 text-[#7C3AED]/40" aria-hidden="true" />
-            </span>
+            coverFallback
           )}
         </div>
       </div>
@@ -149,11 +142,23 @@ export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { it
           {item.people.map((circle) => {
             const cheered = ready?.cheered.includes(circle.id) ?? false;
             const name = shortName(circle.person.name);
+            // A friend's face and name open their profile, as on the feed (TR-025)
+            const profile = circle.isMe ? null : `/profile?id=${encodeURIComponent(circle.person.id)}`;
             return (
               <li key={circle.id} className="flex items-center gap-3 py-2.5">
-                <Face circle={circle} size="w-10 h-10 text-sm" />
+                {profile ? (
+                  <Link href={profile} aria-label={`ดูโปรไฟล์${name}`} className="shrink-0 rounded-full hover:brightness-95">
+                    <Face circle={circle} size="w-10 h-10 text-sm" />
+                  </Link>
+                ) : (
+                  <Face circle={circle} size="w-10 h-10 text-sm" />
+                )}
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+                  {profile ? (
+                    <Link href={profile} className="block text-sm font-bold text-slate-900 truncate hover:underline">{name}</Link>
+                  ) : (
+                    <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+                  )}
                   {circle.momentId ? (
                     <Link href={`/moments/${encodeURIComponent(circle.momentId)}`} onClick={() => onOpenMoment?.(circle.momentId!)} className="block text-xs text-slate-500 hover:text-[#2563EB] hover:underline truncate">
                       {status(circle)} · {circle.timeAgo}
@@ -187,7 +192,7 @@ export function ChallengeCircleBody({ item, onClose, onAct, onOpenMoment }: { it
         {detail === 'error' && (
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3">
             <p className="text-sm text-slate-600">เปิด Circle นี้ไม่ได้ตอนนี้</p>
-            <button type="button" onClick={retry} className="text-sm font-bold text-[#2563EB] hover:underline cursor-pointer">ลองใหม่</button>
+            <button type="button" onClick={onRetry} className="text-sm font-bold text-[#2563EB] hover:underline cursor-pointer">ลองใหม่</button>
           </div>
         )}
         {ready && (

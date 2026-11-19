@@ -86,7 +86,7 @@ async function run() {
   const starters = quests.filter((q) => q.rule?.posts);
   check('five starter challenges exist', starters.length >= 5, `${starters.length} found; run node db/seed-starter-quests.mjs`);
   for (const q of starters) await A.call('/api/quests/join', 'POST', { questId: q.id, action: 'join' });
-  const row = (await A.call('/api/achievements')).items ?? [];
+  const row = (await A.call('/api/circles')).items ?? [];
   check('home row shows the challenge A took on', row.some((i) => i.isMe && i.kind === 'doing'), JSON.stringify(row[0] ?? null).slice(0, 80));
   const spots = (await A.call('/api/spots?province=%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E%E0%B8%AF&limit=5&hasImageOnly=true')).spots ?? [];
   const marked = await A.call('/api/visits', 'POST', { action: 'mark_many', targetIds: spots.slice(0, 3).map((s) => s.id) });

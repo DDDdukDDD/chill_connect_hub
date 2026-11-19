@@ -96,6 +96,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             archive | tail -40
           test "${PIPESTATUS[0]}" -eq 0
+      # An unsigned archive carries no entitlements, so Apple's re-signing would drop push (BE-428). An ad-hoc
+      # signature with App.entitlements puts them in the binary; the export keeps what the profile allows.
+      - name: Put the entitlements (push) into the archived app
+        run: |
+          APP="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          codesign --force --sign - --entitlements ios/App/App/App.entitlements --generate-entitlement-der "$APP"
+          codesign -d --entitlements :- "$APP" 2>/dev/null | tee "$RUNNER_TEMP/entitlements.plist"
+          grep -q "aps-environment" "$RUNNER_TEMP/entitlements.plist" || { echo "::error title=Entitlements::aps-environment missing from the archived app"; exit 1; }
       - name: Sign and upload to TestFlight
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST

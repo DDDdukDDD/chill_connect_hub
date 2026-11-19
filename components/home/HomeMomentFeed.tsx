@@ -23,6 +23,7 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { HOME_AGAIN_EVENT } from '@/lib/homeAgain';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
@@ -194,7 +195,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         <div className="min-w-0 flex-1">
           {/* What they went out and did, first thing in the post (owner 2026-11-18, option B): "มายด์ ไปตี้ <title>" */}
           <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
-            <span className={`font-semibold text-slate-900 truncate ${target ? 'max-w-[45%] shrink-0' : ''}`}>{moment.userName}</span>
+            {/* The name opens the profile like the avatar does (BE-425) */}
+            {moment.authorId ? (
+              <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className={`font-semibold text-slate-900 truncate hover:underline underline-offset-4 ${target ? 'max-w-[45%] shrink-0' : ''}`}>
+                {moment.userName}
+              </Link>
+            ) : (
+              <span className={`font-semibold text-slate-900 truncate ${target ? 'max-w-[45%] shrink-0' : ''}`}>{moment.userName}</span>
+            )}
             {target && (
               <>
                 <span className="shrink-0 text-slate-600">{target.verb}</span>
@@ -210,7 +218,10 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           </p>
           {/* The check-in stays where it always was; left out when it only repeats the place named above */}
           <p className="text-xs text-slate-500 truncate">
-            {moment.timeAgo}
+            {/* The time opens the post's own page, so it can be read and its link copied (BE-425) */}
+            <Link href={`/moments/${encodeURIComponent(moment.id)}`} className="hover:underline underline-offset-4">
+              {moment.timeAgo}
+            </Link>
             {moment.location && moment.location !== (target ? moment.targetTitle || moment.location : '') && ` · ${moment.location}`}
           </p>
         </div>
@@ -348,7 +359,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {(moment.caption || moment.tagged?.length) && (
         <div>
           <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            {moment.authorId ? (
+              <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="font-semibold text-slate-900 hover:underline underline-offset-4">
+                {moment.userName}
+              </Link>
+            ) : (
+              <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            )}
             {moment.tagged?.length ? <> <TaggedFriends people={moment.tagged} inline className="text-slate-700" /></> : null}
             {moment.caption && <> <CaptionText text={moment.caption} mentions={moment.tagged} /></>}
           </p>
@@ -708,11 +725,13 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
   // New moments: a quiet check every minute; the list itself never jumps while someone is reading
   useEffect(() => {
-    if (sort !== 'all' || moments.length === 0) return;
+    // The newest-first views only (ล่าสุด and ติดตาม, TR-014); สำหรับคุณ is ranked, so "N new" means little there and
+    // หน้าหลัก tapped again refreshes it instead
+    if ((sort !== 'all' && sort !== 'following') || moments.length === 0) return;
     const known = new Set(moments.map((m) => m.id));
     const timer = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      fetchPage('all', 1)
+      fetchPage(sort, 1)
         .then(({ items }) => {
           const firstKnown = items.findIndex((m) => known.has(m.id));
           setNewCount(firstKnown === -1 ? items.length : firstKnown);
@@ -921,8 +940,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     setIsComposerOpen(true);
   };
 
+  // หน้าหลัก tapped again while on Home: the nav scrolls up, the feed refreshes the view being read (BE-425)
+  useEffect(() => {
+    const again = () => reload(sort);
+    window.addEventListener(HOME_AGAIN_EVENT, again);
+    return () => window.removeEventListener(HOME_AGAIN_EVENT, again);
+  }, [reload, sort]);
+
   const showNew = () => {
-    reload('all');
+    reload(sort);
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 

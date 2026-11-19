@@ -389,8 +389,10 @@ export function AccountCard({ member, onLogout }: { member: PublicMember; onLogo
           </div>
         </dl>
       )}
-      <p className="mt-2 text-sm">
-        <a href="/legal?tab=privacy#my-data" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดาวน์โหลดข้อมูลหรือลบบัญชี</a>
+      {/* "ลบบัญชี" on its own link, easy to find (App Store Review 5.1.1(v), BE-428); both open the "ข้อมูลของฉัน" part */}
+      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <a href="/legal?tab=privacy#my-data" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ดาวน์โหลดข้อมูลของฉัน</a>
+        <a href="/legal?tab=privacy#my-data" className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline">ลบบัญชี</a>
       </p>
       {!member.isSubAccount && <p className="mt-2 text-xs font-medium text-slate-500">อีเมลของคุณไม่แสดงให้สมาชิกคนอื่นเห็น</p>}
 

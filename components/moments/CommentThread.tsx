@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { Heart, MoreHorizontal, X } from 'lucide-react';
 import { avatarImage } from '@/lib/optimizedImage';
 import { nameInitial } from '@/lib/displayName';
@@ -116,12 +117,29 @@ function CommentRow({ comment, isLoggedIn, onNeedLogin, onAct, onReply, onReport
     if (!done) setHeart(null);
   };
 
+  const profile = 'authorId' in comment && comment.authorId ? `/profile?id=${encodeURIComponent(comment.authorId)}` : null;
+  const avatarSize = comment.parentId ? 'w-6 h-6 text-[11px]' : 'w-7 h-7 text-[11px]';
+
   return (
     <div className="group/comment flex items-start gap-2.5">
-      <MomentAvatar name={comment.userName} src={comment.userAvatar} className={comment.parentId ? 'w-6 h-6 text-[11px]' : 'w-7 h-7 text-[11px]'} />
+      {/* Avatar and name open the commenter's profile (BE-425); sample comments have no member behind them */}
+      {profile ? (
+        <Link href={profile} aria-label={`โปรไฟล์ของ ${comment.userName}`} className="shrink-0">
+          <MomentAvatar name={comment.userName} src={comment.userAvatar} className={avatarSize} />
+        </Link>
+      ) : (
+        <MomentAvatar name={comment.userName} src={comment.userAvatar} className={avatarSize} />
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-[13px] sm:text-sm text-slate-800 break-words">
-          <span className="font-semibold text-slate-900">{comment.userName}</span> <CaptionText text={comment.text} mentions={comment.mentions} />
+          {profile ? (
+            <Link href={profile} className="font-semibold text-slate-900 hover:underline underline-offset-4">
+              {comment.userName}
+            </Link>
+          ) : (
+            <span className="font-semibold text-slate-900">{comment.userName}</span>
+          )}{' '}
+          <CaptionText text={comment.text} mentions={comment.mentions} />
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
           <span>{comment.timeAgo}</span>

@@ -66,7 +66,7 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Actual:** `components/PosterPhoto.tsx` (ที่ใช้ใน `FairTile.tsx` และ `MeetupTile.tsx`) ไม่มี `onError` fallback ทำให้ `<img>` แสดงไอคอนรูปแตกบนพื้นสีเทา (`naturalWidth === 0`)
 - **Evidence:** `components/PosterPhoto.tsx` (บรรทัด 40–51) และ `components/FairTile.tsx` (บรรทัด 104)
   - **Re-test (2026-11-06 on `3745704`):** รูปที่เพิ่งโหลดหลังเลื่อนหน้าจอเปลี่ยนเป็น `PHOTO_STAND_IN` แล้ว แต่การ์ดชุดแรกที่อยู่ใน SSR HTML ของ `/events` (เช่น `/events/live-agg-50cd344c700e3fcf18fe` รูป `one-fight-night-49-6abf6cd60c539-l.png` และ `/events/live-agg-15c758f2787260a944cd` รูป `one-lumpinee-178-6ab4b8f1c402f-l.jpg`) โหลดล้มเหลว (HTTP 404) เสร็จก่อนที่ React จะ hydrate ทำให้ `onError` ไม่ถูกเรียก และใน `useEffect` (`components/PosterPhoto.tsx` บรรทัด 37–40) เช็กแค่ `if (ref.current?.complete) measure(ref.current)` ซึ่งทำเฉพาะกรณี `img.naturalWidth > 0` แต่ไม่ได้เรียก `setFailedSrc(src)` เมื่อ `ref.current.complete && ref.current.naturalWidth === 0` ทำให้ 2 การ์ดนี้ยังแสดงไอคอนรูปแตก (`naturalWidth === 0`)
-- **Status:** Ready to re-test
+- **Status:** Confirmed fixed
 - **Fix:** 13f8949 PosterPhoto และ MeetupTile ใช้รูปสำรองเมื่อโหลดรูปไม่ได้ ตรวจแล้วโดยบังคับลิงก์เสียบน /events · c9fee5a (BE-289) รูปใน SSR ที่โหลดไม่ได้ก่อน hydrate: `useEffect` เช็ก `complete && naturalWidth === 0` แล้วเปลี่ยนเป็นรูปสำรอง · BE-390 ใช้วิธีเดียวกันกับรูปที่เหลือ (`components/FallbackImg.tsx`: EventDateList, แถวอีเวนต์หน้าแรก, ตี้แนะนำใน My Hub)
 
 ### TR-003 · `/moments` และ `/moments/[id]`: ชื่อผู้โพสต์แสดงชื่อบัญชีภาษาอังกฤษในวงเล็บต่อท้ายชื่อไทย เช่น `คุณกี้ (Kee_Explorer)`
@@ -167,6 +167,261 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Evidence:** `app/events/[id]/page.tsx` (บรรทัด 13) และ `app/community/[id]/CommunityDetailView.tsx` (บรรทัด 1124, 1136)
 - **Status:** Confirmed fixed
 - **Fix:** 13f8949 แก้ title และเปลี่ยนเป็นภาษาไทย รวมคำว่า MyHub ใน FairDetailView
+
+### TR-010 · `/` และ `CommentThread`: กดชื่อผู้โพสต์และรูป/ชื่อคนคอมเมนต์เพื่อเข้าโปรไฟล์ไม่ได้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก) และทุกหน้าที่มี `CommentThread`, 390x844 และ 1280x800
+- **Steps:**
+  1. เข้าสู่ระบบแล้วเปิดหน้าหลัก `/` (ฟีดโมเมนต์)
+  2. ลองกดที่ชื่อผู้โพสต์บนหัวโพสต์ และชื่อผู้โพสต์หน้าแคปชัน
+  3. เปิดคอมเมนต์ของโพสต์ แล้วลองกดที่รูป Avatar หรือชื่อของคนคอมเมนต์
+- **Expected:** กดชื่อผู้โพสต์ (ทั้งบนหัวโพสต์และหน้าแคปชัน) รวมถึงรูปและชื่อคนคอมเมนต์ (เมื่อมี `authorId`) ต้องพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนหน้า `/moments/[id]` (`MomentDetailView.tsx`)
+- **Actual:** บนฟีดหลัก ลิงก์ `/profile?id=...` ครอบเฉพาะรูป Avatar บนหัวโพสต์ ส่วนชื่อผู้โพสต์ (`moment.userName`) เป็น `<span>` / `<strong>` ธรรมดา และใน `CommentThread` ทั้ง `<MomentAvatar>` และชื่อคนคอมเมนต์ยังไม่ได้ครอบด้วย `<Link>` แม้มี `comment.authorId` ส่งมาแล้ว
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 188–197, 351) และ `components/moments/CommentThread.tsx` (บรรทัด 120–125)
+- **Status:** Confirmed fixed
+- **Fix:** `b333c13` (BE-425): ชื่อผู้โพสต์บนหัวโพสต์และหน้าแคปชันเป็นลิงก์ไปโปรไฟล์ รูปและชื่อคนคอมเมนต์ก็เป็นลิงก์เมื่อมี `authorId` (คอมเมนต์ตัวอย่างไม่มี จึงยังเป็นข้อความธรรมดา) ฐานข้อมูล dev ไม่มีคอมเมนต์จากสมาชิกจริง ช่วยลองคอมเมนต์ด้วยบัญชีทดสอบแล้วกดชื่อ
+
+### TR-011 · `MomentComposer`: ปุ่มปิด (`X`) มุมขวาบนข้ามการเตือน `confirmDiscard` ทำให้รูปและข้อความที่พิมพ์ค้างไว้หายทันที
+- **Severity:** High
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (หน้าต่าง `แชร์โมเมนต์`), 390x844 และ 1280x800
+- **Steps:**
+  1. กดเปิดหน้าต่าง `แชร์โมเมนต์` จากหน้าหลัก `/`
+  2. เลือกรูปหรือพิมพ์ข้อความค้างไว้ (`hasDraft === true`)
+  3. กดปุ่มปิด (`X`) มุมขวาบนของหน้าต่าง
+- **Expected:** ระบบต้องเรียก `leave()` เพื่อเปิดหน้าต่างยืนยัน `ทิ้งโพสต์` (`confirmDiscard`) เหมือนตอนกดปุ่ม `Esc` เพื่อกันผู้ใช้เผลอทำข้อมูลที่พิมพ์/เลือกรูปไว้หาย
+- **Actual:** ปุ่มปิด `aria-label="ปิด"` เรียก `onClose` โดยตรงแทน `leave` ทำให้หน้าต่างปิดทันทีและข้อมูล draft หายทั้งหมดโดยไม่ถามยืนยัน
+- **Evidence:** `components/moments/MomentComposer.tsx` (บรรทัด 164 ประกาศ `leave` และบรรทัด 443 ผูก `onClick={onClose}`)
+- **Status:** Confirmed fixed
+- **Fix:** `b333c13` (BE-425): ปุ่ม X เรียก `leave()` แล้ว ถ้ามีร่างจะถาม "ทิ้งโพสต์" เหมือนกด Esc
+
+### TR-012 · `SiteSearch`: ช่องค้นหาหลักบน Navbar ค้นหาคน/เพื่อน (สมาชิก) และ `#แฮชแท็ก` โมเมนต์ไม่ได้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** ทุกหน้า (Navbar `SiteSearch`), 390x844 และ 1280x800
+- **Steps:**
+  1. พิมพ์ชื่อสมาชิก/เพื่อน หรือ `#แฮชแท็ก` ลงในช่องค้นหาบน Navbar แล้วกด Enter
+- **Expected:** สามารถค้นหาสมาชิก/เพื่อนตามชื่อเพื่อกดติดตาม และค้นหาโมเมนต์หรือ `#แฮชแท็ก` จากช่องค้นหาหลักได้ ซึ่งเป็นพื้นฐานสำคัญของ Social Platform
+- **Actual:** `SiteSearch` ค้นหาเฉพาะ `['meetups', 'fairs', 'spots']` ผ่าน `/api/discover/counts` และยังไม่มีช่องทางค้นหาสมาชิกตามชื่อในระบบ (นอกจากส่งลิงก์โปรไฟล์ตรงๆ)
+- **Evidence:** `components/discover/SiteSearch.tsx` (บรรทัด 16–27) และ `app/api/members/` (มีเฉพาะ `friends`, `follows`, `suggested`)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ (ต้องมี API ค้นหาสมาชิกและแฮชแท็ก) ไม่ใช่บั๊ก รอเจ้าของเลือกว่าจะทำก่อนเปิดไหม Claude แนะนำให้ทำก่อนเปิด เพราะการหาเพื่อนเป็นพื้นฐานของโซเชียล ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 3 แล้ว
+
+### TR-013 · `/` (ฟีดโมเมนต์): เมนู `⋯` บนโพสต์คนอื่นยังไม่มีตัวเลือกเอาแท็กตัวเองออก (`isTaggedMe`), เลิกติดตาม และไม่สนใจโพสต์นี้
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` แล้วกดปุ่มเมนู `⋯` บนโพสต์ของสมาชิกคนอื่น (รวมถึงโพสต์ที่เพื่อนแท็กเราไว้)
+- **Expected:** มีตัวเลือกพื้นฐานในการจัดการความสัมพันธ์และฟีดจากโพสต์ได้ทันที ได้แก่ เอาแท็กตัวเองออก (เมื่อ `moment.isTaggedMe` เป็นจริง), เลิกติดตาม (เมื่อติดตามอยู่แล้ว) และไม่สนใจ/ซ่อนโพสต์นี้เพื่อส่งสัญญาณให้ฟีด `สำหรับคุณ`
+- **Actual:** `menuItems` ของโพสต์คนอื่นมีเพียง `คัดลอกลิงก์` และ `รายงานโพสต์นี้` เท่านั้น แม้ฝั่งเซิร์ฟเวอร์จะส่ง `isTaggedMe` มาใน `FeedItem` แล้วก็ตาม
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 169–179) และ `lib/moments/service.ts` (บรรทัด 126)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ เอาแท็กตัวเองออกกับเลิกติดตามใช้ข้อมูลที่มีอยู่ได้ ส่วน "ไม่สนใจโพสต์นี้" ต้องมีที่เก็บข้อมูลใหม่ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 3 รอเจ้าของเลือกลำดับ
+
+### TR-014 · `/` และ `MobileNav`: แถบ "โมเมนต์ใหม่" ทำงานเฉพาะแท็บ `ล่าสุด` และแตะแท็บ "หน้าหลัก" ซ้ำยังไม่เลื่อนขึ้นบนสุดพร้อมรีเฟรช
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก) และ `MobileNav`, 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` บนแท็บเริ่มต้น `สำหรับคุณ` (`foryou`) หรือแท็บ `ติดตาม` (`following`) แล้วรอให้มีโพสต์ใหม่เข้ามา
+  2. บนมือถือ เลื่อนฟีดลงไปด้านล่างแล้วแตะปุ่ม `หน้าหลัก` ใน `MobileNav` ซ้ำอีกครั้ง
+- **Expected:** แท็บหลัก `สำหรับคุณ` และ `ติดตาม` ควรตรวจและแจ้งเตือนเมื่อมีโพสต์ใหม่ (หรือรีเฟรชได้ง่าย) และการแตะแท็บ `หน้าหลัก` ซ้ำขณะที่อยู่หน้า `/` ควรเลื่อนกลับขึ้นบนสุดและรีเฟรชฟีดเหมือนแอปโซเชียลทั่วไป
+- **Actual:** `useEffect` ที่เช็กโพสต์ใหม่ทุก `NEW_CHECK_MS` ทำงานเฉพาะเมื่อ `sort === 'all'` (`ล่าสุด`) เท่านั้น และปุ่ม `หน้าหลัก` ใน `MobileNav` เป็น `<Link href="/">` ธรรมดาที่กดซ้ำแล้วไม่เลื่อนขึ้นบนสุดหรือรีเฟรชฟีด
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 708–723) และ `components/MobileNav.tsx` (บรรทัด 63–79)
+- **Status:** Confirmed fixed
+- **Fix:** `b333c13` (BE-425): กด หน้าหลัก ซ้ำบนหน้า `/` (แถบล่างบนมือถือและเมนูบนคอม) จะเลื่อนขึ้นบนสุดและรีเฟรชแท็บที่ดูอยู่ แถบ "โมเมนต์ใหม่" ขึ้นในแท็บ ติดตาม ด้วยแล้ว ส่วนแท็บ สำหรับคุณ ตั้งใจไม่ใส่ เพราะเรียงตามคะแนน คำว่า "ใหม่ N รายการ" จึงไม่มีความหมาย ใช้กด หน้าหลัก ซ้ำเพื่อรีเฟรชแทน ตรวจในเบราว์เซอร์แล้ว scrollY 2500 → 0
+
+### TR-015 · `/` (ฟีดโมเมนต์): โพสต์รูปภาพไม่มีลิงก์เปิดหน้าโพสต์เต็ม (`/moments/[id]`) จากเวลาโพสต์ (`timeAgo`)
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิดฟีดหน้าหลัก `/` แล้วดูโพสต์ที่เป็นรูปภาพ
+  2. ลองกดที่รูปภาพและเวลาโพสต์ (`moment.timeAgo`)
+- **Expected:** กดที่เวลาโพสต์ (`timeAgo`) สามารถเปิดหน้าโพสต์เต็ม `/moments/[id]` ได้โดยตรง (เหมือนมาตรฐาน IG/X/Threads และสอดคล้องกับโพสต์คลิปที่เปิด `/moments/[id]` ได้)
+- **Actual:** กดที่รูปจะเปิด `PhotoViewer` (Lightbox) ส่วน `moment.timeAgo` เป็นข้อความธรรมดา ไม่มีลิงก์ไป `/moments/[id]`
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 212–215, 270–274)
+- **Status:** Confirmed fixed
+- **Fix:** `b333c13` (BE-425): เวลาโพสต์เป็นลิงก์ไป `/moments/[id]`
+
+### TR-016 · `/profile`: ยังไม่มีแท็บ "ที่ถูกแท็ก" สำหรับรวมโมเมนต์ที่เพื่อนแท็กสมาชิกไว้
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/profile`, 390x844 และ 1280x800
+- **Steps:**
+  1. ให้เพื่อนโพสต์โมเมนต์แล้วแท็กบัญชีของเรา
+  2. เปิดหน้าโปรไฟล์ `/profile` แล้วดูแท็บเนื้อหาทั้งหมด
+- **Expected:** มีแท็บสำหรับดูโมเมนต์ที่ถูกแท็ก (Tagged) เพื่อรวมความทรงจำที่เพื่อนแชร์ร่วมกันไว้ในโปรไฟล์
+- **Actual:** `ProfileTab` มีเพียง `'moments' | 'went' | 'hosted' | 'challenges'` ยังไม่มีแท็บโมเมนต์ที่ถูกแท็ก
+- **Evidence:** `app/profile/ProfileScreen.tsx` (`type ProfileTab`)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ (แท็บ "ที่ถูกแท็ก" ในโปรไฟล์) ไม่ใช่บั๊ก ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8 (ทำหลังเปิดได้) แล้ว
+
+### TR-017 · `/` (ฟีดโมเมนต์): คอมเมนต์ขยายแบบ Inline ทั้งหมดในฟีด และยังแก้ไขคอมเมนต์/แท็กเพื่อน-สถานที่หลังโพสต์ไม่ได้
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิก), 390x844 และ 1280x800
+- **Steps:**
+  1. กดดูความคิดเห็นทั้งหมดบนโพสต์ที่มีคอมเมนต์จำนวนมากในฟีดหน้าหลัก
+  2. ลองแก้ไขคอมเมนต์ของตัวเอง หรือกด `แก้ไขโพสต์` เพื่อแก้แท็กเพื่อน/สถานที่
+- **Expected:** เมื่อโพสต์มีคอมเมนต์เยอะควรจำกัดความยาวในฟีดหรือเปิดเป็น Bottom Sheet/Dialog เพื่อไม่ให้ฟีดยาวหลุดจังหวะ และรองรับการแก้ไขคอมเมนต์รวมถึงแท็กเพื่อน/สถานที่หลังโพสต์ได้
+- **Actual:** `shownComments` กางคอมเมนต์ทั้งหมดลงในฟีดแบบ Inline, `CommentThread` ทำได้เฉพาะลบคอมเมนต์ (แก้ไขไม่ได้) และหน้าต่าง `แก้ไขโพสต์` ใน `HomeMomentFeed` แก้ได้เฉพาะแคปชัน รูป และ `PostOptions`
+- **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 132, 382–411, 1134–1158) และ `components/moments/CommentThread.tsx` (บรรทัด 92–95)
+- **Status:** Needs owner
+- **Fix:** เจ้าของตัดสินใจแล้ว 2026-11-19 ว่าให้คอมเมนต์ในฟีดเป็นแบบเดิม (โชว์ 1 อัน กดแล้วกางในฟีด) ไม่ต้องแก้ ส่วนการแก้คอมเมนต์และแก้แท็กเพื่อน/สถานที่หลังโพสต์เป็นฟีเจอร์ใหม่ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8
+
+### TR-018 · `MomentPhotos`: รูปในโพสต์โมเมนต์ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` และ `/moments/[id]`, 390x844 และ 1280x800
+- **Steps:**
+  1. แสดงโพสต์โมเมนต์ที่ URL รูปภาพต้นทางไม่สามารถโหลดได้ (เช่น HTTP 404 หรือไฟล์หาย)
+- **Expected:** มี `onError` fallback หรือใช้ `FallbackImg` / placeholder ที่สะอาดตาตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
+- **Actual:** `<img>` ใน `MomentPhotos.tsx` ไม่มี `onError` handler จึงแสดงไอคอนรูปแตกของเบราว์เซอร์เมื่อโหลดรูปไม่สำเร็จ
+- **Evidence:** `components/moments/MomentPhotos.tsx` (บรรทัด 108–115)
+- **Status:** Confirmed fixed
+- **Fix:** `b333c13` (BE-425): ถ้ารูปย่อโหลดไม่ได้ จะลองโหลดไฟล์ต้นฉบับอีกครั้ง ถ้ายังไม่ได้จะแสดงพื้นสีเทาพร้อมไอคอนและคำว่า "โหลดรูปไม่ได้" ตรวจในเบราว์เซอร์แล้ว
+
+### TR-019 · `/` (หน้าแรกสมาชิก): `MemberLiveHome` โหลดแบบ `ssr: false` ทำให้เห็น Skeleton กระพริบตอนเปิดหน้าแรกทั้งที่เซิร์ฟเวอร์ส่ง `feedStart` มาแล้ว
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (สมาชิกที่เข้าสู่ระบบแล้ว), 390x844 และ 1280x800
+- **Steps:**
+  1. เข้าสู่ระบบแล้วเปิดหรือรีเฟรชหน้าหลัก `/`
+- **Expected:** เมื่อ `app/page.tsx` ดึง `memberData` และ `feedStart` จากเซิร์ฟเวอร์มาพร้อมหน้าเว็บแล้ว ฟีดหน้าแรกควรแสดงผลได้ทันทีโดยไม่กระพริบเป็น `MemberHomeSkeleton`
+- **Actual:** `app/HomeView.tsx` โหลด `MemberLiveHome` ด้วย `dynamic(loadMemberHome, { ssr: false, loading: () => <MemberHomeSkeleton /> })` ทำให้สมาชิกเห็น Skeleton ชั่วคราวทุกครั้งที่โหลดหน้าจนกว่า JS chunk จะโหลดและ hydrate เสร็จ
+- **Evidence:** `app/page.tsx` (บรรทัด 32–36, 57) และ `app/HomeView.tsx` (บรรทัด 48–49)
+- **Status:** Needs owner
+- **Fix:** ตั้งใจทำแบบนี้ (คอมเมนต์ใน `app/HomeView.tsx`) เพื่อไม่ให้ผู้เยี่ยมชมต้องโหลดโค้ดหน้าสมาชิก หน้านี้เป็นหน้าส่วนตัว ไม่มีผลกับ SEO ถ้าจะ render บนเซิร์ฟเวอร์เฉพาะตอนล็อกอิน ต้องวัดความเร็วก่อนและระวังหน้าบนเซิร์ฟเวอร์กับในเบราว์เซอร์ไม่ตรงกัน ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 7 แล้ว
+
+### TR-020 · ฟีด `สำหรับคุณ` (`forYou.ts`) และ `เพื่อนๆ ที่น่าติดตาม`: คะแนนยังไม่นับ `invitesCount`/`sharesCount` และรายชื่อแนะนำยังไม่มี Social Proof
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `bd33376`), 2026-11-19
+- **Page and screen:** `/` (ฟีดสมาชิกและแถบ `เพื่อนๆ ที่น่าติดตาม`), 390x844 และ 1280x800
+- **Steps:**
+  1. ตรวจสอบสูตรคำนวณคะแนน Engagement ใน `lib/moments/forYou.ts`
+  2. ดูบล็อก `เพื่อนๆ ที่น่าติดตาม` ในฟีดและแถบขวา (`PeopleRail`)
+- **Expected:** สูตรจัดอันดับ `สำหรับคุณ` ควรให้น้ำหนัก `invitesCount` (ชวนเพื่อนไป) และ `sharesCount` ซึ่งสะท้อนการพาคนออกไปใช้ชีวิตจริงได้ตรงที่สุด และรายชื่อ `เพื่อนๆ ที่น่าติดตาม` ควรมีบริบทความเชื่อมโยงที่ปลอดภัยต่อความเป็นส่วนตัว (เช่น เพื่อนที่ติดตามเหมือนกัน) เพื่อช่วยตัดสินใจกดติดตาม
+- **Actual:** `scoreParts` คิดเฉพาะ `saves * 4 + comments * 2 + likes * 1` โดยไม่รวม `invitesCount`/`sharesCount` และ `FollowRow` แสดงเฉพาะชื่อและจำนวน `N โมเมนต์`
+- **Evidence:** `lib/moments/forYou.ts` (บรรทัด 98–99) และ `components/home/onboardingFirstStep.tsx` (บรรทัด 106–110)
+- **Status:** Needs owner
+- **Fix:** ตอนนี้ยังไม่มีผู้ใช้จริง สัญญาณการชวนและการแชร์ยังไม่มีข้อมูลให้เรียนรู้ และความสัมพันธ์ระหว่างคนยังน้อยเกินกว่าจะโชว์ "เพื่อนที่ติดตามเหมือนกัน" ได้ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8 แล้ว
+
+### TR-021 · `CircleViewer`: `GroupCircleBody` ลืมใส่ `key={item.id}` ทำให้ปัดข้าม Group Circle แล้วค้างอยู่ที่รูปเดิม (`shown`)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (`CircleViewer` — Group Circle), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิด Group Circle ตี้ A ที่มีรูปมากกว่า 1 รูป แล้วกดเลือกดูรูปที่ 2 หรือ 3 (`shown > 0`)
+  2. ปัดหรือกดปุ่ม `›` เพื่อเลื่อนไป Group Circle ตี้ B ที่อยู่ติดกัน
+- **Expected:** `GroupCircleBody` ต้องรีเซ็ต `shown` กลับเป็น `0` (แสดงรูปแรกของตี้ B พร้อมไฮไลต์ thumbnail แรก) เหมือน `ChallengeCircleBody` ที่ใส่ `key={item.id}`
+- **Actual:** `CircleViewer.tsx` เรนเดอร์ `<GroupCircleBody item={item} ... />` โดยไม่มี `key={item.id}` ทำให้ state `shown` จากตี้ A ค้างไปที่ตี้ B (กรอบไฮไลต์ thumbnail หายหากตี้ B มีรูปน้อยกว่า หรือเปิดข้ามไปรูปหลังทันที)
+- **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 192–195) และ `components/home/GroupCircleView.tsx` (บรรทัด 87–89)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): ใส่ `key={item.id}` ให้ `GroupCircleBody` ปัดไปตี้ถัดไปแล้วกลับมารูปแรก
+
+### TR-022 · `CircleViewer`: เปิด `InviteSheet` จากใน Circle แล้วกด `Esc` ปิดทั้ง `InviteSheet` และ `CircleViewer` พร้อมกัน
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (`CircleViewer` + `InviteSheet`), 1280x800
+- **Steps:**
+  1. เปิด Circle ของตัวเองใน `CircleViewer` แล้วกดปุ่ม `ชวนเพื่อนมาทำด้วย` เพื่อเปิด `InviteSheet`
+  2. กดปุ่ม `Esc` บนคีย์บอร์ด
+- **Expected:** กด `Esc` ครั้งแรกควรปิดเฉพาะ `InviteSheet` ที่อยู่ชั้นบนสุด โดยยังคงเปิด `CircleViewer` ไว้ด้านหลัง
+- **Actual:** `CircleViewer` ผูก `useDialogBehavior(panelRef, close)` ไว้ตลอดเวลาโดยไม่ได้ระงับตอน `inviteOpen === true` (ต่างจาก `ArrowLeft`/`ArrowRight` ที่เช็ก `if (inviteOpen) return;`) ทำให้ `Esc` ปิดทั้ง `InviteSheet` และ `CircleViewer` ทิ้งพร้อมกัน
+- **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 38, 81, 211–213)
+- **Status:** Needs owner
+- **Fix:** ไม่ใช่บั๊ก: `useDialogBehavior` ปิดเฉพาะ `[data-dialog-shell]` ที่อยู่บนสุด และ `InviteSheet` (ผ่าน `DialogShell`) portal ไปท้าย `<body>` จึงอยู่บนสุด ลองในเบราว์เซอร์จริง (dev, 1280x800) แล้ว: Esc ครั้งแรกปิดแค่ `InviteSheet` (dialog 2 → 1) ครั้งที่สองจึงปิด `CircleViewer` (1 → 0) ไม่ต้องแก้
+
+### TR-023 · `Circles`: เส้นคั่นระหว่างวงของฉัน (ส้ม) กับวงเพื่อน (น้ำเงิน) หายไปเมื่อมีเฉพาะวง `lead` (นัดถัดไป/แคมเปญ)
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (แถว Circles บนมือถือ/แท็บเล็ต), 390x844
+- **Steps:**
+  1. เข้าสู่ระบบด้วยสมาชิกที่มีวง `lead` สีส้ม (เช่น `นัดถัดไป`, `ไปมาแล้ว?`, หรือ `แคมเปญ`) แต่ยังไม่ได้รับชาเลนจ์ของตัวเอง (`ordered[0]` เป็นวงเพื่อนสีน้ำเงิน)
+  2. ดูแถว Circles ด้านบนของฟีด
+- **Expected:** มีเส้นคั่นแนวตั้ง (`w-px h-11 bg-slate-200`) แยกกลุ่มวงสีส้มของฉันออกจากวงสีน้ำเงินของเพื่อน
+- **Actual:** เงื่อนไขสร้าง `divider` ใน `Circles.tsx` เช็กเฉพาะ `index > 0 && isOwnCircle(shown[index - 1]) && !isOwnCircle(item)` โดยไม่นับ `lead` ทำให้ไม่มีเส้นคั่นเมื่อวงสีส้มทั้งหมดมาจาก `lead`
+- **Evidence:** `components/home/Circles.tsx` (บรรทัด 116–125)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): วง lead (นัดถัดไป, แคมเปญ) นับเป็นของฉัน ถ้ามีวง lead แล้วตามด้วยวงเพื่อนจะมีเส้นคั่น ถ้า lead ไม่แสดงอะไร เส้นจะเป็นอันแรกของแถวและซ่อนด้วย `first:hidden` บนจอใหญ่ (`lg`) วง lead ไปอยู่คอลัมน์ซ้าย เส้นนี้จึงซ่อนด้วย
+
+### TR-024 · `GroupCircleView`: ขาด `safe-area-inset-bottom` ใน `GroupCircleBody` และ `GroupRowCircle` ไม่หรี่สีชื่อเมื่อดูแล้ว (`seen`)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (แถว Circles และ `GroupCircleBody`), 390x844 (iPhone / แอป iOS)
+- **Steps:**
+  1. เปิด Group Circle ใน `CircleViewer` แล้วดูระยะห่างขอบล่างสุดของปุ่ม `ดูโพสต์` / `ดูตี้นี้` บน iPhone ที่มี Home Bar
+  2. ปิดหน้าต่างแล้วดูสีชื่อใต้ Group Circle ที่เพิ่งเปิดดูไป เทียบกับ `AchievementRowCircle` และ `ChallengeRowCircle`
+- **Expected:** `GroupCircleBody` ควรใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` เหมือน `AchievementBody` และ `ChallengeCircleBody`, และ `GroupRowCircle` ควรหรี่สีชื่อเป็น `text-slate-500` เมื่อ `seen === true`
+- **Actual:** `GroupCircleBody` ใช้ `pb-6` คงที่ (ไม่เผื่อ `safe-area-inset-bottom`) และ `GroupRowCircle` ใช้ `text-slate-700` ตลอดแม้ `seen === true`
+- **Evidence:** `components/home/GroupCircleView.tsx` (บรรทัด 68 และ 152) เทียบกับ `components/home/CircleViewer.tsx` (บรรทัด 280) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 57, 140)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): `GroupCircleBody` ใช้ `pb-[max(1.5rem,env(safe-area-inset-bottom))]` และชื่อใต้ `GroupRowCircle` เป็น `text-slate-500` เมื่อดูแล้ว
+
+### TR-025 · `CircleViewer` และ `ChallengeCircleView`: กดชื่อหรือรูปเพื่อนในหน้าต่าง Circle เพื่อไปหน้าโปรไฟล์ไม่ได้
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (`CircleViewer`), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิด Circle ของเพื่อน (`AchievementBody`) หรือวงกลุ่มเพื่อน (`ChallengeCircleBody`)
+  2. ลองกดที่รูป Avatar หรือชื่อของเพื่อน
+- **Expected:** กดรูปหรือชื่อเพื่อน (ที่ไม่ใช่ `isMe`) ควรพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนบนฟีดและหน้าโพสต์
+- **Actual:** รูปและชื่อเพื่อนในหัวการ์ด `AchievementBody` และแถวเพื่อนใน `ChallengeCircleBody` ไม่ได้ครอบด้วย `<Link>`
+- **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 246–256) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 153–164)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): รูปและชื่อเพื่อนในหัว `AchievementBody` และในรายชื่อ `ChallengeCircleBody` เป็นลิงก์ `/profile?id=` (ไม่ใส่ให้ตัวเอง) ลองแล้วบน dev ทั้งมือถือและจอใหญ่
+
+### TR-026 · `CircleViewer`: ไม่ได้ prefetch วงกลุ่มเพื่อน (`kind === 'challenge'`) ล่วงหน้า ทำให้ปัดเข้าแล้วต้องรอโหลดทุกครั้ง
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (`CircleViewer`), 390x844 และ 1280x800
+- **Steps:**
+  1. เปิด Circle ที่อยู่ก่อนหน้าวงกลุ่มเพื่อน (`เพื่อน N คน`, `kind === 'challenge'`)
+  2. ปัดหรือกด `›` เข้าไปที่วงกลุ่มเพื่อน
+- **Expected:** ควร prefetch `/api/circles/[id]` ของวงถัดไปที่เป็น `challenge` ล่วงหน้าเหมือนวงเดี่ยว เพื่อไม่ให้ค้าง `"กำลังโหลด…"` และล็อกปุ่ม `"ชื่นชม"` ทุกครั้งที่ปัดเข้า
+- **Actual:** `fetchDetail` ใน `CircleViewer.tsx` ข้าม `circle.kind === 'challenge'` และให้ `ChallengeCircleBody` fetch เองตอน mount เท่านั้น
+- **Evidence:** `components/home/CircleViewer.tsx` (บรรทัด 55–67) และ `components/home/ChallengeCircleView.tsx` (บรรทัด 79–85)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): `CircleViewer` โหลด detail ของวงกลุ่มเพื่อนล่วงหน้าเหมือนวงอื่น (เก็บแยกเป็น `challengeDetails`) `ChallengeCircleBody` รับ `detail` / `onDetail` / `onRetry` จาก viewer แทนการ fetch เอง การชื่นชมหรือเข้าร่วมจึงยังอยู่เมื่อปัดออกแล้วกลับมา ยังไม่ได้ลองในเบราว์เซอร์: ใน dev ไม่มีสมาชิกที่มีวงแบบนี้
+
+### TR-027 · `ChallengeCircleView`: ตัวอักษรย่อบนรูปเพื่อนมุมขวาบนใช้ `text-[10px]` ต่ำกว่าขั้นต่ำ `11px` ของ `DESIGN_SYSTEM.md`
+- **Severity:** Low
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (แถว Circles — วงกลุ่มเพื่อนที่เพื่อนไม่มีรูป Avatar), 390x844 และ 1280x800
+- **Steps:**
+  1. ดู `ChallengeRowCircle` ที่มีเพื่อนที่ยังไม่ได้ตั้งรูปโปรไฟล์ (แสดงตัวอักษรย่อใน `<Face>`)
+- **Expected:** ไม่มีตัวอักษรขนาดเล็กกว่า `11px` (`text-[11px]`) ตาม `DESIGN_SYSTEM.md` หัวข้อ 6
+- **Actual:** `ChallengeRowCircle` ส่ง `size="w-6 h-6 text-[10px]"` ให้ `<Face>`
+- **Evidence:** `components/home/ChallengeCircleView.tsx` (บรรทัด 50)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): เปลี่ยนเป็น `text-[11px]`
+
+### TR-028 · `Circles`: รูปภาพในแถวและหน้าต่าง Circles ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `/` (แถว Circles และ `CircleViewer`), 390x844 และ 1280x800
+- **Steps:**
+  1. แสดง Circle ที่รูปโปรไฟล์เพื่อนหรือรูปปกชาเลนจ์/ตี้มีลิงก์เสีย (HTTP 404)
+- **Expected:** เปลี่ยนเป็นรูปสำรองหรือตัวอักษรย่อ/ไอคอนตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
+- **Actual:** `<img>` ใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx` และ `GroupCircleView.tsx` ไม่มี `onError` handler
+- **Evidence:** `components/home/Circles.tsx` (บรรทัด 213, 284), `components/home/CircleViewer.tsx` (บรรทัด 249, 266, 338), `components/home/ChallengeCircleView.tsx` (บรรทัด 41, 68, 131) และ `components/home/GroupCircleView.tsx` (บรรทัด 56, 79, 121, 145)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): คอมโพเนนต์ใหม่ `components/ImgOr.tsx` (เหมือน `FallbackImg` แต่ fallback เป็น element) ใช้กับทุกรูปใน `Circles.tsx`, `CircleViewer.tsx`, `ChallengeCircleView.tsx`, `GroupCircleView.tsx`: รูปคนเสียแสดงตัวอักษรย่อ รูปปกเสียแสดงไอคอนบนพื้นสีเดิม
+
+### TR-029 · `scripts/smoke.mjs`: ยังเรียก `/api/achievements` ซึ่งถูกเปลี่ยนชื่อเป็น `/api/circles` แล้ว
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `23da611`), 2026-11-19
+- **Page and screen:** `npm run smoke` (dev server)
+- **Steps:**
+  1. รัน `npm run dev` แล้วรัน `npm run smoke`
+- **Expected:** สคริปต์ smoke test ตรวจแถว Circles ผ่าน `/api/circles` ได้สำเร็จ
+- **Actual:** `scripts/smoke.mjs` บรรทัด 89 ยังเรียก `A.call('/api/achievements')` ซึ่งถูกลบและเปลี่ยนเป็น `app/api/circles/route.ts` แล้ว ทำให้เช็ก `home row shows the challenge A took on` ไม่ผ่าน
+- **Evidence:** `scripts/smoke.mjs` (บรรทัด 89) (Re-test: รัน `npm run smoke` จริงกับ dev server `http://localhost:3000` บน `f5508b1` — `ok home row shows the challenge A took on` ผ่านแล้ว)
+- **Status:** Confirmed fixed
+- **Fix:** `c314120` (BE-426): `scripts/smoke.mjs` เรียก `/api/circles` แล้ว
 
 ---
 

@@ -12,7 +12,7 @@ async function getPublishedSpots(): Promise<LifestyleSpotItem[]> {
   for (let page = 2; page <= first.totalPages; page += 1) {
     spots.push(...(await db.findSpots({ page, limit: 100 })).items);
   }
-  return spots;
+  return spots.filter((spot) => !spot.chainBrand); // chain branches are not suggestions (BE-424)
 }
 
 /**

@@ -74,6 +74,9 @@ export interface LifestyleSpotItem {
   popularity?: number;
   /** OSM places: average monthly views of the linked Wikipedia article (a storable, free interest signal) */
   wikiMonthlyViews?: number;
+  /** A chain branch (Starbucks, Café Amazon…; owner 2026-11-19): a meeting point and a place to tag in moments, never in
+   *  the /spots lists, the sitemap or search engines, and published without a photo (lib/spotPhotoRule.ts) */
+  chainBrand?: string;
   /** Automatic curation and staff's override (lib/spotCuration.ts) */
   curation?: SpotCuration;
   zone?: string;

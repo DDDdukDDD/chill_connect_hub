@@ -124,6 +124,10 @@ Returns published spots only (drafts hidden).
 
 Response `200`: `{ success: true, spots: LifestyleSpotItem[], pagination: Pagination }`. Cache: `s-maxage=60`.
 
+**Chain branches** (since 2026-11-19, BE-424): places with `chainBrand` (Starbucks, Café Amazon…, ids `osmb-…`) come back only when `q` is given, so place pickers find them; without `q` they are left out of `spots` (`pagination` still counts them). They have no photo (`image: ""`), curation tier `hidden`, and never appear in `/api/spots/browse`, home picks, nearby dining or the sitemap. Their `/spots/[id]` page is `noindex`.
+
+**OSM venues** (ids `osmb-…`, `sourceName: "OpenStreetMap"`, must show the credit): `image` may be `""`; show "no photo yet", never a stock photo. Ones without `chainBrand` stay drafts until staff add a real photo.
+
 Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพฯ"`).
 
 **Optional fields on imported spots** (all optional; curated spots usually lack them):
@@ -272,7 +276,7 @@ The server decides who is signed in through an httpOnly cookie (`cch_member_sess
 | `POST /api/members/[id]/actions` | `{ action: 'report', reason }` (once per member) · `{ action: 'block' }` · `{ action: 'unblock' }` | `{ success }` · `403` reporter not verified · `409` already reported |
 | `POST /api/auth/member/password` | `{ currentPassword?, newPassword }` | Other sessions end; this browser stays signed in |
 | `GET /api/auth/member/account` | — | PDPA export of the member's own data (JSON download) |
-| `DELETE /api/auth/member/account` | `{ confirm: "DELETE" }` | Deletes the account and logs out. Since 2026-10-13 (BE-061) the uploaded files of the member's moments (clips included) and avatar are deleted too (`lib/media/cleanup.ts`), except a file that remaining content still shows. Since BE-393: deleting a main account deletes its sub-accounts too; deleting a sub-account returns `{ member: PublicMember }` (its owner) and the browser stays signed in as the owner, otherwise `member: null` |
+| `DELETE /api/auth/member/account` | `{ confirm: "DELETE" }` | Deletes the account and logs out. Since 2026-10-13 (BE-061) the uploaded files of the member's moments (clips included) and avatar are deleted too (`lib/media/cleanup.ts`), except a file that remaining content still shows. Since BE-393: deleting a main account deletes its sub-accounts too; deleting a sub-account returns `{ member: PublicMember }` (its owner) and the browser stays signed in as the owner, otherwise `member: null`. Since BE-427: an account linked to Apple has its Apple token revoked first (App Review 5.1.1(v), `lib/members/appleTokens.ts`); the deletion never waits on Apple |
 | `GET /api/auth/member/accounts` | — | Account switcher (BE-393): `{ accounts: [{ id, displayName, avatarUrl?, isOwner, isCurrent, available }], canCreate, max }`. `max` = accounts allowed in all, main one included (default 3; staff can change it). `canCreate` is false at the limit or while the main account is still "new" |
 | `POST /api/auth/member/accounts` | `{ displayName, consent: true }` | Makes a sub-account (no email, password or social sign-in) under the main account and switches this browser to it: `{ member: PublicMember }`. `403` main account not verified · `409` limit reached · `429` more than 5 a day |
 | `POST /api/auth/member/switch` | `{ memberId }` | Switches this browser to another account of the same person (main or sub-account): `{ member: PublicMember }`. `403` not one of theirs, or suspended. A sub-account session ends when the main account's sessions end (password change, "log out everywhere", suspension) |
@@ -526,6 +530,7 @@ All writes are `POST` with an `action` field unless noted.
 
 ## Push notifications (added 2026-11-04, BE-258)
 - `POST /api/push` with a browser `PushSubscription` as JSON (`{ endpoint, keys: { p256dh, auth } }`) → `{ success }`. Needs a session and the same origin. This device now receives the member's notifications; a device already saved moves to this member. `400` when the endpoint is not a known push service (Google, Apple, Mozilla, Microsoft), so the server never posts to an address a member made up. A member keeps at most 10 devices, newest first.
+- `POST /api/push` with `{ apns: "<hex device token>" }` (the iPhone store app, BE-428) → `{ success }`. Same session and origin rules; saved as the endpoint `apns:<token>` and sent through APNs (`lib/social/apns.ts`). The app removes it with `DELETE` and `{ endpoint: "apns:<token>" }`.
 - `DELETE /api/push` with `{ endpoint }` → `{ success }`. Same origin, no session: a device whose session ended can still leave.
 - The push payload (read by `public/sw.js`) is `{ title, body, url, tag }`. Words and `url` match the bell's; a newer push with the same `tag` replaces the older one on the device.
 

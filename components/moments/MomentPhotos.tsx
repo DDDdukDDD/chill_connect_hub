@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, ImageOff } from 'lucide-react';
 import { ClipPlayer } from '@/components/moments/ClipPlayer';
 import { isOptimizedRemote, optimizedImage } from '@/lib/optimizedImage';
 
@@ -36,6 +36,45 @@ const FRAME_WIDTHS = [640, 828, 1080];
 const sized = (src: string, width: number) => `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=85`;
 const responsive = (src: string) =>
   src.startsWith('/uploads/') || isOptimizedRemote(src) ? { src: sized(src, 828), srcSet: FRAME_WIDTHS.map((w) => `${sized(src, w)} ${w}w`).join(', '), sizes: '(min-width: 640px) 560px, 100vw' } : { src: optimizedImage(src, 828) };
+
+/**
+ * One photo in the frame. If the resized copy fails it tries the original once, then shows a quiet "photo did not load"
+ * in place of a broken image (BE-425). An error before hydration is caught on mount through `complete`/`naturalWidth`.
+ */
+function FramePhoto({ src, alt, eager }: { src: string; alt: string; eager: boolean }) {
+  const [step, setStep] = useState(0);
+  const ref = useRef<HTMLImageElement>(null);
+  const failed = () => setStep((s) => Math.min(s + 1, 2));
+  useEffect(() => {
+    const img = ref.current;
+    if (img?.complete && img.naturalWidth === 0) setStep(1);
+  }, []);
+  // A new photo gets a new slot (the parent keys it by src), so the steps start over on their own
+
+  if (step === 2) {
+    return (
+      <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-slate-100 text-slate-500">
+        <ImageOff className="w-6 h-6" aria-hidden="true" />
+        <span className="text-xs">โหลดรูปไม่ได้</span>
+      </span>
+    );
+  }
+  const source = step === 0 ? responsive(src) : { src };
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- member uploads and remote sample images
+    <img
+      ref={ref}
+      key={step}
+      {...source}
+      alt={alt}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      draggable={false}
+      onError={failed}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
 
 /** A second tap within this time is a double tap */
 const DOUBLE_TAP_MS = 260;
@@ -104,15 +143,7 @@ export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }:
               className="relative h-full w-full shrink-0 snap-center cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2563EB]"
               aria-label={count > 1 ? `ดูรูปที่ ${i + 1} จาก ${count}` : 'ดูรูปเต็ม'}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- member uploads and remote sample images */}
-              <img
-                {...responsive(src)}
-                alt={i === 0 ? alt : ''}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                decoding="async"
-                draggable={false}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              <FramePhoto src={src} alt={i === 0 ? alt : ''} eager={i === 0} />
             </button>
           ))}
         </div>

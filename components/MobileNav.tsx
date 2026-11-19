@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CalendarHeart, Camera, Footprints, Home, Zap } from 'lucide-react';
 import { useMemberSession } from '@/lib/useMemberSession';
+import { onHomeLinkClick } from '@/lib/homeAgain';
 
 interface MobileNavProps {
   activeTab: string;
@@ -63,7 +64,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <Link
               key={item.id}
               href={item.href}
-              onClick={() => setActiveTab(item.id)}
+              onClick={(event) => {
+                setActiveTab(item.id);
+                if (item.href === '/') onHomeLinkClick(event);
+              }}
               className={`flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 items-center justify-center py-2 [@media(max-height:500px)]:py-1.5 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
                 isActive
                   ? 'bg-white/80 text-slate-900 font-bold scale-105 shadow-sm'

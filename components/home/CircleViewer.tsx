@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronLeft, ChevronRight, HandHeart, Loader2, Trophy, Users, X } from 'lucide-react';
-import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
+import type { AchievementCircle, ChallengeCircleDetail, CircleItem } from '@/lib/social/circles';
+import ImgOr from '@/components/ImgOr';
 import { GroupCircleBody, plainTeeTitle } from '@/components/home/GroupCircleView';
 import { ChallengeCircleBody } from '@/components/home/ChallengeCircleView';
 import type { CircleAction, CircleDetail } from '@/lib/social/circleActions';
@@ -29,6 +30,7 @@ type PostFor = (quest: { id: string; title: string; withPlace?: boolean }) => vo
 export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPost }: { items: CircleItem[]; start: number; onClose: (changed: boolean) => void; onSeen?: (id: string) => void; onOpenMoment?: (momentId: string) => void; onPost?: PostFor }) {
   const [index, setIndex] = useState(start);
   const [details, setDetails] = useState<Record<string, CircleDetail | 'error'>>({});
+  const [challengeDetails, setChallengeDetails] = useState<Record<string, ChallengeCircleDetail | 'error'>>({});
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -50,16 +52,20 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
       }
     : undefined;
 
-  // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row)
+  // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row). A
+  // friends-on-one-challenge Circle has its own detail shape, kept apart (TR-026: it used to load only once opened)
   const asked = useRef(new Set<string>());
   const fetchDetail = useCallback((circle: CircleItem | undefined) => {
-    // Group and friends-on-one-challenge Circles load their own detail
-    if (!circle || circle.kind === 'group' || circle.kind === 'challenge' || asked.current.has(circle.id)) return;
+    if (!circle || circle.kind === 'group' || asked.current.has(circle.id)) return;
     asked.current.add(circle.id);
+    const store = (value: CircleDetail | ChallengeCircleDetail | 'error') =>
+      circle.kind === 'challenge'
+        ? setChallengeDetails((all) => ({ ...all, [circle.id]: value as ChallengeCircleDetail | 'error' }))
+        : setDetails((all) => ({ ...all, [circle.id]: value as CircleDetail | 'error' }));
     fetch(`/api/circles/${encodeURIComponent(circle.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => setDetails((all) => ({ ...all, [circle.id]: json?.success ? (json.detail as CircleDetail) : 'error' })))
-      .catch(() => setDetails((all) => ({ ...all, [circle.id]: 'error' })));
+      .then((json) => store(json?.success ? json.detail : 'error'))
+      .catch(() => store('error'));
   }, []);
   useEffect(() => {
     fetchDetail(items[index]);
@@ -67,11 +73,13 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   }, [index, items, fetchDetail]);
   const retry = () => {
     asked.current.delete(item.id);
-    setDetails((all) => {
+    const without = <T,>(all: Record<string, T>) => {
       const rest = { ...all };
       delete rest[item.id];
       return rest;
-    });
+    };
+    setDetails(without);
+    setChallengeDetails(without);
     fetchDetail(item);
   };
 
@@ -190,9 +198,19 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
           </div>
         )}
         {item.kind === 'group' ? (
-          <GroupCircleBody item={item} onClose={close} onOpenMoment={openMoment} />
+          // key: the photo picked in one group must not carry over to the next (TR-021)
+          <GroupCircleBody key={item.id} item={item} onClose={close} onOpenMoment={openMoment} />
         ) : item.kind === 'challenge' ? (
-          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onOpenMoment={openMoment} />
+          <ChallengeCircleBody
+            key={item.id}
+            item={item}
+            detail={challengeDetails[item.id]}
+            onDetail={(next) => setChallengeDetails((all) => ({ ...all, [item.id]: next }))}
+            onRetry={retry}
+            onClose={close}
+            onAct={actOn}
+            onOpenMoment={openMoment}
+          />
         ) : (
           <AchievementBody
             item={item}
@@ -241,17 +259,29 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
   // My own doing Circle shows how far I am, once known
   const progress = item.kind === 'doing' ? ready?.progress : item.total ? { current: item.current ?? 0, total: item.total } : undefined;
   const barColor = done ? 'bg-[#F59E0B]' : item.kind === 'doing' ? 'bg-[#2563EB]' : 'bg-[#7C3AED]';
+  const initials = <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>;
+  const face = item.person.avatar ? <ImgOr src={avatarImage(item.person.avatar)} fallback={initials} className="w-10 h-10 rounded-full object-cover bg-slate-100" /> : initials;
+  // A friend's face and name open their profile, as on the feed (TR-025)
+  const profile = item.isMe ? null : `/profile?id=${encodeURIComponent(item.person.id)}`;
+  const coverFallback = (
+    <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
+      <Trophy className="w-16 h-16 text-[#7C3AED]/40" aria-hidden="true" />
+    </span>
+  );
   return (
     <>
       <header className="flex items-center gap-3 px-4 pt-3 pb-3">
-        {item.person.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-          <img src={avatarImage(item.person.avatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+        {profile ? (
+          <Link href={profile} aria-label={`ดูโปรไฟล์${name}`} className="shrink-0 rounded-full hover:brightness-95">{face}</Link>
         ) : (
-          <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+          face
         )}
         <span className="flex-1 min-w-0">
-          <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+          {profile ? (
+            <Link href={profile} className="block text-sm font-bold text-slate-900 truncate hover:underline">{name}</Link>
+          ) : (
+            <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+          )}
           <span className="block text-xs text-slate-500">{item.kind === 'doing' ? 'ชาเลนจ์ที่ทำอยู่' : item.timeAgo}</span>
         </span>
         <button type="button" onClick={onClose} aria-label="ปิด" className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
@@ -262,14 +292,11 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
       <div className="px-4">
         <div className="relative aspect-[4/5] sm:aspect-square w-full rounded-3xl overflow-hidden bg-slate-100">
           {picture ? (
-            // eslint-disable-next-line @next/next/no-img-element -- post photos and challenge covers come from many hosts
-            <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
+            <ImgOr key={picture} src={optimizedImage(picture, 828)} fallback={coverFallback} className="w-full h-full object-cover" />
           ) : waiting ? (
             <span className="block w-full h-full bg-slate-100 animate-pulse" aria-hidden="true" />
           ) : (
-            <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
-              <Trophy className="w-16 h-16 text-[#7C3AED]/40" aria-hidden="true" />
-            </span>
+            coverFallback
           )}
           <span className={`absolute left-3 top-3 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold ${done ? 'bg-[#F59E0B] text-white' : item.kind === 'doing' ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}>
             {done ? <><Trophy className="w-3.5 h-3.5" aria-hidden="true" />ทำครบแล้ว</> : item.kind === 'doing' ? 'กำลังทำ' : `${item.current}/${item.total}`}
@@ -332,14 +359,10 @@ function CheersLine({ cheers }: { cheers: NonNullable<CircleDetail['cheers']> })
   return (
     <p className="flex items-center gap-2.5 rounded-2xl bg-[#FFF1F2] px-3.5 py-2.5 text-sm text-slate-800">
       <span className="flex -space-x-2 shrink-0" aria-hidden="true">
-        {cheers.people.map((person) =>
-          person.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-            <img key={person.id} src={avatarImage(person.avatar)} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
-          ) : (
-            <span key={person.id} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">{nameInitial(person.name)}</span>
-          )
-        )}
+        {cheers.people.map((person) => {
+          const initials = <span key={person.id} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">{nameInitial(person.name)}</span>;
+          return person.avatar ? <ImgOr key={person.id} src={avatarImage(person.avatar)} fallback={initials} className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" /> : initials;
+        })}
       </span>
       <span className="min-w-0">
         <HandHeart className="inline w-4 h-4 -mt-0.5 mr-1 text-[#E11D48]" aria-hidden="true" />

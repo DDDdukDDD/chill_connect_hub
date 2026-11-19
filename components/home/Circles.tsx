@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, LayoutGrid, Trophy } from 'lucide-react';
 import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage } from '@/lib/optimizedImage';
+import ImgOr from '@/components/ImgOr';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
 import { GroupRowCircle } from '@/components/home/GroupCircleView';
@@ -117,9 +118,13 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
         {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
           const faded = !isOwnCircle(item) && seen.includes(item.id);
-          // A thin line between my own Circles and friends' (option A)
-          const divider = index > 0 && isOwnCircle(shown[index - 1]) && !isOwnCircle(item) ? (
-            <li key={`divider-${item.id}`} aria-hidden="true" className="shrink-0 self-start mt-[14px] w-px h-11 bg-slate-200" />
+          // A thin line between my own Circles and friends' (option A). The lead Circles (next plan, campaigns) are mine
+          // too (TR-023), but `lead` may draw nothing: then this line is the list's first item and `first:hidden` drops it.
+          // The lead Circles are phone-only (laptops show them beside the feed, MemberLiveHome), so the line after them is too
+          const afterLead = index === 0 && Boolean(lead);
+          const afterMine = index > 0 ? isOwnCircle(shown[index - 1]) : afterLead;
+          const divider = afterMine && !isOwnCircle(item) ? (
+            <li key={`divider-${item.id}`} aria-hidden="true" className={`shrink-0 self-start mt-[14px] w-px h-11 bg-slate-200 first:hidden ${afterLead ? 'lg:hidden' : ''}`} />
           ) : null;
           if (divider) return [divider, rowCircle(item, faded, () => open(index))];
           return rowCircle(item, faded, () => open(index));
@@ -197,6 +202,14 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
     const ring = faded ? 'bg-slate-200' : `bg-linear-to-tr ${item.isMe ? RING_MINE : RING_FRIENDS}`;
     const badge = item.isMe ? BADGE_MINE : done ? 'bg-[#F59E0B] text-white' : 'bg-[#1D4ED8] text-white';
+    // No picture, or a bad link: a trophy for my own challenge, the friend's initial otherwise
+    const fallback = item.isMe ? (
+      <span className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
+        <Trophy className="w-7 h-7 text-[#C2410C]" aria-hidden="true" />
+      </span>
+    ) : (
+      <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+    );
     return (
       <li className="shrink-0 w-[80px]">
         <button
@@ -208,16 +221,7 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         >
           <span className={`relative rounded-full p-[3px] ${ring}`}>
             <span className="block rounded-full bg-white p-[2px]">
-              {picture ? (
-                // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-                <img src={avatarImage(picture)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
-              ) : doing ? (
-                <span className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
-                  <Trophy className="w-7 h-7 text-[#C2410C]" aria-hidden="true" />
-                </span>
-              ) : (
-                <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
-              )}
+              {picture ? <ImgOr src={avatarImage(picture)} fallback={fallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" /> : fallback}
             </span>
             <span
               className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badge}`}
@@ -275,15 +279,15 @@ export function Circle({ href, onClick, label, image, fallback, fit = 'cover', r
   mine?: boolean;
   className?: string;
 }) {
+  const empty = <span className="w-16 h-16 rounded-full bg-[#FFF8DB] flex items-center justify-center group-hover:brightness-95 transition-[filter]">{fallback}</span>;
   const body = (
     <>
       <span className={`relative rounded-full p-[3px] bg-linear-to-tr ${ring}`}>
         <span className="block rounded-full bg-white p-[2px]">
           {image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- event covers come from many hosts
-            <img src={image} alt="" className={`w-16 h-16 rounded-full group-hover:brightness-95 transition-[filter] ${fit === 'contain' ? 'object-contain bg-[#FFF8DB] p-2' : 'object-cover bg-slate-100'}`} />
+            <ImgOr src={image} fallback={empty} className={`w-16 h-16 rounded-full group-hover:brightness-95 transition-[filter] ${fit === 'contain' ? 'object-contain bg-[#FFF8DB] p-2' : 'object-cover bg-slate-100'}`} />
           ) : (
-            <span className="w-16 h-16 rounded-full bg-[#FFF8DB] flex items-center justify-center group-hover:brightness-95 transition-[filter]">{fallback}</span>
+            empty
           )}
         </span>
         <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badgeClass}`} aria-hidden="true">

@@ -77,7 +77,8 @@ async function catalogIndex() {
     spots.push(...next.items);
     if (!next.hasNextPage) break;
   }
-  const all = spots.map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot), district: districtName(spot.district, spot.province) }));
+  // Chain branches never list on /spots or as nearby places, even when searched: they are meeting points and moment tags (BE-424)
+  const all = spots.filter((spot) => !spot.chainBrand).map((spot) => ({ spot, text: spotSearchText(spot), vibe: getSpotVibeCategory(spot), shown: shownWhenBrowsing(spot), district: districtName(spot.district, spot.province) }));
   const nationwide: Record<string, number> = {};
   for (const entry of all) if (entry.shown) nationwide[entry.vibe] = (nationwide[entry.vibe] || 0) + 1;
   const index = { all, rail: MASTER_SPOT_CATEGORIES.filter((c) => (nationwide[c.id] || 0) >= MIN_SPOTS_PER_GROUP).map((c) => c.id) };

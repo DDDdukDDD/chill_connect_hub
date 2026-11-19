@@ -20,6 +20,7 @@ import { recordAudit } from '../auditLog';
 import { momentRepository } from '../moments';
 import { momentFiles } from '../moments/service';
 import { memberRepository } from './index';
+import { revokeAppleToken } from './appleTokens';
 import type { Member } from './types';
 
 /**
@@ -58,11 +59,15 @@ export async function deleteMemberAccount(member: Member, by: 'self' | 'staff' =
   await removeMeetAgainOf(member.id);
   await removeWaitlistOf(member.id);
   await removeQuestionsOf(member.id);
+  // App Review 5.1.1(v): an account that used Sign in with Apple has its Apple token revoked (BE-427). Before the
+  // member row goes, as the token row goes with it; the deletion never waits on Apple's answer to go ahead
+  const apple = member.providers.some((p) => p.provider === 'apple') ? await revokeAppleToken(member.id) : 'none';
   await memberRepository.remove(member.id);
   // The photos themselves go too, unless something that remains still shows them
   const { items: remaining } = await momentRepository.query({ statuses: ['published', 'hidden'], sort: 'newest', page: 1, limit: 10_000 });
   await deleteMemberUploads([...ownMoments.flatMap(momentFiles), member.avatarUrl], remaining.flatMap(momentFiles));
   // Keep proof that the deletion happened, without keeping who it was
-  if (by === 'self') recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชี${member.ownerId ? 'ย่อย' : ''}ของตัวเอง (โมเมนต์ ${moments} คอมเมนต์ ${comments})`, { type: 'member', id: member.id });
+  const appleNote = apple === 'revoked' ? ' ส่งคำขอยกเลิกสิทธิ์ Apple แล้ว' : apple === 'failed' ? ' ส่งคำขอยกเลิกสิทธิ์ Apple ไม่ได้' : '';
+  if (by === 'self') recordAudit(null, 'member.self_delete', `สมาชิกลบบัญชี${member.ownerId ? 'ย่อย' : ''}ของตัวเอง (โมเมนต์ ${moments} คอมเมนต์ ${comments})${appleNote}`, { type: 'member', id: member.id });
   return { removedMoments: removedMoments + moments, removedComments: removedComments + comments };
 }
