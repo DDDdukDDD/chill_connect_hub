@@ -423,6 +423,70 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Status:** Confirmed fixed
 - **Fix:** `c314120` (BE-426): `scripts/smoke.mjs` เรียก `/api/circles` แล้ว
 
+### TR-030 · `app/api/admin/spots`: `scopeMatchers` ใน `set_publication` ไม่รู้จัก prefix `osmb-` และ `tat-` ทำให้ `scope: 'curated'` เหมารวมสถานที่นำเข้าใหม่
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `f5508b1`), 2026-11-19
+- **Page and screen:** `/api/admin/spots` (`action: 'set_publication'`)
+- **Steps:**
+  1. ตรวจสอบ `scopeMatchers` ใน `app/api/admin/spots/route.ts` หลังมีการนำเข้าสถานที่ `tat-` (BE-423) และ `osmb-` (BE-424)
+- **Expected:**
+  - `scope: 'osm'` ควรรวมทั้ง `osm-` และ `osmb-`
+  - `scope: 'imported'` ควรรวมทั้ง `ttd-`, `osm-`, `osmb-` และ `tat-`
+  - `scope: 'curated'` ต้องไม่รวม `osmb-` และ `tat-`
+- **Actual:** `scopeMatchers` เช็กเฉพาะ `id.startsWith('ttd-')` และ `id.startsWith('osm-')` ทำให้ `scope: 'osm'` และ `'imported'` ข้าม `osmb-` กับ `tat-` ทั้งหมด ขณะที่ `scope: 'curated'` (`!ttd- && !osm-`) เหมารวม draft ของ `tat-` และสาขาเชน `osmb-` เข้าไปด้วย
+- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 302–307)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-031 · `db/migrations/0063_circle_events.sql`: ตาราง `app.circle_events` ยังไม่ได้เปิด Row Level Security (RLS)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `f5508b1`), 2026-11-19
+- **Page and screen:** Database schema (`app.circle_events`, `npm run db:verify`)
+- **Steps:**
+  1. ตรวจสอบไฟล์ migration `db/migrations/0063_circle_events.sql` เทียบกับตารางอื่นใน schema `app` (เช่น `0059_pending_joins.sql`)
+- **Expected:** ตาราง `app.circle_events` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ตามมาตรฐานความปลอดภัยของฐานข้อมูลในโปรเจกต์
+- **Actual:** `0063_circle_events.sql` มีเฉพาะ `create table`, `create index` และ `grant` แต่ยังไม่ได้เปิด RLS และไม่ได้สร้าง policy
+- **Evidence:** `db/migrations/0063_circle_events.sql` (บรรทัด 1–12) เทียบกับ `db/migrations/0059_pending_joins.sql` (บรรทัด 13–15)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-032 · `GET /api/spots`: กรอง `chainBrand` หลังแบ่งหน้า ทำให้หน้าแรกๆ คืนรายการว่าง `[]` (`0.1 KB`) และ `totalCount` นับรวมสาขาเชน
+- **Severity:** High
+- **Tested on:** `tester` branch (merged `origin/claude` `40d6702`), 2026-11-19
+- **Page and screen:** `/api/spots?limit=20` (dev DB ที่มีสาขาเชน `osmb-` 516 แห่ง)
+- **Steps:**
+  1. เรียก `GET /api/spots?limit=20` (โดยไม่ส่ง `q`) บน dev server ที่มีสาขาเชน `osmb-` (BE-424)
+- **Expected:** คืนรายชื่อสถานที่ท่องเที่ยว/คาเฟ่ที่ไม่ใช่สาขาเชนจำนวน 20 รายการ และ `pagination.totalCount` ไม่นับรวมสาขาเชนที่ซ่อนจากหน้าหลัก
+- **Actual:** `app/api/spots/route.ts` เรียก `db.findSpots({ page, limit })` ก่อนแล้วค่อย `.filter((spot) => !spot.chainBrand)` ทีหลัง เนื่องจากสาขาเชน 516 แห่งอยู่ช่วงบนของลำดับ หน้าแรกจึงได้สาขาเชนล้วนแล้วถูกกรองทิ้งหมด เหลือ `spots: []` (`0.1 KB`) และ `totalCount` ยังนับรวมสาขาเชน
+- **Evidence:** `app/api/spots/route.ts` (บรรทัด 49–65) — ผลทดสอบจริงบน dev server `GET /api/spots?limit=20` ตอบกลับ `200` ขนาด `0.1 KB` (`spots: []`)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-033 · `/api/admin/spots`: Response ใหญ่ถึง `14.2 MB` เกินลิมิต Vercel Serverless (`4.5 MB`) และกิน Supabase Egress สูงมาก
+- **Severity:** High
+- **Tested on:** `tester` branch (merged `origin/claude` `40d6702`), 2026-11-19
+- **Page and screen:** `GET /api/admin/spots` และ `POST /api/admin/spots` (`action: 'update'`), dev DB
+- **Steps:**
+  1. ล็อกอินแอดมินแล้วเรียก `GET /api/admin/spots` บน dev DB (ที่มีสถานที่นำเข้าจาก TAT + OSM รวม ~6,200 แห่ง)
+  2. ตรวจสอบโค้ด `action: 'update'` ใน `app/api/admin/spots/route.ts`
+- **Expected:** `GET /api/admin/spots` แบ่งหน้า (pagination) และส่งเฉพาะฟิลด์ที่ตารางต้องใช้ให้อยู่ในขนาดที่ปลอดภัยต่อลิมิต Vercel Serverless (`4.5 MB`) และ `action: 'update'` ส่งเฉพาะ `updatedSpot` กลับ (ไม่ส่ง `spots: await getAllSpots()` ทั้งหมด)
+- **Actual:** `GET /api/admin/spots` ตอบกลับขนาด `14,156.9 KB` (~14.2 MB) และ `action: 'update'` ยังเรียก `spots: await getAllSpots()` ส่งกลับทั้งก้อนทุกครั้งที่แก้ไข 1 สถานที่ ซึ่งจะพังด้วย `FUNCTION_PAYLOAD_TOO_LARGE` บน Vercel Production ทันทีที่โปรโมตข้อมูล TAT/OSM ขึ้นเว็บจริง
+- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 260–268) — วัดขนาดจริงบน dev server ได้ `14,156.9 KB`
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-034 · `db/migrations/0064_apple_tokens.sql`: ตาราง `app.apple_tokens` ยังไม่ได้เปิด Row Level Security (RLS)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/claude` `40d6702`), 2026-11-19
+- **Page and screen:** Database schema (`app.apple_tokens`, `npm run db:verify`)
+- **Steps:**
+  1. รันตรวจสอบ `relrowsecurity` และ `relforcerowsecurity` ของทุกตารางใน schema `app` บน dev DB (ตาม `db/verify-security.mjs`)
+- **Expected:** ตาราง `app.apple_tokens` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ครบเหมือนตารางอื่น (76/78 ตารางผ่านแล้ว)
+- **Actual:** `app.apple_tokens` มี `relrowsecurity = false` และ `relforcerowsecurity = false` ทำให้ `db/verify-security.mjs` ไม่ผ่าน (พร้อมกับ `app.circle_events` ใน `TR-031`)
+- **Evidence:** `db/migrations/0064_apple_tokens.sql` (บรรทัด 1–9) — ตรวจจาก `pg_class` บน dev DB: `apple_tokens(rls=false,force=false)`
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
 ---
 
 ## Fixed
