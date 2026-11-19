@@ -179,8 +179,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดชื่อผู้โพสต์ (ทั้งบนหัวโพสต์และหน้าแคปชัน) รวมถึงรูปและชื่อคนคอมเมนต์ (เมื่อมี `authorId`) ต้องพาไปหน้าโปรไฟล์ `/profile?id=...` เหมือนหน้า `/moments/[id]` (`MomentDetailView.tsx`)
 - **Actual:** บนฟีดหลัก ลิงก์ `/profile?id=...` ครอบเฉพาะรูป Avatar บนหัวโพสต์ ส่วนชื่อผู้โพสต์ (`moment.userName`) เป็น `<span>` / `<strong>` ธรรมดา และใน `CommentThread` ทั้ง `<MomentAvatar>` และชื่อคนคอมเมนต์ยังไม่ได้ครอบด้วย `<Link>` แม้มี `comment.authorId` ส่งมาแล้ว
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 188–197, 351) และ `components/moments/CommentThread.tsx` (บรรทัด 120–125)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `b333c13` (BE-425): ชื่อผู้โพสต์บนหัวโพสต์และหน้าแคปชันเป็นลิงก์ไปโปรไฟล์ รูปและชื่อคนคอมเมนต์ก็เป็นลิงก์เมื่อมี `authorId` (คอมเมนต์ตัวอย่างไม่มี จึงยังเป็นข้อความธรรมดา) ฐานข้อมูล dev ไม่มีคอมเมนต์จากสมาชิกจริง ช่วยลองคอมเมนต์ด้วยบัญชีทดสอบแล้วกดชื่อ
 
 ### TR-011 · `MomentComposer`: ปุ่มปิด (`X`) มุมขวาบนข้ามการเตือน `confirmDiscard` ทำให้รูปและข้อความที่พิมพ์ค้างไว้หายทันที
 - **Severity:** High
@@ -193,8 +193,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** ระบบต้องเรียก `leave()` เพื่อเปิดหน้าต่างยืนยัน `ทิ้งโพสต์` (`confirmDiscard`) เหมือนตอนกดปุ่ม `Esc` เพื่อกันผู้ใช้เผลอทำข้อมูลที่พิมพ์/เลือกรูปไว้หาย
 - **Actual:** ปุ่มปิด `aria-label="ปิด"` เรียก `onClose` โดยตรงแทน `leave` ทำให้หน้าต่างปิดทันทีและข้อมูล draft หายทั้งหมดโดยไม่ถามยืนยัน
 - **Evidence:** `components/moments/MomentComposer.tsx` (บรรทัด 164 ประกาศ `leave` และบรรทัด 443 ผูก `onClick={onClose}`)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `b333c13` (BE-425): ปุ่ม X เรียก `leave()` แล้ว ถ้ามีร่างจะถาม "ทิ้งโพสต์" เหมือนกด Esc
 
 ### TR-012 · `SiteSearch`: ช่องค้นหาหลักบน Navbar ค้นหาคน/เพื่อน (สมาชิก) และ `#แฮชแท็ก` โมเมนต์ไม่ได้
 - **Severity:** Medium
@@ -205,8 +205,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** สามารถค้นหาสมาชิก/เพื่อนตามชื่อเพื่อกดติดตาม และค้นหาโมเมนต์หรือ `#แฮชแท็ก` จากช่องค้นหาหลักได้ ซึ่งเป็นพื้นฐานสำคัญของ Social Platform
 - **Actual:** `SiteSearch` ค้นหาเฉพาะ `['meetups', 'fairs', 'spots']` ผ่าน `/api/discover/counts` และยังไม่มีช่องทางค้นหาสมาชิกตามชื่อในระบบ (นอกจากส่งลิงก์โปรไฟล์ตรงๆ)
 - **Evidence:** `components/discover/SiteSearch.tsx` (บรรทัด 16–27) และ `app/api/members/` (มีเฉพาะ `friends`, `follows`, `suggested`)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ (ต้องมี API ค้นหาสมาชิกและแฮชแท็ก) ไม่ใช่บั๊ก รอเจ้าของเลือกว่าจะทำก่อนเปิดไหม Claude แนะนำให้ทำก่อนเปิด เพราะการหาเพื่อนเป็นพื้นฐานของโซเชียล ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 3 แล้ว
 
 ### TR-013 · `/` (ฟีดโมเมนต์): เมนู `⋯` บนโพสต์คนอื่นยังไม่มีตัวเลือกเอาแท็กตัวเองออก (`isTaggedMe`), เลิกติดตาม และไม่สนใจโพสต์นี้
 - **Severity:** Medium
@@ -217,8 +217,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มีตัวเลือกพื้นฐานในการจัดการความสัมพันธ์และฟีดจากโพสต์ได้ทันที ได้แก่ เอาแท็กตัวเองออก (เมื่อ `moment.isTaggedMe` เป็นจริง), เลิกติดตาม (เมื่อติดตามอยู่แล้ว) และไม่สนใจ/ซ่อนโพสต์นี้เพื่อส่งสัญญาณให้ฟีด `สำหรับคุณ`
 - **Actual:** `menuItems` ของโพสต์คนอื่นมีเพียง `คัดลอกลิงก์` และ `รายงานโพสต์นี้` เท่านั้น แม้ฝั่งเซิร์ฟเวอร์จะส่ง `isTaggedMe` มาใน `FeedItem` แล้วก็ตาม
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 169–179) และ `lib/moments/service.ts` (บรรทัด 126)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ เอาแท็กตัวเองออกกับเลิกติดตามใช้ข้อมูลที่มีอยู่ได้ ส่วน "ไม่สนใจโพสต์นี้" ต้องมีที่เก็บข้อมูลใหม่ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 3 รอเจ้าของเลือกลำดับ
 
 ### TR-014 · `/` และ `MobileNav`: แถบ "โมเมนต์ใหม่" ทำงานเฉพาะแท็บ `ล่าสุด` และแตะแท็บ "หน้าหลัก" ซ้ำยังไม่เลื่อนขึ้นบนสุดพร้อมรีเฟรช
 - **Severity:** Medium
@@ -230,8 +230,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** แท็บหลัก `สำหรับคุณ` และ `ติดตาม` ควรตรวจและแจ้งเตือนเมื่อมีโพสต์ใหม่ (หรือรีเฟรชได้ง่าย) และการแตะแท็บ `หน้าหลัก` ซ้ำขณะที่อยู่หน้า `/` ควรเลื่อนกลับขึ้นบนสุดและรีเฟรชฟีดเหมือนแอปโซเชียลทั่วไป
 - **Actual:** `useEffect` ที่เช็กโพสต์ใหม่ทุก `NEW_CHECK_MS` ทำงานเฉพาะเมื่อ `sort === 'all'` (`ล่าสุด`) เท่านั้น และปุ่ม `หน้าหลัก` ใน `MobileNav` เป็น `<Link href="/">` ธรรมดาที่กดซ้ำแล้วไม่เลื่อนขึ้นบนสุดหรือรีเฟรชฟีด
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 708–723) และ `components/MobileNav.tsx` (บรรทัด 63–79)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `b333c13` (BE-425): กด หน้าหลัก ซ้ำบนหน้า `/` (แถบล่างบนมือถือและเมนูบนคอม) จะเลื่อนขึ้นบนสุดและรีเฟรชแท็บที่ดูอยู่ แถบ "โมเมนต์ใหม่" ขึ้นในแท็บ ติดตาม ด้วยแล้ว ส่วนแท็บ สำหรับคุณ ตั้งใจไม่ใส่ เพราะเรียงตามคะแนน คำว่า "ใหม่ N รายการ" จึงไม่มีความหมาย ใช้กด หน้าหลัก ซ้ำเพื่อรีเฟรชแทน ตรวจในเบราว์เซอร์แล้ว scrollY 2500 → 0
 
 ### TR-015 · `/` (ฟีดโมเมนต์): โพสต์รูปภาพไม่มีลิงก์เปิดหน้าโพสต์เต็ม (`/moments/[id]`) จากเวลาโพสต์ (`timeAgo`)
 - **Severity:** Low
@@ -243,8 +243,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** กดที่เวลาโพสต์ (`timeAgo`) สามารถเปิดหน้าโพสต์เต็ม `/moments/[id]` ได้โดยตรง (เหมือนมาตรฐาน IG/X/Threads และสอดคล้องกับโพสต์คลิปที่เปิด `/moments/[id]` ได้)
 - **Actual:** กดที่รูปจะเปิด `PhotoViewer` (Lightbox) ส่วน `moment.timeAgo` เป็นข้อความธรรมดา ไม่มีลิงก์ไป `/moments/[id]`
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 212–215, 270–274)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `b333c13` (BE-425): เวลาโพสต์เป็นลิงก์ไป `/moments/[id]`
 
 ### TR-016 · `/profile`: ยังไม่มีแท็บ "ที่ถูกแท็ก" สำหรับรวมโมเมนต์ที่เพื่อนแท็กสมาชิกไว้
 - **Severity:** Low
@@ -256,8 +256,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มีแท็บสำหรับดูโมเมนต์ที่ถูกแท็ก (Tagged) เพื่อรวมความทรงจำที่เพื่อนแชร์ร่วมกันไว้ในโปรไฟล์
 - **Actual:** `ProfileTab` มีเพียง `'moments' | 'went' | 'hosted' | 'challenges'` ยังไม่มีแท็บโมเมนต์ที่ถูกแท็ก
 - **Evidence:** `app/profile/ProfileScreen.tsx` (`type ProfileTab`)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** เป็นฟีเจอร์ใหม่ (แท็บ "ที่ถูกแท็ก" ในโปรไฟล์) ไม่ใช่บั๊ก ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8 (ทำหลังเปิดได้) แล้ว
 
 ### TR-017 · `/` (ฟีดโมเมนต์): คอมเมนต์ขยายแบบ Inline ทั้งหมดในฟีด และยังแก้ไขคอมเมนต์/แท็กเพื่อน-สถานที่หลังโพสต์ไม่ได้
 - **Severity:** Low
@@ -269,8 +269,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** เมื่อโพสต์มีคอมเมนต์เยอะควรจำกัดความยาวในฟีดหรือเปิดเป็น Bottom Sheet/Dialog เพื่อไม่ให้ฟีดยาวหลุดจังหวะ และรองรับการแก้ไขคอมเมนต์รวมถึงแท็กเพื่อน/สถานที่หลังโพสต์ได้
 - **Actual:** `shownComments` กางคอมเมนต์ทั้งหมดลงในฟีดแบบ Inline, `CommentThread` ทำได้เฉพาะลบคอมเมนต์ (แก้ไขไม่ได้) และหน้าต่าง `แก้ไขโพสต์` ใน `HomeMomentFeed` แก้ได้เฉพาะแคปชัน รูป และ `PostOptions`
 - **Evidence:** `components/home/HomeMomentFeed.tsx` (บรรทัด 132, 382–411, 1134–1158) และ `components/moments/CommentThread.tsx` (บรรทัด 92–95)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** เจ้าของตัดสินใจแล้ว 2026-11-19 ว่าให้คอมเมนต์ในฟีดเป็นแบบเดิม (โชว์ 1 อัน กดแล้วกางในฟีด) ไม่ต้องแก้ ส่วนการแก้คอมเมนต์และแก้แท็กเพื่อน/สถานที่หลังโพสต์เป็นฟีเจอร์ใหม่ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8
 
 ### TR-018 · `MomentPhotos`: รูปในโพสต์โมเมนต์ยังไม่มี `onError` fallback กรณีโหลดรูปไม่สำเร็จ
 - **Severity:** Medium
@@ -281,8 +281,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** มี `onError` fallback หรือใช้ `FallbackImg` / placeholder ที่สะอาดตาตาม `DESIGN_SYSTEM.md` หัวข้อ 14.2 ไม่แสดงไอคอนรูปแตก
 - **Actual:** `<img>` ใน `MomentPhotos.tsx` ไม่มี `onError` handler จึงแสดงไอคอนรูปแตกของเบราว์เซอร์เมื่อโหลดรูปไม่สำเร็จ
 - **Evidence:** `components/moments/MomentPhotos.tsx` (บรรทัด 108–115)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Ready to re-test
+- **Fix:** `b333c13` (BE-425): ถ้ารูปย่อโหลดไม่ได้ จะลองโหลดไฟล์ต้นฉบับอีกครั้ง ถ้ายังไม่ได้จะแสดงพื้นสีเทาพร้อมไอคอนและคำว่า "โหลดรูปไม่ได้" ตรวจในเบราว์เซอร์แล้ว
 
 ### TR-019 · `/` (หน้าแรกสมาชิก): `MemberLiveHome` โหลดแบบ `ssr: false` ทำให้เห็น Skeleton กระพริบตอนเปิดหน้าแรกทั้งที่เซิร์ฟเวอร์ส่ง `feedStart` มาแล้ว
 - **Severity:** Low
@@ -293,8 +293,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** เมื่อ `app/page.tsx` ดึง `memberData` และ `feedStart` จากเซิร์ฟเวอร์มาพร้อมหน้าเว็บแล้ว ฟีดหน้าแรกควรแสดงผลได้ทันทีโดยไม่กระพริบเป็น `MemberHomeSkeleton`
 - **Actual:** `app/HomeView.tsx` โหลด `MemberLiveHome` ด้วย `dynamic(loadMemberHome, { ssr: false, loading: () => <MemberHomeSkeleton /> })` ทำให้สมาชิกเห็น Skeleton ชั่วคราวทุกครั้งที่โหลดหน้าจนกว่า JS chunk จะโหลดและ hydrate เสร็จ
 - **Evidence:** `app/page.tsx` (บรรทัด 32–36, 57) และ `app/HomeView.tsx` (บรรทัด 48–49)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** ตั้งใจทำแบบนี้ (คอมเมนต์ใน `app/HomeView.tsx`) เพื่อไม่ให้ผู้เยี่ยมชมต้องโหลดโค้ดหน้าสมาชิก หน้านี้เป็นหน้าส่วนตัว ไม่มีผลกับ SEO ถ้าจะ render บนเซิร์ฟเวอร์เฉพาะตอนล็อกอิน ต้องวัดความเร็วก่อนและระวังหน้าบนเซิร์ฟเวอร์กับในเบราว์เซอร์ไม่ตรงกัน ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 7 แล้ว
 
 ### TR-020 · ฟีด `สำหรับคุณ` (`forYou.ts`) และ `เพื่อนๆ ที่น่าติดตาม`: คะแนนยังไม่นับ `invitesCount`/`sharesCount` และรายชื่อแนะนำยังไม่มี Social Proof
 - **Severity:** Low
@@ -306,8 +306,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** สูตรจัดอันดับ `สำหรับคุณ` ควรให้น้ำหนัก `invitesCount` (ชวนเพื่อนไป) และ `sharesCount` ซึ่งสะท้อนการพาคนออกไปใช้ชีวิตจริงได้ตรงที่สุด และรายชื่อ `เพื่อนๆ ที่น่าติดตาม` ควรมีบริบทความเชื่อมโยงที่ปลอดภัยต่อความเป็นส่วนตัว (เช่น เพื่อนที่ติดตามเหมือนกัน) เพื่อช่วยตัดสินใจกดติดตาม
 - **Actual:** `scoreParts` คิดเฉพาะ `saves * 4 + comments * 2 + likes * 1` โดยไม่รวม `invitesCount`/`sharesCount` และ `FollowRow` แสดงเฉพาะชื่อและจำนวน `N โมเมนต์`
 - **Evidence:** `lib/moments/forYou.ts` (บรรทัด 98–99) และ `components/home/onboardingFirstStep.tsx` (บรรทัด 106–110)
-- **Status:** Open
-- **Fix:** (Claude Code adds the commit)
+- **Status:** Needs owner
+- **Fix:** ตอนนี้ยังไม่มีผู้ใช้จริง สัญญาณการชวนและการแชร์ยังไม่มีข้อมูลให้เรียนรู้ และความสัมพันธ์ระหว่างคนยังน้อยเกินกว่าจะโชว์ "เพื่อนที่ติดตามเหมือนกัน" ได้ ใส่ไว้ใน LAUNCH_CHECKLIST ขั้น 8 แล้ว
 
 ---
 

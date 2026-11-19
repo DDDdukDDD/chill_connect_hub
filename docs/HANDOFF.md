@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-425 · Feed basics: names open profiles, time opens the post, หน้าหลัก again refreshes (tester TR-010..020, 2026-11-19)
+- **What changed:** in the feed, the author's name (header and before the caption) links to `/profile?id=` like the avatar, and the post time links to `/moments/[id]`. `CommentThread` links the commenter's avatar and name when the comment has an `authorId`. Tapping หน้าหลัก while on `/` (phone bar and desktop nav) scrolls to the top and refreshes the view being read: `lib/homeAgain.ts` fires `chillwaa:home-again`, `HomeMomentFeed` listens. The new-posts banner also runs on ติดตาม (สำหรับคุณ stays without it, it is ranked). `MomentPhotos` tries the original once when the resized photo fails, then shows "โหลดรูปไม่ได้" on a tint. The composer's X asks before throwing a draft away, like Esc (TR-011).
+- **What to do about it:** TR-010/011/014/015/018 are Ready to re-test. TR-012/013/016/017/019/020 are Needs owner, each listed in LAUNCH_CHECKLIST (feed comments stay as they are: owner 2026-11-19). Comment profile links were not seen in a browser: the dev database has no member comments.
+
+---
+
 ### BE-424 · Bangkok cafés, bars and galleries from OpenStreetMap in the dev database (owner 2026-11-19)
 - **Why:** our places were mostly temples (live: temples 26%, temples + old town + museums ~45%, no nightlife). TAT is no help for cafés: about 77 in Bangkok by name, and a sample of 20 had 2 with pictures.
 - **What changed:**
