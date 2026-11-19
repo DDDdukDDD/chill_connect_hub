@@ -19,6 +19,7 @@ import path from 'node:path';
 import { db } from '@/lib/db';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { BEST_TIME, DEFAULT_LABELS } from '@/lib/scrapers/tourismDirectory';
+import { placeMatcher } from '@/lib/scrapers/placeMatch';
 import { TAT_SOURCE_NAME, TatBudget, tatCategory, listHasTextAndPicture, listTatAttractions, tatDetail, tatSourceUrl, tatToSpot, type TatDetail, type TatListPlace } from '@/lib/scrapers/tatDataApi';
 
 const DEV_REF = 'womkobbjdlzefyrxspxh';
@@ -32,20 +33,6 @@ const TAT_IMAGE = /^https:\/\/dmc\.tatdataapi\.io\//;
 const STOCK_IMAGE = /unsplash|placeholder|picsum|\/images\/onboarding\//i;
 const UNKNOWN = /ไม่ระบุ/;
 
-const norm = (value: string) => value.toLocaleLowerCase().replace(/\([^)]*\)/g, ' ').replace(/[^\p{L}\p{N}]+/gu, '');
-const metres = (a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) => {
-  const rad = Math.PI / 180;
-  const dLat = (b.latitude - a.latitude) * rad;
-  const dLng = (b.longitude - a.longitude) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLng / 2) ** 2;
-  return 6_371_000 * 2 * Math.asin(Math.sqrt(h));
-};
-const namesOverlap = (a: string, b: string) => {
-  const x = norm(a);
-  const y = norm(b);
-  return x.length >= 3 && y.length >= 3 && (x.includes(y) || y.includes(x));
-};
-const provinceKey = (p: string) => p.replace(/^จังหวัด/, '').replace(/^กรุงเทพมหานคร$/, 'กรุงเทพฯ').trim();
 const plainLength = (text?: string) => (text || '').replace(/<[^>]+>/g, '').trim().length;
 const isTatRecord = (spot: LifestyleSpotItem) => spot.id.startsWith('tat-') || Boolean(spot.sourceUrl?.startsWith('https://tatdataapi.io/'));
 
@@ -113,21 +100,8 @@ async function main() {
   const existing = await allSpots();
   // Every place as it was, before anything is written: an enrichment that turns out wrong can be put back from here
   if (!dryRun) fs.writeFileSync(path.join(CACHE, `places-before-${new Date().toISOString().replace(/[:.]/g, '-')}.json`), JSON.stringify(existing));
-  const bySource = new Map(existing.filter((s) => s.sourceUrl).map((s) => [s.sourceUrl!, s]));
-  const byId = new Map(existing.map((s) => [s.id, s]));
-  const byName = new Map(existing.map((s) => [`${norm(s.title)}|${provinceKey(s.province)}`, s]));
-  const points = existing.filter((s) => Number.isFinite(s.latitude) && Number.isFinite(s.longitude));
-  const matchOf = (spot: { id: string; title: string; province: string; latitude: number; longitude: number; sourceUrl?: string }): LifestyleSpotItem | null => {
-    const same = byId.get(spot.id) ?? (spot.sourceUrl ? bySource.get(spot.sourceUrl) : undefined) ?? byName.get(`${norm(spot.title)}|${provinceKey(spot.province)}`);
-    if (same) return same;
-    if (!Number.isFinite(spot.latitude) || !Number.isFinite(spot.longitude)) return null;
-    for (const other of points) {
-      if (Math.abs(other.latitude - spot.latitude) > 0.003 || Math.abs(other.longitude - spot.longitude) > 0.003) continue;
-      const d = metres(spot, other);
-      if (d < 60 || (d < 250 && namesOverlap(spot.title, other.title))) return other;
-    }
-    return null;
-  };
+  const matcher = placeMatcher(existing);
+  const matchOf = matcher.match;
 
   if (process.argv.includes('--recategorize')) {
     let changed = 0;
@@ -217,10 +191,7 @@ async function main() {
     }
     ready.push(spot);
     if (samples.length < 12) samples.push(`  new ${spot.province} · ${spot.category} · ${spot.title} · ${spot.openHours} · ${spot.price} · ${spot.galleryImages?.length} pics`);
-    bySource.set(spot.sourceUrl!, spot);
-    byId.set(spot.id, spot);
-    byName.set(`${norm(spot.title)}|${provinceKey(spot.province)}`, spot);
-    points.push(spot);
+    matcher.add(spot);
     await write();
   }
   await write(true);
