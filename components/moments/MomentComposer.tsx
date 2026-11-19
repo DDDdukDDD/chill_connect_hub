@@ -440,7 +440,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
           <>
             <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-slate-100 shrink-0">
               <h3 id="create-moment-title" className="font-bold text-base sm:text-lg text-slate-900">แชร์โมเมนต์</h3>
-              <button type="button" onClick={onClose} aria-label="ปิด" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0">
+              {/* Like Esc: a draft asks before it is thrown away (TR-011) */}
+              <button type="button" onClick={leave} aria-label="ปิด" className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
