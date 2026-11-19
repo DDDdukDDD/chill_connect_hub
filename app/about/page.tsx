@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Camera, Flag, Flame, Heart, MapPin, QrCode, ShieldCheck, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Camera, Flag, Flame, Heart, Mail, MapPin, QrCode, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { BrandWordmark } from '@/components/BrandWordmark';
@@ -87,6 +87,12 @@ const NAME_MEANINGS = [
 ];
 
 const WRAP = 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8';
+
+/** Where to write to us; both forward to the team mailbox (docs/EMAIL.md, Cloudflare Email Routing) */
+const CONTACTS = [
+  { label: 'คำถามทั่วไป ข้อเสนอแนะ และร่วมงานกับเรา', email: 'hello@chillwaa.com' },
+  { label: 'ข้อมูลส่วนตัวและแจ้งเนื้อหาไม่เหมาะสม', email: 'privacy@chillwaa.com' },
+];
 
 export default function AboutPage() {
   const [activeNavTab, setActiveNavTab] = useState('about');
@@ -253,6 +259,27 @@ export default function AboutPage() {
                   <item.Icon className="w-5 h-5" aria-hidden="true" />
                 </span>
                 <span className="text-slate-800 leading-snug">{item.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 4b. Contact: the App Store's support link points here (docs/APP_STORE_LISTING.md), so it must say how to reach us */}
+        <section className={`${WRAP} pb-14 sm:pb-20 grid gap-6 md:grid-cols-[1fr_1.2fr] md:items-start`}>
+          <div className="space-y-3">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">ติดต่อเรา</h2>
+            <p className="text-slate-600 leading-relaxed text-pretty">มีคำถาม ข้อเสนอแนะ หรืออยากชวนกันทำอะไรสนุกๆ ทักมาได้เลย ทีมงานตอบทางอีเมล</p>
+          </div>
+          <ul className="divide-y divide-slate-100">
+            {CONTACTS.map((item) => (
+              <li key={item.email} className="flex items-center gap-4 py-4 first:pt-0">
+                <span className="w-10 h-10 shrink-0 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <Mail className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm text-slate-500">{item.label}</span>
+                  <a href={`mailto:${item.email}`} className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline break-all">{item.email}</a>
+                </span>
               </li>
             ))}
           </ul>
