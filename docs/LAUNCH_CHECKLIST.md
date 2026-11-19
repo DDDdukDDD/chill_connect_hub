@@ -109,13 +109,17 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 - [x] `เจ้าของ` **API key ของ App Store Connect** (App Manager) ใส่ GitHub Secrets ครบ 3 ตัวแล้ว 17 พ.ย.
 - [x] `เจ้าของ` **ลงทะเบียน App ID และสร้างแอปใน App Store Connect** แล้วกด Run workflow ครั้งแรก (ขั้น 4–6 ใน IOS_APP.md) เปลี่ยนเป็น key แบบ Admin แล้ว
 - [x] `Claude` **iPhone ขั้น 1: ส่งขึ้น TestFlight อัตโนมัติ** build 6 และ 7 ขึ้น TestFlight แล้ว 18 พ.ย.
-- [ ] `ร่วม` **ลองแอปจาก TestFlight บน iPhone จริง** สร้างกลุ่ม Internal Testing ใส่ build ล่าสุด แล้วลองเปิดแอป ล็อกอิน และหน้าออฟไลน์
+- [x] `ร่วม` **ลองแอปจาก TestFlight บน iPhone จริง** build #14 เจ้าของลองครบทุกอย่างผ่าน 19 พ.ย.
 - [ ] `Claude` **build ด้วย Xcode 27 (iOS 27 SDK) ก่อนเม.ย. 2570** (คำเตือน 90725 จาก Apple) workflow เลือก Xcode ตัวใหม่สุดบนเครื่อง GitHub ให้แล้ว ดูบรรทัด `xcodebuild -version` ใน log ว่าเป็น 27 ถ้ายังไม่ใช่ เปลี่ยน `runs-on` เป็นเครื่อง macOS รุ่นที่มี Xcode 27
 - [x] `Claude` **iPhone ขั้น 2: ล็อกอินในแอป** (BE-411 สร้างแล้ว 18 พ.ย. ใช้หน้าต่างล็อกอินของระบบ แล้วกลับแอปด้วย chillwaa:// แทน Universal Link)
-- [ ] `ร่วม` **ลองล็อกอิน LINE, Google, Facebook ในแอป iPhone และ iPad** หลัง merge และ build TestFlight ใหม่
-- [ ] `Claude` **iPhone ขั้น 3: Sign in with Apple** (ต้องใช้ key จากบัญชี Apple Developer)
-- [ ] `Claude` **iPhone ขั้น 4: แจ้งเตือนแบบ native (APNs)** แก้ฐานข้อมูล ให้เจ้าของดูก่อนรัน migration บน live
-- [ ] `เจ้าของ` **Android: merge `claude` → `main` แล้วใส่ `ANDROID_CERT_SHA256` บน Vercel** (ค่า fingerprint ใน ANDROID_APP.md) แล้วสร้างไฟล์แอปด้วย `npx @bubblewrap/cli@1.24.1 build`
+- [x] `ร่วม` **ลองล็อกอิน LINE, Google, Facebook และ Apple ในแอป iPhone** ผ่านบน build #14 (19 พ.ย.)
+- [x] `Claude` **iPhone ขั้น 3: Sign in with Apple** (BE-416 เปิดบน live 18 พ.ย.) ลบบัญชีแล้วส่งคำขอยกเลิก token ของ Apple ด้วย (BE-427, ข้อ 5.1.1(v)) live ต้องรัน migration 0064
+- [x] `Claude` **iPhone ขั้น 4: แจ้งเตือนแบบ native (APNs)** (BE-428 สร้างแล้ว 19 พ.ย. ไม่ต้องแก้ฐานข้อมูล ใช้ตาราง push_subscriptions เดิม) พร้อมปุ่มแชร์แบบ native และลิงก์ "ลบบัญชี" ของตัวเองในหน้าตั้งค่า
+- [ ] `เจ้าของ` **สร้าง APNs key แล้วใส่ `APNS_KEY_ID` และ `APNS_PRIVATE_KEY` บน Vercel** (ขั้น 7 ใน IOS_APP.md) แล้ว merge `claude` → `main` ให้ build TestFlight ใหม่
+- [ ] `ร่วม` **ลองแจ้งเตือนและแชร์ในแอป iPhone** เปิด "แจ้งเตือนบนเครื่องนี้" ในหน้าตั้งค่า ให้เพื่อนกดติดตามหรือคอมเมนต์ แจ้งเตือนต้องเด้งในชื่อ Chillwaa กดแล้วเปิดหน้าที่ถูก และปุ่มแชร์ต้องเปิดหน้าต่างแชร์ของ iPhone
+- [ ] `ร่วม` **หน้าร้านใน App Store** ภาพหน้าจอ 6.9 นิ้ว คำอธิบายภาษาไทย ข้อมูลความเป็นส่วนตัว (privacy label) อายุผู้ใช้ และบัญชีทดลองให้ทีมรีวิว แล้วส่งรีวิวไม่เกินต้น ธ.ค.
+- [ ] `ร่วม` **ลองลบบัญชีที่ล็อกอินด้วย Apple** หลังรัน 0064 บน live: สมัครบัญชีทดสอบด้วย Apple ในแอป ลบบัญชีในหน้าตั้งค่า แล้วดูใน การตั้งค่า › Apple ID › ลงชื่อเข้าด้วย Apple ว่า Chillwaa หายไป (Apple ไม่บอกผลกลับมาทางเซิร์ฟเวอร์ ต้องดูในเครื่อง)
+- [x] `เจ้าของ` **Android: merge `claude` → `main` แล้วใส่ `ANDROID_CERT_SHA256` บน Vercel** (assetlinks บน live มีค่าแล้ว เช็ก 19 พ.ย.) เหลือสร้างไฟล์แอปใหม่ ไฟล์ที่มีอยู่สร้าง 16 พ.ย. ยังเป็นไอคอนเก่า: (ค่า fingerprint ใน ANDROID_APP.md) แล้วสร้างไฟล์แอปด้วย `npx @bubblewrap/cli@1.24.1 build`
 - [x] `Claude` **ชวนลงแอปตอนสมัคร เข้าตี้ หรือรับคำชวน** (BE-405) แผ่นบอกวิธีเพิ่มลงหน้าจอโฮม และลิงก์ชวนที่เปิดจาก LINE เด้งไป Safari/Chrome เมื่อแอปขึ้นสโตร์แล้ว เปลี่ยนแผ่นนี้ให้ชี้ไป App Store / Play Store
 - [ ] `ร่วม` **ลองแผ่นชวนลงแอปบน iPhone จริง** เปิดลิงก์ชวนไปจาก LINE (ต้องเด้งไป Safari) สมัคร แล้วเข้าตี้
 - [ ] `Claude` **เปิดได้ตอนไม่มีเน็ต: ตั๋วและนัดของฉัน** เก็บรหัสตั๋ว จุดนัด เวลา และแชตล่าสุดไว้ในเครื่อง ที่จุดนัดเน็ตอ่อนก็ยังให้คนจัดเช็กชื่อได้ (ตอนนี้ `public/sw.js` เก็บแค่หน้า offline)
