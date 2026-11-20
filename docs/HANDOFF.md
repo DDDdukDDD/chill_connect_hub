@@ -20,6 +20,17 @@ Item template:
 
 ---
 
+### BE-438 · Photos without Vercel resizes, running challenges count only their own posts, Circles show new friends, moment page tidy (owner 2026-11-20)
+- **What changed:**
+  - **Broken photos on /moments:** Vercel's 5,000 monthly image resizes ran out; every new resize answers **402**, so posts from the night before showed broken in the grid (the feed and the post page fell back to the original). Uploads on R2 (`media.chillwaa.com`, `media-dev.`) are no longer resized (`OPTIMIZED_REMOTE_IMAGES` in `lib/optimizedImage.ts`, so also not in `images.remotePatterns`): they are already at most 1600 px / 1 MB from the phone and R2 has no egress charge. `/icons/` is not resized either. The grid card (`CardPhoto` in `MomentShowcase.tsx`) now tries the original once when a resize fails, as `FramePhoto` does. **Shared utility change:** `optimizedImage` / `avatarImage` return R2 links as they are.
+  - **Bell:** the Chillwaa notice icon (BE-435) went through the resizer too; avatars there are `ImgOr` with the initial as fallback.
+  - **Running challenges (`posts.tagged`):** the ATMBKK "ซ้อม 3 ครั้ง" challenge counted any post with a place, so a food post finished it. New rule option `posts.tagged`: only posts made from the challenge count (its "โพสต์โมเมนต์" or Circle; the post keeps `achievement.questId`). `db/seed-atmbkk-2026.mjs` sets it on both ATMBKK challenges and now updates the rule of a challenge that already exists. The owner's wrong finish on live is left as it is (owner's choice).
+  - **Circles:** a friends-on-one-challenge Circle (`c:<questId>`) kept its "opened" grey after someone new joined it, and its corner faces were the closest friends, so a friend just followed who finished a starter challenge never showed. The opened mark now includes the newest person's time (`seenKey`), and the newest face comes first.
+  - **Moment page (own photo post):** the trash icon is now an eye with the view count (only the author sees it); delete moved into a "…" menu. The amber box keeps only "โพสต์นี้พาเพื่อนๆ ออกไปแล้ว" (a clip keeps the views line there, having no author row).
+  - **Reel:** the sound button sits below the iPhone status bar in full screen (`fullScreen` on `ClipPlayer`).
+- **What to do about it:** after merge, run `db/seed-atmbkk-2026.mjs` against live so the two ATMBKK challenges get `tagged`. Decide later whether to turn on Cloudflare image resizing for `media.chillwaa.com` (to add to LAUNCH_CHECKLIST). The video picker's "คลังรูปภาพ" is iOS's own menu and cannot be renamed from the page.
+
+---
 ### BE-437 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
 - **What changed:** the ชวนไป sheet offers "วันอื่น" (a calendar) beside เสาร์นี้ / อาทิตย์นี้, and once a day is picked an optional "กี่โมง". The plan chat's day picker (My Hub) sets or clears the time too. `POST /api/invites` takes `time` with `day`; `PATCH /api/plans/{id}` takes `time` (left out keeps it, `''`/`null` clears it); `PlanView.time`; every `dateLabel` reads "ส. 22 พ.ย. 18:30 น." (`planDayLabel` in `lib/social/friendPlans.ts`).
 - **What to do about it:** run **migration 0066** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
