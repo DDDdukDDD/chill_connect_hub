@@ -246,7 +246,7 @@ function feedFilters(tx: Sql, query: MomentFeedQuery): Fragment {
     ${query.tag ? tx`and m.caption ~* ${hashtagPattern(query.tag)}` : tx``}
     ${query.clipsOnly ? tx`and m.video_url is not null` : tx``}
     ${location ? tx`and (m.location_text ilike ${contains(location)} or m.target_title ilike ${contains(location)})` : tx``}
-    ${q ? tx`and (m.caption ilike ${contains(q)} or coalesce(a.display_name, m.author_name) ilike ${contains(q)} or m.location_text ilike ${contains(q)})` : tx``}` as unknown as Fragment;
+    ${q ? tx`and (m.caption ilike ${contains(q)} or coalesce(a.display_name, m.author_name) ilike ${contains(q)} or m.location_text ilike ${contains(q)} or m.target_title ilike ${contains(q)})` : tx``}` as unknown as Fragment;
 }
 
 /**

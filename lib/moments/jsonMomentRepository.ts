@@ -196,7 +196,8 @@ export const jsonMomentRepository: MomentRepository = {
       if (query.tag && !hasHashtag(m.caption, query.tag)) return false;
       if (query.clipsOnly && !m.video) return false;
       if (location && !m.location.toLowerCase().includes(location) && !(m.targetTitle ?? '').toLowerCase().includes(location)) return false;
-      return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q);
+      // The place a post is tied to counts too: "ร้านกาแฟอารีย์" finds posts at it whatever their caption (BE-441)
+      return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q) || (m.targetTitle ?? '').toLowerCase().includes(q);
     });
     const newest = (a: Moment, b: Moment) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id);
     const P = POPULAR_WEIGHTS;

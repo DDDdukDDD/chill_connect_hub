@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import {
   AlertCircle, BadgeCheck, Ban, CalendarPlus, Check, CircleCheck, Clock, Flag, HandHeart, KeyRound, Loader2, LogOut, MailCheck, MapPin, Pencil, ShieldCheck, UserRound,
-  Award, Briefcase, Building2, Camera, ChevronRight, GraduationCap, Heart, Home, Ticket, Users, Phone, ArrowLeftRight, type LucideIcon
+  Award, Briefcase, Building2, Camera, ChevronRight, Eye, GraduationCap, Heart, Home, Ticket, Users, Phone, ArrowLeftRight, type LucideIcon
 } from 'lucide-react';
 import { AccountSwitcherDialog } from '@/components/auth/AccountSwitcherDialog';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -28,6 +28,7 @@ import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
 import { FollowListDialog, type FollowTab } from './FollowListDialog';
+import { AvatarViewer } from '@/components/members/AvatarViewer';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { markVia } from '@/lib/social/via';
 
@@ -510,6 +511,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [editTab, setEditTab] = useState<EditTab | null>(null);
+  // The profile picture tapped: shown large, or (my own) a choice to see or change it
+  const [avatarAction, setAvatarAction] = useState<'view' | 'choose' | null>(null);
   const [isReporting, setIsReporting] = useState(false);
   const [reportingReview, setReportingReview] = useState<{ id: string; eventTitle: string } | null>(null);
   const [reload, setReload] = useState(0);
@@ -786,14 +789,32 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
               <aside className="lg:sticky lg:top-24">
                 <section className="rounded-3xl border border-slate-200 shadow-[0_6px_24px_rgba(15,23,42,0.06)] p-6 sm:p-7">
                   <div className="flex flex-col items-center text-center">
-                    <span className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 text-slate-600 text-5xl font-bold flex items-center justify-center">
-                      {profile.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
-                        <img src={avatarImage(profile.avatarUrl, 256)} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        nameInitial(profile.displayName, 'C')
-                      )}
-                    </span>
+                    {/* A tap shows the picture large (owner 2026-11-20); on my own profile it also offers to change it */}
+                    {(() => {
+                      const face = (
+                        <span className="block w-28 h-28 rounded-full overflow-hidden bg-slate-100 text-slate-600 text-5xl font-bold flex items-center justify-center">
+                          {profile.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- member photo from uploads or a provider
+                            <img src={avatarImage(profile.avatarUrl, 256)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            nameInitial(profile.displayName, 'C')
+                          )}
+                        </span>
+                      );
+                      const mine = Boolean(own && !previewPublic);
+                      if (!profile.avatarUrl && !mine) return face;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => (mine ? (profile.avatarUrl ? setAvatarAction('choose') : setEditTab('me')) : setAvatarAction('view'))}
+                          aria-label={mine ? (profile.avatarUrl ? 'รูปโปรไฟล์ของฉัน: ดูหรือเปลี่ยน' : 'เพิ่มรูปโปรไฟล์') : `ดูรูปโปรไฟล์ของ ${profile.displayName}`}
+                          aria-haspopup="dialog"
+                          className="rounded-full cursor-pointer hover:brightness-95 transition-[filter] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
+                        >
+                          {face}
+                        </button>
+                      );
+                    })()}
                     <h1 className="mt-4 text-2xl sm:text-3xl font-bold tracking-tight break-words">{profile.displayName}</h1>
                     <p className="mt-1 text-sm font-medium text-slate-500">
                       {[provinceName, profile.ageBand ? `อายุ ${profile.ageBand}` : '', profile.gender ? GENDER_LABELS[profile.gender] : ''].filter(Boolean).join(' · ')}
@@ -1173,6 +1194,31 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
       {isInviteOpen && (
         <DialogShell onClose={() => setIsInviteOpen(false)} title="ชวนเพื่อนมาไปตี้ด้วยกัน" size="md">
           <InviteFriendsCard />
+        </DialogShell>
+      )}
+
+      {avatarAction === 'view' && profile?.avatarUrl && (
+        <AvatarViewer src={profile.avatarUrl} name={profile.displayName} onClose={() => setAvatarAction(null)} />
+      )}
+      {avatarAction === 'choose' && (
+        <DialogShell onClose={() => setAvatarAction(null)} title="รูปโปรไฟล์" size="sm">
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={() => setAvatarAction('view')} className="w-full inline-flex items-center gap-3 min-h-12 px-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-sm font-bold text-slate-800 cursor-pointer">
+              <Eye className="w-5 h-5 text-slate-500" aria-hidden="true" />
+              ดูรูปโปรไฟล์
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAvatarAction(null);
+                setEditTab('me');
+              }}
+              className="w-full inline-flex items-center gap-3 min-h-12 px-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-sm font-bold text-slate-800 cursor-pointer"
+            >
+              <Camera className="w-5 h-5 text-slate-500" aria-hidden="true" />
+              เปลี่ยนรูป
+            </button>
+          </div>
         </DialogShell>
       )}
 

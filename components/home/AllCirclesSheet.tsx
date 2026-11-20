@@ -10,7 +10,7 @@ import { useDialogBehavior } from '@/components/auth/DialogShell';
  * "ดูทั้งหมด" at the end of the Circles row (Circles at scale, owner 2026-11-18): every Circle in the same order as the
  * row, drawn the same way, in a grid. A tap opens that Circle in the viewer, where swiping goes on through all of them.
  */
-export function AllCirclesSheet({ items, render, onClose }: { items: CircleItem[]; render: (item: CircleItem, index: number) => React.ReactNode; onClose: () => void }) {
+export function AllCirclesSheet({ items, render, onClose, title = 'Circles ทั้งหมด' }: { items: CircleItem[]; render: (item: CircleItem, index: number) => React.ReactNode; onClose: () => void; title?: string }) {
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogBehavior(panelRef, onClose, { focusField: false });
   if (typeof document === 'undefined') return null;
@@ -26,7 +26,7 @@ export function AllCirclesSheet({ items, render, onClose }: { items: CircleItem[
         className="w-full sm:max-w-[520px] max-h-[85vh] bg-white rounded-t-[28px] sm:rounded-[28px] flex flex-col focus:outline-hidden"
       >
         <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b border-slate-100">
-          <h2 id="all-circles-title" className="text-base font-bold text-slate-900">Circles ทั้งหมด <span className="text-slate-500 font-medium tabular-nums">{items.length}</span></h2>
+          <h2 id="all-circles-title" className="text-base font-bold text-slate-900">{title} <span className="text-slate-500 font-medium tabular-nums">{items.length}</span></h2>
           <button type="button" onClick={onClose} aria-label="ปิด" className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
             <X className="w-5 h-5" aria-hidden="true" />
           </button>

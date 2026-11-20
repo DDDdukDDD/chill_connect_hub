@@ -19,6 +19,12 @@ const PAGE_SIZE = 24;
 const ROSE = '#F43F5E';
 
 type Chip = 'all' | MomentTargetKey;
+/**
+ * The type tabs are hidden until there are enough posts for each to fill a page (owner 2026-11-20: with few posts most
+ * tabs were nearly empty). Posts still keep their type, `?type=` links still filter, and such a link shows the tabs so
+ * the reader can get back to ทั้งหมด. Set to true to bring them back.
+ */
+const SHOW_TYPE_TABS = false;
 /** Text tabs like the ค้นพบ pages: a dot in each pillar colour, and a hand-drawn highlighter under the current one */
 const TABS: { chip: Chip; label: string; dot: string; marker: string }[] = [
   { chip: 'all', label: 'ทั้งหมด', dot: 'bg-[#F43F5E]', marker: 'bg-[#F43F5E]/25' },
@@ -534,7 +540,7 @@ export function MomentShowcase({ initialMoments, initialHasMore, initialCursor, 
           )}
 
           <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
-            {!placeName && (
+            {!placeName && (SHOW_TYPE_TABS || chip !== 'all') && (
               <nav aria-label="ประเภทโมเมนต์" className={`${slim ? 'mt-2 sm:mt-4' : 'mt-3 sm:mt-7'} flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -mx-3 px-4 sm:mx-0 sm:px-0`}>
                 {TABS.map((tab) => {
                   const isHere = tab.chip === chip;
