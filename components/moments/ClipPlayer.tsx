@@ -89,6 +89,8 @@ interface ClipPlayerProps {
   onDoubleTap?: () => void;
   /** A thin time bar along the bottom that can be dragged to any part of the clip (the Reel, FEED_PLAN step 3) */
   showTime?: boolean;
+  /** The clip fills the screen (the Reel): the sound button keeps clear of the iPhone status bar */
+  fullScreen?: boolean;
   className?: string;
 }
 
@@ -148,7 +150,7 @@ function TimeBar({ videoRef, startS, durationS }: { videoRef: React.RefObject<HT
   );
 }
 
-export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, showTime = false, className = '' }: ClipPlayerProps) {
+export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, showTime = false, fullScreen = false, className = '' }: ClipPlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(true);
@@ -333,7 +335,8 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
             }}
             aria-label={sound && isFull ? 'ปิดเสียง' : 'เปิดเสียง'}
             aria-pressed={sound && isFull}
-            className="absolute top-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white"
+            // Full screen: below the iPhone status bar, as the close button is (the battery icon sat on it, owner 2026-11-20)
+            className={`absolute z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white ${fullScreen ? 'top-[max(0.75rem,env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))]' : 'top-3 right-3'}`}
           >
             {sound && isFull ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
           </button>
