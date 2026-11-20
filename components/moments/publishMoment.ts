@@ -2,6 +2,7 @@
 
 import { uploadPresigned } from '@vercel/blob/client';
 import { compressClip } from '@/lib/media/clipCompress';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { exportPhoto, type EditedPhoto, type FunSticker, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { PostingError, type ReportProgress } from '@/lib/moments/postingJobs';
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
@@ -71,9 +72,7 @@ async function uploadClip(file: File, onShare?: (share: number) => void): Promis
 }
 
 export async function uploadPicture(picture: Blob): Promise<string> {
-  const form = new FormData();
-  form.append('file', picture, picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
-  form.append('folder', 'moments');
+  const form = await photoUploadForm(picture, 'moments', picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
   const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
   if (!upload?.success || !upload.url) throw new PostingError(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
   return upload.url;

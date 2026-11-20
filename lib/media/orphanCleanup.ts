@@ -1,4 +1,5 @@
 import { mediaStorage } from './index';
+import { originalOfSmallCopy } from './ownMedia';
 import { sql, USE_POSTGRES } from '../db/postgres/client';
 
 /**
@@ -40,7 +41,11 @@ export async function cleanMomentOrphans({ now = Date.now(), dryRun = false } = 
     union select video_preview_url from app.moments where video_preview_url is not null`;
   const used = new Set(rows.map((r) => pathOf(r.url as string)));
   const old = files.filter((file) => now - Date.parse(file.createdAt) > MIN_AGE_MS);
-  const unused = old.filter((file) => !used.has(pathOf(file.url)));
+  // A small copy (`.s.`) is used while its original (`.o.`) is; deleting an original takes its copy too (R2 adapter)
+  const unused = old.filter((file) => {
+    const path = pathOf(file.url);
+    return !used.has(originalOfSmallCopy(path) ?? path);
+  });
 
   // A wrong read (empty list, other host) would look like "nothing is used": stop instead of deleting half the folder
   if (old.length > 20 && unused.length > old.length / 2) {

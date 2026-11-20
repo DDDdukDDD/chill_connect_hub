@@ -4,6 +4,7 @@ import { askConfirm } from '@/components/admin/adminConfirm';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { safeImageSrc } from '@/lib/optimizedImage';
 import type { MasterCollection, MasterData, MasterEntry } from '@/lib/masterData';
 import { fieldInputClass } from './AdminDrawer';
@@ -84,9 +85,7 @@ export function ImageField({ id, value, onChange, folder }: { id: string; value:
     setUploadError(null);
     try {
       const compressed = await compressImage(file, { maxWidth: 1600, maxHeight: 1600 });
-      const form = new FormData();
-      form.append('file', compressed);
-      form.append('folder', folder);
+      const form = await photoUploadForm(compressed, folder);
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || 'อัปโหลดไม่สำเร็จ');

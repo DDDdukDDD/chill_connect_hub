@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { IMediaStorage, MediaStorageStats, StoredMediaFile, UploadOptions, UploadResult } from '../types';
 import { R2_CACHE_CONTROL, r2Fetch, r2ObjectUrl, type R2Config } from '../r2';
 import { BlobStorageAdapter } from './blobStorageAdapter';
+import { smallCopyKeys, smallCopyOf } from '../ownMedia';
 
 /**
  * Cloudflare R2 storage (lib/media/r2.ts). Like the Blob adapter, the storage key is the public URL.
@@ -30,14 +31,30 @@ export function newMediaKey(folder: string | undefined, name: string, mimeType: 
 export class R2StorageAdapter implements IMediaStorage {
   constructor(private readonly config: R2Config) {}
 
-  public async upload(fileBuffer: Buffer, originalName: string, mimeType: string, options: UploadOptions = {}): Promise<UploadResult> {
-    const key = newMediaKey(options.folder, options.folder === 'moments' && mimeType.startsWith('video/') ? 'clip' : 'photo', mimeType);
-    const res = await r2Fetch(this.config, r2ObjectUrl(this.config, key), {
+  private put(key: string, body: Buffer, mimeType: string) {
+    return r2Fetch(this.config, r2ObjectUrl(this.config, key), {
       method: 'PUT',
-      body: new Uint8Array(fileBuffer),
+      body: new Uint8Array(body),
       headers: { 'content-type': mimeType, 'cache-control': R2_CACHE_CONTROL },
     });
-    if (!res.ok) throw new Error(`R2 upload failed: ${res.status}`);
+  }
+
+  public async upload(fileBuffer: Buffer, originalName: string, mimeType: string, options: UploadOptions = {}): Promise<UploadResult> {
+    let key = newMediaKey(options.folder, options.folder === 'moments' && mimeType.startsWith('video/') ? 'clip' : 'photo', mimeType);
+    // The small copy goes first: a name with `.o.` promises it exists (lib/media/ownMedia.ts). If it fails, the photo
+    // is stored alone under a plain name and screens show the original
+    let smallKey: string | null = null;
+    if (options.smallCopy && mimeType.startsWith('image/')) {
+      const keys = smallCopyKeys(key);
+      const small = await this.put(keys.small, options.smallCopy, mimeType).catch(() => null);
+      if (small?.ok) [key, smallKey] = [keys.original, keys.small];
+      else console.error('[R2StorageAdapter] small copy failed:', small?.status);
+    }
+    const res = await this.put(key, fileBuffer, mimeType);
+    if (!res.ok) {
+      if (smallKey) await this.delete(`${this.config.publicUrl}/${smallKey}`);
+      throw new Error(`R2 upload failed: ${res.status}`);
+    }
     const url = `${this.config.publicUrl}/${key}`;
     return { url, key: url, size: fileBuffer.length, mimeType, originalName };
   }
@@ -46,6 +63,9 @@ export class R2StorageAdapter implements IMediaStorage {
     if (BLOB_URL.test(key)) return new BlobStorageAdapter().delete(key);
     const prefix = `${this.config.publicUrl}/`;
     if (!key.startsWith(prefix)) return false;
+    // A photo's small copy goes with it
+    const small = smallCopyOf(key);
+    if (small) await this.delete(small);
     try {
       const res = await r2Fetch(this.config, r2ObjectUrl(this.config, decodeURIComponent(key.slice(prefix.length))), { method: 'DELETE' });
       return res.ok;

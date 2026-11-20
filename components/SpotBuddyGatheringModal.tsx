@@ -28,6 +28,7 @@ import { SafetyGuidelinesModal } from './SafetyGuidelinesModal';
 import { useAuth } from '@/lib/useAuth';
 import { RichTextEditor, stripHtmlToPlainText } from './RichTextEditor';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import {
   SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MEETING_POINTS,
   SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT,
@@ -191,10 +192,8 @@ export const SpotBuddyGatheringModal: React.FC<SpotBuddyGatheringModalProps> = (
         quality: 0.82,
       });
 
-      // 2. Upload to /api/upload
-      const formData = new FormData();
-      formData.append('file', compressed);
-      formData.append('folder', 'spots');
+      // 2. Upload to /api/upload, with a small copy for cards
+      const formData = await photoUploadForm(compressed, 'spots');
 
       const res = await fetch('/api/upload', {
         method: 'POST',

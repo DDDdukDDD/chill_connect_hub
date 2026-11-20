@@ -11,6 +11,8 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 // lib/rateLimit.ts) to curb abuse of paid storage; admin sessions are not limited.
 const UPLOAD_LIMIT = 20;
 const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
+/** An 800 px WebP is 60–150 KB; anything far past that is not a small copy */
+const MAX_SMALL_BYTES = 512 * 1024;
 
 async function isUploadLimited(request: Request): Promise<boolean> {
   if (await hasAdminCredentials(request)) return false;
@@ -82,9 +84,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // The phone's small copy (lib/media/uploadPhoto.ts): kept only when it is the same type and checks out; otherwise
+    // the photo is stored alone and screens show the original
+    const small = formData.get('small');
+    let smallCopy: Buffer | undefined;
+    if (small instanceof File && small.type === file.type && small.size > 0 && small.size <= MAX_SMALL_BYTES && small.size < file.size) {
+      const smallBuffer = Buffer.from(await small.arrayBuffer());
+      if (detectImageType(smallBuffer) === file.type) smallCopy = smallBuffer;
+    }
+
     const result = await mediaStorage.upload(buffer, file.name, file.type, {
       folder,
       maxSizeBytes,
+      smallCopy,
     });
 
     return NextResponse.json({

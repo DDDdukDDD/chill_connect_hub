@@ -51,6 +51,7 @@ import { NEW_MEMBER_NAME, nameInitial, reservedNameProblem, tidyDisplayName } fr
 import { useNameCheck } from '@/lib/useNameCheck';
 import { NameCheckHint } from '@/components/auth/NameCheckHint';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
@@ -922,9 +923,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         const name = displayName.trim();
         if (session.member && name && name !== session.member.displayName) changes.displayName = name;
         if (session.member && photo) {
-          const form = new FormData();
-          form.append('file', photo.file);
-          form.append('folder', 'avatars');
+          const form = await photoUploadForm(photo.file, 'avatars');
           const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
           if (!upload?.success || !upload.url) throw new Error(upload?.error || 'อัปโหลดรูปไม่สำเร็จ ลองใหม่หรือข้ามรูปไปก่อน');
           changes.avatarUrl = upload.url;
