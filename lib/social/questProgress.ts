@@ -103,7 +103,8 @@ export function parseQuestRule(input: unknown): QuestRule | null {
   // A starter challenge counts posts, not visits (QuestRule.posts)
   if (raw.posts && typeof raw.posts === 'object') {
     if (!(count >= 1 && count <= 20)) return null;
-    return { targetTypes: [], count, posts: { withPlace: (raw.posts as { withPlace?: unknown }).withPlace === true || undefined }, newMemberDays: wholeNumberIn(raw.newMemberDays, 1, 90) };
+    const posts = raw.posts as { withPlace?: unknown; tagged?: unknown };
+    return { targetTypes: [], count, posts: { withPlace: posts.withPlace === true || undefined, tagged: posts.tagged === true || undefined }, newMemberDays: wholeNumberIn(raw.newMemberDays, 1, 90) };
   }
   // A first-step challenge counts likes, follows, saves or ตี้ signed up for (QuestRule.actions)
   if (raw.actions && typeof raw.actions === 'object') {
@@ -289,13 +290,24 @@ export interface QuestProgress {
   /** The member joined it; only then is the reward theirs */
   joined: boolean;
   rewardPoints: number;
-  /** A challenge that counts posts and is still counting for this member: posts from `since` count, with a place if asked */
-  posts?: { since: string; withPlace: boolean };
+  /**
+   * A challenge that counts posts and is still counting for this member: posts from `since` count, with a place if
+   * asked; with `tagged` (the challenge's id) only posts made from that challenge
+   */
+  posts?: PostCountRule;
 }
 
-/** Whether a published post counts toward a post challenge (the same test the count uses) */
-export const postCounts = (posts: { since: string; withPlace: boolean }, m: Pick<Moment, 'createdAt' | 'targetType' | 'targetId' | 'location'>) =>
-  m.createdAt >= posts.since && (!posts.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim()));
+export type PostCountRule = { since: string; withPlace: boolean; tagged?: string };
+
+/**
+ * Whether a published post counts toward a post challenge (the same test the count uses). A post made from a challenge
+ * keeps that challenge on its line (`achievement.questId`, lib/social/achievement.ts); `madeFor` is the challenge a
+ * post just made was opened for, before its line is saved.
+ */
+export const postCounts = (posts: PostCountRule, m: Pick<Moment, 'createdAt' | 'targetType' | 'targetId' | 'location' | 'achievement'>, madeFor?: string) =>
+  m.createdAt >= posts.since &&
+  (!posts.withPlace || Boolean((m.targetType !== 'general' && m.targetId) || m.location?.trim())) &&
+  (!posts.tagged || (m.achievement?.questId ?? madeFor) === posts.tagged);
 
 /**
  * Whether one visit counts toward a challenge: the target matches the rule, the evidence is strong enough, and it
@@ -477,7 +489,7 @@ export async function progressOf(memberId: string) {
     }
     if (quest.rule.posts) {
       const join = joinList.find((item) => item.questId === quest.id);
-      const posts = { since: join?.joinedAt ?? '', withPlace: Boolean(quest.rule.posts.withPlace) };
+      const posts: PostCountRule = { since: join?.joinedAt ?? '', withPlace: Boolean(quest.rule.posts.withPlace), ...(quest.rule.posts.tagged ? { tagged: quest.id } : {}) };
       const counting = !finishedIds.has(quest.id) && Boolean(join) && newEnough(quest.rule);
       const current = finishedIds.has(quest.id) ? quest.rule.count : counting ? Math.min(quest.rule.count, (await myPosts()).filter((m) => postCounts(posts, m)).length) : 0;
       quests.push({ questId: quest.id, title: quest.title, current, total: quest.rule.count, completed: current >= quest.rule.count, joined: joined.has(quest.id), rewardPoints: quest.rewardPoints ?? 0, ...(counting ? { posts } : {}) });

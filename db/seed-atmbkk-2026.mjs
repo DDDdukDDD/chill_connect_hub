@@ -76,7 +76,8 @@ const QUESTS = [
         shortTitle: '+250 XP',
         hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ',
       },
-      rule: { targetTypes: [], count: 3, posts: { withPlace: true } },
+      // tagged (owner 2026-11-20): only posts made from this challenge's page count; a food post finished it
+      rule: { targetTypes: [], count: 3, posts: { withPlace: true, tagged: true } },
     },
   },
   {
@@ -106,7 +107,7 @@ const QUESTS = [
         shortTitle: '+400 XP',
         hubRewardNote: 'เหรียญขึ้นในโปรไฟล์ทันทีที่ทำสำเร็จ',
       },
-      rule: { targetTypes: [], count: 1, posts: {} },
+      rule: { targetTypes: [], count: 1, posts: { tagged: true } },
     },
   },
 ];
@@ -116,6 +117,11 @@ for (const item of QUESTS) {
   let id = existing?.id;
   if (existing) {
     console.log(`quest exists (${existing.status}): ${item.payload.title}`);
+    // Its rule follows this file, so a tightened rule reaches a challenge made earlier (2026-11-20: posts.tagged)
+    if (JSON.stringify(existing.rule) !== JSON.stringify(item.payload.rule)) {
+      const up = await adminFetch('/api/admin/quests', 'POST', { action: 'update', id, updatedFields: { rule: item.payload.rule } });
+      console.log(`  rule updated: ${up.data?.success ? 'ok' : up.data?.error}`);
+    }
   } else {
     const created = await adminFetch('/api/admin/quests', 'POST', { action: 'create', quest: item.payload });
     if (!created.data?.success) {
