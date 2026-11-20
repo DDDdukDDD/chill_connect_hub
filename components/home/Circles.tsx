@@ -58,9 +58,14 @@ export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead
   const ordered = useMemo(() => {
     const mine = items.filter(isOwnCircle);
     const others = items.filter((item) => !isOwnCircle(item));
-    return [...mine, ...others.filter((item) => !seenAtLoad.includes(item.id)), ...others.filter((item) => seenAtLoad.includes(item.id))];
+    return [...mine, ...others.filter((item) => !seenAtLoad.includes(seenKey(item))), ...others.filter((item) => seenAtLoad.includes(seenKey(item)))];
   }, [items, seenAtLoad]);
-  const markSeen = useCallback((id: string) => setSeen((now) => (now.includes(id) ? now : rememberSeen(id))), []);
+  // The viewer reports the Circle's id; what is kept is its seen key, so a friends Circle someone new joined is new again
+  const markSeen = useCallback((id: string) => {
+    const item = items.find((one) => one.id === id);
+    const key = item ? seenKey(item) : id;
+    setSeen((now) => (now.includes(key) ? now : rememberSeen(key)));
+  }, [items]);
   // Asked again after something changed it: a join or a cheer in the viewer, or a post
   const [stale, setStale] = useState(0);
   const load = useCallback(() => {
@@ -128,7 +133,7 @@ export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead
         {lead}
         {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
-          const faded = !isOwnCircle(item) && seen.includes(item.id);
+          const faded = !isOwnCircle(item) && seen.includes(seenKey(item));
           // A thin line between my own Circles and friends' (option A). The lead Circles (next plan, campaigns) are mine
           // too (TR-023), but `lead` may draw nothing: then this line is the list's first item and `first:hidden` drops it.
           // The lead Circles are phone-only (laptops show them beside the feed, MemberLiveHome), so the line after them is too
@@ -185,7 +190,7 @@ export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead
         <AllCirclesSheet
           items={ordered}
           render={(item, index) => {
-            const faded = !isOwnCircle(item) && seen.includes(item.id);
+            const faded = !isOwnCircle(item) && seen.includes(seenKey(item));
             const pick = () => {
               setAllOpen(false);
               open(index);
@@ -281,7 +286,14 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
     );
 }
 
-// Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again
+/**
+ * What "opened already" remembers for a Circle. Friends on one challenge keep the id `c:<questId>` while people join,
+ * so the newest one's time goes with it: a friend just followed who finished the same starter challenge stayed hidden
+ * in a grey Circle at the end of the row (owner 2026-11-20); now that Circle is new again.
+ */
+const seenKey = (item: CircleItem): string => (item.kind === 'challenge' ? `${item.id}@${item.at}` : item.id);
+
+// Circles opened on this device (seen keys), newest last; a per-device convenience, so a cleared browser just shows them fresh again
 const SEEN_KEY = 'circles-seen';
 function readSeen(): string[] {
   try {

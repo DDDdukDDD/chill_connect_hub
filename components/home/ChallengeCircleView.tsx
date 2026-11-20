@@ -28,7 +28,10 @@ export function ChallengeRowCircle({ item, onOpen, seen = false }: { item: Chall
   const meaning = challengeMeaning(item);
   // A hot challenge shows only its picture: strangers' faces in the row read as people the reader follows
   const hot = Boolean(item.suggested);
-  const faces = hot ? [] : item.people.slice(0, 2);
+  // The newest one first, then the closest (owner 2026-11-20): a friend just followed has no closeness yet, so by
+  // closeness alone their face never reached the corner and the Circle looked like the same old people
+  const newest = item.people.reduce((a, b) => (b.at > a.at ? b : a), item.people[0]);
+  const faces = hot || !newest ? [] : [newest, ...item.people.filter((p) => p.id !== newest.id)].slice(0, 2);
   // Orange is for my own Circles and blue for friends (circleLook.ts), so a hot challenge from strangers is violet
   const ring = seen ? 'bg-slate-200' : `bg-linear-to-tr ${hot ? RING_HOT : RING_FRIENDS}`;
   const rowFallback = (
