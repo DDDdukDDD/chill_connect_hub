@@ -6,6 +6,7 @@
 
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { spotOrigin } from './contentOrigin';
+import { isOsmVenue } from './spotPhotoRule';
 
 // Curated high-res Unsplash photo bank (8 images per category) for Thai tourism & lifestyle
 export const CATEGORY_IMAGE_BANKS: Record<string, string[]> = {
@@ -100,10 +101,12 @@ export function resolveSpotImage(spot: Partial<LifestyleSpotItem>): string {
   if (isValidImageUrl(spot.image)) {
     return spot.image!;
   }
+  // OSM cafés and bars: their own photo or none, so the page can say there is no photo yet (BE-424)
+  if (isOsmVenue(spot)) return '';
 
   const cat = spot.category || 'nature';
   const bank = CATEGORY_IMAGE_BANKS[cat] || CATEGORY_IMAGE_BANKS['nature'];
-  
+
   // Deterministic pick based on spot id or title length so it remains consistent
   const seed = (spot.id || spot.title || 'spot').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const index = seed % bank.length;

@@ -172,7 +172,7 @@ function pgPlans(): FriendPlanStore {
     title: r.title as string,
     ...(r.image ? { image: r.image as string } : {}),
     ...(r.day ? { date: r.day as string } : {}),
-    // Absent before migration 0063: plans just have no time
+    // Absent before migration 0066: plans just have no time
     ...(r.day && typeof r.plan_time === 'string' && r.plan_time ? { time: r.plan_time } : {}),
     status: r.status as PlanStatus,
     remindedAt: iso(r.reminded_at),
@@ -248,7 +248,7 @@ function pgPlans(): FriendPlanStore {
       const db = sql();
       const set: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (change.date !== undefined) set.plan_date = change.date;
-      // Written only when a time is set or cleared, so plans keep working before migration 0063 runs
+      // Written only when a time is set or cleared, so plans keep working before migration 0066 runs
       if (change.time !== undefined) set.plan_time = change.time;
       if (change.status) set.status = change.status;
       if ('remindedAt' in change) set.reminded_at = change.remindedAt ?? null;

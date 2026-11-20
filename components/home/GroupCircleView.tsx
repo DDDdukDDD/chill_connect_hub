@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Users, X } from 'lucide-react';
 import type { GroupCircle } from '@/lib/social/groupCircles';
+import { RING_FRIENDS } from '@/components/home/circleLook';
 import { dialogButton } from '@/components/auth/DialogShell';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { nameInitial } from '@/lib/displayName';
+import ImgOr from '@/components/ImgOr';
 
 /**
  * Group Circles (Circles round B, owner 2026-11-16): a ตี้ that just ended, with proof that at least two people went
@@ -39,6 +41,11 @@ const coverOf = (item: GroupCircle) => item.photos[0]?.url || item.tee.image;
 export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCircle; onOpen: () => void; /** Opened before on this device: grey ring */ seen?: boolean }) {
   const picture = coverOf(item);
   const meaning = groupMeaning(item);
+  const rowFallback = (
+    <span className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
+      <Users className="w-7 h-7 text-emerald-600" aria-hidden="true" />
+    </span>
+  );
   return (
     <li className="shrink-0 w-[80px]">
       <button
@@ -48,23 +55,20 @@ export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCirc
         title={meaning}
         className="group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       >
-        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : 'bg-linear-to-tr from-[#059669] to-[#6EE7B7]'}`}>
+        <span className={`relative rounded-full p-[3px] ${seen ? 'bg-slate-200' : `bg-linear-to-tr ${RING_FRIENDS}`}`}>
           <span className="block rounded-full bg-white p-[2px]">
             {picture ? (
-              // eslint-disable-next-line @next/next/no-img-element -- post photos and ตี้ covers come from many hosts
-              <img src={optimizedImage(picture, 128)} alt="" className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
+              <ImgOr src={optimizedImage(picture, 128)} fallback={rowFallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />
             ) : (
-              <span className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
-                <Users className="w-7 h-7 text-emerald-600" aria-hidden="true" />
-              </span>
+              rowFallback
             )}
           </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap bg-[#059669] text-white" aria-hidden="true">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap bg-[#1D4ED8] text-white" aria-hidden="true">
             <Users className="w-3 h-3" />
             {item.count}
           </span>
         </span>
-        <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">
+        <span className={`w-full truncate text-center text-xs font-medium ${seen ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
           {plainTeeTitle(item.tee.title)}
         </span>
       </button>
@@ -73,12 +77,8 @@ export function GroupRowCircle({ item, onOpen, seen = false }: { item: GroupCirc
 }
 
 function Face({ person, size }: { person: GroupCircle['people'][number]; size: string }) {
-  return person.avatar ? (
-    // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-    <img src={avatarImage(person.avatar)} alt="" className={`${size} rounded-full object-cover bg-slate-100 border-2 border-white`} />
-  ) : (
-    <span className={`${size} rounded-full bg-slate-200 text-xs font-bold text-slate-700 flex items-center justify-center border-2 border-white`}>{nameInitial(person.name)}</span>
-  );
+  const initials = <span className={`${size} rounded-full bg-slate-200 text-xs font-bold text-slate-700 flex items-center justify-center border-2 border-white`}>{nameInitial(person.name)}</span>;
+  return person.avatar ? <ImgOr src={avatarImage(person.avatar)} fallback={initials} className={`${size} rounded-full object-cover bg-slate-100 border-2 border-white`} /> : initials;
 }
 
 /** The opened group Circle: header, photos, who went, one button */
@@ -92,6 +92,11 @@ export function GroupCircleBody({ item, onClose, onOpenMoment }: { item: GroupCi
   const main = item.wasThere
     ? { href: item.tee.href, label: 'รีวิวและเลือกคนที่อยากเจออีก' }
     : { href: item.next.href, label: item.next.title ? 'ไปตี้ถัดไปของคนจัด' : 'หาตี้แบบนี้' };
+  const bigFallback = (
+    <span className="w-full h-full flex items-center justify-center">
+      <Users className="w-16 h-16 text-slate-300" aria-hidden="true" />
+    </span>
+  );
 
   return (
     <>
@@ -116,12 +121,9 @@ export function GroupCircleBody({ item, onClose, onOpenMoment }: { item: GroupCi
       <div className="px-4">
         <div className="relative aspect-[4/5] sm:aspect-square w-full rounded-3xl overflow-hidden bg-slate-100">
           {picture ? (
-            // eslint-disable-next-line @next/next/no-img-element -- post photos and ตี้ covers come from many hosts
-            <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
+            <ImgOr key={picture} src={optimizedImage(picture, 828)} fallback={bigFallback} className="w-full h-full object-cover" />
           ) : (
-            <span className="w-full h-full flex items-center justify-center">
-              <Users className="w-16 h-16 text-slate-300" aria-hidden="true" />
-            </span>
+            bigFallback
           )}
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold bg-[#059669] text-white">
             <Users className="w-3.5 h-3.5" aria-hidden="true" />
@@ -140,15 +142,14 @@ export function GroupCircleBody({ item, onClose, onOpenMoment }: { item: GroupCi
                 aria-pressed={i === shown}
                 className={`shrink-0 rounded-xl overflow-hidden cursor-pointer ring-2 ${i === shown ? 'ring-[#059669]' : 'ring-transparent'}`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- post photos come from uploads */}
-                <img src={optimizedImage(p.url, 128)} alt="" className="w-14 h-14 object-cover bg-slate-100" />
+                <ImgOr src={optimizedImage(p.url, 128)} fallback={<span className="block w-14 h-14 bg-slate-100" />} className="w-14 h-14 object-cover bg-slate-100" />
               </button>
             ))}
           </div>
         )}
       </div>
 
-      <div className="px-5 pt-4 pb-6 flex-1 flex flex-col gap-4">
+      <div className="px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex-1 flex flex-col gap-4">
         <div>
           <p className="text-lg font-bold text-slate-900 leading-snug">{title}</p>
           <p className="mt-1 text-sm text-slate-600">{`${who} ไปตี้นี้ด้วยกัน`}</p>

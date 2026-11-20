@@ -22,7 +22,7 @@ async function allPublishedSpots(): Promise<LifestyleSpotItem[]> {
   const spots: LifestyleSpotItem[] = [];
   for (let page = 1; ; page++) {
     const result = await db.findSpots({ page, limit: 100 });
-    spots.push(...result.items);
+    spots.push(...result.items.filter((spot) => !spot.chainBrand)); // chain branches are not home picks (BE-424)
     if (!result.hasNextPage) return spots;
   }
 }

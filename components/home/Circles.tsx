@@ -8,12 +8,14 @@ import { FollowRow } from '@/components/home/onboardingFirstStep';
 import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
 import { avatarImage, safeImageSrc } from '@/lib/optimizedImage';
+import ImgOr from '@/components/ImgOr';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
 import { GroupRowCircle } from '@/components/home/GroupCircleView';
 import { ChallengeRowCircle } from '@/components/home/ChallengeCircleView';
 import { AllCirclesSheet } from '@/components/home/AllCirclesSheet';
 import { ACHIEVEMENTS_ROW_MAX } from '@/lib/social/socialRules';
+import { BADGE_MINE, NAME_MINE, RING_FRIENDS, RING_MINE } from '@/components/home/circleLook';
 
 /** The reader's own Circle: first, never greyed (a type check only; lib/social/circles.ts is server code) */
 export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish' || item.kind === 'step' || item.kind === 'doing') && item.isMe;
@@ -21,10 +23,11 @@ export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish
 const MEMORY_KEY = 'circles';
 const FIND_PEOPLE_KEY = 'circles-find-people';
 
+
 /**
  * Circles (one is a Circle; owner 2026-11-16) above the feed, in the place other apps give stories (owner 2026-11-10: no stories; show who
- * achieved what). A gold ring and a trophy for a finished challenge, a violet ring and "2/3" for a step on the way.
- * A blue ring and "ทำอยู่" for the reader's own challenge they took on but have not posted for yet.
+ * achieved what). Rings: orange for mine, blue for friends (RING_MINE / RING_FRIENDS); the badge says a finish (gold
+ * trophy), a step ("2/3") or my own challenge taken on but not posted for yet ("ทำอยู่").
  * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
  * too. Nothing shows until someone has achieved something.
  */
@@ -126,9 +129,16 @@ export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead
         {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
           const faded = !isOwnCircle(item) && seen.includes(item.id);
-          if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
-          if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
-          return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={() => open(index)} />;
+          // A thin line between my own Circles and friends' (option A). The lead Circles (next plan, campaigns) are mine
+          // too (TR-023), but `lead` may draw nothing: then this line is the list's first item and `first:hidden` drops it.
+          // The lead Circles are phone-only (laptops show them beside the feed, MemberLiveHome), so the line after them is too
+          const afterLead = index === 0 && Boolean(lead);
+          const afterMine = index > 0 ? isOwnCircle(shown[index - 1]) : afterLead;
+          const divider = afterMine && !isOwnCircle(item) ? (
+            <li key={`divider-${item.id}`} aria-hidden="true" className={`shrink-0 self-start mt-[14px] w-px h-11 bg-slate-200 first:hidden ${afterLead ? 'lg:hidden' : ''}`} />
+          ) : null;
+          if (divider) return [divider, rowCircle(item, faded, () => open(index))];
+          return rowCircle(item, faded, () => open(index));
         })}
         {shown.length < ordered.length && (
           <Circle
@@ -210,7 +220,13 @@ export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead
   );
 }
 
-/** A person's Circle in the row: a finish (gold), a step (violet, "2/3"), or my own challenge in progress (blue) */
+function rowCircle(item: CircleItem, faded: boolean, onOpen: () => void) {
+  if (item.kind === 'group') return <GroupRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+  if (item.kind === 'challenge') return <ChallengeRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+  return <AchievementRowCircle key={item.id} item={item} seen={faded} onOpen={onOpen} />;
+}
+
+/** A person's Circle in the row: orange when it is mine, blue for a friend; the badge says finished (trophy), "2/3" or "ทำอยู่" */
 function AchievementRowCircle({ item, seen: faded, onOpen }: { item: AchievementCircle; seen: boolean; onOpen: () => void }) {
     const done = item.kind === 'finish';
     const doing = item.kind === 'doing';
@@ -224,7 +240,16 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
       : done
         ? `${item.isMe ? 'คุณ' : name} พิชิตชาเลนจ์ ${item.quest.title} ครบแล้ว · ${item.timeAgo}`
         : `${item.isMe ? 'คุณ' : name} ทำชาเลนจ์ ${item.quest.title} ไปแล้ว ${item.current} จาก ${item.total} ขั้น · ${item.timeAgo}`;
-    const ring = faded ? 'bg-slate-200' : done ? 'bg-linear-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FDE68A]' : doing ? 'bg-linear-to-tr from-[#2563EB] to-[#93C5FD]' : 'bg-linear-to-tr from-[#7C3AED] to-[#C4B5FD]';
+    const ring = faded ? 'bg-slate-200' : `bg-linear-to-tr ${item.isMe ? RING_MINE : RING_FRIENDS}`;
+    const badge = item.isMe ? BADGE_MINE : done ? 'bg-[#F59E0B] text-white' : 'bg-[#1D4ED8] text-white';
+    // No picture, or a bad link: a trophy for my own challenge, the friend's initial otherwise
+    const fallback = item.isMe ? (
+      <span className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
+        <Trophy className="w-7 h-7 text-[#C2410C]" aria-hidden="true" />
+      </span>
+    ) : (
+      <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+    );
     return (
       <li className="shrink-0 w-[80px]">
         <button
@@ -236,51 +261,24 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         >
           <span className={`relative rounded-full p-[3px] ${ring}`}>
             <span className="block rounded-full bg-white p-[2px]">
-              <CircleImage
-                key={picture}
-                src={picture ? avatarImage(picture) : undefined}
-                original={picture}
-                className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]"
-                fallback={
-                  doing ? (
-                    <span className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
-                      <Trophy className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />
-                    </span>
-                  ) : (
-                    <span className="w-16 h-16 rounded-full bg-slate-200 text-lg font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
-                  )
-                }
-              />
+              {/* A failed resized link tries the original file once (iPad after an Apple sign-up, 2026-11-18), then the fallback */}
+              {picture ? <ImgOr key={picture} src={avatarImage(picture)} fallback={<ImgOr src={safeImageSrc(picture)} fallback={fallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" /> : fallback}
             </span>
             <span
-              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${done ? 'bg-[#F59E0B] text-white' : doing ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}
+              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badge}`}
               aria-hidden="true"
             >
               {done ? <Trophy className="w-3 h-3" /> : doing ? 'ทำอยู่' : `${item.current}/${item.total}`}
             </span>
           </span>
-          <span className={`w-full truncate text-center text-xs font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`} aria-hidden="true">
+          {/* My own show the challenge's name on up to two lines (option A: "ป้ายยาที่โปรด…" was cut off); friends show the name */}
+          <span className={`w-full text-center text-xs ${item.isMe ? `line-clamp-2 leading-tight ${NAME_MINE}` : `truncate font-medium ${faded ? 'text-slate-500' : 'text-slate-700'}`}`} aria-hidden="true">
             {/* Under an 80px slot only the name before a bracket fits ("คุณปอนด์ (Pond)" → "คุณปอนด์"); the link's label keeps it whole */}
             {name.replace(/\s*\(.*$/, '') || name}
           </span>
         </button>
       </li>
     );
-}
-
-/**
- * A circle's picture that mends itself. The first home after an Apple sign-up drew the challenge pictures as broken
- * "?" boxes on iPad, while the same links loaded fine a moment later (owner 2026-11-18). A failed load tries the
- * original file once, and then shows the fallback rather than a broken image.
- */
-function CircleImage({ src, original, className, fallback }: { src?: string; original?: string; className: string; fallback: React.ReactNode }) {
-  const retry = safeImageSrc(original);
-  const [current, setCurrent] = useState(src);
-  if (!current) return <>{fallback}</>;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- member avatars and challenge covers come from uploads or providers
-    <img src={current} alt="" className={className} onError={() => setCurrent(current !== retry && retry ? retry : undefined)} />
-  );
 }
 
 // Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again
@@ -304,7 +302,7 @@ function rememberSeen(id: string): string[] {
 }
 
 /** One circle in the row's look, for what is not an achievement: the next plan, a ตี้ that asks for its moment, a campaign */
-export function Circle({ href, onClick, label, image, fallback, fit = 'cover', ring, badge, badgeClass, name, className = '' }: {
+export function Circle({ href, onClick, label, image, fallback, fit = 'cover', ring, badge, badgeClass, name, mine = false, className = '' }: {
   href?: string;
   onClick?: () => void;
   label: string;
@@ -318,24 +316,26 @@ export function Circle({ href, onClick, label, image, fallback, fit = 'cover', r
   badge: React.ReactNode;
   badgeClass: string;
   name: string;
+  /** One of mine (option A): the name in the orange of my own Circles */
+  mine?: boolean;
   className?: string;
 }) {
+  const empty = <span className="w-16 h-16 rounded-full bg-[#FFF8DB] flex items-center justify-center group-hover:brightness-95 transition-[filter]">{fallback}</span>;
   const body = (
     <>
       <span className={`relative rounded-full p-[3px] bg-linear-to-tr ${ring}`}>
         <span className="block rounded-full bg-white p-[2px]">
           {image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- event covers come from many hosts
-            <img src={image} alt="" className={`w-16 h-16 rounded-full group-hover:brightness-95 transition-[filter] ${fit === 'contain' ? 'object-contain bg-[#FFF8DB] p-2' : 'object-cover bg-slate-100'}`} />
+            <ImgOr src={image} fallback={empty} className={`w-16 h-16 rounded-full group-hover:brightness-95 transition-[filter] ${fit === 'contain' ? 'object-contain bg-[#FFF8DB] p-2' : 'object-cover bg-slate-100'}`} />
           ) : (
-            <span className="w-16 h-16 rounded-full bg-[#FFF8DB] flex items-center justify-center group-hover:brightness-95 transition-[filter]">{fallback}</span>
+            empty
           )}
         </span>
         <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badgeClass}`} aria-hidden="true">
           {badge}
         </span>
       </span>
-      <span className="w-full truncate text-center text-xs font-medium text-slate-700" aria-hidden="true">{name}</span>
+      <span className={`w-full truncate text-center text-xs ${mine ? NAME_MINE : 'font-medium text-slate-700'}`} aria-hidden="true">{name}</span>
     </>
   );
   const look = 'group w-full flex flex-col items-center gap-1.5 rounded-2xl cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]';

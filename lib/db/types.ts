@@ -53,6 +53,8 @@ export interface SpotQueryParams extends PaginationParams {
   searchQuery?: string | null;
   hasImageOnly?: boolean;
   includeDrafts?: boolean;
+  /** Leave out chain branches (meeting points, BE-424) before paging, so a page is never emptied afterwards (TR-032) */
+  excludeChains?: boolean;
   /** Only the places this member suggested, drafts included (My Hub). Postgres reads just those rows. */
   suggestedBy?: string;
 }

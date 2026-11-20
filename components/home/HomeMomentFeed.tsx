@@ -23,6 +23,7 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
+import { HOME_AGAIN_EVENT } from '@/lib/homeAgain';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
@@ -126,6 +127,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
   const [captionRef, captionCut] = useClamped<HTMLParagraphElement>(!showWholeCaption);
   const target = moment.targetType && moment.targetType !== 'general' && moment.targetId ? TARGETS[moment.targetType as keyof typeof TARGETS] : undefined;
   const live = targetLiveText(moment.live);
+  const targetHref = target ? liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' }) : '';
   // Gone once the reader takes back their own like and the friend was the only one counted
   const friendLike = !moment.likesOff && moment.likesCount > 0 ? moment.likedByFriend : undefined;
   const shownComments = showComments ? moment.comments : moment.comments.filter((comment) => !comment.parentId).slice(-1);
@@ -191,12 +193,36 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <Avatar name={moment.userName} src={moment.userAvatar} className="w-10 h-10 text-sm" />
         )}
         <div className="min-w-0 flex-1">
+          {/* What they went out and did, first thing in the post (owner 2026-11-18, option B): "มายด์ ไปตี้ <title>" */}
           <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
-            <span className="font-semibold text-slate-900 truncate">{moment.userName}</span>
+            {/* The name opens the profile like the avatar does (BE-425) */}
+            {moment.authorId ? (
+              <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className={`font-semibold text-slate-900 truncate hover:underline underline-offset-4 ${target ? 'max-w-[45%] shrink-0' : ''}`}>
+                {moment.userName}
+              </Link>
+            ) : (
+              <span className={`font-semibold text-slate-900 truncate ${target ? 'max-w-[45%] shrink-0' : ''}`}>{moment.userName}</span>
+            )}
+            {target && (
+              <>
+                <span className="shrink-0 text-slate-600">{target.verb}</span>
+                <Link
+                  href={targetHref}
+                  onClick={() => markVia(moment.targetType, moment.targetId, 'moment', moment.id)}
+                  className={`min-w-0 truncate font-semibold hover:underline underline-offset-4 ${target.ink}`}
+                >
+                  {moment.targetTitle || moment.location}
+                </Link>
+              </>
+            )}
           </p>
+          {/* The check-in stays where it always was; left out when it only repeats the place named above */}
           <p className="text-xs text-slate-500 truncate">
-            {moment.timeAgo}
-            {moment.location && ` · ${moment.location}`}
+            {/* The time opens the post's own page, so it can be read and its link copied (BE-425) */}
+            <Link href={`/moments/${encodeURIComponent(moment.id)}`} className="hover:underline underline-offset-4">
+              {moment.timeAgo}
+            </Link>
+            {moment.location && moment.location !== (target ? moment.targetTitle || moment.location : '') && ` · ${moment.location}`}
           </p>
         </div>
         {/* Follow sits by the ... menu, away from the name and photo, so a tap meant for the profile never follows (owner 2026-11-09) */}
@@ -333,7 +359,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       {(moment.caption || moment.tagged?.length) && (
         <div>
           <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
-            <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            {moment.authorId ? (
+              <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="font-semibold text-slate-900 hover:underline underline-offset-4">
+                {moment.userName}
+              </Link>
+            ) : (
+              <strong className="font-semibold text-slate-900">{moment.userName}</strong>
+            )}
             {moment.tagged?.length ? <> <TaggedFriends people={moment.tagged} inline className="text-slate-700" /></> : null}
             {moment.caption && <> <CaptionText text={moment.caption} mentions={moment.tagged} /></>}
           </p>
@@ -347,19 +379,17 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
 
       {moment.achievement && <AchievementLine achievement={moment.achievement} />}
 
-      {/* Where it was, in one slim line (owner 2026-10-29): the place, then what to do there */}
+      {/* What to do there, in one slim line: the name is already in the header (option B, owner 2026-11-18) */}
       {target && (
         <Link
-          href={liveHref({ type: moment.targetType as keyof typeof TARGETS, id: moment.targetId, title: moment.targetTitle ?? '' })}
+          href={targetHref}
           // What the reader does there is credited to this post (docs/TRACEABILITY.md)
           onClick={() => markVia(moment.targetType, moment.targetId, 'moment', moment.id)}
           className="group flex items-center gap-1.5 min-w-0 text-[13px] font-semibold"
         >
-          <target.Icon className={`w-4 h-4 shrink-0 ${target.icon}`} aria-hidden="true" />
-          <span className="min-w-0 truncate text-slate-800 group-hover:underline underline-offset-4">{moment.targetTitle || moment.location}</span>
           {/* What it still offers (FEED_PLAN: the feed takes people out): the day and seats left, XP, open now */}
-          {live && <span className={`shrink-0 whitespace-nowrap ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>· {live.status}</span>}
-          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap ${target.ink}`}>· {live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
+          {live && <span className={`min-w-0 truncate font-normal ${live.status === 'เปิดอยู่' ? 'text-[#2D5A3C]' : 'text-slate-500'}`}>{live.status} ·</span>}
+          <span className={`shrink-0 inline-flex items-center gap-1 whitespace-nowrap group-hover:underline underline-offset-4 ${target.ink}`}>{live?.go ?? target.go}<ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></span>
         </Link>
       )}
 
@@ -695,11 +725,13 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
   // New moments: a quiet check every minute; the list itself never jumps while someone is reading
   useEffect(() => {
-    if (sort !== 'all' || moments.length === 0) return;
+    // The newest-first views only (ล่าสุด and ติดตาม, TR-014); สำหรับคุณ is ranked, so "N new" means little there and
+    // หน้าหลัก tapped again refreshes it instead
+    if ((sort !== 'all' && sort !== 'following') || moments.length === 0) return;
     const known = new Set(moments.map((m) => m.id));
     const timer = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      fetchPage('all', 1)
+      fetchPage(sort, 1)
         .then(({ items }) => {
           const firstKnown = items.findIndex((m) => known.has(m.id));
           setNewCount(firstKnown === -1 ? items.length : firstKnown);
@@ -908,8 +940,15 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     setIsComposerOpen(true);
   };
 
+  // หน้าหลัก tapped again while on Home: the nav scrolls up, the feed refreshes the view being read (BE-425)
+  useEffect(() => {
+    const again = () => reload(sort);
+    window.addEventListener(HOME_AGAIN_EVENT, again);
+    return () => window.removeEventListener(HOME_AGAIN_EVENT, again);
+  }, [reload, sort]);
+
   const showNew = () => {
-    reload('all');
+    reload(sort);
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 

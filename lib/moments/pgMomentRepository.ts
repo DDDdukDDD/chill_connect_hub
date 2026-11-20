@@ -448,6 +448,17 @@ export const pgMomentRepository: MomentRepository = {
       order by m.created_at desc limit ${limit}`;
     return rows.map((r) => ({ momentId: String(r.slug), authorId: String(r.author), achievement: r.achievement, createdAt: new Date(r.created_at).toISOString() }));
   },
+  async lastLikedBefore(memberId, before) {
+    const db = sql();
+    const rows = await db`
+      select m.slug from app.moment_likes l
+      join app.members x on x.id = l.member_id
+      join app.moments m on m.id = l.moment_id
+      left join app.members a on a.id = m.author_id
+      where x.legacy_id = ${memberId} and l.created_at <= ${before} and ${publicRule(db)}
+      order by l.created_at desc limit 1`;
+    return rows[0] ? String(rows[0].slug) : null;
+  },
   async markSeen(viewerId, slugs) {
     if (slugs.length === 0) return;
     const db = sql();

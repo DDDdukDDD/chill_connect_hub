@@ -4,6 +4,8 @@ import { MemberAuthError } from '../members/accounts';
 import type { Member } from '../members/types';
 import { tidyDisplayName } from '../displayName';
 import { taggableFriends, visibleMoment } from '../moments/service';
+import { momentRepository } from '../moments';
+import type { Moment } from '../moments/types';
 import { questMemberStore } from './stores';
 import { joinQuest } from './questJoins';
 import { circleItems, findQuest, questPicture, type ChallengeCircle, type ChallengeCircleDetail } from './circles';
@@ -93,9 +95,11 @@ export interface CircleDetail {
   quest: { id: string; title: string; image?: string; open: boolean };
   current?: number;
   total?: number;
-  /** The post's photo for a step; otherwise the challenge cover */
+  /** The post's photo (see finishMoment); otherwise the challenge cover */
   image?: string;
   momentId?: string;
+  /** One line about that post: the start of their caption, or "กดใจโมเมนต์ของ <name>" when it is someone else's */
+  momentNote?: string;
   /** The reader's own place in the challenge */
   joined: boolean;
   finished: boolean;
@@ -123,6 +127,35 @@ interface Parsed {
   total?: number;
   momentId?: string;
   image?: string;
+  momentNote?: string;
+}
+
+const captionNote = (moment: Moment): string | undefined => {
+  const line = moment.caption?.split(/\r?\n/).map((l) => l.trim()).find(Boolean);
+  return line ? `“${line.length > 60 ? `${line.slice(0, 60).trimEnd()}…` : line}”` : undefined;
+};
+
+/**
+ * A finished challenge's Circle shows a real moment rather than the challenge cover (owner 2026-11-18), in this order:
+ * 1. their own public post that counted toward it, newest first;
+ * 2. for a challenge done by liking, the post they liked last before finishing (someone else's, so it must be public
+ *    and neither of them may block the reader);
+ * 3. nothing: the challenge cover stays.
+ */
+async function finishMoment(reader: Member, personId: string, quest: ChallengeQuest): Promise<Pick<Parsed, 'momentId' | 'image' | 'momentNote'>> {
+  const own = (await momentRepository.recentAchievements(new Date(0), 50, [personId]).catch(() => [])).find((s) => s.achievement.questId === quest.id);
+  const ownMoment = own ? await visibleMoment(own.momentId).catch(() => null) : null;
+  if (ownMoment?.images?.[0]) return { momentId: ownMoment.id, image: ownMoment.images[0], momentNote: captionNote(ownMoment) };
+  if (quest.rule?.actions?.kind !== 'like') return {};
+  const finish = (await questMemberStore.finishes({ memberId: personId, questId: quest.id }).catch(() => []))[0];
+  const before = finish ? new Date(Date.parse(finish.finishedAt) + 60_000) : new Date();
+  const likedId = await momentRepository.lastLikedBefore(personId, before).catch(() => null);
+  const liked = likedId ? await visibleMoment(likedId).catch(() => null) : null;
+  if (!liked?.images?.[0] || !liked.authorId || reader.blockedIds?.includes(liked.authorId)) return {};
+  const author = liked.authorId === reader.id ? reader : await memberRepository.findById(liked.authorId);
+  if (!author || author.status !== 'active' || author.blockedIds?.includes(reader.id)) return {};
+  const authorName = liked.authorId === reader.id ? '' : tidyDisplayName(author.displayName).trim() || author.displayName;
+  return { momentId: liked.id, image: liked.images[0], momentNote: authorName ? `กดใจโมเมนต์ของ ${authorName}` : 'กดใจโมเมนต์ของคุณ' };
 }
 
 async function parse(id: string): Promise<Parsed> {
@@ -132,7 +165,7 @@ async function parse(id: string): Promise<Parsed> {
     const moment = await visibleMoment(a).catch(() => null);
     const line = moment?.achievement;
     if (!moment?.authorId || !line) throw new MemberAuthError('ไม่พบโพสต์นี้แล้ว', 404);
-    return { kind: line.current >= line.total ? 'finish' : 'step', questId: line.questId, personId: moment.authorId, current: line.current, total: line.total, momentId: moment.id, image: moment.images?.[0] };
+    return { kind: line.current >= line.total ? 'finish' : 'step', questId: line.questId, personId: moment.authorId, current: line.current, total: line.total, momentId: moment.id, image: moment.images?.[0], momentNote: captionNote(moment) };
   }
   throw new MemberAuthError('ไม่พบ Circle นี้', 404);
 }
@@ -181,6 +214,7 @@ export async function circleDetail(reader: Member, id: string): Promise<CircleDe
   ]);
   const cheerPeople = cheerers.length ? [...(await memberRepository.findByIds(cheerers.slice(0, 3))).values()].filter((p) => p.status === 'active') : [];
   const picture = questPicture(quest);
+  if (parsed.kind === 'finish' && !parsed.momentId) Object.assign(parsed, await finishMoment(reader, person.id, quest));
   return {
     id,
     kind: parsed.kind,
@@ -190,6 +224,7 @@ export async function circleDetail(reader: Member, id: string): Promise<CircleDe
     ...(parsed.current !== undefined ? { current: parsed.current, total: parsed.total } : {}),
     ...(parsed.image || picture ? { image: parsed.image || picture } : {}),
     ...(parsed.momentId ? { momentId: parsed.momentId } : {}),
+    ...(parsed.momentNote ? { momentNote: parsed.momentNote } : {}),
     joined,
     finished,
     canInvite,

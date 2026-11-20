@@ -14,6 +14,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
+import { onHomeLinkClick } from '@/lib/homeAgain';
 import { AuthModal } from './AuthModal';
 import { BrandLogo } from './BrandLogo';
 import { BrandWordmark } from './BrandWordmark';
@@ -103,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // (owner 2026-11-01). Shown before the session is known too, so the bar does not shift when it loads.
   const topLinks = [
     { label: 'หน้าหลัก', href: '/', match: ['/'] },
-    { label: 'กิจกรรม', href: '/community', match: ['/community', '/events', '/spots'] },
+    { label: 'กิจกรรม', href: '/this-week', match: ['/this-week', '/community', '/events', '/spots'] },
     // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13)
     { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
@@ -138,6 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={link.href === '/' ? onHomeLinkClick : undefined}
                   aria-current={on ? 'page' : undefined}
                   className={`relative px-3 py-2 text-[15px] rounded-lg transition-colors ${
                     on ? 'font-semibold text-slate-900' : 'font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50'

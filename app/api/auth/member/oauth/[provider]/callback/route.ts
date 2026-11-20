@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MemberAuthError, signInWithOAuth } from '@/lib/members/accounts';
 import { fetchOAuthProfile, isOAuthProvider } from '@/lib/members/oauth';
+import { saveAppleToken } from '@/lib/members/appleTokens';
 import { applySignupChecks } from '@/lib/members/safety';
 import { readSignedPayload, setMemberSessionCookie } from '@/lib/members/session';
 import { appErrorUrl, appHandoffUrl } from '@/lib/members/appAuth';
@@ -49,6 +50,7 @@ async function handleCallback(request: NextRequest, provider: string, params: UR
       appleUser: params.get('user'),
     });
     const { member, created } = await signInWithOAuth(profile, { consented: Boolean(stored.consented) });
+    if (profile.provider === 'apple' && profile.refreshToken) await saveAppleToken(member.id, profile.refreshToken);
     if (created) await applySignupChecks(member);
     const next = created || (!member.onboardedAt && !member.pledgeAcceptedAt) ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}` : `${returnTo}${returnTo.includes('?') ? '&' : '?'}auth=success`;
     // The store app: no session in the sheet (it has its own cookies); the app's web view trades the code for one,

@@ -54,6 +54,9 @@ export async function GET(request: Request) {
       vibeTag,
       searchQuery,
       hasImageOnly,
+      // Chain branches come up only when searched for, as meeting points and moment tags (BE-424); left out before
+      // paging, so pages stay full and totalCount does not count them (TR-032)
+      excludeChains: !searchQuery,
     });
 
     return NextResponse.json(

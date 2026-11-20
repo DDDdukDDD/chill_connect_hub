@@ -1,6 +1,7 @@
 import { after } from 'next/server';
 import type { PushDevice } from './pushStore';
 import { pushStore } from './pushStore';
+import { APNS_PREFIX, apnsConfigured, sendApns } from './apns';
 
 export interface PushMessage {
   title: string;
@@ -14,8 +15,10 @@ export interface PushMessage {
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
-/** Without the keys the site simply sends nothing; the notice still shows on the bell */
-export const pushConfigured = Boolean(PUBLIC_KEY && PRIVATE_KEY);
+/** Browsers need the VAPID keys; the iPhone store app needs the APNs key (lib/social/apns.ts) */
+const webPushConfigured = Boolean(PUBLIC_KEY && PRIVATE_KEY);
+/** Without either set of keys the site simply sends nothing; the notice still shows on the bell */
+export const pushConfigured = webPushConfigured || apnsConfigured;
 
 // Who push services contact about our sends. Always the public address: they refuse http and localhost
 const PUSH_CONTACT = 'https://www.chillwaa.com';
@@ -50,6 +53,13 @@ export function afterResponse(work: () => Promise<void>): void {
 /** Sends to each device; a device its push service says is gone is forgotten */
 export async function sendPush(devices: PushDevice[], messageFor: (device: PushDevice) => PushMessage): Promise<void> {
   if (!pushConfigured || devices.length === 0) return;
+  // The iPhone store app (endpoint `apns:<token>`, BE-428) goes through Apple; browsers through web push
+  const apps = devices.filter((device) => device.endpoint.startsWith(APNS_PREFIX));
+  const browsers = devices.filter((device) => !device.endpoint.startsWith(APNS_PREFIX));
+  const goneApps = await sendApns(apps.map((device) => ({ token: device.endpoint.slice(APNS_PREFIX.length), message: messageFor(device) })));
+  await pushStore.removeEndpoints(goneApps.map((token) => APNS_PREFIX + token));
+  if (!webPushConfigured || browsers.length === 0) return;
+  devices = browsers;
   const { default: webpush } = await import('web-push');
   const vapidDetails = { subject: PUSH_CONTACT, publicKey: PUBLIC_KEY!, privateKey: PRIVATE_KEY! };
   const gone: string[] = [];

@@ -64,14 +64,22 @@ export function DetailHero({ pillar, image, imageAlt, photoCount = 1, onOpenPhot
         {/* A tall poster shows whole over a blurred copy of itself, so its text is not cut; photos fill the frame (owner 2026-10-28).
             An อีเวนต์ picture is nearly always a poster with words to the edges, so anything taller than the 16:10 frame shows whole */}
         {/* Resized by the image optimizer: the sample photos in /public are ~1 MB originals (2026-10-29) */}
-        <PosterPhoto
-          src={optimizedImage(image, 1080) || image}
-          posterFrom={pillar === 'fair' ? 0.66 : undefined}
-          alt={imageAlt}
-          className={onOpenPhotos ? 'cursor-zoom-in' : ''}
-          onClick={onOpenPhotos}
-          fetchPriority="high"
-        />
+        {image ? (
+          <PosterPhoto
+            src={optimizedImage(image, 1080) || image}
+            posterFrom={pillar === 'fair' ? 0.66 : undefined}
+            alt={imageAlt}
+            className={onOpenPhotos ? 'cursor-zoom-in' : ''}
+            onClick={onOpenPhotos}
+            fetchPriority="high"
+          />
+        ) : (
+          // No photo of this place yet (OSM cafés and bars, BE-424): say so rather than show some other place
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400" style={{ backgroundColor: style.tint }}>
+            <MapPin className="w-9 h-9" style={{ color: style.color }} aria-hidden="true" />
+            <span className="text-sm font-medium text-slate-500">ยังไม่มีรูปของที่นี่</span>
+          </span>
+        )}
         <span className={`absolute top-3 left-3 ${STICKER}`}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: style.color }} aria-hidden="true" />
           {style.name}

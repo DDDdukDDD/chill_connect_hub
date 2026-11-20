@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isPushEndpoint } from '@/lib/social/push';
 import { pushStore } from '@/lib/social/pushStore';
+import { APNS_PREFIX, isApnsToken } from '@/lib/social/apns';
 
 const MAX_KEY_LENGTH = 256;
 const MAX_ENDPOINT_LENGTH = 1024;
@@ -14,6 +15,12 @@ export async function POST(request: Request) {
   const member = await getSessionMember(request);
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   const body = await request.json().catch(() => null);
+  // The iPhone store app sends its APNs device token instead of a browser subscription (BE-428); it has no keys
+  if (body?.apns !== undefined) {
+    if (!isApnsToken(body.apns)) return NextResponse.json({ success: false, message: 'เปิดการแจ้งเตือนบนเครื่องนี้ไม่ได้' }, { status: 400 });
+    await pushStore.save({ memberId: member.id, endpoint: APNS_PREFIX + body.apns.toLowerCase(), p256dh: '-', auth: '-' });
+    return NextResponse.json({ success: true });
+  }
   const endpoint = text(body?.endpoint, MAX_ENDPOINT_LENGTH);
   const p256dh = text(body?.keys?.p256dh, MAX_KEY_LENGTH);
   const auth = text(body?.keys?.auth, MAX_KEY_LENGTH);

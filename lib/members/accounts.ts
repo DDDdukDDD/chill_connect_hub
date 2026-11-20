@@ -114,6 +114,8 @@ export interface OAuthProfile {
   emailVerified: boolean;
   displayName?: string;
   avatarUrl?: string;
+  /** Apple only: kept to revoke on account deletion (lib/members/appleTokens.ts); never stored on the member */
+  refreshToken?: string;
 }
 
 /**

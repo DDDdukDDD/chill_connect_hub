@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages = [
     page('/', 'daily', 1),
+    page('/this-week', 'daily', 0.9),
     page('/community', 'daily', 0.9),
     page('/challenges', 'daily', 0.9),
     page('/campaigns/results', 'weekly', 0.5),
@@ -80,7 +81,8 @@ async function allPublishedSpots(): Promise<LifestyleSpotItem[]> {
   const spots: LifestyleSpotItem[] = [];
   for (let p = 1; ; p++) {
     const res = await db.findSpots({ page: p, limit: 100 });
-    spots.push(...res.items.filter((s) => s.publicationStatus !== 'draft'));
+    // Chain branches stay out of search engines (BE-424)
+    spots.push(...res.items.filter((s) => s.publicationStatus !== 'draft' && !s.chainBrand));
     if (p >= res.totalPages) return spots;
   }
 }

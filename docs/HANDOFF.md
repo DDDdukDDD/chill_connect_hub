@@ -20,21 +20,153 @@ Item template:
 
 ---
 
-### BE-419 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
+### BE-437 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
 - **What changed:** the ชวนไป sheet offers "วันอื่น" (a calendar) beside เสาร์นี้ / อาทิตย์นี้, and once a day is picked an optional "กี่โมง". The plan chat's day picker (My Hub) sets or clears the time too. `POST /api/invites` takes `time` with `day`; `PATCH /api/plans/{id}` takes `time` (left out keeps it, `''`/`null` clears it); `PlanView.time`; every `dateLabel` reads "ส. 22 พ.ย. 18:30 น." (`planDayLabel` in `lib/social/friendPlans.ts`).
-- **What to do about it:** run **migration 0063** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
+- **What to do about it:** run **migration 0066** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
 
-### BE-418 · Staff-made ตี้ get a host account (owner 2026-11-18)
+---
+
+### BE-436 · Staff-made ตี้ get a host account (owner 2026-11-18)
 - **What changed:** the ATM 5K run (seeded with only `hostName: 'ทีม Chillwaa'`) had no `createdByMemberId`, so nobody could scan tickets. The admin ตี้ editor has "บัญชีโฮสต์ (สแกนเช็กอิน)": search a member and pick them; `/api/admin/events` `create` / `update_fields` accept `createdByMemberId` (active member, ตี้ only, set or changed, never cleared). That account checks people in, sees the list and leads the chat; `hostName` stays the shown name. The moderation list marks ตี้ with no host account in red. `db/seed-atmbkk-2026.mjs` takes `HOST_MEMBER_ID`.
 - **What to do about it:** set a host account on every staff-made ตี้ still ahead (the remaining ATM runs first). Searching needs `members.manage`.
 
-### BE-417 · Circles: no strangers' faces, hot challenges and "หาเพื่อน" instead; pictures mend; Chillwaa notices show the app icon (owner 2026-11-18)
+---
+
+### BE-435 · Circles: no strangers' faces, hot challenges and "หาเพื่อน" instead; pictures mend; Chillwaa notices show the app icon (owner 2026-11-18)
 - **What changed:**
   - The fill of the site's newest Circles for readers with few friend Circles is gone (`CIRCLES_FILL_BELOW` removed): a new member saw strangers as if followed.
-  - A reader following fewer than `CIRCLES_SUGGEST_BELOW` (5) people gets up to `CIRCLES_HOT_MAX` (2) hot challenges at the end of the row (`h:<questId>`, `ChallengeCircle.suggested.total`, orange ring, challenge picture only; opened: recent people on it, each with ติดตาม) and a "หาเพื่อน" Circle (`findPeople` on `GET /api/circles` and `HomeFeedStart`) that opens `FollowRow`.
-  - A circle picture that fails to load tries the original file once, then the fallback icon (`CircleImage` in `components/home/Circles.tsx`): own challenge pictures showed a broken "?" on the first home after an Apple sign-up on iPad. Root cause not found; the links load fine.
+  - A reader following fewer than `CIRCLES_SUGGEST_BELOW` (5) people gets up to `CIRCLES_HOT_MAX` (2) hot challenges at the end of the row (`h:<questId>`, `ChallengeCircle.suggested.total`, violet ring (orange means mine since BE-421), challenge picture only; opened: recent people on it, each with ติดตาม) and a "หาเพื่อน" Circle (`findPeople` on `GET /api/circles` and `HomeFeedStart`) that opens `FollowRow`.
+  - A circle picture that fails to load tries the original file once, then the fallback icon (a second `ImgOr` in `AchievementRowCircle`, `components/home/Circles.tsx`): own challenge pictures showed a broken "?" on the first home after an Apple sign-up on iPad. Root cause not found; the links load fine.
   - Notifications from Chillwaa itself carry `actorAvatar: '/icons/icon-192.png'` (was `''`).
 - **What to do about it:** check on a fresh iPad sign-up that the "?" no longer shows.
+
+---
+
+### BE-434 · สัปดาห์นี้: the first view of กิจกรรม, the next 7 days by day (owner 2026-11-19)
+- **What changed:** new page `/this-week`. The job: "I have a free day: what is on, and who is going", answered at a glance. It began as a weekend-only page from the canvas draft; the owner then chose the next 7 days laid out as a schedule, which also tells it apart from the landing (rows by category). Top to bottom: tabs "สัปดาห์นี้ · ตี้ · อีเวนต์ · ที่เที่ยว", "สัปดาห์นี้ไปไหนดี" with the dates; the province is the search box's (top bar, or above the tabs on phones, as on the other กิจกรรม pages; a member starts in their own when it has something this week, remembered on the device; a search word opens the ตี้ list), a sticky day strip (วันนี้, พรุ่งนี้, ส. 21 … with how many, "ว่าง" when none; tap jumps to the day), "เพื่อนๆ จะไปกัน" (signed in only), "ชาเลนจ์ที่คุณทำอยู่" (the member's joined, unfinished challenges with progress, from `/api/rewards`), then one row per day mixing ตี้ and อีเวนต์ in start-time order, each tile labelled "ตี้" or "อีเวนต์" in its pillar color (same tile size as the 2/3/4/6 grids, sliding like the landing rows; weekend days in orange), empty days folded to one line ("ยังไม่มีตี้วันนี้", no button: making a ตี้ is offered once at the end), อีเวนต์ already running listed once as "อีเวนต์ที่กำลังจัดอยู่" (ending soonest first) instead of on every day, "ที่น่าไปวันว่าง" (6 places with a photo, no chain branches, for the province; each with "ชวนไป", which opens the "ไปกัน" invite sheet, or sign-in for a visitor), "ชาเลนจ์ยอดนิยม" (the 6 open challenges most people are doing, leaving out the member's own), and "ยังไม่เจอที่ชอบ?". Server HTML with its own metadata and the ตี้ as JSON-LD; in the sitemap. `lib/thisWeek.ts` (days in Bangkok, lists), `lib/thisWeekFriends.ts` + `GET /api/this-week/friends`. Shared `components/discover/PillarTabs.tsx` puts the new tab first on `/community`, `/events`, `/spots`. "กิจกรรม" in the top bar and the phone bar opens `/this-week`.
+- **What to do about it:** nothing to run (no migration). Checked on dev at 390 px and 1440 px, signed out and in, tile width equal to /community (183 px at 1440); the friends row with two real attendees followed for the check (unfollowed after) and with one blocked; no console errors (a hydration mismatch from the province default was found and fixed). Not built: "ใกล้ฉัน" (needs location); save hearts are off on this page.
+
+---
+
+### BE-433 · /about says how to reach us; App Store listing draft (2026-11-19)
+- **What changed:** `/about` gains a "ติดต่อเรา" part after "ดูแลกันแบบเพื่อน": hello@chillwaa.com (questions, ideas, working with us) and privacy@chillwaa.com (personal data, reporting content), as `mailto:` links. It is the App Store Support URL. New `docs/APP_STORE_LISTING.md`: name, subtitle, promotional text, Thai description, keywords (lengths checked), URLs, category, age-rating answers, the App Privacy table from what the code keeps, reviewer notes with the real delete-account steps, and the screenshot plan (iPhone 6.9" and iPad 13", since the app runs on iPad).
+- **What to do about it:** both addresses reach no one until Cloudflare Email Routing is on (`docs/EMAIL.md` step 1). Checked the new part at 390 px and 1440 px.
+
+---
+
+### BE-432 · Store app push: listeners before register, the failing step on screen, signed-app entitlement check (owner 2026-11-19)
+- **What changed:** after BE-429 the switch still showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ". `nativeToken` (`lib/appClient.ts`) now waits for both listeners to be added before `register()` (adding one is async in Capacitor, so a token iOS sent back quickly was lost and the call timed out), and reads Capacitor's `{ error }` objects. Every native step throws with its name (`permission:`, `ios:`, `timeout:`, `register:`, `save: HTTP n`), and `AppSettingsCard` shows it in small print under the message as "รหัสปัญหา: …". `ios-build.yml` gains "Check the signed app keeps push": the archive is exported once to a local .ipa with Apple's signing and the signed app's entitlements are read; the run fails if `aps-environment` is missing, and notes its value if kept.
+- **What to do about it:** merge to `main` (web fix goes live; the iOS workflow uploads a build and runs the new check: see the run page notice). Then in the app try the switch again; if it still fails, the "รหัสปัญหา" line says which step.
+
+---
+
+### BE-431 · Places paging, admin places payload, RLS on two tables (tester TR-030..034, 2026-11-19)
+- **What changed:**
+  - **TR-032** `GET /api/spots`: chain branches were filtered out after paging, so on dev page 1 (20 chains) came back empty and `totalCount` counted them. New `excludeChains` in `SpotQueryParams`, applied in `filterSpots` (`lib/db/queryEngine.ts`) before paging; the route sets it when there is no `q`. Dev: page 1 now 20 places, 0 chains, total 2,695 → 2,179; a `q=Starbucks` search still finds branches.
+  - **TR-033** `/api/admin/spots`: `GET` is always one page (no `page` = page 1, `limit` default 20, at most 200); the unpaged mode sent the whole list, 14 MB on dev (6,535 places), over Vercel's 4.5 MB response cap. A page of 20 is 27.5 KB. `POST` actions return only the changed `spot`, no longer `spots: getAllSpots()` (no screen read it). Every admin screen already asked with `page`; the map reads `/api/admin/coverage`.
+  - **TR-030** `set_publication` scopes: `osm` covers `osm-` and `osmb-`, new `tat` (`tat-`), `imported` covers `ttd-`/`tat-`/`osm-`/`osmb-`, `curated` is everything else.
+  - **TR-031 / TR-034**: migration **0065** turns on and forces RLS with the `runtime_all` policy on `app.circle_events` and `app.apple_tokens`. Dev: `db/verify-security.mjs` passes "RLS on and forced on all 78 tables".
+- **What to do about it:** run **0065 on live** with 0064 (`! npm run db:migrate`). `docs/API.md` updated for both places endpoints.
+
+---
+
+### BE-430 · Emails ready for real members; owner steps for Resend and @chillwaa.com mail (2026-11-19)
+- **What changed:** `lib/members/mailer.ts`: one email layout for all three messages (logo and name on top, title, one blue button, the link written out for when the button does not work, a footer saying where it came from and that the team never asks for passwords, OTP or money); a viewport tag so phones do not shrink it; the greeting never doubles "คุณ", adds a space before a Latin name and drops the bracket part; the plain-text copies carry the same footer. `sendMail` has an 8 s timeout, sends `reply_to` from the new optional `MAIL_REPLY_TO`, and logs what Resend answered when it refuses. New `docs/EMAIL.md`: Cloudflare Email Routing for privacy@/hello@ (the domain has no MX today, so mail to @chillwaa.com reaches no one), Resend domain on Cloudflare DNS (records on `send.` and `resend._domainkey`, DMARC), the three Vercel values, and the check before removing `SKIP_EMAIL_VERIFICATION`.
+- **What to do about it:** owner steps in `docs/EMAIL.md`. Checked: tsc + lint; the verify and reset emails rendered and looked at 390 px (phone) and 1000 px. Not seen in a real mail app yet (Gmail, Outlook, Apple Mail), which comes with the first real send.
+
+---
+
+### BE-429 · Store app: push and share found no plugin (owner, TestFlight build 16, 2026-11-19)
+- **What changed:** turning on notifications in the app showed "ตั้งค่าการแจ้งเตือนไม่สำเร็จ" without iOS ever asking. `lib/appClient.ts` read the plugins from `Capacitor.Plugins` only, which is empty in our pages (the site does not bundle `@capacitor/core`), so push fell back to web push, which the app's web view lacks. `capPlugin()` now falls back to `Capacitor.registerPlugin`, as `lib/nativeAuth.ts` does for WebAuth; the share sheet uses it too. The web branch of `turnPushOn` returns `unsupported` / `needs-install` instead of throwing where there is no web push.
+- **What to do about it:** web only, no new app build: merge to `main`, wait for the Vercel deploy, then in the app turn on แจ้งเตือนบนเครื่องนี้ again; iOS should now ask.
+
+---
+
+### BE-428 · iPhone app: native push (APNs), native share sheet, "ลบบัญชี" easy to find (2026-11-19)
+- **What changed:**
+  - **Push:** inside the store app the settings switch "แจ้งเตือนบนเครื่องนี้" asks iOS through Capacitor PushNotifications (`lib/appClient.ts`: `readPushStatus` / `turnPushOn` / `turnPushOff` / `syncPushDevice` have a native branch; the token is remembered in localStorage). `POST /api/push { apns }` saves it in `app.push_subscriptions` as endpoint `apns:<token>` (p256dh/auth `-`, no migration; the 10-devices cap, delete with the account and the admin count all apply). `sendPush` sends `apns:` devices through `lib/social/apns.ts` (HTTP/2, ES256 provider token cached 40 min, collapse id = tag, 24 h expiry; 410/BadDeviceToken/Unregistered forget the device) and the rest through web push. `pushConfigured` is true with either key set. `listenForNativePushTaps` (in `AppSetup`) opens a tapped notice's `url` (site paths only).
+  - **iOS shell:** `App.entitlements` (aps-environment production) on the App target; `AppDelegate.swift` forwards the device token to Capacitor; `ios-build.yml` signs the unsigned archive ad hoc with the entitlements before Apple re-signs it (an unsigned archive has none, which would drop push) and fails the run if `aps-environment` is missing.
+  - **Share:** `installNativeShareSheet` points `navigator.share` at Capacitor Share inside the app, so the nine share buttons open the iOS sheet with no change to them.
+  - Inside the app the install sheet and "ติดตั้งแอป" are hidden (`installWay()` returns null via `isStoreApp()`).
+  - Account settings show "ดาวน์โหลดข้อมูลของฉัน" and "ลบบัญชี" as two links (was one "ดาวน์โหลดข้อมูลหรือลบบัญชี"), App Review 5.1.1(v).
+- **What to do about it:** owner step 7 in `docs/IOS_APP.md`: an APNs key, `APNS_KEY_ID` + `APNS_PRIVATE_KEY` on Vercel Production, then merge to `main` (ios-app changed, so a new TestFlight build). Checked: tsc + lint; `/api/push` on dev (save, same token again = one row, bad token 400, signed out 401, delete); a request to Apple's real APNs with a made-up key answered `403 InvalidProviderToken` (request shape accepted). Not seen yet: a real notice on a phone, the native share sheet, and whether the TestFlight build keeps the push entitlement (the workflow checks the archive; Apple mails "Missing Push Notification Entitlement" if not).
+
+---
+
+### BE-427 · Deleting an account revokes its Sign in with Apple token (App Review 5.1.1(v), 2026-11-19)
+- **What changed:** the Apple code exchange (`lib/members/oauth.ts`) now keeps the `refresh_token`; the OAuth callback stores it via `saveAppleToken` in the new table `app.apple_tokens` (migration **0064**, one row per member, replaced at each Apple sign-in, cascades with the member), encrypted with AES-256-GCM under a key derived from `AUTH_SECRET` (`lib/members/appleTokens.ts`). `deleteMemberAccount` calls `revokeAppleToken` for members linked to Apple, just before removing the member; it posts to `https://appleid.apple.com/auth/revoke` and never blocks the deletion. The self-delete audit line says whether the request went out. `OAuthProfile.refreshToken` is Apple-only and never stored on the member.
+- **What to do about it:** run **0064 on live** (`! npm run db:migrate`); until then, saving fails quietly with a log line and sign-in works as before. Apple answers 200 to any revoke (checked: even a made-up client), so the server cannot confirm: after 0064, sign up a test account with Apple in the app, delete it, and check the iPhone's Settings › Apple ID › Sign in with Apple no longer lists Chillwaa. Apple members who signed in before this deploy have no token kept until their next Apple sign-in. On dev, `schema_migrations` had an old checksum for `0063_circle_events.sql` (applied as a draft before BE-420 was committed; the table matched the file), so it was updated there before 0064 applied. Live was not touched.
+
+---
+
+### BE-426 · Circles fixes from the tester (TR-021..029, 2026-11-19)
+- **What changed:** `GroupCircleBody` gets `key={item.id}`, so a picked photo no longer carries over to the next group (TR-021). `CircleViewer` now loads a friends-on-one-challenge Circle's detail ahead of a swipe like the others; `ChallengeCircleBody` takes `detail` / `onDetail` / `onRetry` instead of fetching itself (TR-026). Friends' faces and names in an opened Circle link to `/profile?id=` (TR-025). The row puts a divider after the lead Circles (next plan, campaigns) when friends follow; it hides when the lead draws nothing (`first:hidden`) and on `lg`, where the lead moves to the left column (TR-023). Group Circles: safe-area bottom padding, a grey name once seen (TR-024). Initials 11px (TR-027). New `components/ImgOr.tsx` (an image that becomes an element, initials or an icon, when its link is bad) on every Circles image (TR-028). `scripts/smoke.mjs` calls `/api/circles` (TR-029).
+- **What to do about it:** TR-022 is not a bug (Esc closes only the top dialog; checked in a browser) and is marked Needs owner with the reason. Friends-on-one-challenge and group Circles were not seen in a browser: the dev member with the most follows has none.
+
+---
+
+### BE-425 · Feed basics: names open profiles, time opens the post, หน้าหลัก again refreshes (tester TR-010..020, 2026-11-19)
+- **What changed:** in the feed, the author's name (header and before the caption) links to `/profile?id=` like the avatar, and the post time links to `/moments/[id]`. `CommentThread` links the commenter's avatar and name when the comment has an `authorId`. Tapping หน้าหลัก while on `/` (phone bar and desktop nav) scrolls to the top and refreshes the view being read: `lib/homeAgain.ts` fires `chillwaa:home-again`, `HomeMomentFeed` listens. The new-posts banner also runs on ติดตาม (สำหรับคุณ stays without it, it is ranked). `MomentPhotos` tries the original once when the resized photo fails, then shows "โหลดรูปไม่ได้" on a tint. The composer's X asks before throwing a draft away, like Esc (TR-011).
+- **What to do about it:** TR-010/011/014/015/018 are Ready to re-test. TR-012/013/016/017/019/020 are Needs owner, each listed in LAUNCH_CHECKLIST (feed comments stay as they are: owner 2026-11-19). Comment profile links were not seen in a browser: the dev database has no member comments.
+
+---
+
+### BE-424 · Bangkok cafés, bars and galleries from OpenStreetMap in the dev database (owner 2026-11-19)
+- **Why:** our places were mostly temples (live: temples 26%, temples + old town + museums ~45%, no nightlife). TAT is no help for cafés: about 77 in Bangkok by name, and a sample of 20 had 2 with pictures.
+- **What changed:**
+  - `db/import-osm-venues.ts` + `lib/scrapers/osmVenues.ts`: OSM cafés, bakeries, ice cream, tea, bars, pubs, nightclubs, galleries and arts centres for one province (default Bangkok), dev only. On dev: 2,030 new drafts (cafe 1,404, bar 582, art 44), id `osmb-<n|w|r><osm id>`, credited "OpenStreetMap" with the OSM link. 456 have hours, 413 a phone or link, all have a district (from OSM district outlines when the tags do not say). Left out: names under 5 characters and 47 we already had.
+  - **Chain branches** (owner 2026-11-19: "คนไปเยอะ" but they would bury the independents): 516 on dev, `chainBrand` set, **published without a photo**, curation override `hidden`. They are meeting points and moment tags only: found by `GET /api/spots?q=` (moment place picker, ตี้ form), left out of `/api/spots` without `q`, `/spots` browsing and search (`lib/spotBrowse.ts` catalog), home picks, nearby dining and the sitemap; their page is `noindex`. Named by the nearest mall within 200 m, else the road, else the district ("Starbucks สาขาสยามพารากอน"); 81 names still repeat within a district.
+  - **Shared utility:** `resolveSpotImage` / `resolveSpotGallery` (`lib/spotImageResolver.ts`) now return no stock photo for `osmb-` places, and `DetailHero` shows "ยังไม่มีรูปของที่นี่" on a tint when the image is empty.
+  - The description says only what the tags say ("คาเฟ่ในย่านบางรัก มี Wi-Fi และที่นั่งด้านนอก"); no vibe text yet, it is written when a place gets its photo.
+  - **No photo, no publish** (owner option 1, `lib/spotPhotoRule.ts`): an `osmb-` place cannot be published while it has no real photo of its own (stock photos do not count). Review-queue approve refuses it, bulk publish skips it and says how many, editing it to published returns an error, "เติมรูปอัตโนมัติ" leaves it alone. Topic "ที่เที่ยวที่นำเข้า" added to the admin logic page.
+  - Place matching moved from the TAT importer into `lib/scrapers/placeMatch.ts` (same behaviour for TAT); venues match only on a close place with an overlapping name, as cafés sit side by side and share names across branches.
+- **What to do about it:** nothing reaches live. The 2,030 drafts sit in the review queue with TAT's 1,642. A running `next dev` keeps its old place list until restarted. Next: a way to add photos (staff upload, or a member moment at the place, which needs the terms and an opt-in first: see LAUNCH_CHECKLIST), then the promote step to live. Checked on dev: `?q=Starbucks` finds branches (tier hidden), a branch page has `noindex` and the no-photo header, no stock photo.
+
+---
+
+### BE-423 · TAT attractions in the dev database (owner 2026-11-18)
+- **What changed:** `db/import-tat-attractions.ts` + `lib/scrapers/tatDataApi.ts` (and `categorize` exported from `tourismDirectory.ts`). On dev: 1,642 new attractions from TAT as drafts with credit, 346 existing places filled in where TAT knows more, nothing removed. Details, numbers and rules in [TAT_IMPORT.md](TAT_IMPORT.md) "Import run".
+- **What to do about it:** staff approve on dev; nothing reaches live until a promote step copies pictures to R2 (not built yet). The importer and the earlier Gemini script (`db/import-tat.mjs`, never committed) do the same job; keep this one.
+
+---
+
+### BE-422 · Next.js 16.4.6 (2026-11-19)
+- **What changed:** Next.js and eslint-config-next 16.4.3 → 16.4.6 for the moderate advisory on `'use cache'` root params; `npm audit` now 0. Production build passed against the dev database.
+- **What to do about it:** nothing; reinstall packages after pulling.
+
+---
+
+### BE-421 · Circles row: orange for mine, blue for friends, a line between (owner 2026-11-18, option A)
+- **What changed:** the row had seven ring colours (pink share, orange next plan, yellow campaign, blue doing, violet step, gold finish, green group, violet-gold friends on one challenge). Now two (`components/home/circleLook.ts`): orange `RING_MINE` for the reader's own Circles (share, next plan, campaigns, own challenges; badges `BADGE_MINE`, names in dark orange) and blue `RING_FRIENDS` for friends (finish keeps the gold trophy badge, steps, groups and friends-on-one-challenge badges are dark blue). A thin line sits between the reader's own challenge Circles and the first friend. The reader's own challenge names wrap to two lines instead of "ป้ายยาที่โปรด…"; one joined campaign is named "แคมเปญ" (two keep their prize words). Opened friend Circles still go grey. Admin topic Circles updated.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
+### BE-420 · Circles: no cover flash, cheer moves on, numbers in admin (owner 2026-11-18)
+- **What changed:**
+  - A finish Circle no longer shows the challenge cover for a moment before its real moment (BE-419) loads: a plain grey box waits instead (`CircleViewer`).
+  - After "ชื่นชม" the viewer moves to the next Circle after 0.9 s, unless the reader moved already or it was the last one.
+  - Numbers: new `app.circle_events` (migration 0063, granted to `app_runtime`), one row per Bangkok day, member, Circle kind and event, so people not taps. Opens and "ดูโพสต์" come from `POST /api/circles/events` (always 204); the buttons are counted in `POST /api/circles/:id`. `/admin` shows them in "Circles ได้ผลไหม" (`CirclesStatsPanel`, `GET /api/admin/circles`, 7/14/30 days, each action as a share of opens). Rows older than 180 days (`CIRCLE_EVENTS_KEEP_DAYS` in `socialRules.ts`) are dropped now and then. Not counted yet: taps on the reader's own share, next-plan and campaign Circles, which open other pages. API.md and the admin topic Circles updated.
+  - Drafts for one ring colour per group and short labels under the reader's own Circles wait for the owner's pick (not built).
+- **What to do about it:** live needs migration 0063 before the numbers fill (`! npm run db:migrate`); without it nothing breaks, events are just not kept. Checked on dev: three opens in a day count once, bad input is dropped, a cheer is counted; test rows and the test cheer were removed. The admin panel was not opened signed in.
+
+---
+
+### BE-419 · Circles: a finished challenge shows a real moment, not the cover (owner 2026-11-18)
+- **What changed:** an opened finish Circle (`f:`) used the challenge cover. `finishMoment` in `lib/social/circleActions.ts` now picks, in order: the person's own public post that counted toward the challenge (newest); for a challenge done by liking (`rule.actions.kind: 'like'`), the public post they liked last before finishing (new `momentRepository.lastLikedBefore`, left out when its author and the reader block each other); else the cover. `CircleDetail.momentNote` adds one line under the title in `CircleViewer`: the caption's first line in quotes, or "กดใจโมเมนต์ของ <name>" ("ของคุณ" for the reader's own post). Post Circles (`s:`) get the caption line too. API.md and the admin topic Circles updated. No migration.
+- **What to do about it:** nothing. Checked on dev through `GET /api/circles/:id`: post Circles carry their caption, a like-challenge finish carries the liked post and its line.
+
+---
+
+### BE-418 · Home feed: the post says what they went out and did, first line (owner 2026-11-18, option B)
+- **What changed:** the owner picked option B of four drafts. A post tied to a ตี้, place, อีเวนต์ or challenge now opens "<name> ไปตี้ / ไปที่ / ไปงาน / ทำชาเลนจ์ <title>" (title links, in the pillar colour; `verb` added to `MOMENT_TARGETS`). The check-in line under it stays as before (time · location), with the location left out when it only repeats the title. The slim line under the caption keeps only what it still offers and the go link ("เสาร์นี้ · เหลือ 3 ที่ · ขอไปด้วย →"), no second copy of the name. Only the Home feed (`HomeMomentFeed`); `/moments` and the moment page are unchanged by owner choice.
+- **What to do about it:** nothing. Checked signed in on dev at 393 px and 1440 px.
+
+---
+
+### BE-417 · iPhone: typing in a popup field zoomed the app past the screen edges (owner 2026-11-18)
+- **What changed:** iOS zooms into any field whose text is under 16px when it is tapped and keeps that zoom after the popup closes, so the app stayed wider than the screen. About 60 files use `text-xs`/`text-sm`/`text-[11-13px]` fields. `app/globals.css` now gives fields 16px only on iOS (`@supports (-webkit-touch-callout: none)`): text inputs, textarea, select and `contenteditable`, but not checkboxes, ranges or fields marked `text-lg` and larger. Pinch zoom still works; desktop and Android keep the designed sizes.
+- **What to do about it:** on iPhone and iPad, fields show slightly larger text than in the design. Check on a real iPhone after merge (the store app loads the live site, so no new TestFlight build is needed).
 
 ---
 

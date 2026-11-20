@@ -4,6 +4,7 @@ import { MemberAuthError } from '@/lib/members/accounts';
 import { QuestJoinError } from '@/lib/social/questJoins';
 import { isRateLimited } from '@/lib/rateLimit';
 import { challengeCircleDetail, circleAct, circleDetail, type CircleAction } from '@/lib/social/circleActions';
+import { circleKindOf, recordCircleEvent } from '@/lib/social/circleStats';
 
 type Context = { params: Promise<{ id: string }> };
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
@@ -42,7 +43,11 @@ export async function POST(request: Request, context: Context) {
   const action = ACTIONS.find((a) => a === body?.action);
   if (!action) return NextResponse.json({ success: false, message: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
   try {
-    const result = await circleAct(member, decodeURIComponent((await context.params).id), action);
+    const id = decodeURIComponent((await context.params).id);
+    const result = await circleAct(member, id, action);
+    // What people do in Circles, for the admin numbers (BE-420)
+    const kind = circleKindOf(id, result.detail?.kind);
+    if (kind) await recordCircleEvent(member.id, kind, action);
     return NextResponse.json({ success: true, ...result }, { headers: NO_STORE });
   } catch (error) {
     return failure(error, 'POST /api/circles/[id]');

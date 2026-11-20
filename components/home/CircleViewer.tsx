@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronLeft, ChevronRight, HandHeart, Loader2, Trophy, Users, X } from 'lucide-react';
-import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
+import type { AchievementCircle, ChallengeCircleDetail, CircleItem } from '@/lib/social/circles';
+import ImgOr from '@/components/ImgOr';
 import { GroupCircleBody, plainTeeTitle } from '@/components/home/GroupCircleView';
 import { ChallengeCircleBody } from '@/components/home/ChallengeCircleView';
 import type { CircleAction, CircleDetail } from '@/lib/social/circleActions';
@@ -29,6 +30,7 @@ type PostFor = (quest: { id: string; title: string; withPlace?: boolean }) => vo
 export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPost }: { items: CircleItem[]; start: number; onClose: (changed: boolean) => void; onSeen?: (id: string) => void; onOpenMoment?: (momentId: string) => void; onPost?: PostFor }) {
   const [index, setIndex] = useState(start);
   const [details, setDetails] = useState<Record<string, CircleDetail | 'error'>>({});
+  const [challengeDetails, setChallengeDetails] = useState<Record<string, ChallengeCircleDetail | 'error'>>({});
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -41,17 +43,29 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   const detail = details[item.id];
 
   useEffect(() => onSeen?.(item.id), [item.id, onSeen]);
+  // Admin Circles numbers (BE-420): this Circle opened, and posts opened from it; never waited on
+  useEffect(() => countCircle(item.id, item.kind, 'open'), [item.id, item.kind]);
+  const openMoment = onOpenMoment
+    ? (momentId: string) => {
+        countCircle(item.id, item.kind, 'view_post');
+        onOpenMoment(momentId);
+      }
+    : undefined;
 
-  // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row)
+  // This Circle's detail, and the next one's ahead of a swipe (group Circles come whole with the row). A
+  // friends-on-one-challenge Circle has its own detail shape, kept apart (TR-026: it used to load only once opened)
   const asked = useRef(new Set<string>());
   const fetchDetail = useCallback((circle: CircleItem | undefined) => {
-    // Group and friends-on-one-challenge Circles load their own detail
-    if (!circle || circle.kind === 'group' || circle.kind === 'challenge' || asked.current.has(circle.id)) return;
+    if (!circle || circle.kind === 'group' || asked.current.has(circle.id)) return;
     asked.current.add(circle.id);
+    const store = (value: CircleDetail | ChallengeCircleDetail | 'error') =>
+      circle.kind === 'challenge'
+        ? setChallengeDetails((all) => ({ ...all, [circle.id]: value as ChallengeCircleDetail | 'error' }))
+        : setDetails((all) => ({ ...all, [circle.id]: value as CircleDetail | 'error' }));
     fetch(`/api/circles/${encodeURIComponent(circle.id)}`, { cache: 'no-store' })
       .then((res) => res.json())
-      .then((json) => setDetails((all) => ({ ...all, [circle.id]: json?.success ? (json.detail as CircleDetail) : 'error' })))
-      .catch(() => setDetails((all) => ({ ...all, [circle.id]: 'error' })));
+      .then((json) => store(json?.success ? json.detail : 'error'))
+      .catch(() => store('error'));
   }, []);
   useEffect(() => {
     fetchDetail(items[index]);
@@ -59,11 +73,13 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   }, [index, items, fetchDetail]);
   const retry = () => {
     asked.current.delete(item.id);
-    setDetails((all) => {
+    const without = <T,>(all: Record<string, T>) => {
       const rest = { ...all };
       delete rest[item.id];
       return rest;
-    });
+    };
+    setDetails(without);
+    setChallengeDetails(without);
     fetchDetail(item);
   };
 
@@ -92,9 +108,18 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
   };
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
+    if (nextTimer.current) clearTimeout(nextTimer.current);
   }, []);
+  // A cheer sent moves on to the next Circle after a beat, so cheering several friends is tap, tap (owner 2026-11-18);
+  // it stays put if the reader moved meanwhile or this was the last one
+  const advanceAfterCheer = (from: number) => {
+    if (from >= items.length - 1) return;
+    if (nextTimer.current) clearTimeout(nextTimer.current);
+    nextTimer.current = setTimeout(() => setIndex((i) => (i === from ? i + 1 : i)), 900);
+  };
   const showToast = (message: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
@@ -110,6 +135,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
       if (!json?.success) throw new Error(json?.message || 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
       setDetails((all) => ({ ...all, [item.id]: json.detail as CircleDetail }));
       if (action !== 'cheer') changed.current = true;
+      else advanceAfterCheer(index);
       showToast(json.message);
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
@@ -186,9 +212,20 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
           </div>
         )}
         {item.kind === 'group' ? (
-          <GroupCircleBody item={item} onClose={close} onOpenMoment={onOpenMoment} />
+          // key: the photo picked in one group must not carry over to the next (TR-021)
+          <GroupCircleBody key={item.id} item={item} onClose={close} onOpenMoment={openMoment} />
         ) : item.kind === 'challenge' ? (
-          <ChallengeCircleBody key={item.id} item={item} onClose={close} onAct={actOn} onFollow={followMember} onOpenMoment={onOpenMoment} />
+          <ChallengeCircleBody
+            key={item.id}
+            item={item}
+            detail={challengeDetails[item.id]}
+            onDetail={(next) => setChallengeDetails((all) => ({ ...all, [item.id]: next }))}
+            onRetry={retry}
+            onClose={close}
+            onAct={actOn}
+            onFollow={followMember}
+            onOpenMoment={openMoment}
+          />
         ) : (
           <AchievementBody
             item={item}
@@ -198,7 +235,7 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
             onRetry={retry}
             onInvite={() => setInviteOpen(true)}
             onClose={close}
-            onOpenMoment={onOpenMoment}
+            onOpenMoment={openMoment}
             onPost={onPost}
           />
         )}
@@ -210,6 +247,10 @@ export function CircleViewer({ items, start, onClose, onSeen, onOpenMoment, onPo
     </div>,
     document.body
   );
+}
+
+function countCircle(id: string, kind: string, event: 'open' | 'view_post') {
+  fetch('/api/circles/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, kind, event }), keepalive: true }).catch(() => undefined);
 }
 
 /** The few words under the title: what this Circle says happened, or for my own, where I am */
@@ -227,21 +268,35 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
   const done = item.kind === 'finish';
   const ready = detail && detail !== 'error' ? detail : undefined;
   const name = item.isMe ? 'คุณ' : shortName(item.person.name);
-  const picture = ready ? ready.image : item.quest.image;
+  // A finish may show a real moment instead of the cover (BE-419): wait for it rather than flash the cover first
+  const waiting = !ready && detail !== 'error' && item.kind === 'finish' && !item.momentId;
+  const picture = ready ? ready.image : waiting ? undefined : item.quest.image;
   // My own doing Circle shows how far I am, once known
   const progress = item.kind === 'doing' ? ready?.progress : item.total ? { current: item.current ?? 0, total: item.total } : undefined;
   const barColor = done ? 'bg-[#F59E0B]' : item.kind === 'doing' ? 'bg-[#2563EB]' : 'bg-[#7C3AED]';
+  const initials = <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>;
+  const face = item.person.avatar ? <ImgOr src={avatarImage(item.person.avatar)} fallback={initials} className="w-10 h-10 rounded-full object-cover bg-slate-100" /> : initials;
+  // A friend's face and name open their profile, as on the feed (TR-025)
+  const profile = item.isMe ? null : `/profile?id=${encodeURIComponent(item.person.id)}`;
+  const coverFallback = (
+    <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
+      <Trophy className="w-16 h-16 text-[#7C3AED]/40" aria-hidden="true" />
+    </span>
+  );
   return (
     <>
       <header className="flex items-center gap-3 px-4 pt-3 pb-3">
-        {item.person.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-          <img src={avatarImage(item.person.avatar)} alt="" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+        {profile ? (
+          <Link href={profile} aria-label={`ดูโปรไฟล์${name}`} className="shrink-0 rounded-full hover:brightness-95">{face}</Link>
         ) : (
-          <span className="w-10 h-10 rounded-full bg-slate-200 text-sm font-bold text-slate-700 flex items-center justify-center">{nameInitial(item.person.name)}</span>
+          face
         )}
         <span className="flex-1 min-w-0">
-          <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+          {profile ? (
+            <Link href={profile} className="block text-sm font-bold text-slate-900 truncate hover:underline">{name}</Link>
+          ) : (
+            <span className="block text-sm font-bold text-slate-900 truncate">{name}</span>
+          )}
           <span className="block text-xs text-slate-500">{item.kind === 'doing' ? 'ชาเลนจ์ที่ทำอยู่' : item.timeAgo}</span>
         </span>
         <button type="button" onClick={onClose} aria-label="ปิด" className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
@@ -252,12 +307,11 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
       <div className="px-4">
         <div className="relative aspect-[4/5] sm:aspect-square w-full rounded-3xl overflow-hidden bg-slate-100">
           {picture ? (
-            // eslint-disable-next-line @next/next/no-img-element -- post photos and challenge covers come from many hosts
-            <img src={optimizedImage(picture, 828)} alt="" className="w-full h-full object-cover" />
+            <ImgOr key={picture} src={optimizedImage(picture, 828)} fallback={coverFallback} className="w-full h-full object-cover" />
+          ) : waiting ? (
+            <span className="block w-full h-full bg-slate-100 animate-pulse" aria-hidden="true" />
           ) : (
-            <span className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-50 to-violet-50">
-              <Trophy className="w-16 h-16 text-[#7C3AED]/40" aria-hidden="true" />
-            </span>
+            coverFallback
           )}
           <span className={`absolute left-3 top-3 inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-bold ${done ? 'bg-[#F59E0B] text-white' : item.kind === 'doing' ? 'bg-[#2563EB] text-white' : 'bg-[#7C3AED] text-white'}`}>
             {done ? <><Trophy className="w-3.5 h-3.5" aria-hidden="true" />ทำครบแล้ว</> : item.kind === 'doing' ? 'กำลังทำ' : `${item.current}/${item.total}`}
@@ -269,6 +323,8 @@ function AchievementBody({ item, detail, busy, onAct, onRetry, onInvite, onClose
         <div>
           <p className="text-lg font-bold text-slate-900 leading-snug">{item.quest.title}</p>
           <p className="mt-1 text-sm text-slate-600">{statusLine(item, ready, name)}</p>
+          {/* The moment in the picture, in a line: their caption, or whose post they liked (owner 2026-11-18) */}
+          {ready?.momentNote && <p className="mt-1 text-[13px] text-slate-500 truncate">{ready.momentNote}</p>}
           {progress && progress.total > 1 && (
             <span className="mt-3 flex gap-1.5" aria-hidden="true">
               {Array.from({ length: progress.total }, (_, i) => (
@@ -318,14 +374,10 @@ function CheersLine({ cheers }: { cheers: NonNullable<CircleDetail['cheers']> })
   return (
     <p className="flex items-center gap-2.5 rounded-2xl bg-[#FFF1F2] px-3.5 py-2.5 text-sm text-slate-800">
       <span className="flex -space-x-2 shrink-0" aria-hidden="true">
-        {cheers.people.map((person) =>
-          person.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element -- member avatars come from uploads or providers
-            <img key={person.id} src={avatarImage(person.avatar)} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" />
-          ) : (
-            <span key={person.id} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">{nameInitial(person.name)}</span>
-          )
-        )}
+        {cheers.people.map((person) => {
+          const initials = <span key={person.id} className="w-7 h-7 rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700 flex items-center justify-center">{nameInitial(person.name)}</span>;
+          return person.avatar ? <ImgOr key={person.id} src={avatarImage(person.avatar)} fallback={initials} className="w-7 h-7 rounded-full object-cover border-2 border-white bg-slate-100" /> : initials;
+        })}
       </span>
       <span className="min-w-0">
         <HandHeart className="inline w-4 h-4 -mt-0.5 mr-1 text-[#E11D48]" aria-hidden="true" />

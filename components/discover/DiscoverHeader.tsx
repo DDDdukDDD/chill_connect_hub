@@ -3,16 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, X, Zap } from 'lucide-react';
-import { ALL_PROVINCES, ONLINE, discoverHref, type DiscoverCounts, type DiscoverKind } from '@/lib/discoverMatch';
+import { ALL_PROVINCES, ONLINE, type DiscoverCounts, type DiscoverKind } from '@/lib/discoverMatch';
 import { useDiscoverCounts } from '@/lib/useDiscoverCounts';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
-
-/** The three ค้นพบ pages, in tab order, with their pillar colors (DESIGN_SYSTEM.md) */
-const KINDS: { kind: DiscoverKind; label: string; dot: string; marker: string }[] = [
-  { kind: 'meetups', label: 'ตี้', dot: 'bg-[#F26430]', marker: 'bg-[#F26430]/30' },
-  { kind: 'fairs', label: 'อีเวนต์', dot: 'bg-[#2B527A]', marker: 'bg-[#2B527A]/20' },
-  { kind: 'spots', label: 'ที่เที่ยว', dot: 'bg-[#4A7C59]', marker: 'bg-[#4A7C59]/25' },
-];
+import { PillarTabs } from '@/components/discover/PillarTabs';
 
 /** A picked filter wears its pillar's soft tint, border and dark text (DESIGN_SYSTEM.md, filters inside a pillar page) */
 const PICKED: Record<DiscoverKind, string> = {
@@ -86,34 +80,7 @@ export function DiscoverHeader({ kind, query, onQueryChange, province, onProvinc
       />
 
       <div className="flex items-center gap-3">
-        <nav aria-label="ประเภท" className="flex-1 min-w-0 flex gap-5 sm:gap-7 overflow-x-auto no-scrollbar -ml-4 pl-4 sm:ml-0 sm:pl-0">
-          {KINDS.map((item) => {
-            const isHere = item.kind === kind;
-            const count = counts?.[item.kind];
-            return (
-              <Link
-                key={item.kind}
-                href={discoverHref(item.kind, query, province)}
-                prefetch={isHere ? false : settledQuery === query ? true : undefined}
-                aria-current={isHere ? 'page' : undefined}
-                className={`group relative isolate inline-flex items-center gap-1.5 h-10 text-[15px] sm:text-base whitespace-nowrap shrink-0 transition-colors ${
-                  isHere ? 'font-bold text-slate-900' : 'font-medium text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {/* The current page gets a highlighter stroke in its pillar color, a little tilted like a hand-drawn mark */}
-                <span
-                  className={`absolute -inset-x-1.5 bottom-2 h-3 -z-10 rounded-full -rotate-2 transition-transform origin-left ${
-                    isHere ? `${item.marker} scale-x-100` : `${item.marker} scale-x-0 group-hover:scale-x-50`
-                  }`}
-                  aria-hidden="true"
-                />
-                <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} aria-hidden="true" />
-                <span>{item.label}</span>
-                {count !== undefined && <span className={`text-xs font-medium tabular-nums ${isHere ? 'text-slate-600' : 'text-slate-500'}`}>{count.toLocaleString()}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+        <PillarTabs current={kind} counts={counts} query={query} province={province} prefetchOthers={settledQuery === query} />
         {/* On phones the three tabs need the whole row, so the button moves to the row under them */}
         {action && <div className="hidden sm:block shrink-0">{action}</div>}
       </div>
