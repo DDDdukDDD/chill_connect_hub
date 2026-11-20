@@ -11,7 +11,7 @@ import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { call } from '@/components/home/HomeMomentFeed';
 import { MOMENT_TARGETS, isMomentTarget, momentImageSrc, momentTitle, type MomentTargetKey } from '@/components/moments/momentTargets';
 import { saveShowcase, takeShowcase } from '@/components/moments/momentsReturn';
-import { avatarImage } from '@/lib/optimizedImage';
+import { avatarImage, safeImageSrc } from '@/lib/optimizedImage';
 import { hashtagHref } from '@/lib/moments/hashtags';
 
 const PAGE_SIZE = 24;
@@ -115,6 +115,37 @@ function Avatar({ name, src }: { name: string; src?: string }) {
 }
 
 /**
+ * A card's photo. A resized copy that fails (the image optimizer answered 402 once the month's quota ran out,
+ * 2026-11-20) falls back to the original file once, as the feed's FramePhoto does, then to an empty tinted frame.
+ * The width the screen needs (a phone tile is ~185 px wide, 384 covers it at 2x), and the first row at once.
+ */
+function CardPhoto({ src, alt, first }: { src: string; alt: string; first?: boolean }) {
+  const [step, setStep] = useState(0);
+  const ref = useRef<HTMLImageElement>(null);
+  // An error before the page woke up is caught on mount
+  useEffect(() => {
+    const img = ref.current;
+    if (img?.complete && img.naturalWidth === 0) setStep(1);
+  }, []);
+  const original = safeImageSrc(src);
+  if (step === 2 || (step === 1 && !original)) return null;
+  const sized = step === 0 ? { src: momentImageSrc(src, 828), srcSet: CARD_WIDTHS.map((w) => `${momentImageSrc(src, w)} ${w}w`).join(', '), sizes: '(min-width: 1024px) 23vw, 48vw' } : { src: original };
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote and local photos
+    <img
+      ref={ref}
+      key={step}
+      {...sized}
+      alt={alt}
+      loading={first ? 'eager' : 'lazy'}
+      fetchPriority={first ? 'high' : undefined}
+      onError={() => setStep((s) => s + 1)}
+      className="w-full h-full object-cover"
+    />
+  );
+}
+
+/**
  * One card on every screen, like Lemon8 (owner 2026-11-12): the photo with where it was on it, the words, then who
  * and the reactions on one line pinned to the bottom so a row lines up.
  */
@@ -149,16 +180,7 @@ function MomentCard({ moment, onLike, first }: { moment: FeedItem; onLike?: (mom
         {/* Pointing at a photo only dims it a touch; the card stays still (owner 2026-11-07) */}
         <span className={`${frameClass} transition-[filter] duration-200 group-hover:brightness-95`}>
           {/* The width the screen needs (a phone tile is ~185 px wide, 384 covers it at 2x), and the first row at once: it is what a visitor sees first */}
-          {/* eslint-disable-next-line @next/next/no-img-element -- remote and local photos */}
-          <img
-            src={momentImageSrc(moment.images[0], 828)}
-            srcSet={CARD_WIDTHS.map((w) => `${momentImageSrc(moment.images[0], w)} ${w}w`).join(', ')}
-            sizes="(min-width: 1024px) 23vw, 48vw"
-            alt={title || `โมเมนต์จาก ${place || moment.userName}`}
-            loading={first ? 'eager' : 'lazy'}
-            fetchPriority={first ? 'high' : undefined}
-            className="w-full h-full object-cover"
-          />
+          <CardPhoto key={moment.images[0]} src={moment.images[0]} alt={title || `โมเมนต์จาก ${place || moment.userName}`} first={first} />
           {moment.video?.previewUrl && <ClipPlayer url={moment.video.url} preview={moment.video.previewUrl} startS={moment.video.startS} durationS={moment.video.durationS} fit="cover" interactive={false} className="absolute inset-0" />}
           {moment.video && (
             <span className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white">
