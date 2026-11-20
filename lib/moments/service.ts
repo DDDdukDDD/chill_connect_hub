@@ -323,9 +323,16 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
   };
 }
 
-const HASHTAG_TTL_MS = 6 * 3_600_000;
-/** Counted again every few hours, not on each visit: a day-old trend is still this week's trend (FEED_PLAN step 2) */
+/**
+ * Counted again every half hour, not on each visit (FEED_PLAN step 2). Was 6 hours until the search box listed tags
+ * (BE-441): a tag just posted could not be found. A post, edit or delete with a # also clears it on the server that
+ * handled it (forgetTagsOf); other servers catch up within the half hour.
+ */
+const HASHTAG_TTL_MS = 30 * 60_000;
 const hashtagUses = () => cacheManager.getOrSet('moments:hashtag-uses', () => momentRepository.hashtagUses(), { ttlMs: HASHTAG_TTL_MS, tags: ['moments-hashtags'] });
+const forgetTagsOf = (caption: string) => {
+  if (caption.includes('#')) cacheManager.invalidateTag('moments-hashtags');
+};
 
 /** A tag page needs this many posts before it is worth a search engine's time (sitemap, and noindex below it) */
 export const TAG_PAGE_MIN_POSTS = 3;
@@ -349,6 +356,21 @@ export async function trendingHashtags(): Promise<TrendingTags> {
   if (week.length >= TRENDING_MIN) return { kind: 'week', tags: week.map(({ tag, posts }) => ({ tag, posts })) };
   const popular = uses.filter((use) => use.authors >= 2).slice(0, TRENDING_MAX);
   return { kind: 'popular', tags: popular.length >= TRENDING_MIN ? popular.map((use) => ({ tag: use.tag, posts: use.total })) : [] };
+}
+
+/**
+ * Tags for the site's search (BE-440): those containing the word, tags starting with it first, then the most used.
+ * No word: the most used. Counts are the cached ones above (up to 6 hours old); a newer tag is still reached by
+ * typing it whole, since "#tag" + Enter opens its page.
+ */
+export async function searchHashtags(word: string, limit: number): Promise<{ tag: string; posts: number }[]> {
+  const wanted = normalTag(word);
+  const uses = await hashtagUses().catch(() => []);
+  return uses
+    .filter((use) => !wanted || use.tag.includes(wanted))
+    .sort((a, b) => (wanted ? Number(b.tag.startsWith(wanted)) - Number(a.tag.startsWith(wanted)) : 0) || b.total - a.total || a.tag.localeCompare(b.tag))
+    .slice(0, limit)
+    .map((use) => ({ tag: use.tag, posts: use.total }));
 }
 
 /** Tags used together with this one, for its page */
@@ -447,7 +469,7 @@ export async function createMoment(member: Member, input: Record<string, unknown
   // A photo at a place or fair is proof for challenges when the phone was there; otherwise staff check it
   const evidence = await evidenceForNewMoment(targetType, targetId, input.capture);
 
-  return momentRepository.create({
+  const created = await momentRepository.create({
     id: `mom_${randomUUID()}`,
     authorId: member.id,
     authorName: member.displayName,
@@ -475,6 +497,8 @@ export async function createMoment(member: Member, input: Record<string, unknown
     isSample: false,
     createdAt: new Date().toISOString(),
   });
+  forgetTagsOf(caption);
+  return created;
 }
 
 async function requireVisible(id: string): Promise<Moment> {
@@ -494,7 +518,9 @@ export async function editMoment(member: Member, id: string, input: Record<strin
   // Only what the request names changes; the author can open or close these after posting
   const options = (['commentsOff', 'likesOff', 'sharesOff'] as const).reduce<Partial<Moment>>((set, key) => (typeof input[key] === 'boolean' ? { ...set, [key]: input[key] } : set), {});
   const images = input.images !== undefined ? editedImages(moment, input.images) : moment.images;
-  return momentRepository.mutate(id, (m) => ({ ...m, caption, location, images, ...options, updatedAt: new Date().toISOString() }));
+  const edited = await momentRepository.mutate(id, (m) => ({ ...m, caption, location, images, ...options, updatedAt: new Date().toISOString() }));
+  if (caption !== moment.caption) forgetTagsOf(`${moment.caption} ${caption}`);
+  return edited;
 }
 
 /**
@@ -520,6 +546,7 @@ export async function deleteOwnMoment(member: Member, id: string): Promise<strin
   if (!moment || moment.status === 'removed') throw new MomentError('ไม่พบโมเมนต์', 404);
   if (moment.authorId !== member.id) throw new MomentError('ลบได้เฉพาะโมเมนต์ของตัวเอง', 403);
   await momentRepository.remove(id);
+  forgetTagsOf(moment.caption);
   return momentFiles(moment);
 }
 

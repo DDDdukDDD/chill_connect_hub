@@ -133,4 +133,13 @@ export const jsonMemberRepository: MemberRepository = {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return { items: filtered.slice((page - 1) * limit, page * limit).map((m) => out(m)), totalCount: filtered.length, counts };
   },
+  async searchByName(text, limit) {
+    const word = text.trim().toLowerCase();
+    if (!word) return [];
+    return load()
+      .filter((m) => m.status === 'active' && m.displayName.toLowerCase().includes(word))
+      .sort((a, b) => Number(b.displayName.toLowerCase().startsWith(word)) - Number(a.displayName.toLowerCase().startsWith(word)) || a.displayName.length - b.displayName.length || b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit)
+      .map((m) => m.id);
+  },
 };
