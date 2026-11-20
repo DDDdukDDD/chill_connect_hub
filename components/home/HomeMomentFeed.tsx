@@ -7,7 +7,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Trash2, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bookmark, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Tag, Trash2, UserMinus, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
@@ -92,7 +92,7 @@ interface PostHandlers {
   /** Shows the comment at once, then the server's copy; false (and the comment gone again) when it could not be sent */
   onComment: (id: string, text: string, parentId?: string, mentions?: Mention[]) => Promise<boolean>;
   onCommentAct: (id: string, body: { action: 'like_comment' | 'unlike_comment' | 'delete_comment'; commentId: string }) => Promise<boolean>;
-  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share' | 'send') => void;
+  onMenu: (moment: FeedItem, choice: 'edit' | 'delete' | 'report' | 'copy' | 'share' | 'send' | 'untag' | 'unfollow') => void;
   onPhotos: (images: string[], index: number) => void;
   /** A clip is opening on its own page: keep the list and the place in it for the way back */
   onLeaveToClip: (id: string) => void;
@@ -175,6 +175,9 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
       ] as const)
     : ([
         ...(mayShare ? ([['copy', 'คัดลอกลิงก์', Link2]] as const) : []),
+        // TR-013: take myself off a post I was tagged in, and stop following its author, without leaving the feed
+        ...(moment.isTaggedMe ? ([['untag', 'เอาแท็กฉันออก', Tag]] as const) : []),
+        ...(moment.authorId && moment.isFollowingAuthor && !moment.isSample ? ([['unfollow', 'เลิกติดตาม', UserMinus]] as const) : []),
         ['report', moment.hasReported ? 'รายงานแล้ว' : 'รายงานโพสต์นี้', Flag],
       ] as const);
 
@@ -227,7 +230,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </div>
         {/* Follow sits by the ... menu, away from the name and photo, so a tap meant for the profile never follows (owner 2026-11-09) */}
         {showFollow &&
-          (justFollowed ? (
+          // After "เลิกติดตาม" from the menu the button comes back, even on the post just followed from
+          (justFollowed && moment.isFollowingAuthor ? (
             <span className="shrink-0 text-sm text-slate-500">กำลังติดตาม</span>
           ) : (
             <button
@@ -840,6 +844,26 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       if (choice === 'edit') setEditing({ id: moment.id, caption: moment.caption, photos: moment.video ? null : moment.images.map((url) => ({ url })), ratio: postRatio(moment.imageRatio), commentsOff: moment.commentsOff, likesOff: moment.likesOff, sharesOff: moment.sharesOff });
       if (choice === 'delete') setConfirmDelete(moment);
       if (choice === 'report') setReporting({ moment, reason: '' });
+      if (choice === 'untag') {
+        void call(`/api/moments/${encodeURIComponent(moment.id)}/actions`, 'POST', { action: 'untag' }).then((result) => {
+          if (!result.ok || !result.moment) return showToast(result.message);
+          replace(result.moment);
+          showToast('เอาแท็กคุณออกจากโพสต์นี้แล้ว');
+        });
+      }
+      if (choice === 'unfollow' && moment.authorId) {
+        // Every post by them changes at once, as following does; back with a message if the server says no
+        const authorId = moment.authorId;
+        const following = (on: boolean) => setMoments((list) => list.map((m) => (m.authorId === authorId ? { ...m, isFollowingAuthor: on } : m)));
+        following(false);
+        void call(`/api/members/${encodeURIComponent(authorId)}/actions`, 'POST', { action: 'unfollow' }).then((result) => {
+          if (!result.ok) {
+            following(true);
+            return showToast(result.message);
+          }
+          showToast(`เลิกติดตาม ${moment.userName} แล้ว`);
+        });
+      }
       // The share button opens the send sheet: invite friends, LINE, the link
       if (choice === 'send') setSharing(moment);
       if (choice === 'copy' || choice === 'share') {
