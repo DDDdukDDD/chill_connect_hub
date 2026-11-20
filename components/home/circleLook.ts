@@ -7,3 +7,6 @@ export const RING_MINE = 'from-[#F26430] to-[#FDBA74]';
 export const BADGE_MINE = 'bg-[#C2410C] text-white';
 export const RING_FRIENDS = 'from-[#2563EB] to-[#93C5FD]';
 export const NAME_MINE = 'font-semibold text-[#9A3412]';
+/** A hot challenge suggested to a member who follows few people: strangers, so neither mine (orange) nor friends (blue) */
+export const RING_HOT = 'from-[#7C3AED] to-[#C4B5FD]';
+export const BADGE_HOT = 'bg-[#6D28D9]';

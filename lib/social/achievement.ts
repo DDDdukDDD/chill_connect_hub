@@ -23,12 +23,14 @@ export async function achievementFor(memberId: string, moment: Moment, questId?:
     if (quest) return { questId: quest.questId, title: quest.title, current: quest.current, total: quest.total };
   }
   if (moment.status !== 'published') return undefined;
-  const postQuests = quests.filter((q) => q.posts && postCounts(q.posts, moment)).sort((a, b) => Number(b.questId === questId) - Number(a.questId === questId));
+  // A challenge that counts only posts made from it (QuestRule.posts.tagged) counts this one when its form named it
+  const counts = (posts: NonNullable<(typeof quests)[number]['posts']>, m: Moment) => postCounts(posts, m, m.id === moment.id ? questId : undefined);
+  const postQuests = quests.filter((q) => q.posts && counts(q.posts, moment)).sort((a, b) => Number(b.questId === questId) - Number(a.questId === questId));
   if (postQuests.length === 0) return undefined;
   const mine = (await momentRepository.query({ statuses: ['published'], authorId: memberId, sort: 'newest', page: 1, limit: 100 })).items;
   for (const quest of postQuests) {
     // This post's place among the posts that count, oldest first: a post after the last step is not a step
-    const counted = mine.filter((m) => postCounts(quest.posts!, m)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const counted = mine.filter((m) => counts(quest.posts!, m)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const step = counted.findIndex((m) => m.id === moment.id) + 1;
     if (step > 0 && step <= quest.total) return { questId: quest.questId, title: quest.title, current: step, total: quest.total };
   }

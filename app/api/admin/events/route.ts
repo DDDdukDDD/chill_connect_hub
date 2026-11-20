@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { actorCan, getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { checkedEventCategories } from '@/lib/eventCategories';
+import { memberRepository } from '@/lib/members';
 import {
   listAdminEvents,
   updateEventApproval,
@@ -47,6 +48,21 @@ function getEventValidationError(fields: Record<string, unknown>, eventType: str
   }
   return null;
 }
+/**
+ * The member account that runs a staff-made ตี้ (owner 2026-11-18: the ATM 5K run had no host, so nobody could scan
+ * tickets at the meeting point). That account checks people in, sees the list and leads the chat like any host.
+ * Only set, never cleared: a ตี้ people joined needs someone in charge. Undefined when the request does not set one.
+ */
+async function checkedHost(fields: Record<string, unknown>, eventType: string | undefined): Promise<{ id: string } | { error: string } | undefined> {
+  const id = fields.createdByMemberId;
+  if (id === undefined || id === '') return undefined;
+  if (eventType !== 'community') return { error: 'ตั้งบัญชีโฮสต์ได้เฉพาะตี้' };
+  if (typeof id !== 'string') return { error: 'บัญชีโฮสต์ไม่ถูกต้อง' };
+  const member = await memberRepository.findById(id);
+  if (!member || member.status !== 'active') return { error: 'ไม่พบบัญชีโฮสต์นี้ หรือบัญชีถูกระงับอยู่' };
+  return { id: member.id };
+}
+
 const APPROVAL_STATUSES = new Set(['pending', 'approved', 'rejected', 'all']);
 const EVENT_FORMATS = new Set(['recurring', 'online', 'physical', 'all']);
 
@@ -126,7 +142,10 @@ export async function POST(req: Request) {
       }
       const createError = getEventValidationError(eventData, eventData.eventType, true);
       if (createError) return NextResponse.json({ success: false, error: createError }, { status: 400 });
-      const safeCreate = Object.fromEntries(Object.entries(eventData).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const safeCreate: Record<string, unknown> = Object.fromEntries(Object.entries(eventData).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const host = await checkedHost(eventData, eventData.eventType);
+      if (host && 'error' in host) return NextResponse.json({ success: false, error: host.error }, { status: 400 });
+      if (host) safeCreate.createdByMemberId = host.id;
       const created = await createAdminEvent({
         ...safeCreate,
         ...checkedEventCategories({ ...safeCreate, eventType: eventData.eventType }),
@@ -180,6 +199,9 @@ export async function POST(req: Request) {
     if (action === 'update_fields' && id && updatedFields) {
       if (!target) return NextResponse.json({ success: false, error: 'ไม่พบกิจกรรม' }, { status: 404 });
       const safeFields: Record<string, unknown> = Object.fromEntries(Object.entries(updatedFields as Record<string, unknown>).filter(([key]) => MUTABLE_EVENT_FIELDS.has(key)));
+      const host = await checkedHost(updatedFields as Record<string, unknown>, target.eventType);
+      if (host && 'error' in host) return NextResponse.json({ success: false, error: host.error }, { status: 400 });
+      if (host) safeFields.createdByMemberId = host.id;
       // A changed group is checked like on create (an empty value clears it, so the title decides again)
       if ('lifestyleCategory' in safeFields || 'fairCategory' in safeFields) {
         Object.assign(safeFields, checkedEventCategories({ ...safeFields, eventType: target.eventType }));

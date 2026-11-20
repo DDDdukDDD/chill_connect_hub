@@ -6,18 +6,19 @@ import { memberRepository, type Member } from '../members';
 import { momentRepository } from '../moments';
 import { thaiTimeAgo } from '../moments/service';
 import { closenessOf } from './closeness';
-import { allQuestFinishes } from './questFinishes';
 import { joinsOf } from './questJoins';
 import { questMemberStore } from './stores';
 import {
   ACHIEVEMENTS_WINDOW_DAYS,
-  CIRCLES_FILL_BELOW,
   CIRCLES_FOLLOWING_MAX,
   CIRCLES_FRESH_POINTS,
   CIRCLES_GROUP_MIN,
+  CIRCLES_HOT_MAX,
   CIRCLES_LIST_MAX,
   CIRCLES_OWN_MAX,
+  CIRCLES_SUGGEST_BELOW,
 } from './socialRules';
+import { allQuestFinishes } from './questFinishes';
 import { groupCircles, type GroupCircle } from './groupCircles';
 
 /**
@@ -29,7 +30,9 @@ import { groupCircles, type GroupCircle } from './groupCircles';
  *
  * Circles at scale (owner 2026-11-18), so the row still works with 100 to 1,000+ friends:
  * - Each reader's own query: the people they follow and themselves over the last 14 days, not the site's newest posts
- *   (those pushed friends out once traffic grew). Only a reader with few friend Circles gets other people's after them.
+ *   (those pushed friends out once traffic grew). Never a stranger's face as if followed (owner 2026-11-18): a reader
+ *   following few people gets "กำลังฮิต" challenge Circles instead (the challenge's picture; opened, the people doing
+ *   it, each with ติดตาม) and a "หาเพื่อน" Circle (Circles.tsx), so the row is alive and leads to following.
  * - Order by closeness (lib/social/closeness.ts: done together, talked, follow back) plus freshness, not mutual-then-newest.
  * - 2+ friends on the same challenge become one Circle ("เพื่อน 8 คน"), opened as a list with a cheer for each.
  * - Up to CIRCLES_LIST_MAX come back; the row shows the first ones and a "ดูทั้งหมด" Circle for the rest (Circles.tsx).
@@ -53,10 +56,15 @@ export interface AchievementCircle {
   at: string;
 }
 
-/** Friends on the same challenge in one Circle (`c:<questId>`); each person keeps their own Circle id for "ชื่นชม" */
+/**
+ * Friends on the same challenge in one Circle (`c:<questId>`); each person keeps their own Circle id for "ชื่นชม".
+ * A hot challenge (`h:<questId>`, `suggested` set) has the same shape, with people the reader does not follow yet.
+ */
 export interface ChallengeCircle {
   id: string;
   kind: 'challenge';
+  /** A hot challenge suggested to a reader who follows few people: how many people are doing it */
+  suggested?: { total: number };
   quest: { id: string; title: string; image?: string };
   /** Closest first */
   people: AchievementCircle[];
@@ -146,7 +154,7 @@ const friendsRaw = (readerId: string, ids: string[]) =>
     { ttlMs: 90_000, tags: ['achievements'] }
   );
 
-/** The site's newest Circles, the same for every reader: only to fill the row of a reader with few friends */
+/** The site's newest steps and finishes, the same for every reader: only to find hot challenges for a reader who follows few */
 const everyone = () =>
   cacheManager.getOrSet(
     'circles',
@@ -160,6 +168,33 @@ const everyone = () =>
     },
     { ttlMs: 60_000, tags: ['achievements'] }
   );
+
+/**
+ * Hot challenges: open challenges with the most people achieving something on them lately, leaving out ones the reader
+ * already sees. Each keeps its people (one entry per person, a finish beating a step), none the reader follows.
+ */
+async function hotChallenges(readerId: string, skipPerson: (id: string) => boolean, skipQuest: Set<string>): Promise<{ questId: string; total: number; people: Raw[] }[]> {
+  const byQuest = new Map<string, Map<string, Raw>>();
+  for (const item of await everyone()) {
+    if (item.memberId === readerId || skipPerson(item.memberId) || skipQuest.has(item.quest.id)) continue;
+    const people = byQuest.get(item.quest.id) ?? new Map<string, Raw>();
+    const held = people.get(item.memberId);
+    if (!held || (item.kind === 'finish' && held.kind === 'step') || (item.kind === held.kind && item.at > held.at)) people.set(item.memberId, item);
+    byQuest.set(item.quest.id, people);
+  }
+  const newest = (people: Map<string, Raw>) => [...people.values()].reduce((a, b) => (a.at > b.at ? a : b)).at;
+  const ranked = [...byQuest.entries()].sort((a, b) => b[1].size - a[1].size || newest(b[1]).localeCompare(newest(a[1])));
+  const hot: { questId: string; total: number; people: Raw[] }[] = [];
+  for (const [questId, people] of ranked) {
+    if (hot.length >= CIRCLES_HOT_MAX) break;
+    const quest = await db.findQuestById(questId);
+    // Only one the reader can still join
+    if (!quest || quest.status === 'ended' || quest.status === 'draft') continue;
+    const joined = await questMemberStore.joins({ questId }).catch(() => []);
+    hot.push({ questId, total: Math.max((quest.participantsCount ?? 0) + joined.length, people.size), people: [...people.values()].sort((a, b) => b.at.localeCompare(a.at)) });
+  }
+  return hot;
+}
 
 /**
  * The reader's own "doing" circles: the newest challenges they joined and have not finished, still open. The challenge
@@ -197,16 +232,16 @@ const freshPoints = (at: string, now: number) => {
   return CIRCLES_FRESH_POINTS.find((step) => hours <= step.hours)?.points ?? 0;
 };
 
+/** Whether the row ends with "หาเพื่อน" (people worth following): while the reader follows few people */
+export const wantsFindPeople = (viewer: Member): boolean => (viewer.followingIds ?? []).filter((id) => id !== viewer.id).length < CIRCLES_SUGGEST_BELOW;
+
 export async function circleItems(viewer: Member): Promise<CircleItem[]> {
   const blocked = new Set(viewer.blockedIds ?? []);
   const following = (viewer.followingIds ?? []).filter((id) => !blocked.has(id) && id !== viewer.id).slice(0, CIRCLES_FOLLOWING_MAX);
   const friendSet = new Set(following);
+  // Only the reader and the people they follow (owner 2026-11-18): strangers' Circles filling a new member's row read
+  // as people they had followed
   const best = bestPerPerson(await friendsRaw(viewer.id, [viewer.id, ...following]), (id) => blocked.has(id));
-  // Few friend Circles: the site's newest of other people come after them, so a new member's row is not empty
-  const friendCount = [...best.keys()].filter((id) => id !== viewer.id).length;
-  const fill = friendCount < CIRCLES_FILL_BELOW
-    ? bestPerPerson(await everyone(), (id) => blocked.has(id) || id === viewer.id || friendSet.has(id))
-    : new Map<string, Raw>();
   const mineBest = best.get(viewer.id);
   const [doing, groups] = await Promise.all([
     doingOf(viewer.id, new Set(mineBest ? [mineBest.quest.id] : []), mineBest ? CIRCLES_OWN_MAX - 1 : CIRCLES_OWN_MAX).catch((): Raw[] => []),
@@ -215,10 +250,19 @@ export async function circleItems(viewer: Member): Promise<CircleItem[]> {
       return [];
     }),
   ]);
-  if (best.size === 0 && fill.size === 0 && doing.length === 0) return groups;
+  // Hot challenges only while the reader follows few people, never one already in their row
+  const seenQuests = new Set([...doing, ...best.values()].map((item) => item.quest.id));
+  const hot = following.length < CIRCLES_SUGGEST_BELOW
+    ? await hotChallenges(viewer.id, (id) => blocked.has(id) || friendSet.has(id), seenQuests).catch((error) => {
+        console.error('hotChallenges failed:', error);
+        return [];
+      })
+    : [];
+  if (best.size === 0 && doing.length === 0 && hot.length === 0) return groups;
 
   const friendIds = [...best.keys()].filter((id) => id !== viewer.id);
-  const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys(), ...fill.keys(), viewer.id]), memberRepository.followerIds(viewer.id)]);
+  const hotIds = hot.flatMap((h) => h.people.map((p) => p.memberId));
+  const [people, followers] = await Promise.all([memberRepository.findByIds([...best.keys(), ...hotIds, viewer.id]), memberRepository.followerIds(viewer.id)]);
   const mutual = new Set(followers.filter((id) => friendSet.has(id)));
   // Closeness is asked only for friends who have a Circle now: a handful, whatever the size of the follow list
   const closeness = await closenessOf(viewer.id, friendIds, mutual).catch((error) => {
@@ -263,9 +307,24 @@ export async function circleItems(viewer: Member): Promise<CircleItem[]> {
     });
   }
   ranked.sort((a, b) => b.score - a.score || b.item.at.localeCompare(a.item.at));
-  const others = [...fill.values()].flatMap(toCircle).sort((a, b) => b.at.localeCompare(a.at));
-  // Group Circles come right after the reader's own: a ตี้ just back from is the freshest thing friends did together
-  return [...mine, ...groups, ...ranked.map((r) => r.item), ...others].slice(0, CIRCLES_LIST_MAX);
+  const suggested = hot.flatMap(({ questId, total, people: raw }): ChallengeCircle[] => {
+    const members = raw.flatMap(toCircle);
+    if (members.length === 0) return [];
+    return [{
+      id: `h:${questId}`,
+      kind: 'challenge',
+      suggested: { total },
+      quest: members[0].quest,
+      people: members,
+      finished: members.filter((m) => m.kind === 'finish').length,
+      href: `/challenges/${encodeURIComponent(questId)}`,
+      timeAgo: members[0].timeAgo,
+      at: members[0].at,
+    }];
+  });
+  // Group Circles come right after the reader's own: a ตี้ just back from is the freshest thing friends did together.
+  // Suggestions come last: friends always first
+  return [...mine, ...groups, ...ranked.map((r) => r.item), ...suggested].slice(0, CIRCLES_LIST_MAX);
 }
 
 /** What a friends-on-one-challenge Circle needs when opened: who the reader already cheered, and their own place in it */

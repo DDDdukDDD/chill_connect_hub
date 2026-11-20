@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
-import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FILL_BELOW, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -300,8 +300,9 @@ const TOPICS: Topic[] = [
         <H>เลือกวงไหนบ้าง และเรียงอย่างไร</H>
         <List
           items={[
-            'ลำดับ: วงชมพู/ส้ม/เหลือง (ของเรา สิ่งที่ต้องทำ) → วงของเรา → Circle กลุ่ม → เพื่อน เรียงตามความสนิทบวกความสด → คนอื่นๆ (เฉพาะคนที่มีวงเพื่อนน้อย)',
-            `อ่านเฉพาะคนที่เราติดตาม (ไม่เกิน ${CIRCLES_FOLLOWING_MAX.toLocaleString()} คน) กับตัวเรา ไม่ใช่โพสต์ล่าสุดของทั้งเว็บ เพื่อนจึงไม่หลุดจากแถวเมื่อเว็บโตขึ้น ถ้ามีวงเพื่อนไม่ถึง ${CIRCLES_FILL_BELOW} วง จึงเติมวงล่าสุดของคนอื่นต่อท้าย`,
+            'ลำดับ: วงชมพู/ส้ม/เหลือง (ของเรา สิ่งที่ต้องทำ) → วงของเรา → Circle กลุ่ม → เพื่อน เรียงตามความสนิทบวกความสด → วงแนะนำ (ไม่มีวงของคนที่เราไม่ได้ติดตาม)',
+            `วงแนะนำ เฉพาะคนที่ติดตามไม่ถึง ${CIRCLES_SUGGEST_BELOW} คน: ชาเลนจ์กำลังฮิตไม่เกิน ${CIRCLES_HOT_MAX} วง (ขอบม่วง เพราะส้มเป็นของเรา น้ำเงินเป็นของเพื่อน รูปชาเลนจ์ ไม่มีหน้าคน เลือกชาเลนจ์ที่เปิดอยู่และมีคนทำสำเร็จมากที่สุดใน ${ACHIEVEMENTS_WINDOW_DAYS} วัน กดแล้วเห็นคนที่ทำพร้อมปุ่มติดตาม) และวง "หาเพื่อน" ท้ายแถว เปิดรายชื่อคนน่าติดตาม`,
+            `อ่านเฉพาะคนที่เราติดตาม (ไม่เกิน ${CIRCLES_FOLLOWING_MAX.toLocaleString()} คน) กับตัวเรา ไม่ใช่โพสต์ล่าสุดของทั้งเว็บ เพื่อนจึงไม่หลุดจากแถวเมื่อเว็บโตขึ้น`,
             `ความสนิท (ย้อนหลัง ${CLOSENESS_WINDOW_DAYS} วัน): ไปตี้เดียวกัน ${CLOSENESS_POINTS.tee} แต้มต่อครั้ง (สูงสุด ${CLOSENESS_POINTS.teeMax}) · อยู่ในแผนไปกันด้วยกัน ${CLOSENESS_POINTS.plan} (สูงสุด ${CLOSENESS_POINTS.planMax}) · อยู่ห้องแชตเดียวกัน ${CLOSENESS_POINTS.chat} (สูงสุด ${CLOSENESS_POINTS.chatMax}) · คอมเมนต์โพสต์กันทั้งสองทาง ${CLOSENESS_POINTS.comment} (สูงสุด ${CLOSENESS_POINTS.commentMax}) · กดถูกใจกันทั้งสองทาง ${CLOSENESS_POINTS.like} (สูงสุด ${CLOSENESS_POINTS.likeMax}) · ติดตามกันสองฝ่าย ${CLOSENESS_POINTS.mutual}`,
             `ความสด: วงภายใน 24 ชม. +${CIRCLES_FRESH_POINTS[0].points} · 3 วัน +${CIRCLES_FRESH_POINTS[1].points} · 7 วัน +${CIRCLES_FRESH_POINTS[2].points} วงจากวันนี้จึงขึ้นก่อนวงของเพื่อนสนิทเมื่อสัปดาห์ก่อนได้`,
             `เพื่อนตั้งแต่ ${CIRCLES_GROUP_MIN} คนที่ทำชาเลนจ์เดียวกัน รวมเป็นวงเดียว "เพื่อน N คน" (ขอบน้ำเงินแบบวงเพื่อน รูปชาเลนจ์ หน้าเพื่อนสองคนที่มุม) อยู่ตำแหน่งของเพื่อนที่สนิทที่สุดในกลุ่ม บวกเพิ่มนิดตามจำนวนคน กดแล้วเห็นทุกคนพร้อมสถานะ ชื่นชมทีละคนได้ และปุ่ม "ลองทำบ้าง" ปุ่มเดียว`,

@@ -4,14 +4,15 @@
  * Remote images are resized only from the hosts below (also `images.remotePatterns` in next.config.ts), so the
  * optimizer is never an open proxy; other links (Unsplash with its own sizes) stay as they are.
  * Members' uploads on Vercel Blob are listed by our own store's host, not `*.blob.vercel-storage.com`, which would
- * resize files from anyone's store on our quota. A new store needs its host here; uploads go to Cloudflare R2 behind
- * our own domains since 2026-11-07 (lib/media/ownMedia.ts).
+ * resize files from anyone's store on our quota.
+ * Uploads on Cloudflare R2 (media.chillwaa.com, lib/media/ownMedia.ts) are NOT resized since 2026-11-20: the month's
+ * 5,000 Vercel resizes ran out and every new photo answered 402, so new posts showed broken on /moments. They are
+ * already made small on the phone (lib/media/compressor.ts: at most 1600 px and 1 MB) and R2 serves them with no
+ * egress charge, so they go out as they are.
  * `width` must be one of the optimizer sizes in next.config.ts: 64, 96, 128, 256, 384, 640, 828, 1080 (1920 for a
  * full-width photo). Each width is a separate resize on Vercel's monthly quota, so reuse these rather than add one.
  */
 export const OPTIMIZED_REMOTE_IMAGES = [
-  { hostname: 'media.chillwaa.com', pathname: '/**' },
-  { hostname: 'media-dev.chillwaa.com', pathname: '/**' },
   { hostname: 'wf6n42ar74k77ycg.public.blob.vercel-storage.com', pathname: '/**' },
   { hostname: 'storage.googleapis.com', pathname: '/s.race.thai.run/**' },
   { hostname: 'www.impact.co.th', pathname: '/**' },
@@ -42,7 +43,8 @@ export function safeImageSrc(src: string | null | undefined): string {
 
 export function optimizedImage(src: string | undefined, width: number): string {
   if (!src || !SAFE_IMAGE_SRC.test(src)) return '';
-  const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');
+  // The app icons are already small (192 px at most): resizing them only spent the monthly quota
+  const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//') && !src.startsWith('/icons/');
   if (local || isOptimizedRemote(src)) return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
   return encodeImageLink(unsplashAtWidth(src, width));
 }

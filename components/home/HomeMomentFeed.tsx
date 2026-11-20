@@ -967,6 +967,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       {!PERSONAL[sort] && (
         <Circles
           initial={start?.circles}
+          initialFindPeople={start?.findPeople}
           lead={rowLead}
           refreshKey={circlesVersion}
           onOpenMoment={(id) => loadedView === sort && saveReturn(id)}

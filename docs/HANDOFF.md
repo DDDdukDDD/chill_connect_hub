@@ -20,6 +20,39 @@ Item template:
 
 ---
 
+### BE-438 · Photos without Vercel resizes, running challenges count only their own posts, Circles show new friends, moment page tidy (owner 2026-11-20)
+- **What changed:**
+  - **Broken photos on /moments:** Vercel's 5,000 monthly image resizes ran out; every new resize answers **402**, so posts from the night before showed broken in the grid (the feed and the post page fell back to the original). Uploads on R2 (`media.chillwaa.com`, `media-dev.`) are no longer resized (`OPTIMIZED_REMOTE_IMAGES` in `lib/optimizedImage.ts`, so also not in `images.remotePatterns`): they are already at most 1600 px / 1 MB from the phone and R2 has no egress charge. `/icons/` is not resized either. The grid card (`CardPhoto` in `MomentShowcase.tsx`) now tries the original once when a resize fails, as `FramePhoto` does. **Shared utility change:** `optimizedImage` / `avatarImage` return R2 links as they are.
+  - **Bell:** the Chillwaa notice icon (BE-435) went through the resizer too; avatars there are `ImgOr` with the initial as fallback.
+  - **Running challenges (`posts.tagged`):** the ATMBKK "ซ้อม 3 ครั้ง" challenge counted any post with a place, so a food post finished it. New rule option `posts.tagged`: only posts made from the challenge count (its "โพสต์โมเมนต์" or Circle; the post keeps `achievement.questId`). `db/seed-atmbkk-2026.mjs` sets it on both ATMBKK challenges and now updates the rule of a challenge that already exists. The owner's wrong finish on live is left as it is (owner's choice).
+  - **Circles:** a friends-on-one-challenge Circle (`c:<questId>`) kept its "opened" grey after someone new joined it, and its corner faces were the closest friends, so a friend just followed who finished a starter challenge never showed. The opened mark now includes the newest person's time (`seenKey`), and the newest face comes first.
+  - **Moment page (own photo post):** the trash icon is now an eye with the view count (only the author sees it); delete moved into a "…" menu. The amber box keeps only "โพสต์นี้พาเพื่อนๆ ออกไปแล้ว" (a clip keeps the views line there, having no author row).
+  - **Reel:** the sound button sits below the iPhone status bar in full screen (`fullScreen` on `ClipPlayer`).
+- **What to do about it:** after merge, run `db/seed-atmbkk-2026.mjs` against live so the two ATMBKK challenges get `tagged`. Decide later whether to turn on Cloudflare image resizing for `media.chillwaa.com` (to add to LAUNCH_CHECKLIST). The video picker's "คลังรูปภาพ" is iOS's own menu and cannot be renamed from the page.
+
+---
+### BE-437 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
+- **What changed:** the ชวนไป sheet offers "วันอื่น" (a calendar) beside เสาร์นี้ / อาทิตย์นี้, and once a day is picked an optional "กี่โมง". The plan chat's day picker (My Hub) sets or clears the time too. `POST /api/invites` takes `time` with `day`; `PATCH /api/plans/{id}` takes `time` (left out keeps it, `''`/`null` clears it); `PlanView.time`; every `dateLabel` reads "ส. 22 พ.ย. 18:30 น." (`planDayLabel` in `lib/social/friendPlans.ts`).
+- **What to do about it:** run **migration 0066** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
+
+---
+
+### BE-436 · Staff-made ตี้ get a host account (owner 2026-11-18)
+- **What changed:** the ATM 5K run (seeded with only `hostName: 'ทีม Chillwaa'`) had no `createdByMemberId`, so nobody could scan tickets. The admin ตี้ editor has "บัญชีโฮสต์ (สแกนเช็กอิน)": search a member and pick them; `/api/admin/events` `create` / `update_fields` accept `createdByMemberId` (active member, ตี้ only, set or changed, never cleared). That account checks people in, sees the list and leads the chat; `hostName` stays the shown name. The moderation list marks ตี้ with no host account in red. `db/seed-atmbkk-2026.mjs` takes `HOST_MEMBER_ID`.
+- **What to do about it:** set a host account on every staff-made ตี้ still ahead (the remaining ATM runs first). Searching needs `members.manage`.
+
+---
+
+### BE-435 · Circles: no strangers' faces, hot challenges and "หาเพื่อน" instead; pictures mend; Chillwaa notices show the app icon (owner 2026-11-18)
+- **What changed:**
+  - The fill of the site's newest Circles for readers with few friend Circles is gone (`CIRCLES_FILL_BELOW` removed): a new member saw strangers as if followed.
+  - A reader following fewer than `CIRCLES_SUGGEST_BELOW` (5) people gets up to `CIRCLES_HOT_MAX` (2) hot challenges at the end of the row (`h:<questId>`, `ChallengeCircle.suggested.total`, violet ring (orange means mine since BE-421), challenge picture only; opened: recent people on it, each with ติดตาม) and a "หาเพื่อน" Circle (`findPeople` on `GET /api/circles` and `HomeFeedStart`) that opens `FollowRow`.
+  - A circle picture that fails to load tries the original file once, then the fallback icon (a second `ImgOr` in `AchievementRowCircle`, `components/home/Circles.tsx`): own challenge pictures showed a broken "?" on the first home after an Apple sign-up on iPad. Root cause not found; the links load fine.
+  - Notifications from Chillwaa itself carry `actorAvatar: '/icons/icon-192.png'` (was `''`).
+- **What to do about it:** check on a fresh iPad sign-up that the "?" no longer shows.
+
+---
+
 ### BE-434 · สัปดาห์นี้: the first view of กิจกรรม, the next 7 days by day (owner 2026-11-19)
 - **What changed:** new page `/this-week`. The job: "I have a free day: what is on, and who is going", answered at a glance. It began as a weekend-only page from the canvas draft; the owner then chose the next 7 days laid out as a schedule, which also tells it apart from the landing (rows by category). Top to bottom: tabs "สัปดาห์นี้ · ตี้ · อีเวนต์ · ที่เที่ยว", "สัปดาห์นี้ไปไหนดี" with the dates; the province is the search box's (top bar, or above the tabs on phones, as on the other กิจกรรม pages; a member starts in their own when it has something this week, remembered on the device; a search word opens the ตี้ list), a sticky day strip (วันนี้, พรุ่งนี้, ส. 21 … with how many, "ว่าง" when none; tap jumps to the day), "เพื่อนๆ จะไปกัน" (signed in only), "ชาเลนจ์ที่คุณทำอยู่" (the member's joined, unfinished challenges with progress, from `/api/rewards`), then one row per day mixing ตี้ and อีเวนต์ in start-time order, each tile labelled "ตี้" or "อีเวนต์" in its pillar color (same tile size as the 2/3/4/6 grids, sliding like the landing rows; weekend days in orange), empty days folded to one line ("ยังไม่มีตี้วันนี้", no button: making a ตี้ is offered once at the end), อีเวนต์ already running listed once as "อีเวนต์ที่กำลังจัดอยู่" (ending soonest first) instead of on every day, "ที่น่าไปวันว่าง" (6 places with a photo, no chain branches, for the province; each with "ชวนไป", which opens the "ไปกัน" invite sheet, or sign-in for a visitor), "ชาเลนจ์ยอดนิยม" (the 6 open challenges most people are doing, leaving out the member's own), and "ยังไม่เจอที่ชอบ?". Server HTML with its own metadata and the ตี้ as JSON-LD; in the sitemap. `lib/thisWeek.ts` (days in Bangkok, lists), `lib/thisWeekFriends.ts` + `GET /api/this-week/friends`. Shared `components/discover/PillarTabs.tsx` puts the new tab first on `/community`, `/events`, `/spots`. "กิจกรรม" in the top bar and the phone bar opens `/this-week`.
 - **What to do about it:** nothing to run (no migration). Checked on dev at 390 px and 1440 px, signed out and in, tile width equal to /community (183 px at 1440); the friends row with two real attendees followed for the check (unfollowed after) and with one blocked; no console errors (a hydration mismatch from the province default was found and fixed). Not built: "ใกล้ฉัน" (needs location); save hearts are off on this page.

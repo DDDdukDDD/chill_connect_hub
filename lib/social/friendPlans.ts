@@ -213,7 +213,7 @@ async function routeLine(target: InviteTarget, route: unknown): Promise<string |
  * Sends "ชวนไป": friends picked in the app get a notice, and the link is returned for LINE. Both open the same page
  * with the same signed invitation. Returns how many were newly asked; `share` is the short link for LINE.
  */
-export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown; day?: unknown; route?: unknown }): Promise<{ invited: number; link: string; share: string; planId?: string; dateLabel?: string; momentInvites?: number }> {
+export async function sendInvites(member: Member, input: { type?: unknown; id?: unknown; to?: unknown; day?: unknown; time?: unknown; route?: unknown }):Promise<{ invited: number; link: string; share: string; planId?: string; dateLabel?: string; momentInvites?: number }> {
   const target = await targetOf(input.type, input.id);
   const sharesOff = (target as InviteTarget & { sharesOff?: string }).sharesOff;
   if (sharesOff && sharesOff !== member.id) throw new MemberAuthError('เจ้าของโพสต์ปิดการแชร์ไว้', 403);
@@ -247,9 +247,11 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
     const line = await routeLine(target, input.route);
     if (line) await tellChat(member, plan, line);
   }
-  // A day picked when inviting ("เสาร์นี้", owner 2026-11-12) sets the plan's day, unless it already has one
+  // A day picked when inviting ("เสาร์นี้", owner 2026-11-12) sets the plan's day, unless it already has one; a time
+  // picked with it (owner 2026-11-18) goes along
   if (typeof input.day === 'string' && input.day && !plan.date && plan.targetType !== 'quest') {
-    await friendPlanStore.update(plan.id, { date: await checkPlanDay(plan, input.day), status: 'set' });
+    const time = input.time === undefined ? null : checkPlanTime(input.time);
+    await friendPlanStore.update(plan.id, { date: await checkPlanDay(plan, input.day), ...(time ? { time } : {}), status: 'set' });
     plan = (await friendPlanStore.byId(plan.id))!;
   }
   const inPlan = new Set(plan.members.map((m) => m.memberId));
@@ -261,7 +263,7 @@ export async function sendInvites(member: Member, input: { type?: unknown; id?: 
   const token = planToken(plan.id, plan.hostId === member.id ? undefined : member.id);
   const link = withToken(target.path, token);
   await Promise.all(fresh.map((f) => notifyInvite(f.id, member, { place: placeWord(target.title), path: link, refs: target.refs })));
-  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: shortLabelOf(plan.date) } : {}), ...(momentInvites !== undefined ? { momentInvites } : {}) };
+  return { invited: fresh.length, link, share: await shareLink(member, target.path, token), planId: plan.id, ...(plan.date ? { dateLabel: planDayLabel(plan.date, plan.time) } : {}), ...(momentInvites !== undefined ? { momentInvites } : {}) };
 }
 
 export interface InviteInfo {
@@ -315,7 +317,7 @@ export async function inviteInfo(reader: Member | null, token: unknown): Promise
     target: plan.targetType,
     title: placeWord(plan.title),
     image: plan.image,
-    ...(plan.date && plan.date >= bangkokDay() ? { dateLabel: shortLabelOf(plan.date) } : {}),
+    ...(plan.date && plan.date >= bangkokDay() ? { dateLabel: planDayLabel(plan.date, plan.time) } : {}),
     going: people.slice(0, 5).flatMap((m) => (shown.get(m.memberId)?.status === 'active' ? [person(shown.get(m.memberId)!)] : [])),
     goingCount: people.length,
     isIn: Boolean(reader && memberOf(plan, reader.id)?.state === 'going'),
@@ -402,6 +404,9 @@ export interface PlanView {
   placeHref?: string;
   /** "YYYY-MM-DD", or none while they are still talking */
   date?: string;
+  /** "HH:MM" when a meeting time was set on that day */
+  time?: string;
+  /** The day, and the time when there is one ("ส. 22 พ.ย. 18:30 น.") */
   dateLabel?: string;
   /** An อีเวนต์ plan can only pick the event's days */
   dateMin?: string;
@@ -468,7 +473,8 @@ async function viewsOf(member: Member, plans: FriendPlan[]): Promise<PlanView[]>
       image: plan.image,
       placeHref: targetHref(plan),
       date: plan.date,
-      dateLabel: plan.date ? shortLabelOf(plan.date) : undefined,
+      ...(plan.date && plan.time ? { time: plan.time } : {}),
+      dateLabel: plan.date ? planDayLabel(plan.date, plan.time) : undefined,
       ...(range.min ? { dateMin: range.min > today ? range.min : today } : {}),
       ...(range.max ? { dateMax: range.max } : {}),
       isPast: Boolean(plan.date && plan.date < today),
@@ -589,6 +595,18 @@ export async function setFreeDays(member: Member, id: string, input: unknown): P
   return view;
 }
 
+const TIME_OF_DAY = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** A meeting time "HH:MM"; '' or null clears it, anything else is refused */
+function checkPlanTime(time: unknown): string | null {
+  if (time === null || time === '') return null;
+  if (typeof time !== 'string' || !TIME_OF_DAY.test(time)) throw new MemberAuthError('เลือกเวลาอีกทีนะ');
+  return time;
+}
+
+/** "ส. 22 พ.ย. 18:30 น." with a time, "ส. 22 พ.ย." without (the day as every plan screen and invitation shows it) */
+export const planDayLabel = (date: string, time?: string | null): string => (time ? `${shortLabelOf(date)} ${time} น.` : shortLabelOf(date));
+
 /** A day a plan can take: today up to a year ahead (Bangkok), inside an อีเวนต์'s days */
 async function checkPlanDay(plan: FriendPlan, date: unknown): Promise<string> {
   const today = bangkokDay();
@@ -605,16 +623,20 @@ async function checkPlanDay(plan: FriendPlan, date: unknown): Promise<string> {
  * group's, so the chat always hears it (owner 2026-11-12), in words that leave room to say no. The place is not
  * named: the plan card above the chat says it, and a post with no place would read "ที่ในโพสต์นี้".
  */
-export async function setPlanDate(member: Member, id: string, date: unknown): Promise<PlanView> {
+export async function setPlanDate(member: Member, id: string, date: unknown, time?: unknown): Promise<PlanView> {
   const plan = await myPlan(member, id);
   if (date === null) {
-    await friendPlanStore.update(plan.id, { date: null, status: 'planning', remindedAt: undefined, followedUpAt: undefined });
+    // The time goes with the day (written only when there was one: older databases have no time column)
+    await friendPlanStore.update(plan.id, { date: null, ...(plan.time ? { time: null } : {}), status: 'planning', remindedAt: undefined, followedUpAt: undefined });
     if (plan.date) await tellChat(member, plan, 'ขอเลื่อนไปก่อน ค่อยนัดวันกันใหม่นะ');
   } else {
     const day = await checkPlanDay(plan, date);
-    await friendPlanStore.update(plan.id, { date: day, status: 'set', remindedAt: undefined, followedUpAt: undefined });
-    const label = shortLabelOf(day);
-    if (day !== plan.date) await tellChat(member, plan, plan.date ? `ขอเปลี่ยนเป็น ${label} นะ ใครไม่สะดวกบอกได้เลย` : `นัดกัน ${label} นะ ใครไม่สะดวกบอกได้เลย`);
+    // Time left out: the plan keeps the one it has (owner 2026-11-18: the time is optional)
+    const at = time === undefined ? plan.time ?? null : checkPlanTime(time);
+    const timeChange = at !== (plan.time ?? null) ? { time: at } : {};
+    await friendPlanStore.update(plan.id, { date: day, ...timeChange, status: 'set', remindedAt: undefined, followedUpAt: undefined });
+    const label = planDayLabel(day, at);
+    if (day !== plan.date || at !== (plan.time ?? null)) await tellChat(member, plan, plan.date ? `ขอเปลี่ยนเป็น ${label} นะ ใครไม่สะดวกบอกได้เลย` : `นัดกัน ${label} นะ ใครไม่สะดวกบอกได้เลย`);
   }
   const [view] = await viewsOf(member, [(await friendPlanStore.byId(plan.id))!]);
   if (!view) throw new MemberAuthError('ไม่พบแผนนี้แล้ว', 404);

@@ -2,10 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, LayoutGrid, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, Trophy, UserPlus } from 'lucide-react';
+import { DialogShell } from '@/components/auth/DialogShell';
+import { FollowRow } from '@/components/home/onboardingFirstStep';
 import type { AchievementCircle, CircleItem } from '@/lib/social/circles';
 import { nameInitial } from '@/lib/displayName';
-import { avatarImage } from '@/lib/optimizedImage';
+import { avatarImage, safeImageSrc } from '@/lib/optimizedImage';
 import ImgOr from '@/components/ImgOr';
 import { recall, remember } from '@/lib/clientMemory';
 import { CircleViewer } from '@/components/home/CircleViewer';
@@ -19,6 +21,7 @@ import { BADGE_MINE, NAME_MINE, RING_FRIENDS, RING_MINE } from '@/components/hom
 export const isOwnCircle = (item: CircleItem): boolean => (item.kind === 'finish' || item.kind === 'step' || item.kind === 'doing') && item.isMe;
 
 const MEMORY_KEY = 'circles';
+const FIND_PEOPLE_KEY = 'circles-find-people';
 
 
 /**
@@ -28,8 +31,10 @@ const MEMORY_KEY = 'circles';
  * A tap opens the Circle (CircleViewer, round A 2026-11-16): who did what, who else is doing it, and one button to do it
  * too. Nothing shows until someone has achieved something.
  */
-export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }: {
+export function Circles({ initial, initialFindPeople, onOpenMoment, onPost, lead, refreshKey = 0 }: {
   initial?: CircleItem[];
+  /** The row ends with "หาเพื่อน" (the reader follows few people; GET /api/circles `findPeople`) */
+  initialFindPeople?: boolean;
   /** Circles before the achievements: the reader's next plan (MemberLiveHome UpNextCircle) */
   lead?: React.ReactNode;
   /** A circle that opens a post: the feed keeps its place, so that post's back link returns here */
@@ -41,6 +46,9 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
 }) {
   // From the server with the page (app/page.tsx), so the row never pops in above posts already on screen
   const [items, setItems] = useState<CircleItem[]>(() => initial ?? recall<CircleItem[]>(MEMORY_KEY) ?? []);
+  const [findPeople, setFindPeople] = useState<boolean>(() => initialFindPeople ?? recall<boolean>(FIND_PEOPLE_KEY) ?? false);
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const followedHere = useRef(false);
   const [openAt, setOpenAt] = useState<number | null>(null);
   // Circles opened on this device get a grey ring and move behind the new ones (owner 2026-11-18: no way to tell what
   // was new). The order is set when the row loads, never while the member taps through it. The member home is drawn in
@@ -50,9 +58,14 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   const ordered = useMemo(() => {
     const mine = items.filter(isOwnCircle);
     const others = items.filter((item) => !isOwnCircle(item));
-    return [...mine, ...others.filter((item) => !seenAtLoad.includes(item.id)), ...others.filter((item) => seenAtLoad.includes(item.id))];
+    return [...mine, ...others.filter((item) => !seenAtLoad.includes(seenKey(item))), ...others.filter((item) => seenAtLoad.includes(seenKey(item)))];
   }, [items, seenAtLoad]);
-  const markSeen = useCallback((id: string) => setSeen((now) => (now.includes(id) ? now : rememberSeen(id))), []);
+  // The viewer reports the Circle's id; what is kept is its seen key, so a friends Circle someone new joined is new again
+  const markSeen = useCallback((id: string) => {
+    const item = items.find((one) => one.id === id);
+    const key = item ? seenKey(item) : id;
+    setSeen((now) => (now.includes(key) ? now : rememberSeen(key)));
+  }, [items]);
   // Asked again after something changed it: a join or a cheer in the viewer, or a post
   const [stale, setStale] = useState(0);
   const load = useCallback(() => {
@@ -62,7 +75,9 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
       .then((json) => {
         if (!active || !Array.isArray(json?.items)) return;
         remember(MEMORY_KEY, json.items);
+        remember(FIND_PEOPLE_KEY, Boolean(json.findPeople));
         setItems(json.items);
+        setFindPeople(Boolean(json.findPeople));
         setSeenAtLoad(readSeen());
       })
       .catch(() => undefined);
@@ -73,10 +88,11 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   useEffect(() => {
     if (initial && refreshKey === 0 && stale === 0) {
       remember(MEMORY_KEY, initial);
+      remember(FIND_PEOPLE_KEY, Boolean(initialFindPeople));
       return;
     }
     return load();
-  }, [initial, refreshKey, stale, load]);
+  }, [initial, initialFindPeople, refreshKey, stale, load]);
   const open = (index: number) => setOpenAt(index);
   // Past ACHIEVEMENTS_ROW_MAX the row ends with "ดูทั้งหมด" (Circles at scale, owner 2026-11-18): a list of every Circle
   const [allOpen, setAllOpen] = useState(false);
@@ -97,7 +113,7 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
   const page = (direction: 1 | -1) => listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: 'smooth' });
   const arrow = 'hidden sm:flex absolute top-[30px] z-10 w-9 h-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-md text-slate-700 hover:bg-slate-50 cursor-pointer';
 
-  if (items.length === 0 && !lead) return null;
+  if (items.length === 0 && !lead && !findPeople) return null;
   // At the very top of home (owner 2026-11-13): the circles speak for themselves, so the label is for screen readers only
   return (
     <section aria-labelledby="circles-heading" className="relative mb-3">
@@ -117,7 +133,7 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
         {lead}
         {shown.map((item, index) => {
           // A friend's Circle already opened on this device gets a grey ring; my own are things to do and never fade
-          const faded = !isOwnCircle(item) && seen.includes(item.id);
+          const faded = !isOwnCircle(item) && seen.includes(seenKey(item));
           // A thin line between my own Circles and friends' (option A). The lead Circles (next plan, campaigns) are mine
           // too (TR-023), but `lead` may draw nothing: then this line is the list's first item and `first:hidden` drops it.
           // The lead Circles are phone-only (laptops show them beside the feed, MemberLiveHome), so the line after them is too
@@ -140,12 +156,41 @@ export function Circles({ initial, onOpenMoment, onPost, lead, refreshKey = 0 }:
             name="ดูทั้งหมด"
           />
         )}
+        {/* A reader following few people (owner 2026-11-18): people worth following, so the row fills with real friends */}
+        {findPeople && (
+          <Circle
+            onClick={() => setPeopleOpen(true)}
+            label="หาคนน่าติดตาม"
+            ring="from-[#2563EB] to-[#93C5FD]"
+            fallback={<UserPlus className="w-7 h-7 text-[#2563EB]" aria-hidden="true" />}
+            badge={<UserPlus className="w-3 h-3" />}
+            badgeClass="bg-[#2563EB] text-white"
+            name="หาเพื่อน"
+          />
+        )}
       </ul>
+      {peopleOpen && (
+        <DialogShell
+          onClose={() => {
+            setPeopleOpen(false);
+            // Someone followed: the row is asked again, so their Circles show
+            if (followedHere.current) {
+              followedHere.current = false;
+              setStale((n) => n + 1);
+            }
+          }}
+          title="เพื่อนๆ ที่น่าติดตาม"
+          size="sm"
+        >
+          <p className="mb-4 text-sm text-slate-600">ติดตามแล้ว ชาเลนจ์และโมเมนต์ของเขาจะขึ้นใน Circles ของคุณ</p>
+          <FollowRow layout="list" onFollowed={() => (followedHere.current = true)} emptyText="ยังไม่มีคนแนะนำตอนนี้ ลองดูโมเมนต์ในฟีดแล้วกดติดตามคนที่ชอบได้เลย" />
+        </DialogShell>
+      )}
       {allOpen && (
         <AllCirclesSheet
           items={ordered}
           render={(item, index) => {
-            const faded = !isOwnCircle(item) && seen.includes(item.id);
+            const faded = !isOwnCircle(item) && seen.includes(seenKey(item));
             const pick = () => {
               setAllOpen(false);
               open(index);
@@ -221,7 +266,8 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
         >
           <span className={`relative rounded-full p-[3px] ${ring}`}>
             <span className="block rounded-full bg-white p-[2px]">
-              {picture ? <ImgOr src={avatarImage(picture)} fallback={fallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" /> : fallback}
+              {/* A failed resized link tries the original file once (iPad after an Apple sign-up, 2026-11-18), then the fallback */}
+              {picture ? <ImgOr key={picture} src={avatarImage(picture)} fallback={<ImgOr src={safeImageSrc(picture)} fallback={fallback} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" />} className="w-16 h-16 rounded-full object-cover bg-slate-100 group-hover:brightness-95 transition-[filter]" /> : fallback}
             </span>
             <span
               className={`absolute -bottom-1 left-1/2 -translate-x-1/2 inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full border-2 border-white text-[11px] font-bold tabular-nums whitespace-nowrap ${badge}`}
@@ -240,7 +286,14 @@ function AchievementRowCircle({ item, seen: faded, onOpen }: { item: Achievement
     );
 }
 
-// Circles opened on this device (ids), newest last; a per-device convenience, so a cleared browser just shows them fresh again
+/**
+ * What "opened already" remembers for a Circle. Friends on one challenge keep the id `c:<questId>` while people join,
+ * so the newest one's time goes with it: a friend just followed who finished the same starter challenge stayed hidden
+ * in a grey Circle at the end of the row (owner 2026-11-20); now that Circle is new again.
+ */
+const seenKey = (item: CircleItem): string => (item.kind === 'challenge' ? `${item.id}@${item.at}` : item.id);
+
+// Circles opened on this device (seen keys), newest last; a per-device convenience, so a cleared browser just shows them fresh again
 const SEEN_KEY = 'circles-seen';
 function readSeen(): string[] {
   try {

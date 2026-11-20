@@ -25,8 +25,10 @@ export const CLOSENESS_POINTS = {
 export const CIRCLES_FRESH_POINTS = [{ hours: 24, points: 4 }, { hours: 72, points: 2 }, { hours: 168, points: 1 }] as const;
 /** 2+ friends on the same challenge become one Circle "เพื่อน N คน" */
 export const CIRCLES_GROUP_MIN = 2;
-/** A reader with fewer friend Circles than this gets the site's newest Circles of other people after them */
-export const CIRCLES_FILL_BELOW = 6;
+/** A reader following fewer people than this gets suggestion Circles: hot challenges and "หาเพื่อน" (owner 2026-11-18) */
+export const CIRCLES_SUGGEST_BELOW = 5;
+/** Hot-challenge Circles at most */
+export const CIRCLES_HOT_MAX = 2;
 /** The friends asked for at most (the first of the follow list when a reader follows more) */
 export const CIRCLES_FOLLOWING_MAX = 1000;
 /** Circles sent to the browser: the row shows ACHIEVEMENTS_ROW_MAX, "ดูทั้งหมด" opens the rest */

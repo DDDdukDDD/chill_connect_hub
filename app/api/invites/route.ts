@@ -9,7 +9,7 @@ import { inviteLinkStore } from '@/lib/social/inviteLinkStore';
 
 /**
  * "ชวนไป" from every section (owner 2026-11-11), lib/social/friendPlans.ts.
- * POST { type: 'spot' | 'fair' | 'community' | 'quest' | 'moment', id, to?: [memberId], day?: 'YYYY-MM-DD' } → { invited, link, share, planId?, dateLabel? }:
+ * POST { type: 'spot' | 'fair' | 'community' | 'quest' | 'moment', id, to?: [memberId], day?: 'YYYY-MM-DD', time?: 'HH:MM' (with day) } →{ invited, link, share, planId?, dateLabel? }:
  *   friends picked (people who follow each other, up to 15 in a plan) get a notice; `link` is the same invitation for
  *   LINE. A ตี้ makes no plan: its link only says who asked.
  * GET ?type=&id= → { plans, into?, elsewhere, joined, asked } (InviteSheetInfo): the signed-in reader's plans still
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อน' }, { status: 401 });
   if (await isRateLimited(`invite-send:${member.id}`, INVITE_SENDS_PER_HOUR, 60 * 60 * 1000)) return NextResponse.json({ success: false, message: 'ชวนบ่อยเกินไป ลองใหม่ภายหลังนะ' }, { status: 429 });
   try {
-    const body = (await request.json().catch(() => ({}))) as { type?: unknown; id?: unknown; to?: unknown; day?: unknown; route?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { type?: unknown; id?: unknown; to?: unknown; day?: unknown; time?: unknown; route?: unknown };
     return NextResponse.json({ success: true, ...(await sendInvites(member, body)) });
   } catch (error) {
     if (error instanceof MemberAuthError || error instanceof MomentError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
