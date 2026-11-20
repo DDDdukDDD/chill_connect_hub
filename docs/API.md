@@ -406,6 +406,32 @@ Response: `{ success: true, counts: { meetups, fairs, spots, challenges } }`.
 - Matching is `lib/discoverMatch.ts`, the same code `/community`, `/events`, `/spots` and `/challenges` filter with, so a tab's number equals the cards that page shows for the same word and province with its other filters at their defaults.
 - Cached for 60 seconds (`s-maxage=60`).
 
+### `GET /api/search` — the site's search (BE-440, BE-441, TR-012)
+
+`lib/search/siteSearch.ts`; used by the top bar's dropdown, the phone search screen and `/search`.
+
+- Query: `q` (up to 40 letters; spaces squeezed; `#word` looks for tags only), `type` (one of `people`, `spots`, `meetups`, `fairs`, `challenges`, `moments`, `tags`: that kind only), `limit` (rows per kind: 3 by default, 30 with `type`, at most 30), `province` (that province's matches go first among equal ones; a member's own province by default), `moments=1` (also read moments, which `type=moments` implies).
+- **Empty `q`** → `200 { success, q: '', start: { people, challenges, weekend, tags } }`: up to 4 people worth following (members only, else `[]`), the 4 most-joined open challenges, up to 4 ตี้ and อีเวนต์ this weekend (the province first), the 6 most used tags.
+- **With `q`** → `200 { success, q, people, spots, meetups, fairs, challenges, tags, moments?, counts, order }`.
+  - `spots`, `meetups`, `fairs`, `challenges` are `SearchHit { id, title, subtitle, image?, href }`, matched as ค้นพบ matches them (`matchesQuery` with its Thai synonyms; ตี้ not closed to joining, อีเวนต์ not ended, challenges open and public), then ordered by how well the title matches (whole title, its start, inside it, the rest of the text, a synonym), the province and the list's own order breaking ties.
+  - `people` is `null` for a guest (names are for members only). Active members whose shown name contains the word, never matched by email or id, without the viewer, anyone either side has blocked, or members with open risk flags; people the viewer follows or who follow them first. `SearchPerson { id, name, avatar, isFollowing, followsMe? }`.
+  - `tags`: tags containing the word, those starting with it first, then the most used. Counts come from the hashtag cache: 30 minutes since BE-441 (was 6 hours), cleared on the server that handled a post, edit or delete with a `#`.
+  - `moments` (only when asked): `FeedItem[]` from `listMoments` with `q`, which matches the caption, the author's name, the location and, since BE-441, the title of the place, ตี้ or อีเวนต์ the post is tied to.
+  - `counts`: how many each kind found (`spots` is /spots' full total; `people` up to 30 read).
+  - `order`: the kinds that found something, best match first (moments not included). Screens show the kinds in this order.
+- `429` past 60 searches a minute per IP. `Cache-Control: private, no-store`.
+
+### `/search` — all results (BE-441)
+
+`/search?q=…&tab=…` (`tab` is a kind above; none is "ทั้งหมด"): server-rendered, `noindex, nofollow`. Enter in any search box comes here, except `#tag`, which opens the tag's page. Recent searches (up to 8) are kept in the browser only (`localStorage` `search-recent`, `components/discover/searchClient.ts`).
+
+### `POST /api/upload` — one photo (multipart/form-data)
+
+- Fields: `file` (JPG, PNG, WebP or AVIF, at most 5 MB, checked by its first bytes), `folder` (`moments`, `avatars`, `events`, `spots`…), and since 2026-11-20 (BE-439) an optional `small`: the phone's smaller copy, same type, at most 512 KB and smaller than `file`. Build the form with `photoUploadForm` (`lib/media/uploadPhoto.ts`), which makes the copy (800 px, 384 for `avatars`).
+- Signed-in member or staff only (`401`); members 20 uploads per 10 minutes per IP (`429`).
+- `200 { success, url, key, size, mimeType, originalName }`. On R2 a photo stored with its copy has a name ending `.o.<ext>` and the copy sits beside it as `.s.<ext>` (`smallCopyOf` in `lib/media/ownMedia.ts`); a `small` that fails a check, or a copy that fails to store, leaves a plain name. Other storage drivers ignore `small`.
+- `optimizedImage(url, width)` returns the copy for widths up to 640, so screens need no change. Deleting the original through the storage adapter deletes the copy too.
+
 ### `/api/upload/video` — a moment's clip (trial, 2026-11-02)
 - `GET` → `{ mode: "r2" | "direct" | "server" | "off" }`: `r2` = send it straight to Cloudflare R2 with a signed link (since 2026-11-07), `direct` = send it straight to Vercel Blob with a signed URL, `server` = a local server keeps it, `off` = hosted without Blob storage, so clips cannot be uploaded.
 - `POST`: Same rules as posting a moment (signed in, verified, pledge), 20 files an hour per member (a clip and its preview are two). MP4, MOV or WEBM, up to 50 MB. In `r2` mode it takes JSON `{ contentType, size, preview? }` and answers `{ uploadUrl, url, cacheControl }`: the phone `PUT`s the file to `uploadUrl` within 10 minutes with headers `Content-Type` and `Cache-Control` exactly as given, and posts `url`; the size and type are signed into the link, so R2 refuses any other file (`preview: true` names it as the clip's preview). In `direct` mode it answers `uploadPresigned`'s request from `@vercel/blob/client` and the signed URL holds the type and size limits (works with the store's OIDC login, no `BLOB_READ_WRITE_TOKEN`); in `server` mode it takes `multipart/form-data` with `file` and checks the file's first bytes.

@@ -20,6 +20,39 @@ Item template:
 
 ---
 
+### BE-441 · Search at IG/TikTok level: every kind at once, recent searches, things to tap, arrow keys, /search with tabs (owner 2026-11-20)
+- **What changed** (owner picked items 1–7 of the search plan):
+  1. **Every kind while typing:** the dropdown (computer) and the phone search screen show people, ที่เที่ยว, ตี้, อีเวนต์, ชาเลนจ์ and tags, three each, with picture and one line ("คาเฟ่ & ร้านกาแฟ · อารีย์", "22 พ.ย. 2569 · สวนเบญจกิติ", "430 คนกำลังทำ"). The kinds are ordered by their best match (`order` from the server): "วิ่ง" shows ตี้ named "วิ่ง…" before places that only mention running. Matching is ค้นพบ's own (`matchesQuery` with synonyms); ranking is new (`lib/search/siteSearch.ts`).
+  2. **Recent searches:** up to 8 on this device, each removable, "ล้างทั้งหมด"; a word is kept when Enter is pressed or a result opened from it.
+  3. **Before typing:** recent searches, people worth following (members), this weekend (province first), the busiest challenges, popular tags. The dropdown now opens on focus.
+  4. **Arrow keys:** down from the box into the results, up back to the box, Escape closes and returns focus.
+  5. **Fresh tags:** the hashtag counts are kept 30 minutes (was 6 hours) and cleared when a post, edit or delete has a `#` (`forgetTagsOf` in `lib/moments/service.ts`; other servers catch up within the half hour).
+  6. **`/search?q=&tab=`:** all results with a tab per kind and counts; "ทั้งหมด" six of each with "ดูทั้งหมด"; a tab up to 30, with a link to the ค้นพบ page and its filters for places, ตี้ and อีเวนต์. Server-rendered and `noindex`. Enter in every box comes here (`#tag` still opens the tag page); typing a new word on the page shows live results until Enter.
+  7. **Moments by words:** `listMoments`' `q` also matches the title of the place, ตี้ or อีเวนต์ a post is tied to (both repositories); moments show as a photo grid on `/search`.
+  - The dropdown's old first row "ค้นหา … ในตี้ อีเวนต์ ที่เที่ยว" became "ดูผลทั้งหมดของ …" (→ `/search`). `GET /api/search` grew `type`, `limit`, `province`, `moments`, the empty-word `start`, and `counts` / `order` (`docs/API.md`).
+- **What to do about it:** checked in headless Edge at 1280 and 390 with the local sample data: the empty dropdown and phone screen, "วิ่ง" ordering, arrow keys, Enter to `/search`, the ที่เที่ยว tab, moments for "กาแฟ", a guest's results, recent searches; no page errors; `/search` sends `noindex, nofollow` with the results in the server HTML. Not tried: the tag cache clearing after a real post (needs a post on dev). Tester: TR-012 re-test now covers this.
+
+---
+
+### BE-440 · Search finds people and #hashtags (TR-012, owner 2026-11-20)
+- **What changed:**
+  - **API:** `GET /api/search?q=` (`app/api/search/route.ts`, contract in `docs/API.md`): people by name for signed-in members (`searchMembers` in `lib/members/safety.ts`, on a new name-only `memberRepository.searchByName`: the staff `query` also matches emails, which a public search must not) and tags (`searchHashtags` in `lib/moments/service.ts`, on the cached hashtag counts).
+  - **Top bar (md and up):** typing in `SiteSearch` opens a dropdown (`components/discover/SearchResults.tsx`): first a row "ค้นหา “…” ในตี้ อีเวนต์ ที่เที่ยว" (what Enter always did), then people with ติดตาม buttons (`PeopleList`), then tags. "#tag" + Enter opens the tag page. Placeholder "ค้นหากิจกรรม คน #แท็ก" (`DiscoverSearch` takes `placeholder`).
+  - **Phones:** the top bar's search icon opened `/community`; it now opens a full-screen search (`components/discover/SearchSheet.tsx`, loaded on first tap) with ตี้ / อีเวนต์ / ที่เที่ยว tiles and popular tags before typing, the same results while typing.
+  - Guests get tags and "เข้าสู่ระบบเพื่อค้นหาเพื่อน" instead of people.
+- **What to do about it:** tested against the API and the local member file (no database on the office notebook), and in headless Edge at 1280 and 390: the dropdown for a member and a guest, tags for "#", Escape closes it, the phone screen before and while typing, and ติดตาม → กำลังติดตาม from the list. Tester: please re-test TR-012 at 390 and 1280 wide. A tag first used in the last few hours is not listed until the hashtag cache refreshes (up to 6 hours), but "#tag" + Enter reaches it. Name search scans `display_name` with `ilike`; add a trigram index when members reach the tens of thousands.
+
+---
+
+### BE-439 · Small photo copies made on the phone; Circles: gold for finished, one "ทำอยู่" Circle; moment tabs hidden (owner 2026-11-20)
+- **What changed:**
+  - **Small copies (shared utility change):** every photo upload (moments and their edits, clip covers, profile pictures in onboarding and the profile editor, ตี้/อีเวนต์ images, Spot Buddy, admin image fields) builds its form with `photoUploadForm` (`lib/media/uploadPhoto.ts`), which adds an 800 px copy (384 px for `avatars`) when the photo is bigger than that. `/api/upload` takes it as `small`; the R2 adapter stores `name.s.webp` first, then the photo as `name.o.webp`. `optimizedImage` returns the copy for widths up to 640 (grid cards, tiles, avatars), the original above that. Only `.o.` names have a copy, so older photos are untouched. Deleting a photo through the adapter deletes its copy; the daily moment orphan cleanup keeps a copy while its original is used. `docs/API.md` has the `/api/upload` contract.
+  - **Circles:** a friends Circle's corner faces were clipped by the scrolling row (the row now has 4 px above). My finished challenges are gold (`RING_DONE` / `BADGE_DONE` / `NAME_DONE` in `circleLook.ts`) instead of the same orange as ongoing ones. Two or more of my challenges still going ("ทำอยู่" or "2/3") share one Circle "ทำอยู่ N" with their pictures split inside it; a tap lists them (`AllCirclesSheet` takes a `title`) and each opens in the viewer, which still swipes through all Circles.
+  - **/moments:** the type tabs (สถานที่, ตี้, อีเวนต์, ชาเลนจ์) are hidden while there are few posts (`SHOW_TYPE_TABS` in `MomentShowcase.tsx`). Posts keep their type and `?type=` links still filter; such a link shows the tabs so the reader can get back.
+- **What to do about it:** the Circles row (gold finish, "ทำอยู่ 3" with three pictures, corner faces no longer clipped, the list it opens) and /moments without tabs were checked in headless Edge with sample Circles. The office notebook has no R2 settings, so the copy upload was not tried against a bucket. On the main computer, post a photo on dev and check that `media-dev` holds both `.o.` and `.s.` files and the /moments grid loads the `.s.` file. Turn the tabs back on when each type has enough posts to fill a page.
+
+---
+
 ### BE-438 · Photos without Vercel resizes, running challenges count only their own posts, Circles show new friends, moment page tidy (owner 2026-11-20)
 - **What changed:**
   - **Broken photos on /moments:** Vercel's 5,000 monthly image resizes ran out; every new resize answers **402**, so posts from the night before showed broken in the grid (the feed and the post page fell back to the original). Uploads on R2 (`media.chillwaa.com`, `media-dev.`) are no longer resized (`OPTIMIZED_REMOTE_IMAGES` in `lib/optimizedImage.ts`, so also not in `images.remotePatterns`): they are already at most 1600 px / 1 MB from the phone and R2 has no egress charge. `/icons/` is not resized either. The grid card (`CardPhoto` in `MomentShowcase.tsx`) now tries the original once when a resize fails, as `FramePhoto` does. **Shared utility change:** `optimizedImage` / `avatarImage` return R2 links as they are.
