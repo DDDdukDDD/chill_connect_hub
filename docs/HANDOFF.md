@@ -20,6 +20,21 @@ Item template:
 
 ---
 
+### BE-443 · Profile picture: placed in the circle at onboarding, shown large on a tap (owner 2026-11-20)
+- **What changed:**
+  - **Onboarding:** a picked photo opens `AvatarCropDialog` (drag, pinch, zoom), as the profile editor does; "ปรับตำแหน่ง" opens it again. It saves the same 640 px square (was an 800 px photo as picked).
+  - **Profile:** tapping the picture shows it large (`components/members/AvatarViewer.tsx`, dark screen, X / tap outside / Escape). On my own profile the tap offers "ดูรูปโปรไฟล์" or "เปลี่ยนรูป"; with no picture it opens the editor. Uploads are shown as stored (640–800 px); sample accounts' Unsplash pictures are asked for at 640.
+  - The viewer's dark backdrop is an inline style: the dev server did not build `bg-black/90` for the new file.
+- **What to do about it:** checked in headless Edge at 390: another member's picture opens large and Escape closes it; my profile without a picture opens the editor. **Not seen in a browser:** the onboarding crop (the test could not get past the สาย cards in preview mode); please try a sign-up with a photo on dev.
+
+---
+
+### BE-442 · Feed ⋯ menu: "เอาแท็กฉันออก" and "เลิกติดตาม" (TR-013, owner 2026-11-20)
+- **What changed:** the menu on someone else's post in the feed (`HomeMomentFeed.tsx`) adds "เอาแท็กฉันออก" when `isTaggedMe` (the existing `untag` action, as the moment page has) and "เลิกติดตาม" when `isFollowingAuthor` and the post is not a sample (`POST /api/members/{id}/actions` `unfollow`); every post by that author changes at once and goes back with a message if the server refuses. The "กำลังติดตาม" note by the name now gives way to the ติดตาม button after an unfollow. "ไม่สนใจโพสต์นี้" is still open (needs a table).
+- **What to do about it:** checked in headless Edge at 390 with the feed answer altered in the test browser (local data has only sample posts): the menu shows both, unfollow flips the button and the toast. "เอาแท็กฉันออก" was not pressed (no tagged post locally); it reuses the moment page's call.
+
+---
+
 ### BE-441 · Search at IG/TikTok level: every kind at once, recent searches, things to tap, arrow keys, /search with tabs (owner 2026-11-20)
 - **What changed** (owner picked items 1–7 of the search plan):
   1. **Every kind while typing:** the dropdown (computer) and the phone search screen show people, ที่เที่ยว, ตี้, อีเวนต์, ชาเลนจ์ and tags, three each, with picture and one line ("คาเฟ่ & ร้านกาแฟ · อารีย์", "22 พ.ย. 2569 · สวนเบญจกิติ", "430 คนกำลังทำ"). The kinds are ordered by their best match (`order` from the server): "วิ่ง" shows ตี้ named "วิ่ง…" before places that only mention running. Matching is ค้นพบ's own (`matchesQuery` with synonyms); ranking is new (`lib/search/siteSearch.ts`).
