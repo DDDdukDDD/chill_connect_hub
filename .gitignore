@@ -70,3 +70,7 @@ next-env.d.ts
 /data/.tat-cache/
 # OSM venue importer cache (db/import-osm-venues.ts)
 /data/.osm-cache/
+
+# Content audit reports (db/audit-content.ts): stale in a day, kept on each computer
+/audit-*.md
+/audit-*.json

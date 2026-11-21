@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-451 · Content audit script, read only, dev against live (owner 2026-11-21: the week of 23 Nov is 80% data)
+- **What changed:** `db/audit-content.ts` reads through the app's own `db` (never writes) and prints a Thai report: totals by origin (member, source, sample, `lib/contentOrigin.ts`); per province the open ตี้ and อีเวนต์ starting in 7 and 30 days, real ones apart from samples, with "บาง" where the 7 days have fewer than 6 (สัปดาห์นี้'s thin mode); places published, with a photo and a description, drafts by source; open challenges; problems to fix (missing province, place, time, organizer or source link; under the form's minimums; past but not marked ended; likely duplicates; published places without photo, hours or coordinates; pictures pointing at files missing from public/). `--json=` keeps a snapshot, and `--diff=a.json,b.json` lists what the first database has that the second lacks, matched by source link or name and province (for the TAT places still only on dev).
+- **How to run** (on the main computer; the office notebook has no database env files):
+  - `npx tsx --env-file=.env.development.local db/audit-content.ts --out=audit-dev.md --json=audit-dev.json`
+  - `npx tsx --env-file=.env.local db/audit-content.ts --out=audit-live.md --json=audit-live.json` (live, read only)
+  - `npx tsx db/audit-content.ts --diff=audit-dev.json,audit-live.json --out=audit-dev-not-live.md`
+  - Report files are git-ignored (`/audit-*`). Tried on the no-database JSON files only: 69 ตี้ (57 sample), 295 อีเวนต์, 2,217 places, 8 provinces with anything in 30 days.
+
 ### BE-450 · สัปดาห์นี้ on a thin week: one row, เร็วๆ นี้, places first, nearby; "ตั้งตี้วันนั้น" (owner 2026-11-21)
 - **Why:** in a province with little, or early on, a schedule of mostly empty days told visitors the app is empty.
 - **What changed:**
