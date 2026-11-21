@@ -1,6 +1,7 @@
 import { MAX_VIDEO_SECONDS } from '@/lib/moments/types';
 import { drawOverlays, type FunSticker, type PhotoText } from './photoEdit';
 import { canvasHasFilter, drawFiltered } from './clipFilter';
+import { findTrack, type ClipMusic, type MusicTrack } from './musicLibrary';
 
 /**
  * Shrinks a member's clip on their own phone before it uploads (owner 2026-11-07, after Blob transfer reached 75% of
@@ -13,7 +14,8 @@ import { canvasHasFilter, drawFiltered } from './clipFilter';
  *
  * The clip editor's edits are done here too (owner 2026-11-07, filter and stickers 2026-11-09): every frame is drawn
  * through the filter with the text and stickers on top, and "no sound" leaves the sound track out, so the post stays
- * one plain MP4 that looks and sounds the same everywhere.
+ * one plain MP4 that looks and sounds the same everywhere. A song from lib/media/musicLibrary.ts (owner 2026-11-21) is
+ * mixed with the clip's own sound here as well and replaces its sound track, so playing a post needs nothing new.
  */
 
 const SHORT_SIDE = 720;
@@ -25,9 +27,15 @@ const PREVIEW_FRAME_RATE = 24;
 
 export type CompressedClip = { file: File; durationS: number; preview: File | null };
 /** What the member changed in the clip editor */
-export type ClipEdits = { texts?: PhotoText[]; stickers?: FunSticker[]; filter?: string; muted?: boolean };
+export type ClipEdits = { texts?: PhotoText[]; stickers?: FunSticker[]; filter?: string; muted?: boolean; music?: ClipMusic | null };
 
-/** Whether this device can shrink a clip, and so also edit it (filter, text, stickers, no sound) */
+/** The sound of a clip with a song is drawn at this rate; AAC encoders take it everywhere */
+const MIX_RATE = 44100;
+/** The song fades in and out over these, so it does not start or stop with a jolt */
+const MUSIC_FADE_IN_S = 0.2;
+const MUSIC_FADE_OUT_S = 1;
+
+/** Whether this device can shrink a clip, and so also edit it (filter, text, stickers, no sound, music) */
 export const canShrinkClips = () => typeof VideoEncoder !== 'undefined' && typeof VideoDecoder !== 'undefined';
 type Mediabunny = typeof import('mediabunny');
 
@@ -44,7 +52,9 @@ export async function compressClip(file: File, startS: number, endS: number, onP
   const stickers = edits.stickers ?? [];
   const filter = edits.filter && edits.filter !== 'none' ? edits.filter : '';
   const drawn = texts.length > 0 || stickers.length > 0 || Boolean(filter);
-  const edited = drawn || Boolean(edits.muted);
+  const track = findTrack(edits.music?.trackId);
+  const music = track && edits.music ? { ...edits.music, track } : null;
+  const edited = drawn || Boolean(edits.muted) || Boolean(music);
   try {
     const mb = await import('mediabunny');
     if (!(await mb.canEncodeVideo('avc'))) return null;
@@ -68,17 +78,24 @@ export async function compressClip(file: File, startS: number, endS: number, onP
           ...(drawn ? { process: editedFrames(size.width, size.height, { texts, stickers }, filter) } : {}),
         };
       },
-      // Sound is copied as it is when the file allows (iPhone AAC), otherwise re-encoded to AAC
-      audio: edits.muted ? { discard: true } : { codec: 'aac' },
+      // Sound is copied as it is when the file allows (iPhone AAC), otherwise re-encoded to AAC. With a song the sound
+      // is made separately below and added to the finished picture
+      audio: edits.muted || music ? { discard: true } : { codec: 'aac' },
       showWarnings: false,
     });
     // A clip that would lose its picture or its sound here is better sent whole
     if (!conversion.isValid || conversion.discardedTracks.some((t) => t.reason !== 'discarded_by_user' && t.reason !== 'max_track_count_of_type_reached')) return null;
-    conversion.onProgress = (share) => onProgress?.(share);
+    conversion.onProgress = (share) => onProgress?.(music ? share * 0.9 : share);
     await conversion.execute();
+    let buffer = target.buffer;
+    if (buffer && music) {
+      const sound = await mixSound(mb, file, startS, end, !edits.muted, music);
+      buffer = await withSound(mb, buffer, sound);
+      onProgress?.(1);
+    }
     // Edits must go through even when the result is not smaller; without them a bigger file is not worth it
-    if (!target.buffer || (!edited && target.buffer.byteLength >= file.size)) return null;
-    const small = new File([target.buffer], 'clip.mp4', { type: 'video/mp4' });
+    if (!buffer || (!edited && buffer.byteLength >= file.size)) return null;
+    const small = new File([buffer], 'clip.mp4', { type: 'video/mp4' });
     return { file: small, durationS: end - startS, preview: await makePreview(mb, small) };
   } catch {
     return null;
@@ -105,6 +122,75 @@ function editedFrames(width: number, height: number, overlays: { texts: PhotoTex
     if (hasLayer) ctx.drawImage(layer, 0, 0);
     return canvas;
   };
+}
+
+/**
+ * The clip's new sound: the song from the chosen point, looped when the clip is longer, faded in and out, with the
+ * clip's own sound on top unless the member turned it off. A clip without sound simply gets the song.
+ */
+async function mixSound(mb: Mediabunny, file: File, startS: number, endS: number, keepOwn: boolean, music: ClipMusic & { track: MusicTrack }): Promise<AudioBuffer> {
+  const length = endS - startS;
+  const ctx = new OfflineAudioContext(2, Math.ceil(length * MIX_RATE), MIX_RATE);
+  const response = await fetch(music.track.src);
+  if (!response.ok) throw new Error('song not found');
+  const song = await ctx.decodeAudioData(await response.arrayBuffer());
+  const volume = Math.max(0, Math.min(1, music.volume));
+  // A loud clip plus the song can pass full scale; this holds the peaks down instead of letting them crackle
+  const limiter = new DynamicsCompressorNode(ctx, { threshold: -3, knee: 3, ratio: 20, attack: 0.003, release: 0.1 });
+  limiter.connect(ctx.destination);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, 0);
+  gain.gain.linearRampToValueAtTime(volume, Math.min(MUSIC_FADE_IN_S, length / 2));
+  gain.gain.setValueAtTime(volume, Math.max(length / 2, length - MUSIC_FADE_OUT_S));
+  gain.gain.linearRampToValueAtTime(0, length);
+  gain.connect(limiter);
+  const songNode = ctx.createBufferSource();
+  songNode.buffer = song;
+  songNode.loop = true;
+  songNode.connect(gain);
+  songNode.start(0, Math.max(0, music.startS) % song.duration);
+
+  if (keepOwn) {
+    const input = new mb.Input({ source: new mb.BlobSource(file), formats: mb.ALL_FORMATS });
+    const own = await input.getPrimaryAudioTrack();
+    if (own && (await own.canDecode())) {
+      for await (const { buffer, timestamp } of new mb.AudioBufferSink(own).buffers(startS, endS)) {
+        const node = ctx.createBufferSource();
+        node.buffer = buffer;
+        node.connect(limiter);
+        const at = timestamp - startS;
+        if (at >= 0) node.start(at);
+        else node.start(0, -at);
+      }
+    }
+  }
+  return ctx.startRendering();
+}
+
+/** The finished picture, copied as it is, with the mixed sound as its one sound track; null when this device cannot make AAC */
+async function withSound(mb: Mediabunny, picture: ArrayBuffer, sound: AudioBuffer): Promise<ArrayBuffer | null> {
+  if (!(await mb.canEncodeAudio('aac'))) return null;
+  const input = new mb.Input({ source: new mb.BlobSource(new Blob([picture])), formats: mb.ALL_FORMATS });
+  const video = await input.getPrimaryVideoTrack();
+  const decoderConfig = await video?.getDecoderConfig();
+  if (!video || !decoderConfig) return null;
+  const target = new mb.BufferTarget();
+  const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }), target });
+  const videoSource = new mb.EncodedVideoPacketSource('avc');
+  const audioSource = new mb.AudioBufferSource({ codec: 'aac', quality: new mb.Quality('medium') });
+  output.addVideoTrack(videoSource, { rotation: await video.getRotation() });
+  output.addAudioTrack(audioSource);
+  await output.start();
+  let first = true;
+  for await (const packet of new mb.EncodedPacketSink(video).packets()) {
+    await videoSource.add(packet, first ? { decoderConfig } : undefined);
+    first = false;
+  }
+  videoSource.close();
+  await audioSource.add(sound);
+  audioSource.close();
+  await output.finalize();
+  return target.buffer;
 }
 
 /** The first seconds of the small clip, smaller still and silent; null when it fails, and the post then simply has none */
