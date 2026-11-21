@@ -183,9 +183,15 @@ function MyDataActions() {
   if (!session.isLoaded) return null;
   if (!session.member) {
     return (
-      <p className="text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-        <PhraseText text="เข้าสู่ระบบก่อน แล้วกลับมาที่หน้านี้ เพื่อดาวน์โหลดข้อมูล หรือลบบัญชีของคุณ" />
-      </p>
+      <div className="text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+        <p><PhraseText text="เข้าสู่ระบบก่อน แล้วกลับมาที่หน้านี้ เพื่อดาวน์โหลดข้อมูล หรือลบบัญชีของคุณ" /></p>
+        {/* Google Play asks for a way to request deletion without the app (BE-445) */}
+        <p className="font-medium">
+          <PhraseText text="เข้าสู่ระบบไม่ได้ ส่งอีเมลจากอีเมลที่ใช้สมัครมาที่" />{' '}
+          <a href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('ขอลบบัญชี Chillwaa')}`} className="font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline break-all">{CONTACT_EMAIL}</a>{' '}
+          <PhraseText text="แล้วเราจะลบให้" />
+        </p>
+      </div>
     );
   }
 
