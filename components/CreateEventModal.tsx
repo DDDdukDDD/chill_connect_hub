@@ -109,14 +109,14 @@ function recurrenceText(days: DayOfWeek[], frequency: 'weekly' | 'biweekly' | 'm
   return `${names}${frequency === 'biweekly' ? ' (เว้นสัปดาห์)' : frequency === 'monthly' ? ' (เดือนละครั้ง)' : ''}`;
 }
 
-type Seed = { title?: string; location?: string; category?: Category; image?: string; place?: PlacePick; itinerary?: Array<{ time: string; title: string }> };
+type Seed = { title?: string; location?: string; category?: Category; image?: string; place?: PlacePick; itinerary?: Array<{ time: string; title: string }>; date?: string; province?: string };
 
 const initialForm = (type: CreationEntityType, seed: Seed) => ({
   title: seed.title ?? '',
   category: seed.category ?? ('chill' as Category),
   image: seed.image || PRESET_IMAGES[type][0].url,
   description: '',
-  province: seed.place?.province && ALL_THAI_PROVINCES.includes(seed.place.province) ? seed.place.province : 'กรุงเทพฯ',
+  province: seed.place?.province && ALL_THAI_PROVINCES.includes(seed.place.province) ? seed.place.province : seed.province && ALL_THAI_PROVINCES.includes(seed.province) ? seed.province : 'กรุงเทพฯ',
   district: seed.place?.district ?? '',
   locationName: seed.location ?? seed.place?.name ?? '',
   priceMode: 'free' as 'free' | 'paid',
@@ -124,7 +124,8 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   itinerary: seed.itinerary ?? ([] as Array<{ time: string; title: string }>),
   // community
   scheduleType: 'single' as 'single' | 'recurring',
-  date: '',
+  // A day picked on สัปดาห์นี้ ("ตั้งตี้วันนั้น", BE-450), as YYYY-MM-DD
+  date: seed.date && /^\d{4}-\d{2}-\d{2}$/.test(seed.date) ? seed.date : '',
   startTime: '',
   endTime: '',
   frequency: 'weekly' as 'weekly' | 'biweekly' | 'monthly',
@@ -508,6 +509,10 @@ interface CreateEventModalProps {
   initialPlace?: PlacePick;
   /** A schedule to start from, e.g. the Smart Plan's stops */
   initialItinerary?: Array<{ time: string; title: string }>;
+  /** A ตี้'s day to start from, YYYY-MM-DD ("ตั้งตี้วันนั้น" on สัปดาห์นี้) */
+  initialDate?: string;
+  /** The province to start from when no place is given */
+  initialProvince?: string;
   /** When opened from /admin, bypasses member gates and publishes via admin APIs */
   adminMode?: boolean;
   onAdminCreated?: (message: string) => void;
@@ -516,15 +521,15 @@ interface CreateEventModalProps {
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = (props) => (props.isOpen ? <CreateDialog {...props} /> : null);
 
-function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, adminMode = false, onAdminCreated, onCreateSuccess }: CreateEventModalProps) {
+function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, initialDate, initialProvince, adminMode = false, onAdminCreated, onCreateSuccess }: CreateEventModalProps) {
   const { userProfile, isOrganizer, isVenueOwner, isHost } = useAuth();
   const { member, isLoaded } = useMemberSession();
   const titleId = useId();
   const uid = useId();
   const bodyRef = useRef<HTMLDivElement>(null);
   const seed = useMemo<Seed>(
-    () => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage, place: initialPlace, itinerary: initialItinerary }),
-    [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary],
+    () => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage, place: initialPlace, itinerary: initialItinerary, date: initialDate, province: initialProvince }),
+    [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary, initialDate, initialProvince],
   );
 
   const canCreate = adminMode || (Boolean(member) && member?.trust?.level !== 'new');

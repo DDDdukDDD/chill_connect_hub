@@ -15,7 +15,7 @@ import { listPublicFairs, listPublicMeetups, listPublicQuests } from '@/lib/publ
  * in the server's local frame by lib/dateUtils, so the day bounds are built in that same frame from the Bangkok day.
  */
 
-import { WEEK_DAYS, WEEK_PLACES } from '@/lib/thisWeekRules';
+import { LATER_DAYS, WEEK_DAYS, WEEK_PLACES } from '@/lib/thisWeekRules';
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const WEEKDAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสฯ', 'ศุกร์', 'เสาร์'];
@@ -87,6 +87,11 @@ export interface WeekContent {
   quests: ChallengeQuest[];
   /** "ที่น่าไปวันว่าง" for all of Thailand (the page asks again for a picked province): with a photo, no chain branches */
   places: LifestyleSpotItem[];
+  /**
+   * "เร็วๆ นี้" (BE-450): open ตี้ and อีเวนต์ that start after the 7 days, up to LATER_DAYS from today, soonest first.
+   * A thin week shows them so the page always has something to go to.
+   */
+  later: WeekItem[];
 }
 
 const startTime = (event: EventItem) => (event.time || '').match(/\d{1,2}[:.]\d{2}/)?.[0]?.replace('.', ':').padStart(5, '0') ?? '99:99';
@@ -103,18 +108,27 @@ export async function weekContent(now = new Date()): Promise<WeekContent> {
   ]);
   const byDay: Record<string, WeekItem[]> = Object.fromEntries(days.map((day) => [day.iso, []]));
   const dayOf = (timestamp: number) => days.find((day) => timestamp >= day.start && timestamp <= day.end);
+  const laterEnd = days[0].start + LATER_DAYS * DAY_MS - 1;
+  const isLater = (timestamp: number) => timestamp > last && timestamp <= laterEnd;
+  const later: WeekItem[] = [];
 
   // Open ตี้ only: one already started or closed to joining is no answer to "where shall we go"
   for (const event of allMeetups) {
     if ((event.eventType || 'community') !== 'community' || isClosedToJoin(event)) continue;
-    const day = dayOf(parseEventDateToTimestamp(event.date));
+    const start = parseEventDateToTimestamp(event.date);
+    const day = dayOf(start);
     if (day) byDay[day.iso].push({ kind: 'tee', event });
+    else if (isLater(start)) later.push({ kind: 'tee', event });
   }
   const ongoing: EventItem[] = [];
   for (const event of allFairs) {
     if (isEventEnded(event)) continue;
     const start = parseEventDateToTimestamp(event.date);
     const end = parseEventEndDateToTimestamp(event.endDate || event.date);
+    if (isLater(start)) {
+      later.push({ kind: 'fair', event });
+      continue;
+    }
     if (start > last || end < first) continue;
     const day = dayOf(start);
     if (day) byDay[day.iso].push({ kind: 'fair', event });
@@ -125,5 +139,6 @@ export async function weekContent(now = new Date()): Promise<WeekContent> {
   ongoing.sort((a, b) => parseEventEndDateToTimestamp(a.endDate || a.date) - parseEventEndDateToTimestamp(b.endDate || b.date));
   // Challenges are not tied to a day: the open ones most people are doing, for any free day
   const quests = allQuests.filter(isOpenQuest).sort((a, b) => (b.participantsCount ?? 0) - (a.participantsCount ?? 0));
-  return { days, byDay, ongoing, quests, places: placePage.items.map(spotListItem) };
+  later.sort((a, b) => parseEventDateToTimestamp(a.event.date) - parseEventDateToTimestamp(b.event.date));
+  return { days, byDay, ongoing, quests, places: placePage.items.map(spotListItem), later };
 }

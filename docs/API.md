@@ -140,7 +140,7 @@ Province names follow `MASTER_77_PROVINCES` (Bangkok is `"กรุงเทพ�
 
 ### `GET /api/this-week/friends` — "เพื่อนๆ จะไปกัน" on /this-week (added 2026-11-19, BE-434)
 
-Signed-in member only; a visitor gets `{ success: true, items: [], requiresLogin: true }`. Never cached. Response `200`: `{ success: true, items: WeekFriendItem[] }`, at most 6: `{ kind: "tee" | "plan", id, title, href, when ("วันนี้ 19:00", "เสาร์ 21"), people: { id, name, avatar? }[] (up to 2), more }`. `tee` = open ตี้ in the next 7 days (Bangkok, from today) that people the member follows joined or host (attendee lists are public; blocked people left out); `plan` = the member's own "ไปกัน" plans dated in those days. The page itself (`/this-week`) renders the schedule on the server from `lib/thisWeek.ts`.
+Signed-in member only; a visitor gets `{ success: true, items: [], requiresLogin: true }`. Never cached. Response `200`: `{ success: true, items: WeekFriendItem[] }`, at most 6: `{ kind: "tee", id, title, href, when ("วันนี้ 19:00", "เสาร์ 21"), people: { id, name, avatar? }[] (up to 2), more }`: open ตี้ in the next 7 days (Bangkok, from today) that people the member follows joined or host (attendee lists are public; blocked people left out). Since BE-449 (2026-11-21) the member's own "ไปกัน" plans (`kind: "plan"`) are no longer listed; they are on My Hub. The page itself (`/this-week`) renders the schedule on the server from `lib/thisWeek.ts`.
 
 ### `GET /api/spots/browse` — the /spots list, worked out on the server (added 2026-10-28, BE-176)
 

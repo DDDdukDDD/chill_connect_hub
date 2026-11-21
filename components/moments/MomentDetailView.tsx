@@ -512,8 +512,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 {/* On a clip, follow ends the author row as an outlined pill, apart from the name (owner 2026-11-09) */}
                 {followLink(true, 'ml-auto rounded-full border border-white/70 px-3 py-1')}
               </div>
-              {/* The song in one line under the author, as on Reels (BE-446, owner 2026-11-21); the record turns while the clip is open */}
-              {moment.video.musicId && <SongBadge musicId={moment.video.musicId} playing variant="line" className="relative mt-1.5 pointer-events-auto" />}
+              {/* The song in one line under the author, as on Reels (BE-446, owner 2026-11-21) */}
+              {moment.video.musicId && <SongBadge musicId={moment.video.musicId} className="relative mt-1 pointer-events-auto" />}
               <div data-own-scroll={showFullCaption || undefined} className={`mt-2 pointer-events-auto ${showFullCaption ? 'max-h-40 overflow-y-auto' : ''}`}>
                 <h1 ref={titleRef} className={title ? `text-sm font-semibold leading-snug break-words ${showFullCaption ? '' : 'line-clamp-2'}` : 'sr-only'}>{title ? <CaptionText text={title} mentions={moment.tagged} linkClassName="underline" /> : `โมเมนต์จาก ${moment.userName}`}</h1>
                 {/* The rest stays in the HTML for search engines and shows when the reader asks */}

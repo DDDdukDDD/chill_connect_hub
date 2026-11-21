@@ -2,93 +2,55 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bookmark, Music, Pause, Play } from 'lucide-react';
+import { AudioLines, Bookmark, Loader2, Music, Pause, Play } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { findTrack, type MusicTrack } from '@/lib/media/musicLibrary';
 import { readSavedSongs, toggleSavedSong } from '@/lib/media/savedSongs';
-import { SongPlayer } from '@/lib/media/songPlayer';
+import { SongPlayer, loadSong, songHook } from '@/lib/media/songPlayer';
 import { optimizedImage } from '@/lib/optimizedImage';
 
 /** "ใช้ใน 1.2K คลิป": short counts, the way the big apps write them */
 export const clipUses = (n: number) => `ใช้ใน ${n >= 1000 ? `${Math.round(n / 100) / 10}K` : n} คลิป`;
 
 /**
- * The song on a clip (owner 2026-11-21, BE-446: "no less than IG or TikTok, cuter if we can"). A small record spins and
- * notes rise from it while the clip plays, and the song's name slides by; still for people who turn motion off. A tap
- * opens the song's sheet: the record slides out of its sleeve, it can be heard and saved for one's own next clip, and
- * the other clips that use it are listed.
+ * The song on a clip (owner 2026-11-21, BE-446): one small line, a note and "song · artist", as Reels shows it. The
+ * owner chose this over a spinning record with a sliding name: quieter over someone's clip. A tap opens the song's
+ * sheet, where it can be heard and saved for one's own next clip, with the other clips that use it.
  */
 
-/** Each feel has its own colour: the sleeve in the sheet and the picker, and the label in the middle of the record */
-const MOODS: Record<string, { tile: string; label: string }> = {
-  ฟีลกู๊ด: { tile: 'bg-[#FFF3C4] text-[#8A6100]', label: 'bg-[#FFC93C]' },
-  แดนซ์: { tile: 'bg-[#FCE1F0] text-[#A3245F]', label: 'bg-[#F0559A]' },
-  ผจญภัย: { tile: 'bg-[#DDF0FB] text-[#1E5F8A]', label: 'bg-[#3BA3DD]' },
-  ชิล: { tile: 'bg-[#DCEFE6] text-[#1F6B4F]', label: 'bg-[#34A57F]' },
-  สนุก: { tile: 'bg-[#FFE7D6] text-[#B4471A]', label: 'bg-[#FF8A4C]' },
-  อบอุ่น: { tile: 'bg-[#FDF0D5] text-[#8A5A12]', label: 'bg-[#F2B53A]' },
-  โลไฟ: { tile: 'bg-[#E6E4F7] text-[#4B3F99]', label: 'bg-[#8B7CF6]' },
+/** Each feel has its own colour, for the song's square in the picker and the sheet */
+const MOODS: Record<string, string> = {
+  ฟีลกู๊ด: 'bg-[#FFF3C4] text-[#8A6100]',
+  แดนซ์: 'bg-[#FCE1F0] text-[#A3245F]',
+  ผจญภัย: 'bg-[#DDF0FB] text-[#1E5F8A]',
+  ชิล: 'bg-[#DCEFE6] text-[#1F6B4F]',
+  สนุก: 'bg-[#FFE7D6] text-[#B4471A]',
+  อบอุ่น: 'bg-[#FDF0D5] text-[#8A5A12]',
+  โลไฟ: 'bg-[#E6E4F7] text-[#4B3F99]',
 };
-const moodOf = (mood: string) => MOODS[mood] ?? { tile: 'bg-slate-100 text-slate-600', label: 'bg-slate-400' };
+const tileOf = (mood: string) => MOODS[mood] ?? 'bg-slate-100 text-slate-600';
 
-/** A song's square, in place of album art (the library has none); its record spins while it plays */
-export function SongTile({ track, playing = false, size = 'md' }: { track: MusicTrack; playing?: boolean; size?: 'sm' | 'md' }) {
-  const box = size === 'sm' ? 'w-10 h-10' : 'w-12 h-12';
+/** A song's square, in place of album art (the library has none); a spinner while it downloads, sound bars as it plays */
+export function SongTile({ track, playing = false, loading = false, size = 'md' }: { track: MusicTrack; playing?: boolean; loading?: boolean; size?: 'sm' | 'md' | 'lg' }) {
+  const box = size === 'lg' ? 'w-20 h-20 rounded-2xl' : size === 'sm' ? 'w-10 h-10 rounded-xl' : 'w-12 h-12 rounded-xl';
+  const icon = size === 'lg' ? 'w-8 h-8' : 'w-5 h-5';
   return (
-    <span className={`relative shrink-0 ${box} rounded-xl ${moodOf(track.mood).tile} flex items-center justify-center overflow-hidden`} aria-hidden="true">
-      {playing ? <Vinyl track={track} spinning px={size === 'sm' ? 28 : 34} /> : <Music className="w-5 h-5" />}
-    </span>
-  );
-}
-
-/** A record drawn with flat shapes: black disc, one groove, the song's colour as the label */
-export function Vinyl({ track, spinning = false, px }: { track: MusicTrack; spinning?: boolean; px: number }) {
-  return (
-    <span
-      className={`relative block shrink-0 rounded-full bg-slate-900 ring-1 ring-white/30 ${spinning ? 'motion-safe:animate-[spin_3.2s_linear_infinite]' : ''}`}
-      style={{ width: px, height: px }}
-      aria-hidden="true"
-    >
-      <span className="absolute inset-[16%] rounded-full border border-white/15" />
-      <span className={`absolute inset-[31%] rounded-full ${moodOf(track.mood).label}`} />
-      <span className="absolute left-[38%] top-[38%] w-[9%] h-[9%] rounded-full bg-white/70" />
-      <span className="absolute inset-[46%] rounded-full bg-slate-900" />
-    </span>
-  );
-}
-
-/** The name slides by while the clip plays; still, it is cut with an ellipsis */
-function Marquee({ text, running }: { text: string; running: boolean }) {
-  return (
-    <span className={`relative min-w-0 overflow-hidden text-xs font-semibold whitespace-nowrap ${running ? 'motion-safe:[mask-image:linear-gradient(90deg,transparent,#000_10%,#000_90%,transparent)]' : ''}`}>
-      <span className={`flex gap-8 ${running ? 'motion-safe:w-max motion-safe:animate-song-marquee' : ''}`}>
-        <span className={running ? 'motion-reduce:truncate' : 'truncate'}>{text}</span>
-        {running && (
-          <span className="motion-reduce:hidden" aria-hidden="true">
-            {text}
-          </span>
-        )}
-      </span>
+    <span className={`shrink-0 ${box} ${tileOf(track.mood)} flex items-center justify-center`} aria-hidden="true">
+      {loading ? <Loader2 className={`${icon} animate-spin`} /> : playing ? <AudioLines className={`${icon} motion-safe:animate-pulse`} /> : <Music className={icon} />}
     </span>
   );
 }
 
 interface SongBadgeProps {
   musicId: string;
-  /** The clip is playing: the record spins and the name slides */
-  playing: boolean;
-  /** A pill over the clip's corner (feeds), or a quiet line under the author's name (full screen) */
-  variant?: 'pill' | 'line';
   className?: string;
 }
 
-/** The pill itself, on a post's clip and in the clip editor (where a tap changes the song instead) */
-export function SongPill({ track, playing, onClick, label, variant = 'pill', className = 'absolute z-10 bottom-3 left-3' }: { track: MusicTrack; playing: boolean; onClick: () => void; label: string; variant?: 'pill' | 'line'; className?: string }) {
-  // 'line': one quiet line under the author's name on a full-screen clip, as Reels does it (owner 2026-11-21)
-  const shape =
-    variant === 'line'
-      ? 'h-6 max-w-[min(75%,16rem)] text-white/90 hover:text-white'
-      : 'h-9 max-w-[min(70%,15rem)] pl-1.5 pr-3.5 rounded-full bg-black/45 backdrop-blur-sm text-white hover:bg-black/60';
+/**
+ * The song's line itself, on a post's clip and in the clip editor (where a tap changes the song instead). White with a
+ * soft shadow, so it reads on any picture without a box behind it.
+ */
+export function SongPill({ track, onClick, label, className = 'absolute z-10 bottom-3 left-3' }: { track: MusicTrack; onClick: () => void; label: string; className?: string }) {
   return (
     <button
       type="button"
@@ -97,30 +59,24 @@ export function SongPill({ track, playing, onClick, label, variant = 'pill', cla
         onClick();
       }}
       aria-label={label}
-      className={`flex items-center gap-2 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white ${shape} ${className}`}
+      className={`flex items-center gap-1.5 h-7 max-w-[min(75%,16rem)] text-white/95 hover:text-white text-xs font-semibold [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] cursor-pointer rounded focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white ${className}`}
     >
-      <span className="relative shrink-0">
-        <Vinyl track={track} spinning={playing} px={variant === 'line' ? 18 : 24} />
-        {playing && (
-          <span className="motion-reduce:hidden" aria-hidden="true">
-            <Music className="absolute -top-1 left-3 w-2.5 h-2.5 opacity-0 motion-safe:animate-song-note" />
-            <Music className="absolute -top-1 left-1 w-2 h-2 opacity-0 motion-safe:animate-song-note [animation-delay:1.2s] [--drift:-5px]" />
-          </span>
-        )}
+      <Music className="w-3.5 h-3.5 shrink-0 drop-shadow" aria-hidden="true" />
+      <span className="truncate">
+        {track.title} · {track.artist}
       </span>
-      <Marquee text={`${track.title} · ${track.artist}`} running={playing} />
     </button>
   );
 }
 
-/** The pill on a post's clip, opening the song's sheet; nothing for a song no longer in the library */
-export function SongBadge({ musicId, playing, variant, className }: SongBadgeProps) {
+/** The song's line on a post's clip, opening the song's sheet; nothing for a song no longer in the library */
+export function SongBadge({ musicId, className }: SongBadgeProps) {
   const track = findTrack(musicId);
   const [open, setOpen] = useState(false);
   if (!track) return null;
   return (
     <>
-      <SongPill track={track} playing={playing} onClick={() => setOpen(true)} label={`เพลง ${track.title} โดย ${track.artist}`} variant={variant} className={className} />
+      <SongPill track={track} onClick={() => setOpen(true)} label={`เพลง ${track.title} โดย ${track.artist}`} className={className} />
       {open && <SongSheet track={track} onClose={() => setOpen(false)} />}
     </>
   );
@@ -132,6 +88,7 @@ type ClipCard = { id: string; images: string[] };
 function SongSheet({ track, onClose }: { track: MusicTrack; onClose: () => void }) {
   const player = useRef<SongPlayer | null>(null);
   const [listening, setListening] = useState(false);
+  const [loadingSong, setLoadingSong] = useState(false);
   const [saved, setSaved] = useState(() => readSavedSongs().includes(track.id));
   const [clips, setClips] = useState<ClipCard[] | null>(null);
   const [total, setTotal] = useState<number | null>(null);
@@ -164,22 +121,19 @@ function SongSheet({ track, onClose }: { track: MusicTrack; onClose: () => void 
     // The clip behind would sing along with its own copy of the song
     document.querySelectorAll('video').forEach((v) => v.pause());
     setListening(true);
-    void own.play(track.src, 0, 0.9);
+    setLoadingSong(true);
+    // From the song's best part, as the editor starts it (BE-448)
+    void loadSong(track.src)
+      .then((song) => own.play(track.src, songHook(song, 15), 0.9))
+      .catch(() => undefined)
+      .finally(() => setLoadingSong(false));
   };
 
   return (
     <DialogShell onClose={onClose} size="md" layer="top" bare labelledBy="song-sheet-title" focusField={false}>
       <div className="overflow-y-auto p-5 sm:p-7">
-        <div className="flex items-center gap-5 pr-10">
-          {/* The sleeve, with the record sliding out of it while the song plays */}
-          <div className="relative shrink-0 w-[124px] h-24" aria-hidden="true">
-            <span className={`absolute top-1 left-0 transition-transform duration-500 ease-out ${listening ? 'translate-x-[36px]' : 'translate-x-[20px]'}`}>
-              <Vinyl track={track} spinning={listening} px={88} />
-            </span>
-            <span className={`absolute inset-y-0 left-0 w-24 rounded-2xl ${moodOf(track.mood).tile} shadow-sm flex items-center justify-center`}>
-              <Music className="w-9 h-9" />
-            </span>
-          </div>
+        <div className="flex items-center gap-4 pr-10">
+          <SongTile track={track} playing={listening} loading={loadingSong} size="lg" />
           <div className="min-w-0">
             <h2 id="song-sheet-title" className="text-lg sm:text-xl font-bold text-slate-900 truncate">{track.title}</h2>
             <p className="text-sm text-slate-600 truncate">{track.artist}</p>

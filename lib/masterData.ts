@@ -181,6 +181,12 @@ const PROVINCE_REGION_LISTS: Record<Region, string[]> = {
   'ภาคใต้': ['สุราษฎร์ธานี', 'กระบี่', 'ภูเก็ต', 'พังงา', 'ระนอง', 'ชุมพร', 'นครศรีธรรมราช', 'สงขลา', 'พัทลุง', 'ตรัง', 'สตูล', 'ยะลา', 'นราธิวาส', 'ปัตตานี'],
 };
 
+/** The region a province is in ("กรุงเทพมหานคร" counts as กรุงเทพฯ); null for a name not in the lists (ออนไลน์) */
+export function provinceRegion(province: string): Region | null {
+  const name = province === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : province;
+  return (Object.entries(PROVINCE_REGION_LISTS).find(([, list]) => list.includes(name))?.[0] as Region | undefined) ?? null;
+}
+
 // Featured destinations as the homepage rail shows them today (components/TopDestinationsRail.tsx)
 const FEATURED_PROVINCES: Record<string, { displayName: string; nameEn: string; tagline: string; image: string }> = {
   'กรุงเทพฯ': { displayName: 'กรุงเทพมหานคร', nameEn: 'Bangkok', tagline: 'คาเฟ่ และพื้นที่สีเขียวกลางเมือง', image: '/images/destinations/bkk.jpg' },
