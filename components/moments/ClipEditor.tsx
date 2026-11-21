@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Ban, Blend, Check, Music, RefreshCw, Scissors, Sticker, Type, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Blend, Music, RefreshCw, Scissors, Sticker, Type, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { clipClock, clipStrip } from '@/lib/media/clip';
 import { CLIP_FILTERS, clipFilterCss } from '@/lib/media/clipFilter';
-import { DEFAULT_MUSIC_VOLUME, MUSIC_TRACKS, findTrack, type ClipMusic } from '@/lib/media/musicLibrary';
+import { DEFAULT_MUSIC_VOLUME, findTrack, type ClipMusic } from '@/lib/media/musicLibrary';
 import { MAX_FUN_STICKERS, drawOverlays, hitOverlay, loadEditorFont, type FunSticker, type PhotoText } from '@/lib/media/photoEdit';
+import { SongPlayer } from '@/lib/media/songPlayer';
 import { MAX_VIDEO_SECONDS, MIN_CLIP_SECONDS } from '@/lib/moments/types';
 import { Segmented, TextTools, newText } from './EditorControls';
+import { MusicPicker, SongRange } from './MusicPicker';
+import { SongPill, SongTile } from './SongBadge';
 import { StickerTools, newFunSticker } from './StickerTools';
 
 /**
@@ -15,13 +18,15 @@ import { StickerTools, newFunSticker } from './StickerTools';
  * part that plays on a filmstrip, a filter, text and stickers on the clip, and whether it keeps its sound. The cover is
  * taken from the start of the chosen part, with the edits on it, so there is no cover step. Edits are made while this
  * phone shrinks the clip (lib/media/clipCompress.ts), so they show only where the device can do that. The preview
- * loops the chosen part. A song from lib/media/musicLibrary.ts can go under it (owner 2026-11-21); the preview plays
- * the song beside the clip, kept in step with it, and the phone mixes them when the clip is posted.
+ * loops the chosen part. A song from lib/media/musicLibrary.ts can go under it (owner 2026-11-21), chosen in a sheet
+ * and cut on its waveform (MusicPicker.tsx, BE-446); the preview plays the song from memory beside the clip
+ * (lib/media/songPlayer.ts), started again in step whenever the clip starts, loops or stalls, and the phone mixes them
+ * when the clip is posted.
  */
 
 type Tool = 'trim' | 'filter' | 'text' | 'sticker' | 'music' | 'sound';
-/** How far the song preview may drift from the clip before it is put back in step */
-const SONG_DRIFT_S = 0.3;
+/** How far the song may drift from the clip before it is moved back in step; moving it is instant, so this can be tight */
+const SONG_DRIFT_S = 0.12;
 const OVERLAY_WIDTH = 720;
 const STRIP_FRAMES = 10;
 /** Half the width of a trim handle: the range inputs reach this far past the strip, so a handle's middle sits on its time */
@@ -59,8 +64,8 @@ interface ClipEditorProps {
 
 export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, filter, onFilterChange, texts, onTextsChange, stickers, onStickersChange, muted, onMutedChange, music, onMusicChange, canEdit, isBusy, onBack, onReplace, onNext }: ClipEditorProps) {
   const video = useRef<HTMLVideoElement>(null);
-  const song = useRef<HTMLAudioElement>(null);
-  const songList = useRef<HTMLDivElement>(null);
+  const song = useRef<SongPlayer | null>(null);
+  const [picking, setPicking] = useState(false);
   const overlay = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ kind: 'text' | 'fun'; id: string; lastX: number; lastY: number } | null>(null);
   const [src, setSrc] = useState('');
@@ -140,15 +145,11 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
     loadEditorFont()?.then(() => setFontReady((n) => n + 1));
   }, []);
 
-  // Coming back to the เพลง tab shows the chosen song, which may sit past the edge of the row
+  // Sound made through Web Audio outlives the page part that made it, so the song stops with the editor
   useEffect(() => {
-    if (tool === 'music') songList.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [tool]);
-
-  // An audio element taken off the page can keep playing, so the song stops with the editor
-  useEffect(() => {
-    const el = song.current;
-    return () => el?.pause();
+    const player = new SongPlayer();
+    song.current = player;
+    return () => player.stop();
   }, []);
 
   // A changed part starts playing from its start, so the member sees what they chose
@@ -230,41 +231,64 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
 
   /* ---------- music ---------- */
 
+  /** Where in the song the clip's current time falls: the chosen point plus how far into the part we are */
+  const songAt = (chosen: ClipMusic, videoAt: number) => Math.max(0, chosen.startS) + Math.max(0, videoAt - startS);
   /**
-   * Starts or stops the song preview. Called straight from the tap, since phones let sound start only there; the song
-   * is set here too rather than in the markup, so a new choice plays on that same tap.
+   * Starts or stops the song preview in step with the clip. Called straight from taps too, since phones let sound start
+   * only there; the clip's own events (playing, seeked, pause, waiting) call it again to keep the two together.
    */
   const playSong = (next: ClipMusic | null, on: boolean) => {
-    const el = song.current;
+    const player = song.current;
     const chosen = findTrack(next?.trackId);
-    if (!el) return;
-    if (!next || !chosen || !on) return void el.pause();
-    if (el.getAttribute('src') !== chosen.src) el.setAttribute('src', chosen.src);
-    el.volume = next.volume;
-    el.currentTime = Math.max(0, next.startS) % chosen.durationS;
-    void el.play().catch(() => undefined);
+    if (!player) return;
+    if (!next || !chosen || !on) return player.stop();
+    const el = video.current;
+    if (el?.paused) return player.unlock();
+    const want = songAt(next, el?.currentTime ?? startS) % chosen.durationS;
+    // A loop fires both seeked and playing: when the song already sits where it should, leave it, or it dips twice
+    const at = player.position(chosen.src);
+    if (at !== null) {
+      const off = Math.abs(at - want);
+      if (Math.min(off, chosen.durationS - off) <= SONG_DRIFT_S) return player.setVolume(next.volume);
+    }
+    void player.play(chosen.src, want, next.volume);
   };
-  /** Keeps the song where it belongs for the clip's current time: the chosen point plus how far into the part we are */
+  /** Small drift between the two clocks is moved back at once; the song is in memory, so nothing is heard */
   const keepSongInStep = (videoAt: number) => {
-    const el = song.current;
-    if (!el || !music || !track || !listening || el.paused) return;
-    const want = (Math.max(0, music.startS) + Math.max(0, videoAt - startS)) % track.durationS;
-    if (Math.abs(el.currentTime - want) > SONG_DRIFT_S) el.currentTime = want;
+    if (!music || !track || !listening || picking) return;
+    const at = song.current?.position(track.src);
+    if (at == null) return;
+    const want = songAt(music, videoAt) % track.durationS;
+    const off = Math.abs(at - want);
+    if (Math.min(off, track.durationS - off) > SONG_DRIFT_S) song.current?.jump(track.src, want);
   };
+  /** The clip's own events: start the song with it, stop it when the clip stops or waits for data */
+  const followClip = (playing: boolean) => playSong(music, playing && listening && !picking);
   /** The clip goes back to the start of its part, so the song and the clip begin together */
   const fromStart = () => {
     if (video.current) video.current.currentTime = startS;
   };
   const chooseMusic = (next: ClipMusic | null) => {
     onMusicChange(next);
-    fromStart();
     // Picking a song is asking to hear it
     if (next) setListening(true);
-    playSong(next, next ? true : listening);
+    song.current?.unlock();
+    fromStart();
+    playSong(next, Boolean(next));
+  };
+  const openPicker = () => {
+    song.current?.stop();
+    setPicking(true);
+  };
+  const closePicker = () => {
+    setPicking(false);
+    song.current?.unlock();
+    playSong(music, listening);
   };
   const toggleListening = () => {
     const on = !listening;
     setListening(on);
+    song.current?.unlock();
     fromStart();
     playSong(music, on);
   };
@@ -341,52 +365,34 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
       )}
       {tool === 'sticker' && <StickerTools sticker={funOn} count={stickers.length} on="คลิป" onAdd={addFun} onEdit={editFun} onRemove={removeFun} onNew={() => setSelectedFun(null)} />}
       {tool === 'music' && (
-        <div className="space-y-2">
-          {/* A row to swipe on a phone; a list on a wide screen, where the side panel is tall */}
-          <div ref={songList} className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 landscape:flex-col landscape:overflow-visible" role="group" aria-label="เพลงประกอบคลิป">
-            {[null, ...MUSIC_TRACKS].map((t) => {
-              const on = (music?.trackId ?? null) === (t?.id ?? null);
-              return (
-                <button
-                  key={t?.id ?? 'none'}
-                  type="button"
-                  onClick={() => chooseMusic(t ? { trackId: t.id, startS: 0, volume: music?.volume ?? DEFAULT_MUSIC_VOLUME } : null)}
-                  aria-pressed={on}
-                  className={`relative shrink-0 w-40 landscape:w-full flex items-center gap-2 rounded-2xl border py-2 pl-2 pr-6 text-left cursor-pointer transition-colors active:scale-95 ${on ? 'border-[#2563EB] ring-1 ring-[#2563EB]' : 'border-slate-200 hover:bg-slate-50'}`}
-                >
-                  <span className="shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center" aria-hidden="true">
-                    {t ? <Music className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-900 truncate">{t ? t.title : 'ไม่ใส่เพลง'}</span>
-                    <span className="block text-xs text-slate-500 truncate">{t ? `${t.mood} · ${clipClock(t.durationS)}` : 'เสียงเดิม'}</span>
-                  </span>
-                  {on && <Check className="absolute top-2 right-2 w-4 h-4 text-[#2563EB]" aria-hidden="true" />}
+        <div className="space-y-3">
+          {music && track ? (
+            <>
+              <div className="flex items-center gap-3">
+                <SongTile track={track} size="sm" playing={listening} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{track.title}</p>
+                  <p className="text-xs text-slate-500 truncate">{track.artist} · {track.mood}</p>
+                </div>
+                <button type="button" onClick={openPicker} className="shrink-0 h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer whitespace-nowrap">
+                  เปลี่ยนเพลง
                 </button>
-              );
-            })}
-          </div>
-          {music && track && (
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <span className="shrink-0 w-24 text-xs font-bold text-slate-800 whitespace-nowrap">
-                  เริ่มที่ <span className="font-semibold text-slate-600 tabular-nums">{clipClock(music.startS)}</span>
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(0, Math.floor(track.durationS - 1))}
-                  step={0.5}
-                  value={music.startS}
-                  onChange={(e) => {
-                    const next = { ...music, startS: Number(e.target.value) };
-                    onMusicChange(next);
-                    fromStart();
-                    playSong(next, listening);
-                  }}
-                  className="flex-1 min-w-0 h-8 accent-[#2563EB] cursor-pointer"
-                />
-              </label>
+                <button type="button" onClick={() => chooseMusic(null)} className="shrink-0 h-9 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer whitespace-nowrap">
+                  เอาออก
+                </button>
+              </div>
+              <SongRange
+                track={track}
+                startS={music.startS}
+                clipS={endS - startS}
+                playingAtS={listening && now >= startS ? songAt(music, now) % track.durationS : null}
+                onChange={(startAt) => {
+                  const next = { ...music, startS: startAt };
+                  onMusicChange(next);
+                  fromStart();
+                  playSong(next, listening);
+                }}
+              />
               <div className="flex items-center gap-2">
                 <span className="shrink-0 w-24 text-xs font-bold text-slate-800 whitespace-nowrap">ความดังเพลง</span>
                 <Volume1 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
@@ -400,14 +406,24 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
                   onChange={(e) => {
                     const volume = Number(e.target.value);
                     onMusicChange({ ...music, volume });
-                    if (song.current) song.current.volume = volume;
+                    song.current?.setVolume(volume);
                   }}
                   className="flex-1 min-w-0 h-8 accent-[#2563EB] cursor-pointer"
                 />
                 <Volume2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
               </div>
               <p className="text-xs text-slate-500">{muted ? 'ได้ยินแค่เพลง ปิดเสียงคลิปเดิมไว้ในแท็บเสียง' : 'เพลงเล่นคู่กับเสียงคลิปเดิม ปิดเสียงเดิมได้ในแท็บเสียง'}</p>
-            </div>
+            </>
+          ) : (
+            <button type="button" onClick={openPicker} className="w-full flex items-center gap-3 rounded-2xl border border-slate-200 hover:bg-slate-50 p-3 text-left cursor-pointer">
+              <span className="shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center" aria-hidden="true">
+                <Music className="w-5 h-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">เลือกเพลงใส่คลิป</span>
+                <span className="block text-xs text-slate-500">ฟังก่อนเลือก แล้วเลือกท่อนที่ชอบได้</span>
+              </span>
+            </button>
           )}
         </div>
       )}
@@ -432,7 +448,7 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
   );
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="relative flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 border-b border-slate-100 shrink-0">
         <button type="button" onClick={onBack} aria-label="ย้อนกลับ" className="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-700 flex items-center justify-center cursor-pointer">
           <ArrowLeft className="w-5 h-5" />
@@ -461,8 +477,6 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
               }}
             />
           </label>
-          {/* The song preview; its src is set from the tap that plays it (playSong) */}
-          <audio ref={song} loop preload="none" className="hidden" aria-hidden="true" />
           {!canPreview && (
             <p className="px-6 text-center text-sm font-medium leading-relaxed text-slate-600">เครื่องนี้แสดงตัวอย่างคลิปนี้ไม่ได้ แต่โพสต์ได้ตามปกติ<br />ถ้าคลิปไม่เล่นบนบางเครื่อง ลองตั้งกล้องเป็น H.264 (Most Compatible) นะ</p>
           )}
@@ -472,9 +486,14 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
                 ref={video}
                 // A blob: link from the browser, which encodeURI leaves as it is; CodeQL needs it for text that started in a file input
                 src={encodeURI(src)}
-                muted={!listening || muted}
+                muted={!listening || muted || picking}
                 autoPlay
                 playsInline
+                onPlaying={() => followClip(true)}
+                onSeeked={(e) => followClip(!e.currentTarget.paused)}
+                onPause={() => followClip(false)}
+                // A loop's own seek also fires waiting; the song is already moved, so only a real stall stops it
+                onWaiting={(e) => !e.currentTarget.seeking && followClip(false)}
                 onLoadedMetadata={(e) => {
                   const el = e.currentTarget;
                   if (el.videoWidth && el.videoHeight) setRatio(el.videoWidth / el.videoHeight);
@@ -507,6 +526,8 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
                 style={{ touchAction: texts.length || stickers.length ? 'none' : 'auto' }}
                 className="absolute inset-0 w-full h-full"
               />
+              {/* Where it will sit on the post, so the member sees the finished look */}
+              {track && <SongPill track={track} playing={listening} onClick={openPicker} label={`เพลง ${track.title} แตะเพื่อเปลี่ยน`} />}
               {canListen && (
                 <button
                   type="button"
@@ -527,7 +548,15 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
           {/* Under the thumb on a phone; on a wide screen the tools head the panel, as in the photo editor */}
           <div className="shrink-0 grid gap-1 px-2 py-1.5 border-t landscape:border-t-0 landscape:border-b border-slate-100 pb-[max(0.375rem,env(safe-area-inset-bottom))] landscape:pb-1.5 landscape:order-1" style={{ gridTemplateColumns: `repeat(${tools.length}, minmax(0, 1fr))` }} role="group" aria-label="เครื่องมือแต่งคลิป">
             {tools.map(({ id, label, Icon }) => (
-              <button key={id} type="button" onClick={() => setTool(id)} aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl text-[11px] cursor-pointer transition-colors active:scale-95 ${tool === id ? 'bg-[#EFF6FF] font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setTool(id);
+                  // No song yet: the sheet of songs is what the เพลง tab is for
+                  if (id === 'music' && !track) openPicker();
+                }}
+                aria-pressed={tool === id} className={`flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl text-[11px] cursor-pointer transition-colors active:scale-95 ${tool === id ? 'bg-[#EFF6FF] font-bold text-[#2563EB]' : 'font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
                 <Icon className="w-5 h-5" aria-hidden="true" />
                 {label}
               </button>
@@ -535,6 +564,17 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
           </div>
         </div>
       </div>
+      {picking && (
+        <MusicPicker
+          currentId={track?.id ?? null}
+          onClose={closePicker}
+          onPick={(picked) => {
+            setPicking(false);
+            setTool('music');
+            chooseMusic({ trackId: picked.id, startS: 0, volume: music?.volume ?? DEFAULT_MUSIC_VOLUME });
+          }}
+        />
+      )}
     </div>
   );
 }

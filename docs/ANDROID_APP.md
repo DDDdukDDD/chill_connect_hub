@@ -50,7 +50,7 @@ For a new store version: raise `appVersionCode` and `appVersionName` in `twa-man
 ## Google Play
 
 - Developer account: $25 once. **A new personal account must run a closed test with at least 12 testers for 14 days in a row before it can publish to everyone.** An organisation account (needs a D-U-N-S number) skips this. To be live on 1 January 2027, the closed test should start by mid December.
-- Store listing needs: the 512 px icon, a 1024×500 feature graphic, at least 2 phone screenshots, a short and a full description (Thai), the privacy policy URL (`/privacy`), the content rating form, and the data safety form (account, photos, location for challenge evidence, messages).
+- Store listing, content rating, data safety, target audience and the closed test: answers and assets in [PLAY_STORE_LISTING.md](PLAY_STORE_LISTING.md). Privacy policy URL: `https://www.chillwaa.com/legal?tab=privacy`; delete account URL: `https://www.chillwaa.com/legal?tab=privacy#my-data`.
 
 ## Try on a real phone
 

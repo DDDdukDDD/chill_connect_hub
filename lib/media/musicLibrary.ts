@@ -3,8 +3,9 @@
  *
  * Only songs we may hand to every member to post: never popular songs, which TikTok and Instagram can offer only
  * through paid label deals. Each entry says where it came from and under what terms, so a song can be pulled if a
- * question comes up. Three are samples made by scripts/make-sample-music.mjs; the rest are CC0 songs (public domain,
- * no credit needed). More come from the owner (docs/LAUNCH_CHECKLIST.md). The files live in public/music/.
+ * question comes up. 34 are CC0 songs (public domain, no credit needed, though the artist is shown on every clip); three
+ * are samples made by scripts/make-sample-music.mjs. More come from the owner (docs/LAUNCH_CHECKLIST.md). The files live
+ * in public/music/.
  */
 
 export interface MusicTrack {
@@ -19,10 +20,54 @@ export interface MusicTrack {
   license: string;
 }
 
+/**
+ * 29 CC0 songs added 2026-11-21 (BE-447): Loyalty Freak Music, Komiku and HoliznaCC0 on Free Music Archive. Each track
+ * page's own licence link (rel="license") was checked to be CC0 1.0 on that day. The first 60 s (Skate is 48 s), made
+ * equally loud (EBU R128 -16 LUFS) with a 2 s fade at the end so a loop under a long clip has no click, 128 kbps AAC.
+ * [id, title, artist, mood, seconds, track page]; the file is /music/<id>.m4a. Listed in the order แนะนำ shows them.
+ */
+const CC0_SONGS: [string, string, string, string, number, string][] = [
+  ['lfm-go-to-the-picnic', 'Go to the Picnic', 'Loyalty Freak Music', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/POSITIVE_ATTITUDE_/Loyalty_Freak_Music_-_POSITIVE_ATTITUDE__-_01_Go_to_the_Picnic/'],
+  ['lfm-sweet-sun', 'Sweet Sun', 'Loyalty Freak Music', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/POSITIVE_ATTITUDE_/Loyalty_Freak_Music_-_POSITIVE_ATTITUDE__-_04_Sweet_Sun/'],
+  ['lfm-ice-cream-with-you', 'Ice Cream with you', 'Loyalty Freak Music', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/POSITIVE_ATTITUDE_/Loyalty_Freak_Music_-_POSITIVE_ATTITUDE__-_05_Ice_Cream_with_you/'],
+  ['lfm-yippee', 'Yippee!', 'Loyalty Freak Music', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/POSITIVE_ATTITUDE_/Loyalty_Freak_Music_-_POSITIVE_ATTITUDE__-_08_Yippee_/'],
+  ['lfm-roller-fever', 'Roller Fever', 'Loyalty Freak Music', 'แดนซ์', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/ROLLER_DISCO_DANCE_DANCE/Loyalty_Freak_Music_-_ROLLER_DISCO_DANCE_DANCE_-_01_Roller_Fever/'],
+  ['lfm-cant-stop-my-feet', "Can't Stop My Feet!", 'Loyalty Freak Music', 'แดนซ์', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/ROLLER_DISCO_DANCE_DANCE/Loyalty_Freak_Music_-_ROLLER_DISCO_DANCE_DANCE_-_04_Cant_Stop_My_Feet_/'],
+  ['lfm-grab-a-partner', 'Grab A Partner', 'Loyalty Freak Music', 'แดนซ์', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/ROLLER_DISCO_DANCE_DANCE/Loyalty_Freak_Music_-_ROLLER_DISCO_DANCE_DANCE_-_05_Grab_A_Partner/'],
+  ['lfm-everyone-is-so-alive', 'Everyone is so alive', 'Loyalty Freak Music', 'แดนซ์', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/ROBOT_DANCE_/Loyalty_Freak_Music_-_ROBOT_DANCE__-_01_Everyone_is_so_alive/'],
+  ['lfm-after-party', 'After Party', 'Loyalty Freak Music', 'แดนซ์', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/ROBOT_DANCE_/Loyalty_Freak_Music_-_ROBOT_DANCE__-_03_After_Party/'],
+  ['lfm-traveling-in-your-mind', 'Traveling in your mind', 'Loyalty Freak Music', 'ชิล', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/TO_CHILL_AND_STAY_AWAKE/Loyalty_Freak_Music_-_TO_CHILL_AND_STAY_AWAKE_-_05_Traveling_in_your_mind/'],
+  ['lfm-everyone', 'Everyone', 'Loyalty Freak Music', 'ชิล', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/TO_CHILL_AND_STAY_AWAKE/Loyalty_Freak_Music_-_TO_CHILL_AND_STAY_AWAKE_-_02_Everyone/'],
+  ['lfm-beach', 'Beach', 'Loyalty Freak Music', 'ชิล', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/MELODIES_WITH_A_BEAT/Loyalty_Freak_Music_-_MELODIES_WITH_A_BEAT_-_08_Beach/'],
+  ['lfm-softly', 'Softly', 'Loyalty Freak Music', 'ชิล', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/MELODIES_WITH_A_BEAT/Loyalty_Freak_Music_-_MELODIES_WITH_A_BEAT_-_06_Softly/'],
+  ['lfm-one-cool-minute', 'One Cool Minute', 'Loyalty Freak Music', 'ชิล', 60, 'https://freemusicarchive.org/music/Loyalty_Freak_Music/MINIMAL_AMBIENT_BOUNCE/Loyalty_Freak_Music_-_MINIMAL_AMBIENT_BOUNCE_-_02_One_Cool_Minute/'],
+  ['holizna-feeling-human-again', 'Feeling Human Again', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/spring-woke-me-up/feeling-human-again/'],
+  ['holizna-hope-on-repeat', 'Hope On Repeat', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/spring-woke-me-up/hope-on-repeat/'],
+  ['holizna-kodama', 'Kodama', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/nature-spirit/kodama/'],
+  ['holizna-roof-tops', 'Roof Tops', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/summer-air-lo-fi/roof-tops/'],
+  ['holizna-faded-in-the-sunlight', 'Faded in the Sunlight', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/summer-air-lo-fi/faded-in-the-sunlight/'],
+  ['holizna-ocean-memory', 'Ocean Memory', 'HoliznaCC0', 'โลไฟ', 60, 'https://freemusicarchive.org/music/holiznacc0/ocean-memory-lo-fi-chill/ocean-memory/'],
+  ['komiku-skate', 'Skate', 'Komiku', 'ผจญภัย', 48, 'https://freemusicarchive.org/music/Komiku/Captain_Glouglous_Incredible_Week_Soundtrack/Skate/'],
+  ['komiku-surfing', 'Surfing', 'Komiku', 'ผจญภัย', 60, 'https://freemusicarchive.org/music/Komiku/Poupis_incredible_adventures_/Komiku_-_Poupis_incredible_adventures__-_05_Surfing/'],
+  ['komiku-walk-of-the-day', 'Time for the walk of the day', 'Komiku', 'ผจญภัย', 60, 'https://freemusicarchive.org/music/Komiku/Poupis_incredible_adventures_/Komiku_-_Poupis_incredible_adventures__-_03_Time_for_the_walk_of_the_day/'],
+  ['komiku-champ-de-tournesol', 'Champ de tournesol', 'Komiku', 'ผจญภัย', 60, 'https://freemusicarchive.org/music/Komiku/Its_time_for_adventure_/Komiku_-_Its_time_for_adventure_-_03_Champ_de_tournesol/'],
+  ['komiku-remember-the-time', 'Remember the time we use to play', 'Komiku', 'อบอุ่น', 60, 'https://freemusicarchive.org/music/Komiku/Tale_on_the_Late/Komiku_-_Tale_on_the_Late_-_02_Remember_the_time_we_use_to_play/'],
+  ['holizna-we-drove-all-night', 'We Drove All Night', 'HoliznaCC0', 'อบอุ่น', 60, 'https://freemusicarchive.org/music/holiznacc0/we-drove-all-night-game-soundtrack/we-drove-all-night/'],
+  ['holizna-toy-box', 'Toy Box', 'HoliznaCC0', 'อบอุ่น', 60, 'https://freemusicarchive.org/music/holiznacc0/spring-woke-me-up/toy-box/'],
+  ['holizna-side-quest', 'Side Quest to Nowhere', 'HoliznaCC0', 'สนุก', 60, 'https://freemusicarchive.org/music/holiznacc0/we-drove-all-night-game-soundtrack/side-quest-to-nowhere/'],
+  ['holizna-extra-life', 'Extra Life I Never Used', 'HoliznaCC0', 'สนุก', 60, 'https://freemusicarchive.org/music/holiznacc0/we-drove-all-night-game-soundtrack/extra-life-i-never-used/'],
+];
+
 export const MUSIC_TRACKS: MusicTrack[] = [
-  { id: 'chill-evening', title: 'ชิลยามเย็น', artist: 'Chillwaa', mood: 'ชิล', src: '/music/chill-evening.wav', durationS: 24, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
-  { id: 'on-the-road', title: 'ออกเดินทาง', artist: 'Chillwaa', mood: 'สนุก', src: '/music/on-the-road.wav', durationS: 25.7, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
-  { id: 'cafe-morning', title: 'คาเฟ่ยามเช้า', artist: 'Chillwaa', mood: 'อบอุ่น', src: '/music/cafe-morning.wav', durationS: 20.9, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
+  ...CC0_SONGS.map(([id, title, artist, mood, durationS, page]) => ({
+    id,
+    title,
+    artist,
+    mood,
+    src: `/music/${id}.m4a`,
+    durationS,
+    license: `CC0 1.0, ${page} (downloaded 2026-11-21)`,
+  })),
   // HoliznaCC0, album "Spring at last (LOFI TAPE)" and "Winter Lofi" on Free Music Archive, both marked CC0 1.0 (public
   // domain, no credit needed; the artist dedicates the whole catalogue to CC0). The first 60 s of each, as AAC (BE-444)
   ...(
@@ -42,6 +87,10 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     durationS: 60,
     license: `CC0 1.0, https://freemusicarchive.org/music/holiznacc0/${album}/${slug}/ (downloaded 2026-11-21)`,
   })),
+  // The first three samples, drawn from code; last, since the real songs sound better
+  { id: 'chill-evening', title: 'ชิลยามเย็น', artist: 'Chillwaa', mood: 'ชิล', src: '/music/chill-evening.wav', durationS: 24, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
+  { id: 'on-the-road', title: 'ออกเดินทาง', artist: 'Chillwaa', mood: 'สนุก', src: '/music/on-the-road.wav', durationS: 25.7, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
+  { id: 'cafe-morning', title: 'คาเฟ่ยามเช้า', artist: 'Chillwaa', mood: 'อบอุ่น', src: '/music/cafe-morning.wav', durationS: 20.9, license: 'Sample made by scripts/make-sample-music.mjs; ours' },
 ];
 
 export const findTrack = (id: string | null | undefined) => MUSIC_TRACKS.find((t) => t.id === id) ?? null;

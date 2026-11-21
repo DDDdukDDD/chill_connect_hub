@@ -12,7 +12,7 @@ import { traceAction } from '@/lib/social/actionLog';
 
 /**
  * Moments feed. ?tab=all|popular|following|saved|mine &author=<memberId> &category=heal|move|chill|learn
- * &location &targetType &targetId &q &tag &media=clip &page &limit(≤30) &cursor (pagination.nextCursor of the page before)
+ * &location &targetType &targetId &q &tag &media=clip &music=<song id> &page &limit(≤30) &cursor (pagination.nextCursor of the page before)
  * Posts by members the viewer has blocked are left out.
  * "saved", "mine" and "following" need a signed-in member (otherwise an empty list with requiresLogin).
  */
@@ -30,6 +30,7 @@ export async function GET(request: Request) {
     q: searchParams.get('q') ?? undefined,
     tag: searchParams.get('tag') ?? undefined,
     media: searchParams.get('media') ?? undefined,
+    music: searchParams.get('music') ?? undefined,
     cursor: searchParams.get('cursor') ?? undefined,
     page: Number.parseInt(searchParams.get('page') || '1', 10) || 1,
     limit: Number.parseInt(searchParams.get('limit') || '12', 10) || 12,
