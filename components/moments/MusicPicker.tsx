@@ -6,30 +6,35 @@ import { useDialogBehavior } from '@/components/auth/DialogShell';
 import { clipClock } from '@/lib/media/clip';
 import { MUSIC_TRACKS, type MusicTrack } from '@/lib/media/musicLibrary';
 import { readSavedSongs, toggleSavedSong } from '@/lib/media/savedSongs';
-import { SongPlayer, loadSong, songPeaks } from '@/lib/media/songPlayer';
+import { loadSong, songPeaks } from '@/lib/media/songPlayer';
 import { SongTile, clipUses } from './SongBadge';
 
 /**
  * Choosing a song for a clip, the way Reels does it (owner 2026-11-21, BE-446): a sheet over the editor with search,
  * แนะนำ, มาแรง (the songs most clips use) and บันทึกไว้, a tap to hear a song and "ใช้เพลงนี้" to put it under the
- * clip. Then SongRange picks the part of the song on its waveform. Saved songs stay on this device only.
+ * clip. Since BE-448 a tap plays the song with the clip above, from the song's best part, and a spinner shows while it
+ * loads; the first songs load ahead. Then SongRange picks the part of the song on its waveform. Saved songs stay on
+ * this device only.
  */
 
 type PickerTab = 'all' | 'trending' | 'saved';
 
 /** Every feel in the library, in the order the songs come, for the chips under the tabs */
 const MOODS = [...new Set(MUSIC_TRACKS.map((t) => t.mood))];
+/** How many songs at the top of the list load as the sheet opens, so the first taps sound at once */
+const LOAD_AHEAD = 4;
 
 interface MusicPickerProps {
   /** The song already under the clip */
   currentId: string | null;
+  /** Plays a song with the clip (null stops it); resolves once it sounds, so the row can show it was loading */
+  onHear: (track: MusicTrack | null) => Promise<void>;
   onPick: (track: MusicTrack) => void;
   onClose: () => void;
 }
 
-export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
+export function MusicPicker({ currentId, onHear, onPick, onClose }: MusicPickerProps) {
   const panel = useRef<HTMLDivElement>(null);
-  const player = useRef<SongPlayer | null>(null);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<PickerTab>('all');
   const [mood, setMood] = useState<string | null>(null);
@@ -37,19 +42,20 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
   const [saved, setSaved] = useState<string[]>(readSavedSongs);
   const [uses, setUses] = useState<Record<string, number>>({});
   const [hearing, setHearing] = useState<string | null>(null);
+  // The song still downloading after its tap
+  const [loading, setLoading] = useState<string | null>(null);
+  const tapTurn = useRef(0);
   useDialogBehavior(panel, onClose, { focusField: false });
 
   useEffect(() => {
-    const own = new SongPlayer();
-    player.current = own;
     let live = true;
     fetch('/api/moments/music')
       .then((r) => r.json())
       .then((data) => live && data?.uses && setUses(data.uses))
       .catch(() => undefined);
+    for (const t of MUSIC_TRACKS.slice(0, LOAD_AHEAD)) loadSong(t.src).catch(() => undefined);
     return () => {
       live = false;
-      own.stop();
     };
   }, []);
 
@@ -66,25 +72,24 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
     ['saved', saved.length ? `บันทึกไว้ ${saved.length}` : 'บันทึกไว้'],
   ];
 
-  const hear = (track: MusicTrack) => {
-    const own = player.current;
-    if (!own) return;
+  const hear = async (track: MusicTrack) => {
+    const turn = ++tapTurn.current;
     if (hearing === track.id) {
-      own.stop();
       setHearing(null);
-      return;
+      setLoading(null);
+      return onHear(null);
     }
     setHearing(track.id);
-    void own.play(track.src, 0, 0.9);
+    setLoading(track.id);
+    await onHear(track);
+    // A later tap owns the row state by now
+    if (turn === tapTurn.current) setLoading(null);
   };
   const toggleSave = (id: string) => setSaved(toggleSavedSong(id));
-  const pick = (track: MusicTrack) => {
-    player.current?.stop();
-    onPick(track);
-  };
 
   return (
-    <div className="absolute inset-0 z-30 flex items-end justify-center bg-black/40" onClick={onClose}>
+    // A light veil and a sheet that stops near the middle: the clip stays in view while songs are tried (owner 2026-11-21)
+    <div className="absolute inset-0 z-30 flex items-end justify-center bg-black/15" onClick={onClose}>
       <div
         ref={panel}
         data-dialog-shell
@@ -93,9 +98,9 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
         aria-labelledby="music-picker-title"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[520px] h-[82%] flex flex-col bg-white rounded-t-3xl shadow-2xl outline-hidden"
+        className="w-full max-w-[520px] h-[56%] min-h-[340px] flex flex-col bg-white rounded-t-3xl shadow-2xl outline-hidden"
       >
-        <div className="shrink-0 px-4 pt-2.5 pb-3 space-y-3 border-b border-slate-100">
+        <div className="shrink-0 px-4 pt-2 pb-2.5 space-y-2.5 border-b border-slate-100">
           <span className="block mx-auto w-10 h-1 rounded-full bg-slate-200" aria-hidden="true" />
           <div className="flex items-center justify-between gap-3">
             <h3 id="music-picker-title" className="text-base font-bold text-slate-900">เลือกเพลง</h3>
@@ -152,7 +157,7 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
             return (
               <li key={track.id} className={`flex items-center gap-3 rounded-2xl px-2 py-2 ${on ? 'bg-slate-50' : ''}`}>
                 <button type="button" onClick={() => hear(track)} aria-pressed={on} aria-label={`${on ? 'หยุดฟัง' : 'ฟัง'} ${track.title}`} className="flex-1 min-w-0 flex items-center gap-3 text-left cursor-pointer rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
-                  <SongTile track={track} playing={on} />
+                  <SongTile track={track} playing={on} loading={loading === track.id} />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
                       <span className="truncate">{track.title}</span>
@@ -164,7 +169,7 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
                   </span>
                 </button>
                 {on ? (
-                  <button type="button" onClick={() => pick(track)} className="shrink-0 h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold shadow-sm cursor-pointer whitespace-nowrap">
+                  <button type="button" onClick={() => onPick(track)} className="shrink-0 h-9 px-4 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold shadow-sm cursor-pointer whitespace-nowrap">
                     ใช้เพลงนี้
                   </button>
                 ) : (
@@ -195,14 +200,19 @@ export function MusicPicker({ currentId, onPick, onClose }: MusicPickerProps) {
   );
 }
 
-/** How many bars the waveform has; enough to look like a song, few enough to stay crisp on a phone */
-const BARS = 56;
+/** The window's share of the strip: wide enough to grab with a thumb, whatever the clip's length */
+const WINDOW_SHARE = 0.42;
+/** One bar per this many pixels; capped so a short clip on a long song stays light to draw */
+const BAR_PX = 5;
+const MAX_BARS = 480;
+/** The window settles this long after the waveform stops moving, then the clip and song start again from it */
+const SETTLE_MS = 160;
 
 interface SongRangeProps {
   track: MusicTrack;
   /** Where in the song the clip starts */
   startS: number;
-  /** How long the clip is: the width of the window on the waveform */
+  /** How long the clip is: the window covers this much of the song */
   clipS: number;
   /** Where the song is now, to draw the playhead; null when it is not playing */
   playingAtS: number | null;
@@ -210,77 +220,132 @@ interface SongRangeProps {
 }
 
 /**
- * The song as a waveform with a window as long as the clip; dragging the window chooses the part under the clip. The
- * window is the thumb of a range input, so it also works with the keyboard and a screen reader: its width is the
- * clip's share of the song, which makes the thumb's position match the start exactly.
+ * Choosing the part of the song, as on Reels (BE-448): a fixed window in the middle and the song's waveform, enlarged,
+ * slid under it with a finger. The window is the same width for any clip, so a 5 s clip on a 60 s song is as easy to
+ * move as a 30 s one (the old window on the whole song was 25 px). With a mouse it drags; with the keyboard the arrow
+ * keys move it a second at a time.
  */
 export function SongRange({ track, startS, clipS, playingAtS, onChange }: SongRangeProps) {
-  // Kept with the song they belong to, so another song shows flat bars until its own are ready
-  const [drawn, setDrawn] = useState<{ src: string; peaks: number[] } | null>(null);
-  const peaks = drawn?.src === track.src ? drawn.peaks : [];
-  const strip = useRef<HTMLDivElement>(null);
-  // The thumb's width must be in pixels: a percentage there is not read against the input in every browser
+  const outer = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mouseDrag = useRef<{ x: number; left: number } | null>(null);
   const [width, setWidth] = useState(0);
+  // Where the window is while the member moves the waveform; null when it rests on `startS`
+  const [live, setLive] = useState<number | null>(null);
+  // Kept with the song and bar count they belong to, so another song shows flat bars until its own are ready
+  const [drawn, setDrawn] = useState<{ key: string; peaks: number[] } | null>(null);
+
+  const length = track.durationS;
+  const fits = clipS >= length - 0.5;
+  const max = fits ? 0 : length - clipS;
+  const windowPx = fits ? width : Math.round(width * WINDOW_SHARE);
+  const pps = windowPx / Math.max(0.1, fits ? length : clipS);
+  const total = length * pps;
+  const side = fits ? 0 : (width - windowPx) / 2;
+  const bars = Math.max(1, Math.min(MAX_BARS, Math.floor(total / BAR_PX)));
+  const key = `${track.src}|${bars}`;
+  const peaks = drawn?.key === key ? drawn.peaks : [];
+  const shown = Math.min(max, Math.max(0, live ?? startS));
+
   useEffect(() => {
-    const el = strip.current;
+    const el = outer.current;
     if (!el) return;
     const watch = new ResizeObserver(() => setWidth(el.clientWidth));
     watch.observe(el);
     setWidth(el.clientWidth);
     return () => watch.disconnect();
   }, []);
+
   useEffect(() => {
-    let live = true;
+    let alive = true;
     loadSong(track.src)
-      .then((song) => live && setDrawn({ src: track.src, peaks: songPeaks(song, BARS) }))
+      .then((song) => alive && setDrawn({ key: `${track.src}|${bars}`, peaks: songPeaks(song, bars) }))
       .catch(() => undefined);
     return () => {
-      live = false;
+      alive = false;
     };
-  }, [track.src]);
+  }, [track.src, bars]);
 
-  const length = track.durationS;
-  const share = Math.min(1, clipS / length);
-  const max = Math.max(0, length - Math.min(clipS, length));
-  const from = startS / length;
-  const to = from + share;
+  // The waveform follows a start chosen elsewhere (a new song starts at its best part), but never fights a finger
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || live !== null || !pps) return;
+    const want = Math.min(startS, max) * pps;
+    if (Math.abs(el.scrollLeft - want) > 1) el.scrollLeft = want;
+  }, [startS, pps, max, live]);
+
+  useEffect(() => () => {
+    if (settle.current) clearTimeout(settle.current);
+  }, []);
+
+  const onScroll = () => {
+    const el = scroller.current;
+    if (!el || !pps || fits) return;
+    const at = Math.min(max, Math.max(0, el.scrollLeft / pps));
+    setLive(at);
+    if (settle.current) clearTimeout(settle.current);
+    settle.current = setTimeout(() => {
+      setLive(null);
+      const rounded = Math.round(at * 10) / 10;
+      if (Math.abs(rounded - startS) >= 0.1) onChange(rounded);
+    }, SETTLE_MS);
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (fits || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    onChange(Math.min(max, Math.max(0, Math.round((startS + (e.key === 'ArrowRight' ? 1 : -1)) * 10) / 10)));
+  };
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span className="font-bold text-slate-800">เลือกท่อนเพลง</span>
         <span className="font-semibold text-slate-600 tabular-nums">
-          {clipClock(startS)} – {clipClock(Math.min(length, startS + clipS))}
+          {clipClock(shown)} – {clipClock(Math.min(length, shown + clipS))}
         </span>
       </div>
-      <div ref={strip} className="relative h-14 rounded-xl bg-slate-50">
-        <div className="absolute inset-x-1 inset-y-2 flex items-center gap-[2px]" aria-hidden="true">
-          {Array.from({ length: BARS }, (_, i) => {
-            const at = (i + 0.5) / BARS;
-            const inside = at >= from && at <= to;
-            return <span key={i} className={`flex-1 rounded-full ${inside ? 'bg-[#2563EB]' : 'bg-slate-300'}`} style={{ height: `${18 + (peaks[i] ?? 0.25) * 82}%` }} />;
-          })}
-        </div>
-        {/* The window over the chosen part */}
-        <div className="absolute inset-y-0 rounded-xl border-[3px] border-[#2563EB] bg-[#2563EB]/5 pointer-events-none" style={{ left: `${from * 100}%`, width: `${share * 100}%` }} aria-hidden="true" />
-        {playingAtS !== null && (
-          <div className="absolute inset-y-1.5 w-0.5 -translate-x-1/2 rounded-full bg-slate-900 pointer-events-none" style={{ left: `${(playingAtS / length) * 100}%` }} aria-hidden="true" />
-        )}
-        <input
-          type="range"
+      <div ref={outer} className="relative h-14">
+        <div
+          ref={scroller}
+          onScroll={onScroll}
+          onKeyDown={onKeyDown}
+          onPointerDown={(e) => {
+            if (e.pointerType !== 'mouse' || fits || !scroller.current) return;
+            mouseDrag.current = { x: e.clientX, left: scroller.current.scrollLeft };
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            const drag = mouseDrag.current;
+            if (drag && scroller.current) scroller.current.scrollLeft = drag.left - (e.clientX - drag.x);
+          }}
+          onPointerUp={() => (mouseDrag.current = null)}
+          onPointerCancel={() => (mouseDrag.current = null)}
+          tabIndex={fits ? -1 : 0}
+          role="slider"
           aria-label="ท่อนเพลงที่ใช้"
-          aria-valuetext={`เริ่มที่ ${clipClock(startS)}`}
-          min={0}
-          max={max}
-          step={0.1}
-          value={Math.min(startS, max)}
-          disabled={max === 0}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-0 w-full h-full appearance-none bg-transparent cursor-grab active:cursor-grabbing disabled:cursor-default [&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-14 [&::-webkit-slider-thumb]:w-[var(--window)] [&::-webkit-slider-thumb]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:h-14 [&::-moz-range-thumb]:w-[var(--window)] [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-transparent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-xl"
-          style={{ ['--window' as string]: `${Math.max(24, share * width)}px` }}
-        />
+          aria-valuemin={0}
+          aria-valuemax={Math.round(max)}
+          aria-valuenow={Math.round(shown)}
+          aria-valuetext={`เริ่มที่ ${clipClock(shown)}`}
+          className={`h-full rounded-xl bg-slate-50 overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 ${fits ? 'overflow-x-hidden' : 'overflow-x-auto cursor-grab active:cursor-grabbing touch-pan-x select-none'}`}
+        >
+          <div className="h-full flex items-center gap-[2px] py-2" style={{ width: total + side * 2, paddingLeft: side, paddingRight: side }} aria-hidden="true">
+            {Array.from({ length: bars }, (_, i) => {
+              const at = ((i + 0.5) / bars) * length;
+              const inside = fits || (at >= shown && at <= shown + clipS);
+              return <span key={i} className={`flex-1 min-w-px rounded-full ${inside ? 'bg-[#2563EB]' : 'bg-slate-300'}`} style={{ height: `${18 + (peaks[i] ?? 0.25) * 82}%` }} />;
+            })}
+          </div>
+        </div>
+        {/* The fixed window over the chosen part */}
+        <div className="absolute inset-y-0 rounded-xl border-[3px] border-[#2563EB] bg-[#2563EB]/5 pointer-events-none" style={{ left: side, width: windowPx }} aria-hidden="true" />
+        {playingAtS !== null && playingAtS >= shown && playingAtS <= shown + clipS && (
+          <div className="absolute inset-y-1.5 w-0.5 -translate-x-1/2 rounded-full bg-slate-900 pointer-events-none" style={{ left: side + (playingAtS - shown) * pps }} aria-hidden="true" />
+        )}
       </div>
-      <p className="text-xs text-slate-500">{max === 0 ? 'เพลงสั้นกว่าคลิป จะเล่นวนจนจบคลิป' : 'ลากกรอบเพื่อเลือกท่อนที่ชอบ'}</p>
+      <p className="text-xs text-slate-500">{fits ? 'เพลงสั้นกว่าคลิป จะเล่นวนจนจบคลิป' : 'เลื่อนคลื่นเสียงใต้กรอบ เพื่อเลือกท่อนที่ชอบ'}</p>
     </div>
   );
 }
+

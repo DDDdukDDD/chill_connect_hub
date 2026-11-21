@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Blend, Music, RefreshCw, Scissors, Sticker, Type, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { clipClock, clipStrip } from '@/lib/media/clip';
 import { CLIP_FILTERS, clipFilterCss } from '@/lib/media/clipFilter';
-import { DEFAULT_MUSIC_VOLUME, findTrack, type ClipMusic } from '@/lib/media/musicLibrary';
+import { DEFAULT_MUSIC_VOLUME, findTrack, type ClipMusic, type MusicTrack } from '@/lib/media/musicLibrary';
 import { MAX_FUN_STICKERS, drawOverlays, hitOverlay, loadEditorFont, type FunSticker, type PhotoText } from '@/lib/media/photoEdit';
-import { SongPlayer } from '@/lib/media/songPlayer';
+import { SongPlayer, loadSong, songHook } from '@/lib/media/songPlayer';
 import { MAX_VIDEO_SECONDS, MIN_CLIP_SECONDS } from '@/lib/moments/types';
 import { Segmented, TextTools, newText } from './EditorControls';
 import { MusicPicker, SongRange } from './MusicPicker';
@@ -66,6 +66,9 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
   const video = useRef<HTMLVideoElement>(null);
   const song = useRef<SongPlayer | null>(null);
   const [picking, setPicking] = useState(false);
+  // The song being tried in the sheet, played with the clip (BE-448); a ref, since the clip's events read it at once
+  const trialRef = useRef<ClipMusic | null>(null);
+  const trialTurn = useRef(0);
   const overlay = useRef<HTMLCanvasElement>(null);
   const drag = useRef<{ kind: 'text' | 'fun'; id: string; lastX: number; lastY: number } | null>(null);
   const [src, setSrc] = useState('');
@@ -234,10 +237,16 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
   /** Where in the song the clip's current time falls: the chosen point plus how far into the part we are */
   const songAt = (chosen: ClipMusic, videoAt: number) => Math.max(0, chosen.startS) + Math.max(0, videoAt - startS);
   /**
+   * The song that should sound now: while the sheet is open, the one being tried (BE-448), otherwise the chosen one.
+   * The tried one is kept in a ref too, since the clip's events can fire before the new state has rendered.
+   */
+  const heard = (): { tune: ClipMusic | null; on: boolean } => (picking ? { tune: trialRef.current, on: Boolean(trialRef.current) } : { tune: music, on: listening });
+  /**
    * Starts or stops the song preview in step with the clip. Called straight from taps too, since phones let sound start
    * only there; the clip's own events (playing, seeked, pause, waiting) call it again to keep the two together.
+   * Resolves once the song sounds.
    */
-  const playSong = (next: ClipMusic | null, on: boolean) => {
+  const playSong = async (next: ClipMusic | null, on: boolean): Promise<void> => {
     const player = song.current;
     const chosen = findTrack(next?.trackId);
     if (!player) return;
@@ -251,19 +260,48 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
       const off = Math.abs(at - want);
       if (Math.min(off, chosen.durationS - off) <= SONG_DRIFT_S) return player.setVolume(next.volume);
     }
-    void player.play(chosen.src, want, next.volume);
+    return player.play(chosen.src, want, next.volume);
   };
   /** Small drift between the two clocks is moved back at once; the song is in memory, so nothing is heard */
   const keepSongInStep = (videoAt: number) => {
-    if (!music || !track || !listening || picking) return;
-    const at = song.current?.position(track.src);
+    const { tune, on } = heard();
+    const playing = findTrack(tune?.trackId);
+    if (!tune || !playing || !on) return;
+    const at = song.current?.position(playing.src);
     if (at == null) return;
-    const want = songAt(music, videoAt) % track.durationS;
+    const want = songAt(tune, videoAt) % playing.durationS;
     const off = Math.abs(at - want);
-    if (Math.min(off, track.durationS - off) > SONG_DRIFT_S) song.current?.jump(track.src, want);
+    if (Math.min(off, playing.durationS - off) > SONG_DRIFT_S) song.current?.jump(playing.src, want);
   };
   /** The clip's own events: start the song with it, stop it when the clip stops or waits for data */
-  const followClip = (playing: boolean) => playSong(music, playing && listening && !picking);
+  const followClip = (playing: boolean) => {
+    const { tune, on } = heard();
+    void playSong(tune, playing && on);
+  };
+  /**
+   * A song tapped in the sheet plays with the clip, from its best part for a clip this long (BE-448); null stops it.
+   * Resolves once it sounds, so the sheet can show a spinner while the song downloads.
+   */
+  const tryInPicker = async (picked: MusicTrack | null) => {
+    const turn = ++trialTurn.current;
+    song.current?.unlock();
+    if (!picked) {
+      trialRef.current = null;
+      return song.current?.stop();
+    }
+    let from = 0;
+    try {
+      from = songHook(await loadSong(picked.src), endS - startS);
+    } catch {
+      // Could not load: the row stops spinning and stays silent
+      return;
+    }
+    if (turn !== trialTurn.current) return;
+    const next = { trackId: picked.id, startS: from, volume: music?.volume ?? DEFAULT_MUSIC_VOLUME };
+    trialRef.current = next;
+    fromStart();
+    await playSong(next, true);
+  };
   /** The clip goes back to the start of its part, so the song and the clip begin together */
   const fromStart = () => {
     if (video.current) video.current.currentTime = startS;
@@ -274,23 +312,37 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
     if (next) setListening(true);
     song.current?.unlock();
     fromStart();
-    playSong(next, Boolean(next));
+    void playSong(next, Boolean(next));
+  };
+  const endTrial = () => {
+    trialTurn.current++;
+    trialRef.current = null;
   };
   const openPicker = () => {
     song.current?.stop();
+    endTrial();
     setPicking(true);
   };
   const closePicker = () => {
+    endTrial();
     setPicking(false);
     song.current?.unlock();
-    playSong(music, listening);
+    void playSong(music, listening);
+  };
+  /** The song from the sheet goes under the clip from the part it was tried at, its best part */
+  const pickFromSheet = (picked: MusicTrack) => {
+    const tried = trialRef.current?.trackId === picked.id ? trialRef.current.startS : 0;
+    endTrial();
+    setPicking(false);
+    setTool('music');
+    chooseMusic({ trackId: picked.id, startS: tried, volume: music?.volume ?? DEFAULT_MUSIC_VOLUME });
   };
   const toggleListening = () => {
     const on = !listening;
     setListening(on);
     song.current?.unlock();
     fromStart();
-    playSong(music, on);
+    void playSong(music, on);
   };
 
   /* ---------- panels ---------- */
@@ -462,7 +514,8 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
       {/* The same layout as the photo editor: the clip on a soft grey stage, then one tool's controls and the tool bar.
           The panel keeps one height, so the clip does not jump when the tool changes */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row overflow-hidden">
-        <div className="relative [container-type:size] flex-1 min-h-0 min-w-0 bg-[#F6F7FB] flex items-center justify-center p-3 sm:p-4">
+        {/* While songs are picked the clip moves to the top, where the sheet leaves it in view */}
+        <div className={`relative [container-type:size] flex-1 min-h-0 min-w-0 bg-[#F6F7FB] flex justify-center p-3 sm:p-4 ${picking ? 'items-start' : 'items-center'}`}>
           <label className="absolute top-3 left-3 z-10 h-9 px-3.5 rounded-full bg-white/90 hover:bg-white shadow-sm text-slate-800 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer focus-within:ring-2 focus-within:ring-[#2563EB]">
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
             เลือกคลิปใหม่
@@ -527,7 +580,7 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
                 className="absolute inset-0 w-full h-full"
               />
               {/* Where it will sit on the post, so the member sees the finished look */}
-              {track && <SongPill track={track} playing={listening} onClick={openPicker} label={`เพลง ${track.title} แตะเพื่อเปลี่ยน`} />}
+              {track && <SongPill track={track} onClick={openPicker} label={`เพลง ${track.title} แตะเพื่อเปลี่ยน`} />}
               {canListen && (
                 <button
                   type="button"
@@ -564,17 +617,7 @@ export function ClipEditor({ file, fullSeconds, startS, endS, onRangeChange, fil
           </div>
         </div>
       </div>
-      {picking && (
-        <MusicPicker
-          currentId={track?.id ?? null}
-          onClose={closePicker}
-          onPick={(picked) => {
-            setPicking(false);
-            setTool('music');
-            chooseMusic({ trackId: picked.id, startS: 0, volume: music?.volume ?? DEFAULT_MUSIC_VOLUME });
-          }}
-        />
-      )}
+      {picking && <MusicPicker currentId={track?.id ?? null} onHear={tryInPicker} onClose={closePicker} onPick={pickFromSheet} />}
     </div>
   );
 }

@@ -20,6 +20,15 @@ Item template:
 
 ---
 
+### BE-448 · Choosing a song: hear it with the clip from its best part, a waveform that is easy to move (owner 2026-11-21)
+- **What changed:**
+  - **iPhone on silent** (`lib/media/songPlayer.ts`): Web Audio follows the ring switch while the clip's own sound does not, so the song could be silent. `unlock()` now sets `navigator.audioSession.type = 'playback'` (Safari 17+). Not yet tried on a real iPhone.
+  - **Best part** (`songHook`): the stretch of the song with the most sound for the clip's length, in 0.5 s steps (the 2 s end fade left out). A tried or chosen song starts there; the song's sheet on a post plays from there too.
+  - **Hear it with the clip:** a tap in the song sheet plays the song in step with the clip above (the editor's own player, `tryInPicker`), not on its own from 0. "ใช้เพลงนี้" keeps the part it was heard at.
+  - **Loading:** the song's square shows a spinner until it sounds (in the sheet and on a post's song sheet); the first 4 songs load as the sheet opens.
+  - **Waveform** (`SongRange`): a fixed window in the middle (42% of the strip) with the waveform enlarged under it and slid by finger, mouse drag or arrow keys (1 s). A 5 s clip on a 60 s song was a 25 px window before.
+- Checked in Edge: different start points per song, spinner during a slowed 1.5 s download, the song started at the hook with the clip at 0, chosen start kept, a 120 px slide moved it 10 → 14 s.
+
 ### BE-447 · 29 more songs, 7 feels, mood chips in the picker (owner 2026-11-21)
 - **What changed:** `MUSIC_TRACKS` has 37 songs (was 8): 29 CC0 songs by Loyalty Freak Music, Komiku and HoliznaCC0 from Free Music Archive, in `public/music/<id>.m4a`. Each track page's own licence link (`rel="license"`) was checked to be CC0 1.0 on 2026-11-21; the page is in each song's `license`. Each is its first 60 s (Skate 48 s), equally loud (-16 LUFS), with a 2 s fade at the end, 128 kbps AAC (about 1 MB). Feels: ฟีลกู๊ด, แดนซ์, ชิล, โลไฟ, ผจญภัย, อบอุ่น, สนุก, each with its own colour (`MOODS` in `SongBadge.tsx`). The three code-made samples moved to the end. The picker has a row of feel chips under the tabs. All 37 decode in Edge with the right lengths.
 - **What to do about it:** `public/music` is now about 35 MB in git. Listen through the new songs once; pull any you do not like from `CC0_SONGS` (the file can stay or go).
@@ -28,7 +37,8 @@ Item template:
 - **Why:** the song preview in the clip editor stuttered on phones; the owner asked for picking and showing songs at IG/TikTok level.
 - **Stutter fixed** (`lib/media/songPlayer.ts`): the preview was an `<audio>` element moved whenever it drifted from the clip, and each move fetched the file again. Now the song is decoded once into memory and played through Web Audio; it is started again only when the clip starts, loops, stalls or seeks (a loop's own `waiting` is ignored), small drift is moved back at once, and the volume works on iPhone. Checked in Edge with a test clip: one song start per loop.
 - **Picking** (`components/moments/MusicPicker.tsx`): the เพลง tab opens a sheet with search, แนะนำ, มาแรง (shown once a clip uses a song) and บันทึกไว้; a tap plays the song, "ใช้เพลงนี้" puts it under the clip. The part of the song is chosen by dragging a window over its waveform (`SongRange`, replaces the "เริ่มที่" slider). Saved songs are on the device only (`lib/media/savedSongs.ts`).
-- **On the post** (`components/moments/SongBadge.tsx`): a pill with a small spinning record, notes rising from it and the name sliding by while the clip plays (still with reduced motion). Bottom left on feed clips (`ClipPlayer` `musicId`); on the full-screen clip a quiet line under the author's name, as Reels does it (`variant="line"`, owner 2026-11-21); in the editor where it will sit. A tap opens the song's sheet: the record slides out of its sleeve, ฟังเพลง, บันทึกเพลง, and the clips that use it.
+- **On the post** (`components/moments/SongBadge.tsx`): one small white line, a note and "song · artist" with a soft shadow, as Reels shows it (owner 2026-11-21: no spinning record, no sliding name). Bottom left on feed clips (`ClipPlayer` `musicId`), under the author's name on the full-screen clip, and in the editor where it will sit. A tap opens the song's sheet: ฟังเพลง, บันทึกเพลง, and the clips that use it.
+- **Sheet height** (owner 2026-11-21): the song sheet takes about half the editor with a light veil, and the clip moves to the top while it is open, so it stays in view.
 - **Data:** `video.musicId` on posts, `?music=` on `GET /api/moments`, new `GET /api/moments/music` (docs/API.md). **Migration 0067** adds `moments.video_music_id`; code reads it only when present and writes it only for a clip with a song. Before 0067 a clip with a song still posts (the song is in the sound), but the post does not name it, so it shows no song pill (`pgMomentRepository.create` retries without the column).
 - **What to do about it:** run 0067 on dev and live before merging this to `main`. Try on a real iPhone and Android: the preview with the clip's sound on, and the song's sheet over a playing clip.
 

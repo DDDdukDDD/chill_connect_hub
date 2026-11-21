@@ -92,7 +92,7 @@ interface ClipPlayerProps {
   showTime?: boolean;
   /** The clip fills the screen (the Reel): the sound button keeps clear of the iPhone status bar */
   fullScreen?: boolean;
-  /** The library song under the clip: a spinning record in the corner that opens the song (BE-446) */
+  /** The library song under the clip: its name in the corner, opening the song (BE-446) */
   musicId?: string;
   className?: string;
 }
@@ -343,7 +343,7 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
           >
             {sound && isFull ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
           </button>
-          {musicId && <SongBadge musicId={musicId} playing={!isPaused} />}
+          {musicId && <SongBadge musicId={musicId} />}
           {showTime && isFull && <TimeBar videoRef={video} startS={startS} durationS={durationS} />}
           {hearts > 0 && (
             <span key={hearts} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">

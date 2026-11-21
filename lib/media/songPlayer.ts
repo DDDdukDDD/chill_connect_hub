@@ -25,6 +25,58 @@ function audioContext(): AudioContext | null {
   return shared;
 }
 
+/**
+ * iPhone mutes Web Audio when the ring switch is on silent, while the clip's own sound still plays, so a member heard
+ * the clip but not the song. Safari 17+ lets a page say its sound is media playback, which the switch does not mute
+ * (BE-448). Elsewhere this does nothing.
+ */
+function playEvenWhenSilenced() {
+  const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (session && session.type !== 'playback') {
+    try {
+      session.type = 'playback';
+    } catch {
+      // Older Safari: the switch still mutes the preview, the posted clip is unaffected
+    }
+  }
+}
+
+/**
+ * Where the song's best part starts for a clip this long: the stretch with the most sound, in half-second steps, so a
+ * song chosen with a quiet intro starts at its hook as on Reels and TikTok (BE-448). The last 2 s fade out and are left
+ * out; a clip longer than the song starts at 0 and the song loops.
+ */
+export function songHook(song: AudioBuffer, clipS: number): number {
+  const STEP_S = 0.5;
+  const usable = song.duration - 2;
+  const length = Math.min(clipS, usable);
+  if (length <= 0 || usable - length < STEP_S) return 0;
+  // Loudness of each half second (root mean square, every 8th sample is enough)
+  const data = song.getChannelData(0);
+  const per = Math.floor(song.sampleRate * STEP_S);
+  const steps = Math.floor(usable / STEP_S);
+  const loud: number[] = [];
+  for (let s = 0; s < steps; s++) {
+    let sum = 0;
+    let n = 0;
+    for (let i = s * per, end = Math.min(data.length, i + per); i < end; i += 8, n++) sum += data[i] * data[i];
+    loud.push(Math.sqrt(sum / Math.max(1, n)));
+  }
+  const span = Math.max(1, Math.round(length / STEP_S));
+  let best = 0;
+  let bestSum = -1;
+  let sum = 0;
+  for (let s = 0; s < loud.length; s++) {
+    sum += loud[s];
+    if (s >= span) sum -= loud[s - span];
+    if (s >= span - 1 && sum > bestSum * 1.02) {
+      bestSum = sum;
+      best = s - span + 1;
+    }
+  }
+  return best * STEP_S;
+}
+
 /** The decoded song, fetched once per page; a failed fetch is tried again next time */
 export function loadSong(src: string): Promise<AudioBuffer> {
   const ctx = audioContext();
@@ -72,6 +124,7 @@ export class SongPlayer {
 
   /** Phones allow sound only from a tap: call this inside the tap, before anything is awaited */
   unlock() {
+    playEvenWhenSilenced();
     const ctx = audioContext();
     if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => undefined);
   }
