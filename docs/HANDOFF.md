@@ -20,6 +20,19 @@ Item template:
 
 ---
 
+### BE-444 · Music on clips: a เพลง tab in the clip editor, mixed on the phone (owner 2026-11-21)
+- **What changed:**
+  - **Clip editor** (`ClipEditor.tsx`): a new tab, เพลง, between สติกเกอร์ and เสียง, on devices that can shrink clips. You pick a song from `MUSIC_TRACKS` (`lib/media/musicLibrary.ts`) or ไม่ใส่เพลง, then set where the song starts and how loud it is. The preview plays the song next to the clip and keeps it in step. With เสียง → ปิดเสียง, the post has only the song.
+  - **Posting** (`lib/media/clipCompress.ts`): the picture is made as before without sound. `OfflineAudioContext` mixes the song (looped, 0.2 s fade in, 1 s fade out) with the clip's own sound and passes it through a limiter, then the picture is copied as it is into a new MP4 with that mix as the AAC track. The post is still one plain MP4, so playing it needs nothing new. Where it fails, posting stops with "ลองเอาเพลงออก" and the original file is not uploaded.
+  - **Songs (8):** 3 samples that `scripts/make-sample-music.mjs` makes from code (ours, WAV), and 5 CC0 songs by HoliznaCC0 from Free Music Archive (albums "Spring at last (LOFI TAPE)" and "Winter Lofi", both marked CC0 1.0). Each CC0 song is cut to its first 60 s as 128 kbps AAC `.m4a` (about 1 MB). The source link for each is in its `license` field.
+  - **Not stored:** which song a post uses. The server, API and database are unchanged. There is no admin page for songs yet; adding one is on the LAUNCH_CHECKLIST.
+- **What to do about it:**
+  - `compressClip` was tested in headless Chrome with 6 cases, using both a WAV and an m4a song: song plus own sound, song only, song on a silent clip, song with filter and text. All gave AVC + stereo AAC of the right length, and the paths without a song behave as before.
+  - The editor was walked on the dev server in no-database mode at 390 and 1280: sign up, pick a clip, เพลง tab, pick a song, move start and volume, mute the clip's own sound, speaker off, post. The song stays within 0.2 s of the clip; the six tool labels fit at 390; there is no sideways scroll and no page errors. The posted clip is 8 s with a stereo AAC track that carries the song.
+  - **Not tested:** iPhone. Safari ignores `audio.volume`, so the preview plays at full volume, but the volume in the posted mix is right. Please try it on a real phone.
+
+---
+
 ### BE-443 · Profile picture: placed in the circle at onboarding, shown large on a tap (owner 2026-11-20)
 - **What changed:**
   - **Onboarding:** a picked photo opens `AvatarCropDialog` (drag, pinch, zoom), as the profile editor does; "ปรับตำแหน่ง" opens it again. It saves the same 640 px square (was an 800 px photo as picked).
