@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-450 · สัปดาห์นี้ on a thin week: one row, เร็วๆ นี้, places first, nearby; "ตั้งตี้วันนั้น" (owner 2026-11-21)
+- **Why:** in a province with little, or early on, a schedule of mostly empty days told visitors the app is empty.
+- **What changed:**
+  - **Thin week** (`ThisWeekView.tsx`, `THIN_WEEK_ITEMS` 6 / `THIN_WEEK_EMPTY_DAYS` 4 in `lib/thisWeekRules.ts`): fewer than 6 things in the 7 days, or 4 empty days or more. The day strip is left out; the week is one row ("7 วันนี้มี 2 อย่าง", each tile says its day); then กำลังจัดอยู่, **เร็วๆ นี้** (ตี้ and อีเวนต์ 8–30 days ahead, `weekContent().later`), ที่น่าไปวันว่าง, ชาเลนจ์, and for a picked province **ใกล้ๆ ใน<region>** (other provinces of its region, else "ที่อื่นทั่วประเทศ"), with a plain line that the province has little so far. A full week keeps the day-by-day schedule.
+  - **ตั้งตี้วันนั้น:** an empty day (or folded run of days) links to `/community?create=1&date=YYYY-MM-DD[&province=]`; the create form starts on that day and province (`CreateEventModal` `initialDate`, `initialProvince`). This revisits the 2026-11-19 choice to offer making a ตี้ only once at the end.
+  - The page gets a province → region map from the server (`provinceRegion()` in `lib/masterData.ts`), so the region lists stay out of the page's code.
+- Checked on dev at 390 px: all provinces stays a schedule with "ตั้งตี้วันนั้น" on the two empty days; เชียงใหม่ switches to the thin layout (1 in the week, เร็วๆ นี้, places, challenges, ทั่วประเทศ as no other northern province has anything). Not tried: the form opening on the day (needs a signed-in member).
+
 ### BE-449 · สัปดาห์นี้ is what is on, My Hub is what I am doing; empty days fold (owner 2026-11-21)
 - **What changed:**
   - **Empty days** (`app/this-week/ThisWeekView.tsx`): the day strip says "ยังไม่มี" (was "ว่าง", read as "you are free") and an empty day is no longer a link. In the schedule, days in a row with nothing fold into one line, "อังคาร 24 – พฤหัสฯ 26 ยังไม่มีกิจกรรม" (was "ยังไม่มีตี้…", wrong when a day had no อีเวนต์ either).

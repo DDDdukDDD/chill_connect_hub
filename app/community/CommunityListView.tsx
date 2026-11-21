@@ -207,8 +207,10 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
     }
   };
 
-  // /community?create=1 (from the host challenge) opens the create dialog once sign-in is known
+  // /community?create=1 (from the host challenge) opens the create dialog once sign-in is known; &date=YYYY-MM-DD and
+  // &province= come from "ตั้งตี้วันนั้น" on สัปดาห์นี้ (BE-450) and start the form on that day and province
   const createFromLink = useRef(searchParams.get('create') === '1');
+  const [createSeed] = useState(() => ({ date: searchParams.get('date') ?? undefined, province: searchParams.get('province') ?? undefined }));
   useEffect(() => {
     if (!createFromLink.current || !isAuthReady) return;
     createFromLink.current = false;
@@ -454,6 +456,8 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
         initialType="community"
+        initialDate={createSeed.date}
+        initialProvince={createSeed.province}
         onClose={() => setIsCreateEventModalOpen(false)}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
