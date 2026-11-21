@@ -44,7 +44,16 @@ function rowToMoment(r: PgRow): Moment {
     imageRatio: orUndefined(r.image_ratio),
     // Read only when migration 0040 has added the column
     ...(r.achievement ? { achievement: r.achievement } : {}),
-    video: r.video_url ? { url: r.video_url, durationS: r.video_duration_s, ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}), ...(r.video_preview_url ? { previewUrl: r.video_preview_url } : {}) } : undefined,
+    video: r.video_url
+      ? {
+          url: r.video_url,
+          durationS: r.video_duration_s,
+          ...(r.video_start_s > 0 ? { startS: r.video_start_s } : {}),
+          ...(r.video_preview_url ? { previewUrl: r.video_preview_url } : {}),
+          // Read only when migration 0067 has added the column
+          ...(r.video_music_id ? { musicId: r.video_music_id } : {}),
+        }
+      : undefined,
     ...(r.comments_off ? { commentsOff: true } : {}),
     ...(r.likes_off ? { likesOff: true } : {}),
     ...(r.shares_off ? { sharesOff: true } : {}),
@@ -125,6 +134,8 @@ const momentColumns = (m: Moment) => ({
   video_start_s: m.video?.startS ?? 0,
   // Written only when there is one, so posts keep saving on a database that has not run migration 0028 yet
   ...(m.video?.previewUrl ? { video_preview_url: m.video.previewUrl } : {}),
+  // The same for the song under a clip (migration 0067): posts without one save on any database
+  ...(m.video?.musicId ? { video_music_id: m.video.musicId } : {}),
   comments_off: Boolean(m.commentsOff),
   likes_off: Boolean(m.likesOff),
   shares_off: Boolean(m.sharesOff),
@@ -245,6 +256,7 @@ function feedFilters(tx: Sql, query: MomentFeedQuery): Fragment {
     ${query.placesOnly ? tx`and ${placeRule(tx)}` : tx``}
     ${query.tag ? tx`and m.caption ~* ${hashtagPattern(query.tag)}` : tx``}
     ${query.clipsOnly ? tx`and m.video_url is not null` : tx``}
+    ${query.musicId ? tx`and m.video_music_id = ${query.musicId}` : tx``}
     ${location ? tx`and (m.location_text ilike ${contains(location)} or m.target_title ilike ${contains(location)})` : tx``}
     ${q ? tx`and (m.caption ilike ${contains(q)} or coalesce(a.display_name, m.author_name) ilike ${contains(q)} or m.location_text ilike ${contains(q)} or m.target_title ilike ${contains(q)})` : tx``}` as unknown as Fragment;
 }
@@ -314,6 +326,25 @@ function filters(tx: Sql, query: MomentQuery): Fragment {
     ${location ? tx`and (m.location_text ilike ${contains(location)} or m.target_title ilike ${contains(location)})` : tx``}
     ${query.reportedOnly ? tx`and exists (select 1 from app.moment_reports r where r.moment_id = m.id)` : tx``}
     ${q ? tx`and (m.caption ilike ${contains(q)} or coalesce(a.display_name, m.author_name) ilike ${contains(q)} or m.location_text ilike ${contains(q)})` : tx``}` as unknown as Fragment;
+}
+
+/** A new moment with all its rows, in one transaction */
+async function insertMoment(moment: Moment) {
+  await sql().begin(async (tx) => {
+    const id = uuidV7(moment.createdAt);
+    const authorId = moment.authorId ? (await memberIdsOf(tx, [moment.authorId])).get(moment.authorId) ?? null : null;
+    const row = {
+      id, slug: moment.id, author_id: authorId, author_name: authorId ? null : moment.authorName, author_avatar: authorId ? null : moment.authorAvatar ?? null,
+      is_sample: moment.isSample, created_at: toDate(moment.createdAt) as Date, ...momentColumns(moment), ...(await targetColumns(tx, moment)),
+    };
+    await tx`insert into app.moments ${tx(row)}`;
+    await insertImages(tx, id, moment.images);
+    await syncPeople(tx, 'moment_likes', id, [], moment.likedBy);
+    await syncPeople(tx, 'moment_saves', id, [], moment.savedBy);
+    await syncPeople(tx, 'moment_tags', id, [], moment.taggedIds ?? []);
+    await insertComments(tx, id, moment.comments);
+    await syncReports(tx, id, [], moment.reports);
+  });
 }
 
 export const pgMomentRepository: MomentRepository = {
@@ -522,6 +553,20 @@ export const pgMomentRepository: MomentRepository = {
       from uses group by tag order by total desc, tag limit 500`;
     return rows.map((r) => ({ tag: String(r.tag), total: Number(r.total), authors: Number(r.authors), week: Number(r.week), weekBefore: Number(r.week_before), weekAuthors: Number(r.week_authors) }));
   },
+  async musicUses() {
+    const db = sql();
+    try {
+      const rows = await db`
+        select m.video_music_id as id, count(*)::int as clips
+        from app.moments m left join app.members a on a.id = m.author_id
+        where ${publicRule(db)} and m.video_music_id is not null group by 1`;
+      return Object.fromEntries(rows.map((r) => [String(r.id), Number(r.clips)]));
+    } catch (error) {
+      // 42703: migration 0067 not run yet, so no clip has a song on record
+      if ((error as { code?: string }).code !== '42703') throw error;
+      return {};
+    }
+  },
   async relatedHashtags(tag, limit) {
     const db = sql();
     const own = tag.trim().replace(/^#/, '').toLowerCase();
@@ -575,21 +620,16 @@ export const pgMomentRepository: MomentRepository = {
     }
   },
   async create(moment) {
-    await sql().begin(async (tx) => {
-      const id = uuidV7(moment.createdAt);
-      const authorId = moment.authorId ? (await memberIdsOf(tx, [moment.authorId])).get(moment.authorId) ?? null : null;
-      const row = {
-        id, slug: moment.id, author_id: authorId, author_name: authorId ? null : moment.authorName, author_avatar: authorId ? null : moment.authorAvatar ?? null,
-        is_sample: moment.isSample, created_at: toDate(moment.createdAt) as Date, ...momentColumns(moment), ...(await targetColumns(tx, moment)),
-      };
-      await tx`insert into app.moments ${tx(row)}`;
-      await insertImages(tx, id, moment.images);
-      await syncPeople(tx, 'moment_likes', id, [], moment.likedBy);
-      await syncPeople(tx, 'moment_saves', id, [], moment.savedBy);
-      await syncPeople(tx, 'moment_tags', id, [], moment.taggedIds ?? []);
-      await insertComments(tx, id, moment.comments);
-      await syncReports(tx, id, [], moment.reports);
-    });
+    try {
+      await insertMoment(moment);
+    } catch (error) {
+      // 42703: migration 0067 not run yet; the clip already has the song mixed in, so it posts without naming it
+      if ((error as { code?: string }).code !== '42703' || !moment.video?.musicId) throw error;
+      const video = { ...moment.video };
+      delete video.musicId;
+      await insertMoment({ ...moment, video });
+      return { ...moment, video };
+    }
     return moment;
   },
   async mutate(id, change) {

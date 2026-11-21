@@ -132,6 +132,8 @@ export interface MomentVideo {
    * load `url` only when someone opens the clip or turns the sound on; older clips have none and wait for a tap.
    */
   previewUrl?: string;
+  /** The library song mixed into the clip (lib/media/musicLibrary.ts, BE-446); shown on the clip, and clips can be listed by it */
+  musicId?: string;
 }
 
 export interface MomentEvidence {
@@ -176,6 +178,8 @@ export interface MomentFeedQuery {
   placesOnly?: boolean;
   /** Clip posts only (the Reel's next clips) */
   clipsOnly?: boolean;
+  /** Clips with this library song under them (the song sheet) */
+  musicId?: string;
   sort: 'newest' | 'popular';
   page: number;
   limit: number;
@@ -256,6 +260,8 @@ export interface MomentRepository {
   typeCounts(): Promise<MomentTypeCounts>;
   /** Every hashtag in public posts with its counts, the most used first (at most 500) */
   hashtagUses(): Promise<HashtagUse[]>;
+  /** How many public clips use each library song: song id → clips; empty on a database without migration 0067 */
+  musicUses(): Promise<Record<string, number>>;
   /** Hashtags that appear in the same public posts as `tag`, the most shared first */
   relatedHashtags(tag: string, limit: number): Promise<{ tag: string; posts: number }[]>;
   findById(id: string): Promise<Moment | null>;

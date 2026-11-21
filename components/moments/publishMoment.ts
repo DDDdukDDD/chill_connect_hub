@@ -132,8 +132,9 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
     if (!clipUrl) throw new PostingError('อัปโหลดคลิปไม่สำเร็จ ลองอีกครั้งนะ');
     // The silent loop feeds autoplay; without it the post still goes, its clip then waits for a tap
     const previewUrl = small?.preview ? await uploadClip(small.preview).catch(() => null) : null;
+    // The song is mixed only into a shrunk clip, so only then does the post name it (shown on the clip, BE-446)
     done.video = small
-      ? { url: clipUrl, durationS: small.durationS, startS: 0, ...(previewUrl ? { previewUrl } : {}) }
+      ? { url: clipUrl, durationS: small.durationS, startS: 0, ...(previewUrl ? { previewUrl } : {}), ...(clip.music ? { musicId: clip.music.trackId } : {}) }
       : { url: clipUrl, durationS: Math.min(MAX_VIDEO_SECONDS, clip.endS - clip.startS), startS: clip.startS };
   }
   if (!clip) {

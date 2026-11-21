@@ -1,0 +1,151 @@
+'use client';
+
+/**
+ * Plays a library song for the clip editor through Web Audio (BE-446).
+ *
+ * The first preview used an <audio> element and moved it whenever it drifted from the clip. Each move made the phone
+ * fetch that part of the file again, which members heard as stutter, and iPhone ignored its volume. Here a song is
+ * downloaded and decoded once, kept in memory, and started at an exact point: moving it is instant and gapless, and the
+ * volume is a gain node, which iPhone honours.
+ */
+
+/** A short fade on every start and stop, so a jump in the song never clicks */
+const FADE_S = 0.02;
+
+let shared: AudioContext | null = null;
+const songs = new Map<string, Promise<AudioBuffer>>();
+
+function audioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (!shared) {
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    shared = new Ctor();
+  }
+  return shared;
+}
+
+/** The decoded song, fetched once per page; a failed fetch is tried again next time */
+export function loadSong(src: string): Promise<AudioBuffer> {
+  const ctx = audioContext();
+  if (!ctx) return Promise.reject(new Error('no Web Audio'));
+  let song = songs.get(src);
+  if (!song) {
+    song = fetch(src)
+      .then((r) => {
+        if (!r.ok) throw new Error('song not found');
+        return r.arrayBuffer();
+      })
+      .then((data) => ctx.decodeAudioData(data));
+    song.catch(() => songs.delete(src));
+    songs.set(src, song);
+  }
+  return song;
+}
+
+/** The loudness of a song in `bars` slices, 0–1, for drawing its waveform */
+export function songPeaks(song: AudioBuffer, bars: number): number[] {
+  const data = song.getChannelData(0);
+  const size = Math.max(1, Math.floor(data.length / bars));
+  const peaks: number[] = [];
+  for (let i = 0; i < bars; i++) {
+    let peak = 0;
+    // Every 16th sample is plenty to find a slice's peak
+    for (let j = i * size, end = Math.min(data.length, j + size); j < end; j += 16) peak = Math.max(peak, Math.abs(data[j]));
+    peaks.push(peak);
+  }
+  const top = Math.max(...peaks, 0.001);
+  return peaks.map((p) => p / top);
+}
+
+/** One looping song at a time; a new start replaces the one playing */
+export class SongPlayer {
+  private source: AudioBufferSourceNode | null = null;
+  private gain: GainNode | null = null;
+  private song: AudioBuffer | null = null;
+  private src = '';
+  private startedAt = 0;
+  private offset = 0;
+  /** Bumped on every start and stop, so a song that finishes loading late does not start after all */
+  private turn = 0;
+  private volume = 1;
+
+  /** Phones allow sound only from a tap: call this inside the tap, before anything is awaited */
+  unlock() {
+    const ctx = audioContext();
+    if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => undefined);
+  }
+
+  /** Plays `src` from `atS` seconds, looping; resolves once it sounds, or quietly does nothing if the song cannot load */
+  async play(src: string, atS: number, volume: number) {
+    const turn = ++this.turn;
+    this.volume = volume;
+    this.unlock();
+    let song: AudioBuffer;
+    try {
+      song = await loadSong(src);
+    } catch {
+      return;
+    }
+    if (turn !== this.turn) return;
+    this.start(song, src, atS);
+  }
+
+  /** Where the song is now, in seconds; null when nothing plays */
+  position(src: string): number | null {
+    const ctx = audioContext();
+    if (!ctx || !this.source || !this.song || src !== this.src) return null;
+    return (this.offset + ctx.currentTime - this.startedAt) % this.song.duration;
+  }
+
+  /** Moves the playing song to `atS` at once (it is in memory); false when nothing of `src` is playing */
+  jump(src: string, atS: number): boolean {
+    if (!this.song || !this.source || src !== this.src) return false;
+    this.start(this.song, src, atS);
+    return true;
+  }
+
+  setVolume(volume: number) {
+    this.volume = volume;
+    const ctx = audioContext();
+    if (ctx && this.gain) this.gain.gain.setTargetAtTime(volume, ctx.currentTime, 0.03);
+  }
+
+  stop() {
+    this.turn++;
+    this.release();
+  }
+
+  private start(song: AudioBuffer, src: string, atS: number) {
+    const ctx = audioContext();
+    if (!ctx) return;
+    this.release();
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(this.volume, now + FADE_S);
+    gain.connect(ctx.destination);
+    const source = ctx.createBufferSource();
+    source.buffer = song;
+    source.loop = true;
+    source.connect(gain);
+    const offset = ((atS % song.duration) + song.duration) % song.duration;
+    source.start(now, offset);
+    Object.assign(this, { source, gain, song, src, startedAt: now, offset });
+  }
+
+  /** Fades the playing song out and stops it */
+  private release() {
+    const ctx = audioContext();
+    const { source, gain } = this;
+    this.source = null;
+    this.gain = null;
+    if (!ctx || !source || !gain) return;
+    const now = ctx.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(gain.gain.value, now);
+    gain.gain.linearRampToValueAtTime(0, now + FADE_S);
+    source.stop(now + FADE_S + 0.01);
+    source.onended = () => gain.disconnect();
+  }
+}

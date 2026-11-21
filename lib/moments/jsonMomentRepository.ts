@@ -195,6 +195,7 @@ export const jsonMomentRepository: MomentRepository = {
       if (query.placesOnly && !isPlaceMoment(m)) return false;
       if (query.tag && !hasHashtag(m.caption, query.tag)) return false;
       if (query.clipsOnly && !m.video) return false;
+      if (query.musicId && m.video?.musicId !== query.musicId) return false;
       if (location && !m.location.toLowerCase().includes(location) && !(m.targetTitle ?? '').toLowerCase().includes(location)) return false;
       // The place a post is tied to counts too: "ร้านกาแฟอารีย์" finds posts at it whatever their caption (BE-441)
       return !q || m.caption.toLowerCase().includes(q) || m.authorName.toLowerCase().includes(q) || m.location.toLowerCase().includes(q) || (m.targetTitle ?? '').toLowerCase().includes(q);
@@ -289,6 +290,12 @@ export const jsonMomentRepository: MomentRepository = {
   async hashtagUses() {
     const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000 });
     return tallyHashtags(items.map((m) => ({ caption: m.caption, createdAt: m.createdAt, author: m.authorId ?? m.authorName })));
+  },
+  async musicUses() {
+    const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000, clipsOnly: true });
+    const uses: Record<string, number> = {};
+    for (const m of items) if (m.video?.musicId) uses[m.video.musicId] = (uses[m.video.musicId] ?? 0) + 1;
+    return uses;
   },
   async relatedHashtags(tag, limit) {
     const { items } = await jsonMomentRepository.feed({ sort: 'newest', page: 1, limit: 5000, tag });

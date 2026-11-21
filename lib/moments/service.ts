@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { cacheManager } from '../cache';
 import { tidyDisplayName, withoutSampleHandle } from '../displayName';
+import { findTrack } from '../media/musicLibrary';
 import { ownUploadFolder } from '../media/ownMedia';
 import { memberRepository } from '../members';
 import type { Member } from '../members/types';
@@ -190,6 +191,8 @@ export interface MomentListOptions {
   tag?: string;
   /** 'clip': clip posts only, newest first (the Reel's next clips) */
   media?: string;
+  /** A library song id: the clips that use it, newest first (the song sheet, BE-446) */
+  music?: string;
   page?: number;
   limit?: number;
   /** `pagination.nextCursor` of the page before; the next page then starts right after it */
@@ -281,7 +284,8 @@ async function readForYou(viewer: Member | null, personal: boolean, page: number
 async function readMoments(viewer: Member | null, options: MomentListOptions) {
   const page = Math.max(1, options.page ?? 1);
   const limit = Math.min(30, Math.max(1, options.limit ?? 12));
-  const filtered = Boolean(options.author || options.category || options.targetType || options.targetId || options.location || options.q || options.tag || options.media === 'clip');
+  const musicId = findTrack(options.music)?.id;
+  const filtered = Boolean(options.author || options.category || options.targetType || options.targetId || options.location || options.q || options.tag || options.media === 'clip' || musicId);
   const ranked = (options.tab === 'foryou' || options.tab === 'mix') && !filtered;
   // A ranked feed that has shown its whole pool carries on newest first with the usual cursor
   if (ranked && (!options.cursor || FOR_YOU_CURSOR.test(options.cursor))) return readForYou(viewer, options.tab === 'foryou', page, limit, options.cursor);
@@ -296,7 +300,7 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
   const placeTab = asked === 'spot' && !options.targetId;
   const targetType = placeTab ? undefined : asked;
   const category = options.category && CATEGORIES.has(options.category as MomentCategory) ? (options.category as MomentCategory) : undefined;
-  const found = await momentRepository.feed({
+  const feedQuery = {
     viewerId: viewer?.id,
     blockedIds: viewer?.blockedIds,
     authorIds: tab === 'following' ? followed : undefined,
@@ -310,11 +314,16 @@ async function readMoments(viewer: Member | null, options: MomentListOptions) {
     category,
     placesOnly: placeTab,
     clipsOnly: options.media === 'clip' || undefined,
-    sort: tab === 'popular' ? 'popular' : 'newest',
+    musicId,
+    sort: tab === 'popular' ? ('popular' as const) : ('newest' as const),
     page,
     limit,
     cursor: options.cursor || undefined,
-  });
+  };
+  // 42703: a song asked for before migration 0067 added the column; no clip has one on record yet
+  const found = await momentRepository.feed(feedQuery).catch((error) =>
+    musicId && (error as { code?: string })?.code === '42703' ? { items: [], totalCount: 0, hasNext: false } : Promise.reject(error),
+  );
   const people = await loadPeople(found.items);
   return {
     moments: await withLive(found.items.map((moment) => toFeedItem(moment, viewer, people))),
@@ -333,6 +342,10 @@ const hashtagUses = () => cacheManager.getOrSet('moments:hashtag-uses', () => mo
 const forgetTagsOf = (caption: string) => {
   if (caption.includes('#')) cacheManager.invalidateTag('moments-hashtags');
 };
+
+/** How many public clips use each library song (the picker's มาแรง and "ใช้ใน N คลิป"), counted again every 10 minutes */
+export const musicUses = () =>
+  cacheManager.getOrSet('moments:music-uses', () => momentRepository.musicUses(), { ttlMs: 10 * 60_000, tags: ['moments-music'] }).catch(() => ({}) as Record<string, number>);
 
 /** A tag page needs this many posts before it is worth a search engine's time (sitemap, and noindex below it) */
 export const TAG_PAGE_MIN_POSTS = 3;
@@ -391,13 +404,15 @@ export async function findPublicMoment(id: string): Promise<FeedItem | null> {
 
 function cleanVideo(input: unknown, imageCount: number): Moment['video'] {
   if (input === undefined || input === null) return undefined;
-  const { url, durationS, startS, previewUrl } = input as { url?: unknown; durationS?: unknown; startS?: unknown; previewUrl?: unknown };
+  const { url, durationS, startS, previewUrl, musicId } = input as { url?: unknown; durationS?: unknown; startS?: unknown; previewUrl?: unknown; musicId?: unknown };
   if (typeof url !== 'string' || !isAllowedMomentVideo(url)) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
   if (typeof durationS !== 'number' || !Number.isFinite(durationS) || durationS <= 0 || durationS > MAX_VIDEO_SECONDS + VIDEO_SECONDS_GRACE) throw new MomentError(`คลิปยาวได้ไม่เกิน ${MAX_VIDEO_SECONDS} วินาที`);
   if (imageCount !== 1) throw new MomentError('โมเมนต์ที่มีคลิปใช้รูปปกได้รูปเดียว');
   const start = typeof startS === 'number' && Number.isFinite(startS) && startS > 0 ? Math.round(startS * 10) / 10 : 0;
   if (previewUrl !== undefined && (typeof previewUrl !== 'string' || !isAllowedMomentVideo(previewUrl))) throw new MomentError('คลิปต้องอัปโหลดผ่านระบบก่อน');
-  return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}), ...(previewUrl ? { previewUrl } : {}) };
+  // Only a song from our own library; anything else is dropped rather than refused, the clip itself is fine
+  const song = typeof musicId === 'string' ? findTrack(musicId) : null;
+  return { url, durationS: Math.round(durationS * 10) / 10, ...(start > 0 ? { startS: start } : {}), ...(previewUrl ? { previewUrl } : {}), ...(song ? { musicId: song.id } : {}) };
 }
 
 /** People the member follows who follow back, neither blocking the other: the only ones they can tag */
@@ -498,6 +513,8 @@ export async function createMoment(member: Member, input: Record<string, unknown
     createdAt: new Date().toISOString(),
   });
   forgetTagsOf(caption);
+  // A new clip with a song shows in that song's count straight away on this server
+  if (video?.musicId) cacheManager.invalidateTag('moments-music');
   return created;
 }
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Play, Heart, Volume2, VolumeX } from 'lucide-react';
+import { SongBadge } from './SongBadge';
 
 /**
  * A moment's clip, played the way Instagram plays one (owner 2026-11-02): it starts by itself once it is on screen,
@@ -91,6 +92,8 @@ interface ClipPlayerProps {
   showTime?: boolean;
   /** The clip fills the screen (the Reel): the sound button keeps clear of the iPhone status bar */
   fullScreen?: boolean;
+  /** The library song under the clip: a spinning record in the corner that opens the song (BE-446) */
+  musicId?: string;
   className?: string;
 }
 
@@ -150,7 +153,7 @@ function TimeBar({ videoRef, startS, durationS }: { videoRef: React.RefObject<HT
   );
 }
 
-export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, showTime = false, fullScreen = false, className = '' }: ClipPlayerProps) {
+export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label, fit = 'contain', interactive = true, onTap: onSingleTap, onDoubleTap, showTime = false, fullScreen = false, musicId, className = '' }: ClipPlayerProps) {
   const video = useRef<HTMLVideoElement>(null);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaused, setIsPaused] = useState(true);
@@ -340,6 +343,7 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
           >
             {sound && isFull ? <Volume2 className="h-5 w-5" aria-hidden="true" /> : <VolumeX className="h-5 w-5" aria-hidden="true" />}
           </button>
+          {musicId && <SongBadge musicId={musicId} playing={!isPaused} />}
           {showTime && isFull && <TimeBar videoRef={video} startS={startS} durationS={durationS} />}
           {hearts > 0 && (
             <span key={hearts} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">

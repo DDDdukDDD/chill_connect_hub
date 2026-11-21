@@ -16,7 +16,7 @@ import { isOptimizedRemote, optimizedImage } from '@/lib/optimizedImage';
 interface MomentPhotosProps {
   images: string[];
   /** One short clip: played here in place of the photos, and `images[0]` is its cover */
-  video?: { url: string; startS?: number; durationS?: number; previewUrl?: string };
+  video?: { url: string; startS?: number; durationS?: number; previewUrl?: string; musicId?: string };
   /** Width / height of the post. Photo posts made before 2026-11-07 are square; new ones start tall (4:5) and can be made square in the editor */
   ratio?: number;
   alt: string;
@@ -120,7 +120,7 @@ export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }:
   };
 
   if (video) {
-    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} className={`relative w-full ${frameOf(ratio)} overflow-hidden rounded-2xl bg-black`} />;
+    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} musicId={video.musicId} className={`relative w-full ${frameOf(ratio)} overflow-hidden rounded-2xl bg-black`} />;
   }
 
   return (

@@ -72,6 +72,19 @@
     0% { transform: translateY(18%); opacity: 0.4; }
     100% { transform: translateY(0); opacity: 1; }
   }
+  /* The song name on a clip slides by while it plays (SongBadge, BE-446): two copies, so the loop has no seam */
+  --animate-song-marquee: song-marquee 9s linear infinite;
+  @keyframes song-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(calc(-50% - 1rem)); }
+  }
+  /* Little notes rise from the record while the clip plays */
+  --animate-song-note: song-note 2.4s ease-out infinite;
+  @keyframes song-note {
+    0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(var(--drift, 6px), -22px) scale(1); opacity: 0; }
+  }
   --animate-reel-down: reel-down 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   @keyframes reel-down {
     0% { transform: translateY(-18%); opacity: 0.4; }
