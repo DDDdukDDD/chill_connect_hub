@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-449 · สัปดาห์นี้ is what is on, My Hub is what I am doing; empty days fold (owner 2026-11-21)
+- **What changed:**
+  - **Empty days** (`app/this-week/ThisWeekView.tsx`): the day strip says "ยังไม่มี" (was "ว่าง", read as "you are free") and an empty day is no longer a link. In the schedule, days in a row with nothing fold into one line, "อังคาร 24 – พฤหัสฯ 26 ยังไม่มีกิจกรรม" (was "ยังไม่มีตี้…", wrong when a day had no อีเวนต์ either).
+  - **Moved out of สัปดาห์นี้:** the member's challenges row became one line linking to My Hub (`/myhub?tab=quests`); "เพื่อนๆ จะไปกัน" lists only ตี้ friends go to, the member's own "ไปกัน" plans are on My Hub only (`lib/thisWeekFriends.ts`, `kind: "plan"` gone, docs/API.md).
+  - **Marked on สัปดาห์นี้:** a ตี้ the member joined shows "ร่วมแล้ว" (the word every ตี้ list uses), their own shows "คุณจัด", saved ตี้ and อีเวนต์ a filled heart that can be toggled here; a day they go to something has an orange dot in the strip.
+  - **My Hub** (`app/myhub/page.tsx`): with nothing coming up it no longer lists four open ตี้ of its own (the same ones สัปดาห์นี้ shows); one card "สัปดาห์นี้มีอะไรบ้าง" links there instead.
+- Checked on dev at 390 px signed out: 5 of 7 days linked, two empty days with their line. Signed-in marks not seen on screen (no test account here).
+
 ### BE-448 · Choosing a song: hear it with the clip from its best part, a waveform that is easy to move (owner 2026-11-21)
 - **What changed:**
   - **iPhone on silent** (`lib/media/songPlayer.ts`): Web Audio follows the ring switch while the clip's own sound does not, so the song could be silent. `unlock()` now sets `navigator.audioSession.type = 'playback'` (Safari 17+). Not yet tried on a real iPhone.

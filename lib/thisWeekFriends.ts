@@ -1,18 +1,17 @@
 import { db } from '@/lib/db';
 import { memberRepository, type Member } from '@/lib/members';
 import { tidyDisplayName } from '@/lib/displayName';
-import { plansOf } from '@/lib/social/friendPlans';
 import { weekContent } from '@/lib/thisWeek';
 
 /**
- * "เพื่อนๆ จะไปกัน" on สัปดาห์นี้ (owner 2026-11-19), for a signed-in member only, over the same 7 days:
- * - ตี้ that people the member follows joined or host. Who is going is open on every ตี้ page (owner 2026-10-16), so
- *   this shows nothing new; people the member blocked are left out.
- * - the member's own "ไปกัน" plans dated in those days. Other people's plans are private, so only plans the member is in.
+ * "เพื่อนๆ จะไปกัน" on สัปดาห์นี้ (owner 2026-11-19), for a signed-in member only, over the same 7 days: ตี้ that people
+ * the member follows joined or host. Who is going is open on every ตี้ page (owner 2026-10-16), so this shows nothing
+ * new; people the member blocked are left out. The member's own "ไปกัน" plans were listed here too until BE-449 (owner
+ * 2026-11-21): สัปดาห์นี้ is what is on, My Hub is what the member is doing, and the plans live there.
  */
 
 export interface WeekFriendItem {
-  kind: 'tee' | 'plan';
+  kind: 'tee';
   id: string;
   title: string;
   href: string;
@@ -61,22 +60,6 @@ export async function weekFriends(member: Member, now = new Date()): Promise<Wee
         more: Math.max(0, ids.length - FACES),
       });
     }
-  }
-
-  const dayByIso = new Map(days.map((day) => [day.iso, day]));
-  for (const plan of await plansOf(member)) {
-    const day = plan.date ? dayByIso.get(plan.date) : undefined;
-    if (!day || plan.isPast) continue;
-    const others = plan.people.filter((person) => person.id !== member.id && !blocked.has(person.id));
-    items.push({
-      kind: 'plan',
-      id: plan.id,
-      title: plan.title,
-      href: plan.placeHref || '/myhub',
-      when: day.name,
-      people: others.slice(0, FACES).map((person) => ({ id: person.id, name: shortName(person.name), avatar: person.avatar || undefined })),
-      more: Math.max(0, others.length - FACES),
-    });
   }
 
   return items.slice(0, MAX_ITEMS);

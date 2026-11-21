@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Plus, Users } from 'lucide-react';
+import { ArrowRight, Plus, Trophy, Users } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
@@ -18,6 +18,7 @@ import { PillarTabs } from '@/components/discover/PillarTabs';
 import { DiscoverSearch } from '@/components/discover/DiscoverSearch';
 import { useAuth } from '@/lib/useAuth';
 import { useMyRewards } from '@/lib/useMyRewards';
+import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { ALL_PROVINCES, discoverHref, eventInProvince } from '@/lib/discoverMatch';
 import { avatarImage } from '@/lib/optimizedImage';
 import { nameInitial } from '@/lib/displayName';
@@ -40,8 +41,10 @@ const PROVINCE_KEY = 'this-week-province';
 /**
  * สัปดาห์นี้ (owner 2026-11-19): the next 7 days as a schedule. The job: "I have a free day: what is on, and who is
  * going" answered at a glance. Friends first (the strongest reason to go), a day strip to jump to the free day, then
- * one row per day mixing ตี้ and อีเวนต์ in time order; empty days fold to one line that offers to make a ตี้. อีเวนต์
- * already running sit once in "กำลังจัดอยู่", challenges (no date) close the page as something for any free day.
+ * one row per day mixing ตี้ and อีเวนต์ in time order; days in a row with nothing fold into one "ยังไม่มีกิจกรรม" line.
+ * อีเวนต์ already running sit once in "กำลังจัดอยู่", challenges (no date) close the page as something for any free day.
+ * Since BE-449 (owner 2026-11-21) this page is what is on and My Hub is what the member is doing: the member's own
+ * challenges and plans moved out, and what they joined, run or saved is only marked on the tiles and the day strip.
  */
 export default function ThisWeekView({ days, label, byDay, ongoing, quests, places: allPlaces }: {
   days: WeekDay[];
@@ -133,6 +136,28 @@ export default function ThisWeekView({ days, label, byDay, ongoing, quests, plac
     [days, byDay, province] // eslint-disable-line react-hooks/exhaustive-deps -- inProvince reads province
   );
   const shownOngoing = useMemo(() => ongoing.filter(inProvince), [ongoing, province]); // eslint-disable-line react-hooks/exhaustive-deps -- inProvince reads province
+  // Days in a row with nothing fold into one block (owner 2026-11-21)
+  const weekBlocks = useMemo(() => {
+    const blocks: { empty: boolean; days: WeekDay[] }[] = [];
+    for (const day of days) {
+      const empty = shownByDay[day.iso].length === 0;
+      const last = blocks[blocks.length - 1];
+      if (empty && last?.empty) last.days.push(day);
+      else blocks.push({ empty, days: [day] });
+    }
+    return blocks;
+  }, [days, shownByDay]);
+
+  // What the member goes to, runs or saved, from the account (lib/useMyActivity.ts), marked on the tiles (BE-449)
+  const activity = useMyActivity();
+  const joinedIds = useMemo(() => new Set(isLoggedIn ? activity.joinedIds : []), [isLoggedIn, activity.joinedIds]);
+  const hostedIds = useMemo(() => new Set(isLoggedIn ? activity.hosted.map((event) => event.id) : []), [isLoggedIn, activity.hosted]);
+  const savedIds = useMemo(() => new Set(isLoggedIn ? activity.savedEventIds : []), [isLoggedIn, activity.savedEventIds]);
+  const isMine = (id: string) => joinedIds.has(id) || hostedIds.has(id);
+  const toggleSave = (eventId: string) => {
+    if (!isLoggedIn) return setIsAuthModalOpen(true);
+    void activityActions.setSaved('event', eventId, !savedIds.has(eventId));
+  };
 
   const [loadedFriends, setFriends] = useState<WeekFriendItem[]>([]);
   const friends = isLoggedIn ? loadedFriends : [];
@@ -180,17 +205,27 @@ export default function ThisWeekView({ days, label, byDay, ongoing, quests, plac
           <ol className="flex gap-2 overflow-x-auto no-scrollbar">
             {days.map((day) => {
               const count = shownByDay[day.iso].length;
+              const going = shownByDay[day.iso].some((item) => isMine(item.event.id));
+              const label = (
+                <>
+                  <span className={`text-[13px] font-semibold leading-tight ${day.weekend ? 'text-[#C2410C]' : count ? 'text-slate-900' : ''}`}>{day.short}</span>
+                  {/* "ว่าง" read as "you are free"; the day simply has nothing yet (owner 2026-11-21) */}
+                  <span className="text-[11px] leading-tight text-slate-500 tabular-nums">{count ? `${count} อย่าง` : 'ยังไม่มี'}</span>
+                  {/* A day the member already goes to something (BE-449) */}
+                  {going && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F26430]" aria-hidden="true" />}
+                </>
+              );
+              const box = 'relative flex flex-col items-center justify-center min-w-[64px] h-14 px-3 rounded-2xl border';
               return (
                 <li key={day.iso} className="shrink-0">
-                  <a
-                    href={`#day-${day.iso}`}
-                    className={`flex flex-col items-center justify-center min-w-[64px] h-14 px-3 rounded-2xl border transition-colors ${
-                      count ? 'border-slate-200 bg-white hover:border-slate-400' : 'border-transparent bg-slate-50 text-slate-500'
-                    }`}
-                  >
-                    <span className={`text-[13px] font-semibold leading-tight ${day.weekend ? 'text-[#C2410C]' : count ? 'text-slate-900' : ''}`}>{day.short}</span>
-                    <span className="text-[11px] leading-tight text-slate-500 tabular-nums">{count ? `${count} อย่าง` : 'ว่าง'}</span>
-                  </a>
+                  {count ? (
+                    <a href={`#day-${day.iso}`} aria-label={going ? `${day.short} ${count} อย่าง มีที่คุณไปด้วย` : undefined} className={`${box} border-slate-200 bg-white hover:border-slate-400 transition-colors`}>
+                      {label}
+                    </a>
+                  ) : (
+                    // Nothing to jump to: an empty day is a plain chip, not a link to a blank line
+                    <span className={`${box} border-transparent bg-slate-50 text-slate-500`}>{label}</span>
+                  )}
                 </li>
               );
             })}
@@ -200,21 +235,32 @@ export default function ThisWeekView({ days, label, byDay, ongoing, quests, plac
         <div className="mt-6 space-y-10">
           {friends.length > 0 && <FriendsSection items={friends} />}
 
-          {/* The member's own unfinished challenges: this week's to-do, a strong personal reason to go out (owner 2026-11-19) */}
+          {/* The member's own challenges live in My Hub (BE-449, owner 2026-11-21): here one line says they are waiting */}
           {myQuests.length > 0 && (
-            <section aria-labelledby="this-week-mine" className="space-y-3">
-              <SectionHead id="this-week-mine" title="ชาเลนจ์ที่คุณทำอยู่" href="/myhub" more="ดูของฉันทั้งหมด" />
-              <ScrollRow as="ul" className={QUEST_ROW} label="ชาเลนจ์ที่คุณทำอยู่">
-                {myQuests.map((quest, index) => (
-                  <li key={quest.id} className={TILE}>
-                    <ChallengeTile quest={quest} index={index} mine={progress.get(quest.id)} />
-                  </li>
-                ))}
-              </ScrollRow>
-            </section>
+            <Link href="/myhub?tab=quests" className="group flex items-center gap-3 rounded-2xl bg-[#F5F3FF] px-4 py-3 max-w-2xl">
+              <Trophy className="w-5 h-5 shrink-0 text-[#7C3AED]" aria-hidden="true" />
+              <span className="flex-1 min-w-0 text-sm text-slate-800">
+                คุณมีชาเลนจ์ที่ทำอยู่ <b className="font-semibold">{myQuests.length} อย่าง</b> ออกไปสัปดาห์นี้แล้วนับได้เลย
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 text-sm font-semibold text-[#2563EB] group-hover:underline whitespace-nowrap">
+                ดูใน MyHub
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </span>
+            </Link>
           )}
 
-          {days.map((day) => {
+          {weekBlocks.map((block) => {
+            if (block.empty) {
+              // Days in a row with nothing fold into one line (owner 2026-11-21), so a quiet week stays short
+              const range = block.days.length === 1 ? block.days[0].name : `${block.days[0].name} – ${block.days[block.days.length - 1].name}`;
+              return (
+                <section key={block.days[0].iso} aria-labelledby={`h-${block.days[0].iso}`} className="flex flex-wrap items-baseline gap-x-2">
+                  <h2 id={`h-${block.days[0].iso}`} className="text-base font-semibold text-slate-500">{range}</h2>
+                  <p className="text-sm text-slate-500">ยังไม่มีกิจกรรม</p>
+                </section>
+              );
+            }
+            const day = block.days[0];
             const items = shownByDay[day.iso];
             const tees = items.filter((item) => item.kind === 'tee').length;
             const fairs = items.length - tees;
@@ -228,23 +274,27 @@ export default function ThisWeekView({ days, label, byDay, ongoing, quests, plac
                     </span>
                   )}
                 </div>
-                {items.length > 0 ? (
-                  <ScrollRow as="ul" className={ROW} label={`สิ่งที่มี${day.name}`}>
-                    {items.map((item) => (
-                      <li key={item.event.id} className={TILE}>
+                <ScrollRow as="ul" className={ROW} label={`สิ่งที่มี${day.name}`}>
+                  {items.map((item) => {
+                    const id = item.event.id;
+                    return (
+                      <li key={id} className={TILE}>
                         {/* ตี้ and อีเวนต์ share a day row, so each says which it is, in its pillar's color as the tabs above (owner 2026-11-19) */}
                         <span className={`mb-1.5 flex items-center gap-1.5 text-xs font-semibold ${item.kind === 'tee' ? 'text-[#C2410C]' : 'text-[#2B527A]'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${item.kind === 'tee' ? 'bg-[#F26430]' : 'bg-[#2B527A]'}`} aria-hidden="true" />
                           {item.kind === 'tee' ? 'ตี้' : 'อีเวนต์'}
                         </span>
-                        {item.kind === 'tee' ? <MeetupTile event={item.event} now={now} /> : <FairTile event={item.event} now={now} />}
+                        {/* What the member already goes to or saved shows here too, so the week reads as their own (BE-449):
+                            "ร่วมแล้ว" as on every ตี้ list, "คุณจัด" for their own, a filled heart for a saved one */}
+                        {item.kind === 'tee' ? (
+                          <MeetupTile event={item.event} now={now} isJoined={joinedIds.has(id) && !hostedIds.has(id)} badge={hostedIds.has(id) ? 'คุณจัด' : undefined} isSaved={savedIds.has(id)} onToggleSave={toggleSave} />
+                        ) : (
+                          <FairTile event={item.event} now={now} isSaved={savedIds.has(id)} onToggleSave={toggleSave} />
+                        )}
                       </li>
-                    ))}
-                  </ScrollRow>
-                ) : (
-                  // Just the fact (owner 2026-11-19): making a ตี้ is offered once, in "ยังไม่เจอที่ชอบ?" at the end
-                  <p className="text-sm text-slate-500">ยังไม่มีตี้{day.name === 'วันนี้' ? 'วันนี้' : `วัน${day.name}`}</p>
-                )}
+                    );
+                  })}
+                </ScrollRow>
               </section>
             );
           })}
@@ -347,7 +397,7 @@ function SectionHead({ id, title, href, more }: { id: string; title: string; hre
   );
 }
 
-/** "เพื่อนๆ จะไปกัน": ตี้ people the member follows joined, and the member's own "ไปกัน" plans (lib/thisWeekFriends.ts) */
+/** "เพื่อนๆ จะไปกัน": ตี้ people the member follows joined (lib/thisWeekFriends.ts); the member's own plans are in My Hub */
 function FriendsSection({ items }: { items: WeekFriendItem[] }) {
   return (
     <section aria-labelledby="this-week-friends" className="space-y-1">
@@ -369,7 +419,7 @@ function FriendsSection({ items }: { items: WeekFriendItem[] }) {
               <span className="flex-1 min-w-0">
                 <span className="block text-sm text-slate-800 leading-snug">
                   <b className="font-semibold">{item.people.map((p) => p.name).join(item.more === 0 && item.people.length === 2 ? ' และ ' : ' ')}</b>
-                  {item.more > 0 ? ` และอีก ${item.more} คน` : ''} {item.kind === 'plan' ? 'ไปกันกับคุณ' : 'ไป'} <span className="group-hover:underline">{item.title}</span>
+                  {item.more > 0 ? ` และอีก ${item.more} คน` : ''} ไป <span className="group-hover:underline">{item.title}</span>
                 </span>
                 <span className="block mt-0.5 text-xs text-slate-500">{item.when}</span>
               </span>

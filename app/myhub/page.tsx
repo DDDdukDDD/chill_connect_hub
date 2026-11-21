@@ -94,7 +94,6 @@ const THAI_MONTH_SHORT = [
 import { useRewardCatalog } from '@/lib/useRewardCatalog';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 import { defaultEventImage } from '@/lib/eventImageResolver';
-import FallbackImg from '@/components/FallbackImg';
 
 // A date saved as "2026-10-12" reads like the rest of the page: "12 ต.ค. 2569"
 function thaiShortDate(date?: string): string {
@@ -495,11 +494,9 @@ function MyHubContent() {
   // Events the member runs live under "งานที่จัด"; the lists and the numbers are about what they go to as a guest
   const hostedIdSet = useMemo(() => new Set(userCreatedEvents.map((e) => e.id)), [userCreatedEvents]);
   const guestEvents = useMemo(() => allJoinedEvents.filter((e) => !hostedIdSet.has(e.id)), [allJoinedEvents, hostedIdSet]);
-  // For a member with an empty schedule: a few real meetups that are open now, the soonest first
-  const [openEvents, setOpenEvents] = useState<EventItem[]>([]);
   const emptySchedule = activity.isLoaded && guestEvents.length === 0;
-  // Nothing coming up, also for someone who has been out before: that is when an invite helps most
-  // A challenge under way is not a plan to go out, so it does not hide the open ตี้ (2026-11-15)
+  // Nothing coming up, also for someone who has been out before: that is when a way to something new helps most
+  // A challenge under way is not a plan to go out, so it does not hide that way (2026-11-15)
   const needsSuggestions = activity.isLoaded && !guestEvents.some((e) => (e as { eventType?: string }).eventType !== 'challenge' && !e.id.startsWith('quest-') && !isEventEnded(e));
   // A host with nothing to go to as a guest but a ตี้ of their own coming up opens on "งานที่จัด" (once, without ?tab)
   const hasUpcomingHosted = activity.hosted.some((ev) => !isEventEnded(ev));
@@ -508,30 +505,6 @@ function MyHubContent() {
     setOpenedOnHosting(true);
     setHubMainMode('hosting');
   }
-  // Read once: the member's own ตี้ are left out below, so a change to them does not ask the server again
-  useEffect(() => {
-    if (!needsSuggestions) return;
-    let isActive = true;
-    fetch('/api/events?type=community&status=recruiting&limit=40')
-      .then((res) => res.json())
-      .then((json: { events?: EventItem[] }) => {
-        if (isActive) setOpenEvents(json.events ?? []);
-      })
-      .catch(() => undefined);
-    return () => {
-      isActive = false;
-    };
-  }, [needsSuggestions]);
-  const suggestedEvents = useMemo(
-    () =>
-      openEvents
-        // A ตี้ waiting for the email (BE-392) is already listed above it
-        .filter((e) => !isEventEnded(e) && !hostedIdSet.has(e.id) && !guestEvents.some((mine) => mine.id === e.id) && !activity.pendingIds.includes(e.id))
-        .sort((a, b) => parseEventDateToTimestamp(a.date) - parseEventDateToTimestamp(b.date))
-        .slice(0, 4),
-    [openEvents, hostedIdSet, guestEvents, activity.pendingIds]
-  );
-
   // Events the member saved but has not joined: they had no place on this page before
   const [savedEventItems, setSavedEventItems] = useState<EventItem[]>([]);
   const savedEventKey = favorites.join(',');
@@ -1059,45 +1032,22 @@ function MyHubContent() {
     );
   };
 
-  // A member with nothing on the schedule yet: no filters full of zeros, just three ways to get a first entry
-  const renderSuggested = () =>
-    suggestedEvents.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-xs font-bold text-slate-500">ตี้ที่เปิดรับอยู่ตอนนี้</h3>
-              <Link href="/community" className="text-xs sm:text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">ดูทั้งหมด</Link>
-            </div>
-            <ul className="mt-1 divide-y divide-slate-100">
-              {suggestedEvents.map((ev) => {
-                const ts = parseEventDateToTimestamp(ev.date);
-                const when = Number.isFinite(ts) && ts > 0 ? new Date(ts) : null;
-                // The whole row opens the ตี้ (2026-11-15: a full-width button under every row made the list heavy on a phone)
-                return (
-                  <li key={ev.id}>
-                    <Link href={`/community/${encodeURIComponent(ev.id)}`} className="group py-3 flex items-center gap-3 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
-                      <span className="w-10 shrink-0 text-center">
-                        <span className="block text-lg font-bold text-slate-900 leading-tight tabular-nums">{when ? when.getDate() : '-'}</span>
-                        <span className="block text-[11px] font-semibold text-slate-500">{when ? THAI_MONTH_SHORT[when.getMonth()] : ''}</span>
-                      </span>
-                      {/* a missing picture falls back to the category's own */}
-                      <FallbackImg
-                        src={optimizedImage(ev.image, 128)}
-                        fallback={defaultEventImage(ev.category)}
-                        className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold text-slate-900 truncate group-hover:underline" title={ev.title}>{ev.title}</span>
-                        <span className="block text-xs font-medium text-slate-600 truncate tabular-nums mt-0.5">{[ev.time, ev.location].filter(Boolean).join(' · ')}</span>
-                        <span className="block text-xs font-medium text-slate-500 tabular-nums mt-0.5">เข้าร่วมแล้ว {ev.participantsCount ?? 0} จาก {ev.maxParticipants ?? 0} คน</span>
-                      </span>
-                      <span className="hidden sm:inline-flex items-center h-9 px-4 rounded-full bg-white group-hover:bg-slate-50 border border-slate-300 text-slate-800 text-sm font-bold whitespace-nowrap">ดูรายละเอียด</span>
-                      <ChevronRight className="sm:hidden w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+  /**
+   * Nothing coming up: one way to what is on, the สัปดาห์นี้ page. My Hub used to list four open ตี้ of its own, the
+   * same ones that page shows by day; since BE-449 My Hub is only what the member is doing (owner 2026-11-21).
+   */
+  const renderWeekLink = () =>
+    needsSuggestions && (
+      <Link href="/this-week" className="group mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 p-4 hover:border-slate-300 hover:bg-slate-50/70 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#2563EB]">
+        <span className="w-10 h-10 shrink-0 rounded-xl bg-[#FFF4EE] text-[#C2410C] flex items-center justify-center" aria-hidden="true">
+          <CalendarDays className="w-5 h-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm sm:text-base font-bold text-slate-900 group-hover:underline">สัปดาห์นี้มีอะไรบ้าง</span>
+          <span className="block mt-0.5 text-xs sm:text-sm font-medium text-slate-600">ตี้และอีเวนต์ 7 วันข้างหน้า เรียงตามวัน และดูว่าเพื่อนจะไปไหน</span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
+      </Link>
     );
 
   const renderFirstSteps = (underTabs = false) => {
@@ -1111,11 +1061,10 @@ function MyHubContent() {
         <h2 className="text-base sm:text-lg font-bold text-slate-900">เริ่มที่ไหนดี</h2>
         <p className="mt-1 text-sm font-medium text-slate-600">{hasFriendPlans ? 'อยากไปที่อื่นอีก เลือกตี้หรืออีเวนต์ที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้' : 'มายฮับของคุณยังว่างอยู่ เลือกสักอย่างที่อยากลอง แล้วนัดจะมารออยู่ตรงนี้'}</p>
 
-        {/* Real meetups that are open now: something to say yes to, not only doors to other pages */}
-        {renderSuggested()}
+        {renderWeekLink()}
 
-        {suggestedEvents.length > 0 && <h3 className="mt-3 text-xs font-bold text-slate-500">หรือเลือกดูเอง</h3>}
-        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${suggestedEvents.length > 0 ? 'mt-2' : 'mt-4'}`}>
+        {needsSuggestions && <h3 className="mt-3 text-xs font-bold text-slate-500">หรือเลือกดูเอง</h3>}
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${needsSuggestions ? 'mt-2' : 'mt-4'}`}>
           {steps.map(({ href, Icon, tint, title, text, cta }) => (
             <Link key={href} href={href} className="group flex flex-col rounded-2xl border border-slate-200 p-4 hover:border-slate-300 hover:bg-slate-50/70 transition-colors">
               <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${tint}`}>
@@ -1724,7 +1673,7 @@ function MyHubContent() {
                   </Link>
                 </div>
               </div>
-              {scheduleView === 'list' && scheduleWhen === 'upcoming' && calendarCategoryFilter !== 'quests' && renderSuggested()}
+              {scheduleView === 'list' && scheduleWhen === 'upcoming' && calendarCategoryFilter !== 'quests' && renderWeekLink()}
               </>
             ) : (
               <div>
