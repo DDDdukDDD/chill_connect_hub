@@ -50,6 +50,17 @@ const provinceOf = (name?: string) => {
   if (!p) return '(ไม่ระบุ)';
   return p === 'กรุงเทพมหานคร' ? 'กรุงเทพฯ' : p;
 };
+/** Text outside HTML tags, only for measuring length (never rendered). A scan, not a regex, so nothing half-stripped is left. */
+const textOutsideTags = (html: string) => {
+  let out = '';
+  let inTag = false;
+  for (const ch of html) {
+    if (ch === '<') inTag = true;
+    else if (ch === '>') inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+};
 const norm = (text: string) => text.toLowerCase().replace(/[\s\-–—_.,:;!?'"()[\]]+/g, '');
 /** "คัดโดย Chillwaa · พิกัด … · รูป …" groups as "คัดโดย Chillwaa": the photo credit is per place */
 const sourceGroup = (source?: string) => source?.split(' · ')[0].trim() || '(ไม่ระบุแหล่ง)';
@@ -232,7 +243,7 @@ async function audit() {
   problems.push(['อีเวนต์ที่จะมาถึง แต่ไม่มีผู้จัด', upcomingReal.filter((e) => kindOf(e) === 'fair' && !e.hostName?.trim()).map(label)]);
   problems.push(['อีเวนต์ที่จะมาถึง แต่ไม่มีลิงก์แหล่งที่มา', upcomingReal.filter((e) => kindOf(e) === 'fair' && !e.sourceUrl && !e.externalUrl).map(label)]);
   problems.push([`ชื่อสั้นกว่า ${MIN_TITLE} ตัวอักษร`, upcomingReal.filter((e) => e.title.trim().length < MIN_TITLE).map(label)]);
-  problems.push([`คำอธิบายสั้นกว่า ${MIN_DESCRIPTION} ตัวอักษร`, upcomingReal.filter((e) => (e.description || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().length < MIN_DESCRIPTION).map(label)]);
+  problems.push([`คำอธิบายสั้นกว่า ${MIN_DESCRIPTION} ตัวอักษร`, upcomingReal.filter((e) => textOutsideTags(e.description || '').trim().length < MIN_DESCRIPTION).map(label)]);
   problems.push(['จบแล้วตามวันที่ แต่ยังไม่ได้ตั้งสถานะ ended', events.filter((e) => eventOrigin(e) !== 'sample' && e.status !== 'ended' && isEventEndedByDate(e.endDate || e.date) && parseEventEndDateToTimestamp(e.endDate || e.date) > 0).map(label)]);
   // Same title in the same province on the same day: most likely one event imported twice
   const seen = new Map<string, EventItem>();
