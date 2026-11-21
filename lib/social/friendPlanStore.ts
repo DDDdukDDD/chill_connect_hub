@@ -28,6 +28,8 @@ export interface FriendPlan {
   image?: string;
   /** Thai date "YYYY-MM-DD", set in the chat */
   date?: string;
+  /** Meeting time "HH:MM" on that day, when someone set one (owner 2026-11-18); only with a date */
+  time?: string;
   status: PlanStatus;
   remindedAt?: string;
   followedUpAt?: string;
@@ -41,7 +43,7 @@ export interface FriendPlan {
 }
 
 export type NewPlan = Pick<FriendPlan, 'hostId' | 'targetType' | 'targetId' | 'momentId' | 'title' | 'image'>;
-export type PlanChange = Partial<Pick<FriendPlan, 'status' | 'remindedAt' | 'followedUpAt'>> & { date?: string | null; closedIdle?: boolean };
+export type PlanChange = Partial<Pick<FriendPlan, 'status' | 'remindedAt' | 'followedUpAt'>> & { date?: string | null; time?: string | null; closedIdle?: boolean };
 
 interface FriendPlanStore {
   create(plan: NewPlan): Promise<FriendPlan>;
@@ -125,9 +127,11 @@ function jsonPlans(): FriendPlanStore {
       );
     },
     async update(id, change) {
-      const { date, closedIdle, ...rest } = change;
+      const { date, time, closedIdle, ...rest } = change;
       void closedIdle;
-      await store.update((items) => items.map((p) => (p.id === id ? { ...p, ...rest, ...(date !== undefined ? { date: date ?? undefined } : {}), updatedAt: now() } : p)));
+      await store.update((items) =>
+        items.map((p) => (p.id === id ? { ...p, ...rest, ...(date !== undefined ? { date: date ?? undefined } : {}), ...(time !== undefined ? { time: time ?? undefined } : {}), updatedAt: now() } : p))
+      );
     },
     async dated(from, to) {
       return store.read().filter((p) => p.status === 'set' && p.date && p.date >= from && p.date <= to);
@@ -168,6 +172,8 @@ function pgPlans(): FriendPlanStore {
     title: r.title as string,
     ...(r.image ? { image: r.image as string } : {}),
     ...(r.day ? { date: r.day as string } : {}),
+    // Absent before migration 0066: plans just have no time
+    ...(r.day && typeof r.plan_time === 'string' && r.plan_time ? { time: r.plan_time } : {}),
     status: r.status as PlanStatus,
     remindedAt: iso(r.reminded_at),
     followedUpAt: iso(r.followed_up_at),
@@ -242,6 +248,8 @@ function pgPlans(): FriendPlanStore {
       const db = sql();
       const set: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (change.date !== undefined) set.plan_date = change.date;
+      // Written only when a time is set or cleared, so plans keep working before migration 0066 runs
+      if (change.time !== undefined) set.plan_time = change.time;
       if (change.status) set.status = change.status;
       if ('remindedAt' in change) set.reminded_at = change.remindedAt ?? null;
       if ('followedUpAt' in change) set.followed_up_at = change.followedUpAt ?? null;

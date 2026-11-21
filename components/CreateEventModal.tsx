@@ -7,6 +7,7 @@ import { DayOfWeek, EventItem } from '@/data/mockData';
 import { MASTER_77_PROVINCES as ALL_THAI_PROVINCES } from '@/data/masterHub';
 import { formatThaiDateBE, isValidTimeRange } from '@/lib/dateUtils';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { SPOT_CATEGORY_OPTIONS } from '@/lib/spotCategories';
 import { useAuth } from '@/lib/useAuth';
 import { useMemberSession } from '@/lib/useMemberSession';
@@ -667,9 +668,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     setIsUploading(true);
     try {
       const compressed = await compressImage(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.82 });
-      const body = new FormData();
-      body.append('file', compressed);
-      body.append('folder', type);
+      const body = await photoUploadForm(compressed, type);
       const res = await fetch('/api/upload', { method: 'POST', body });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.success && data.url) set('image', data.url);

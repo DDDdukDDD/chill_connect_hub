@@ -10,6 +10,7 @@ import { nameInitial, tidyDisplayName } from '@/lib/displayName';
 import { useNameCheck } from '@/lib/useNameCheck';
 import { NameCheckHint } from '@/components/auth/NameCheckHint';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import type { MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
 import { safeImageSrc } from '@/lib/optimizedImage';
 import { AvatarCropDialog } from './AvatarCropDialog';
@@ -150,9 +151,7 @@ export function EditProfileDialog({
     try {
       let avatarUrl: string | undefined;
       if (photo) {
-        const form = new FormData();
-        form.append('file', photo.file);
-        form.append('folder', 'avatars');
+        const form = await photoUploadForm(photo.file, 'avatars');
         const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
         if (!upload?.success || !upload.url) throw new Error(upload?.error || 'อัปโหลดรูปไม่สำเร็จ');
         avatarUrl = upload.url;

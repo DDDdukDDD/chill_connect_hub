@@ -20,6 +20,10 @@ type Props = {
   compact?: boolean;
   /** Runs on Enter or the search button (pages outside ค้นพบ open it); the list pages filter while typing instead */
   onSubmit?: () => void;
+  /** The top bar's box also finds people and tags (SiteSearch) */
+  placeholder?: string;
+  /** The top bar's box: the down arrow moves into its dropdown */
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   className?: string;
 };
 
@@ -29,7 +33,7 @@ const SHORT_PLACEHOLDER: Record<DiscoverKind, string> = { meetups: 'ค้นห
  * The ค้นพบ search: word | province | search button, one rounded box. In the top bar on wide screens and
  * above the tabs on phones. The list filters while typing; the button only closes the phone keyboard.
  */
-export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinceChange, idPrefix, compact = false, onSubmit, className = '' }: Props) {
+export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinceChange, idPrefix, compact = false, onSubmit, placeholder, onKeyDown, className = '' }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   return (
     <form
@@ -48,7 +52,9 @@ export function DiscoverSearch({ kind, query, onQueryChange, province, onProvinc
         type="search"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
-        placeholder={compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ อีเวนต์ ที่เที่ยว'}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder ?? (compact ? SHORT_PLACEHOLDER[kind] : 'ค้นหาตี้ อีเวนต์ ที่เที่ยว')}
+        autoComplete="off"
         className="h-full flex-1 min-w-0 bg-transparent text-sm font-semibold text-slate-900 placeholder:font-medium placeholder:text-slate-500 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
       />
       {query && (

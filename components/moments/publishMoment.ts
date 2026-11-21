@@ -2,6 +2,8 @@
 
 import { uploadPresigned } from '@vercel/blob/client';
 import { compressClip } from '@/lib/media/clipCompress';
+import type { ClipMusic } from '@/lib/media/musicLibrary';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { exportPhoto, type EditedPhoto, type FunSticker, type PhotoText, type PostShape } from '@/lib/media/photoEdit';
 import { PostingError, type ReportProgress } from '@/lib/moments/postingJobs';
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/moments/types';
@@ -16,7 +18,7 @@ import type { CountedQuest, MomentLinkTarget, PostOptions } from './MomentCompos
 export interface MomentDraft {
   photos: EditedPhoto[];
   shape: PostShape;
-  clip: { file: File; fullSeconds: number; startS: number; endS: number; filter: string; texts: PhotoText[]; stickers: FunSticker[]; muted: boolean; cover: string } | null;
+  clip: { file: File; fullSeconds: number; startS: number; endS: number; filter: string; texts: PhotoText[]; stickers: FunSticker[]; muted: boolean; music: ClipMusic | null; cover: string } | null;
   caption: string;
   location: string;
   target: MomentLinkTarget | null;
@@ -71,9 +73,7 @@ async function uploadClip(file: File, onShare?: (share: number) => void): Promis
 }
 
 export async function uploadPicture(picture: Blob): Promise<string> {
-  const form = new FormData();
-  form.append('file', picture, picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
-  form.append('folder', 'moments');
+  const form = await photoUploadForm(picture, 'moments', picture.type === 'image/webp' ? 'moment.webp' : 'moment.jpg');
   const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
   if (!upload?.success || !upload.url) throw new PostingError(upload?.error || upload?.message || 'อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งนะ');
   return upload.url;
@@ -120,9 +120,10 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
   if (clip && !done.video) {
     // Only the chosen part, made small on this phone; the original goes when this device cannot do that
     report(0.05, 'กำลังเตรียมคลิป…');
-    const small = await compressClip(clip.file, clip.startS, clip.endS, (share) => report(0.05 + share * 0.45, 'กำลังเตรียมคลิป…'), { texts: clip.texts, stickers: clip.stickers, filter: clip.filter, muted: clip.muted });
+    const small = await compressClip(clip.file, clip.startS, clip.endS, (share) => report(0.05 + share * 0.45, 'กำลังเตรียมคลิป…'), { texts: clip.texts, stickers: clip.stickers, filter: clip.filter, muted: clip.muted, music: clip.music });
     if (!small) {
       // Edits exist only in the shrunk clip, and the whole file must fit the upload limit
+      if (clip.music) throw new PostingError('เครื่องนี้ใส่เพลงในคลิปไม่สำเร็จ ลองเอาเพลงออกแล้วโพสต์อีกครั้งนะ');
       if (clip.muted || clip.filter !== 'none' || clip.stickers.length > 0 || clip.texts.some((t) => t.text.trim())) throw new PostingError('เครื่องนี้แต่งคลิปไม่สำเร็จ ลองเอาฟิลเตอร์ ข้อความ สติกเกอร์ หรือการปิดเสียงออกแล้วโพสต์อีกครั้งนะ');
       if (clip.file.size > MAX_VIDEO_BYTES) throw new PostingError(`ย่อคลิปบนเครื่องนี้ไม่สำเร็จ และไฟล์ใหญ่เกิน ${MAX_VIDEO_BYTES / 1024 / 1024}MB ลองเลือกคลิปที่สั้นลงนะ`);
     }

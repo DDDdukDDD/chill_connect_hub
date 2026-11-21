@@ -1,17 +1,21 @@
+import { smallCopyOf } from './media/ownMedia';
+
 /**
  * Photos kept in /public are often ~1 MB originals, and organisers' posters (ThaiRun, IMPACT, QSNCC) are as big.
  * They go through the Next.js image optimizer at the width a card shows (AVIF/WebP, tens of KB).
  * Remote images are resized only from the hosts below (also `images.remotePatterns` in next.config.ts), so the
  * optimizer is never an open proxy; other links (Unsplash with its own sizes) stay as they are.
  * Members' uploads on Vercel Blob are listed by our own store's host, not `*.blob.vercel-storage.com`, which would
- * resize files from anyone's store on our quota. A new store needs its host here; uploads go to Cloudflare R2 behind
- * our own domains since 2026-11-07 (lib/media/ownMedia.ts).
+ * resize files from anyone's store on our quota.
+ * Uploads on Cloudflare R2 (media.chillwaa.com, lib/media/ownMedia.ts) are NOT resized since 2026-11-20: the month's
+ * 5,000 Vercel resizes ran out and every new photo answered 402, so new posts showed broken on /moments. They are
+ * already made small on the phone (lib/media/compressor.ts: at most 1600 px and 1 MB) and R2 serves them with no
+ * egress charge, so they go out as they are. Since the same day each new photo also has a small copy made on the phone
+ * (lib/media/uploadPhoto.ts), which screens asking for 640 px or less get instead.
  * `width` must be one of the optimizer sizes in next.config.ts: 64, 96, 128, 256, 384, 640, 828, 1080 (1920 for a
  * full-width photo). Each width is a separate resize on Vercel's monthly quota, so reuse these rather than add one.
  */
 export const OPTIMIZED_REMOTE_IMAGES = [
-  { hostname: 'media.chillwaa.com', pathname: '/**' },
-  { hostname: 'media-dev.chillwaa.com', pathname: '/**' },
   { hostname: 'wf6n42ar74k77ycg.public.blob.vercel-storage.com', pathname: '/**' },
   { hostname: 'storage.googleapis.com', pathname: '/s.race.thai.run/**' },
   { hostname: 'www.impact.co.th', pathname: '/**' },
@@ -40,9 +44,16 @@ export function safeImageSrc(src: string | null | undefined): string {
   return src && SAFE_IMAGE_SRC.test(src) ? encodeImageLink(src) : '';
 }
 
+/** Up to this width a photo's small copy (800 px, 384 for a profile picture) is sharp enough */
+const SMALL_COPY_MAX_WIDTH = 640;
+
 export function optimizedImage(src: string | undefined, width: number): string {
   if (!src || !SAFE_IMAGE_SRC.test(src)) return '';
-  const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//');
+  // An upload made since 2026-11-20 carries the phone's small copy (lib/media/uploadPhoto.ts): no resize needed
+  const small = width <= SMALL_COPY_MAX_WIDTH ? smallCopyOf(src) : null;
+  if (small) return encodeImageLink(small);
+  // The app icons are already small (192 px at most): resizing them only spent the monthly quota
+  const local = src.startsWith('/') && !src.startsWith('/_next/') && !src.startsWith('//') && !src.startsWith('/icons/');
   if (local || isOptimizedRemote(src)) return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
   return encodeImageLink(unsplashAtWidth(src, width));
 }

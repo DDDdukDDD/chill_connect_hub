@@ -43,9 +43,9 @@ export function useMomentInvited(onCount: (id: string, count: number) => void) {
 type SendResult = { ok: boolean; message?: string; invited?: number; link?: string; dateLabel?: string };
 
 /** POST /api/invites: friends picked get a notice; the link is the same invitation for LINE */
-export async function sendInvites(target: InviteTarget, to: string[] = [], day?: string): Promise<SendResult> {
+export async function sendInvites(target: InviteTarget, to: string[] = [], day?: string, time?: string): Promise<SendResult> {
   try {
-    const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to, ...(day ? { day } : {}) }) });
+    const res = await fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...target, to, ...(day ? { day, ...(time ? { time } : {}) } : {}) }) });
     const json = await res.json().catch(() => null);
     // From a post, the post's ชวนไป count changes: whichever screen shows that post picks it up (BE-384)
     if (target.type === 'moment' && typeof json?.momentInvites === 'number') {
@@ -70,6 +70,9 @@ export function inviteWords(place: string, type: InviteTargetType, dateLabel?: s
 }
 export const inviteLineText = (place: string, link: string, type: InviteTargetType, dateLabel?: string) => `${inviteWords(place, type, dateLabel)}
 ${window.location.origin}${link}`;
+
+/** Today in Bangkok ("YYYY-MM-DD"): the earliest day "วันอื่น" offers */
+const bangkokToday = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
 
 /** The coming Saturday and Sunday in Bangkok ("YYYY-MM-DD"); today counts when it is one */
 function weekendDays(): { sat: string; sun: string } {
@@ -128,6 +131,12 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
   const canPickDay = !isTee && target.type !== 'quest';
   const weekend = useMemo(() => weekendDays(), []);
   const [day, setDay] = useState('');
+  // "วันอื่น" (owner 2026-11-18): any day from the calendar, as the plan chat offers; the server checks the range
+  const [otherDay, setOtherDay] = useState(false);
+  const today = useMemo(() => bangkokToday(), []);
+  // "กี่โมง" (owner 2026-11-18): a time on the day picked, optional
+  const [time, setTime] = useState('');
+  const pickedTime = day ? time || undefined : undefined;
 
   useEffect(() => {
     let active = true;
@@ -151,17 +160,17 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
     if (picked.length === 0 || isSending) return;
     setIsSending(true);
     setError('');
-    const result = await sendInvites(target, picked, day || undefined);
+    const result = await sendInvites(target, picked, day || undefined, pickedTime);
     setIsSending(false);
     if (!result.ok) return setError(result.message || 'ส่งคำชวนไม่สำเร็จ ลองอีกครั้งนะ');
     onDone(picked.length === 1 ? 'ส่งคำชวนให้เพื่อนแล้ว' : `ส่งคำชวนให้เพื่อน ${picked.length} คนแล้ว`);
   };
 
-  const apps = useAppsInvite(target, place, (how) => (how === 'copied' ? onDone(appsInviteCopied) : onClose()), setError, day || undefined);
+  const apps = useAppsInvite(target, place, (how) => (how === 'copied' ? onDone(appsInviteCopied) : onClose()), setError, day || undefined, pickedTime);
 
   const viaLine = async () => {
     setError('');
-    const result = await sendInvites(target, [], day || undefined);
+    const result = await sendInvites(target, [], day || undefined, pickedTime);
     if (!result.ok || !result.link) return setError(result.message || 'ทำลิงก์ชวนไม่สำเร็จ ลองอีกครั้งนะ');
     openLineShare(inviteLineText(place, result.link, target.type, result.dateLabel));
   };
@@ -198,21 +207,70 @@ export function InviteSheet({ target, place, onClose, onDone, exceptPlanId }: { 
               { value: weekend.sat, label: 'เสาร์นี้' },
               { value: weekend.sun, label: 'อาทิตย์นี้' },
             ].map((option) => {
-              const on = day === option.value;
+              const on = !otherDay && day === option.value;
               return (
                 <button
                   key={option.label}
                   type="button"
                   role="radio"
                   aria-checked={on}
-                  onClick={() => setDay(option.value)}
+                  onClick={() => {
+                    setOtherDay(false);
+                    setDay(option.value);
+                  }}
                   className={`h-9 px-4 rounded-full text-[13px] font-semibold cursor-pointer transition-colors ${on ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
                   {option.label}
                 </button>
               );
             })}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={otherDay}
+              onClick={() => {
+                setOtherDay(true);
+                setDay('');
+              }}
+              className={`h-9 px-4 rounded-full text-[13px] font-semibold cursor-pointer transition-colors ${otherDay ? 'bg-blue-50 text-[#1D4ED8] ring-1 ring-[#2563EB]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+            >
+              วันอื่น
+            </button>
           </div>
+          {otherDay && (
+            <div className="mt-3 flex items-center gap-3">
+              <label htmlFor="invite-day" className="text-[13px] font-semibold text-slate-500 whitespace-nowrap">วันที่</label>
+              <input
+                id="invite-day"
+                type="date"
+                min={today}
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
+              />
+            </div>
+          )}
+          {/* The time comes once a day is picked; left empty, they agree on it in the chat */}
+          {day && (
+            <div className="mt-3 flex items-center gap-3">
+              <label htmlFor="invite-time" className="text-[13px] font-semibold text-slate-500 whitespace-nowrap">กี่โมง</label>
+              <input
+                id="invite-time"
+                type="time"
+                step={900}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-slate-300 bg-white text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]"
+              />
+              {time ? (
+                <button type="button" onClick={() => setTime('')} className="text-[13px] font-semibold text-slate-500 hover:text-slate-700 underline underline-offset-4 decoration-slate-300 cursor-pointer">
+                  ไม่ระบุเวลา
+                </button>
+              ) : (
+                <span className="text-[13px] text-slate-500">ไม่บังคับ</span>
+              )}
+            </div>
+          )}
         </div>
       )}
       {/* Friends on Chillwaa first (owner 2026-11-12: our chat leads); LINE and other apps for everyone else, below */}

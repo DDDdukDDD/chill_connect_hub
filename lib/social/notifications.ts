@@ -129,6 +129,8 @@ export async function notifyDrawResult(memberIds: string[], path: string, headli
 }
 
 /** Sent by the site itself, not by a person */
+/** The face of notifications from Chillwaa itself (the same icon push notifications show) */
+const CHILLWAA_AVATAR = '/icons/icon-192.png';
 const SYSTEM_TYPES = new Set<NotificationType>(['challenge', 'evidence', 'seat', 'approved', 'rejected', 'draw_won', 'draw_result', 'trip_cancelled']);
 
 /** Where a notice from the site leads; undefined means its moment */
@@ -294,7 +296,8 @@ export async function notificationsFor(member: Member) {
           type: n.type,
           actorId: n.actorId,
           actorName: 'Chillwaa',
-          actorAvatar: '',
+          // The app icon (owner 2026-11-18): a grey "C" letter looked like a member with no picture
+          actorAvatar: CHILLWAA_AVATAR,
           momentId: n.type === 'evidence' ? n.momentId : undefined,
           href: systemHref(n),
           message: messageOf(n),

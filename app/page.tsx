@@ -6,7 +6,7 @@ import { homeCampaigns } from '@/lib/campaigns/store';
 import { HOME_CARD_WIDTH, memberHomeData, sizedImage, type HomeFeedStart } from '@/lib/homeData';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { listMoments } from '@/lib/moments/service';
-import { circleItems } from '@/lib/social/circles';
+import { circleItems, wantsFindPeople } from '@/lib/social/circles';
 import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import type { Member } from '@/lib/members/types';
 import { optimizedImage } from '@/lib/optimizedImage';
@@ -66,7 +66,7 @@ async function homeFeedStart(member: Member): Promise<HomeFeedStart | null> {
   try {
     await ensureSampleMembers();
     const [feed, circles] = await Promise.all([listMoments(member, { tab: 'foryou', page: 1, limit: HOME_FEED_PAGE_SIZE }), circleItems(member)]);
-    return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, circles };
+    return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, circles, findPeople: wantsFindPeople(member) };
   } catch {
     return null;
   }

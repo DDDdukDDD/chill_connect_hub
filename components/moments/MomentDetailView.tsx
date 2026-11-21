@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Eye, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
@@ -449,6 +449,7 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               onTap={isFull ? undefined : () => setIsFull(true)}
               onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && toggle('like')}
               showTime={isFull}
+              fullScreen={isFull}
               className="absolute inset-0"
             />
             {/* The next clip loads while this one plays, so a swipe starts it at once */}
@@ -658,10 +659,36 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                   </button>
                   )}
                   {moment.isMine ? (
-                    <button type="button" onClick={() => setConfirmDelete(true)} className={`${iconButton} text-slate-500`}>
-                      <Trash2 className="w-4 h-4" aria-hidden="true" />
-                      <span className="sr-only sm:not-sr-only">ลบ</span>
-                    </button>
+                    <>
+                      {/* How many times friends saw it, as an eye and a number (owner 2026-11-20, like Facebook); only the author sees it */}
+                      {(impact?.views?.total ?? 0) > 0 && (
+                        <span
+                          title="จำนวนครั้งที่เพื่อนๆ เห็นโพสต์นี้ เห็นแค่คุณ"
+                          className="inline-flex items-center gap-1 h-9 px-2 text-sm font-bold text-slate-600 tabular-nums"
+                        >
+                          <Eye className="w-4 h-4" aria-hidden="true" />
+                          {impact!.views.total.toLocaleString()}
+                          <span className="sr-only">ครั้งที่เพื่อนๆ เห็นโพสต์นี้ (เห็นแค่คุณ)</span>
+                        </span>
+                      )}
+                      {/* Delete stays one step away, in the menu, so it is not pressed by mistake */}
+                      <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
+                        <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-label="ตัวเลือกเพิ่มเติม" aria-haspopup="menu" aria-expanded={moreOpen} className={`${iconButton} text-slate-500`}>
+                          <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+                        </button>
+                        {moreOpen && (
+                          <>
+                            <button type="button" aria-label="ปิดเมนู" tabIndex={-1} onClick={() => setMoreOpen(false)} className="fixed inset-0 z-10 cursor-default" />
+                            <div role="menu" className="absolute right-0 top-full z-20 mt-1 w-max rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-slate-100">
+                              <button type="button" role="menuitem" autoFocus onClick={() => { setMoreOpen(false); setConfirmDelete(true); }} className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-bold text-rose-600 hover:bg-rose-50 cursor-pointer">
+                                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                ลบโมเมนต์
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </>
                   ) : (
                     !moment.hasReported && (
                       <button type="button" onClick={() => (isLoggedIn ? setReportReason('') : requireLogin('เพื่อรายงานโพสต์'))} className={`${iconButton} text-slate-500`}>
@@ -745,7 +772,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
           </div>
           )}
 
-          {impact && (impact.people > 0 || impact.views?.total > 0) && <ImpactLine impact={impact} />}
+          {/* A photo post shows its views as the eye beside the author; a clip has no such row, so its box keeps them */}
+          {impact && (impact.people > 0 || (moment.video && impact.views?.total > 0)) && <ImpactLine impact={impact} showViews={Boolean(moment.video)} />}
 
           {/* One section for the page and the sheet, so the comments stay in the server HTML and in one place */}
           {!moment.commentsOff && (
@@ -975,7 +1003,7 @@ function ReelHost({ initialMoment, openFullScreen = false, context }: DetailProp
 type PostImpact = SourceImpact & { views: { total: number; week: number } };
 
 /** What the author's post brought, in one warm line; only the author sees it, never who those people are */
-function ImpactLine({ impact }: { impact: PostImpact }) {
+function ImpactLine({ impact, showViews }: { impact: PostImpact; showViews: boolean }) {
   const parts = [
     impact.visit > 0 && `ไปถึงจริง ${impact.visit.toLocaleString()}`,
     impact.join > 0 && `เข้าร่วม ${impact.join.toLocaleString()}`,
@@ -993,7 +1021,7 @@ function ImpactLine({ impact }: { impact: PostImpact }) {
           {parts.length > 0 && <span className="text-amber-800"> · {parts.join(' · ')}</span>}
         </span>
       )}
-      {impact.views?.total > 0 && (
+      {showViews && impact.views?.total > 0 && (
         <span className={impact.people > 0 ? 'block text-amber-800' : 'block font-bold'}>
           เพื่อนๆ เห็นโพสต์นี้ {impact.views.total.toLocaleString()} ครั้ง
           {impact.views.week > 0 && impact.views.week < impact.views.total && <span className="font-normal"> · 7 วันนี้ {impact.views.week.toLocaleString()}</span>}

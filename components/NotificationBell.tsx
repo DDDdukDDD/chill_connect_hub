@@ -8,6 +8,7 @@ import { readPushStatus } from '@/lib/appClient';
 import { nameInitial } from '@/lib/displayName';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
+import ImgOr from '@/components/ImgOr';
 
 interface NotificationItem {
   id: string;
@@ -201,14 +202,16 @@ export function NotificationBell() {
                       return (
                         <li key={n.id} className="flex items-center gap-2">
                           <Link href={hrefOf(n)} onClick={close} className={`flex-1 min-w-0 flex items-center gap-3 px-2 py-2.5 rounded-2xl ${isNew ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-slate-50'}`}>
-                            {n.actorAvatar ? (
-                              // eslint-disable-next-line @next/next/no-img-element -- member upload
-                              <img src={avatarImage(n.actorAvatar)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0" />
-                            ) : (
-                              <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
-                                {nameInitial(n.actorName)}
-                              </span>
-                            )}
+                            {/* A picture that does not load shows the initial, never a broken image */}
+                            <ImgOr
+                              src={n.actorAvatar ? avatarImage(n.actorAvatar) : undefined}
+                              fallback={
+                                <span className="w-10 h-10 rounded-full bg-slate-200 text-slate-600 text-base font-bold flex items-center justify-center shrink-0" aria-hidden="true">
+                                  {nameInitial(n.actorName)}
+                                </span>
+                              }
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
                             <span className="min-w-0 flex-1">
                               <span className="block text-sm text-slate-700 leading-snug">
                                 <span className="font-bold text-slate-900">{n.actorName}</span> {n.message}

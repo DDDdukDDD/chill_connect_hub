@@ -201,6 +201,17 @@ export function describeQuestRule(rule: QuestRule | undefined, evidence: Evidenc
     };
   }
   // A starter challenge (owner 2026-11-11): one post from the phone, counted at once
+  if (rule.posts?.tagged) {
+    // Only posts made from the challenge (owner 2026-11-20): a running challenge was finished by a food post
+    return {
+      unit: 'โพสต์',
+      scope: rule.posts.withPlace ? 'โมเมนต์ที่โพสต์จากหน้าชาเลนจ์นี้ และใส่ชื่อสถานที่' : 'โมเมนต์ที่โพสต์จากหน้าชาเลนจ์นี้',
+      proof: 'กด "โพสต์โมเมนต์" ในหน้าชาเลนจ์นี้ โพสต์อื่นในฟีดไม่นับ',
+      onceEach: 'ทำสำเร็จได้ครั้งเดียว',
+      goStep: rule.posts.withPlace ? 'กด "โพสต์โมเมนต์" ในหน้าชาเลนจ์นี้ แล้วใส่ชื่อสถานที่ ให้ครบ {n} โพสต์' : 'กด "โพสต์โมเมนต์" ในหน้าชาเลนจ์นี้ ให้ครบ {n} โพสต์',
+      eligible,
+    };
+  }
   if (rule.posts) {
     return {
       unit: 'โพสต์',

@@ -51,6 +51,8 @@ import { NEW_MEMBER_NAME, nameInitial, reservedNameProblem, tidyDisplayName } fr
 import { useNameCheck } from '@/lib/useNameCheck';
 import { NameCheckHint } from '@/components/auth/NameCheckHint';
 import { compressImage } from '@/lib/media/compressor';
+import { photoUploadForm } from '@/lib/media/uploadPhoto';
+import { AvatarCropDialog } from '@/app/profile/AvatarCropDialog';
 import { safeImageSrc } from '@/lib/optimizedImage';
 import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { useMasterData } from '@/lib/useMasterData';
@@ -656,6 +658,9 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
   const [displayName, setDisplayName] = useState(saved?.displayName ?? '');
   const [prefilledFrom, setPrefilledFrom] = useState<string | null>(null);
   const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(saved?.photo ?? null);
+  // The picked photo before it is placed in the circle; kept so "ปรับตำแหน่ง" can open it again
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [birthYear, setBirthYear] = useState(saved?.birthYear ?? '');
   const [gender, setGender] = useState(saved?.gender ?? '');
@@ -793,8 +798,12 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
     setIsCompressing(true);
     setError('');
     try {
-      const compressed = await compressImage(file, { maxWidth: 800, maxHeight: 800, quality: 0.85, targetMimeType: 'image/webp' });
-      setPhoto({ file: compressed, preview: URL.createObjectURL(compressed) });
+      // Placed in the circle first, as the profile editor does (owner 2026-11-20): big enough to zoom in on, small
+      // enough for the phone's memory; the cropper saves a 640 px square
+      const compressed = await compressImage(file, { maxWidth: 2000, maxHeight: 2000, quality: 0.92, targetMimeType: 'image/jpeg' });
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      setCropSrc(URL.createObjectURL(compressed));
+      setIsCropping(true);
     } catch {
       setError('ใช้รูปนี้ไม่ได้ ลองเลือกรูปอื่น (JPG, PNG หรือ WebP)');
     } finally {
@@ -922,9 +931,7 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
         const name = displayName.trim();
         if (session.member && name && name !== session.member.displayName) changes.displayName = name;
         if (session.member && photo) {
-          const form = new FormData();
-          form.append('file', photo.file);
-          form.append('folder', 'avatars');
+          const form = await photoUploadForm(photo.file, 'avatars');
           const upload = await fetch('/api/upload', { method: 'POST', body: form }).then((r) => r.json()).catch(() => null);
           if (!upload?.success || !upload.url) throw new Error(upload?.error || 'อัปโหลดรูปไม่สำเร็จ ลองใหม่หรือข้ามรูปไปก่อน');
           changes.avatarUrl = upload.url;
@@ -1678,16 +1685,33 @@ export function OnboardingFlow({ preview, pledgeOnly = false, returnTo, cameFor 
                           <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={pickPhoto} disabled={isCompressing} />
                         </label>
                         {photo ? (
-                          <button type="button" onClick={() => setPhoto(null)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600 cursor-pointer">
-                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                            ลบรูป
-                          </button>
+                          <span className="flex items-center gap-3">
+                            {cropSrc && (
+                              <button type="button" onClick={() => setIsCropping(true)} className="text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+                                ปรับตำแหน่ง
+                              </button>
+                            )}
+                            <button type="button" onClick={() => setPhoto(null)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-rose-600 cursor-pointer">
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                              ลบรูป
+                            </button>
+                          </span>
                         ) : (
                           <span className="text-xs font-semibold text-slate-500">
                             <PhraseText text="ใส่รูปจริง เพื่อนจะทักง่ายขึ้น ไม่ใส่ก็ได้" />
                           </span>
                         )}
                       </div>
+                      {isCropping && cropSrc && (
+                        <AvatarCropDialog
+                          src={cropSrc}
+                          onCancel={() => setIsCropping(false)}
+                          onDone={(file, preview) => {
+                            setPhoto({ file, preview });
+                            setIsCropping(false);
+                          }}
+                        />
+                      )}
                     </div>
 
                     <div className="flex-1 space-y-5 min-w-0">

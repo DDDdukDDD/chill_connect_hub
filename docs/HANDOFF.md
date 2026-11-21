@@ -20,6 +20,100 @@ Item template:
 
 ---
 
+### BE-444 · Music on clips: a เพลง tab in the clip editor, mixed on the phone (owner 2026-11-21)
+- **What changed:**
+  - **Clip editor** (`ClipEditor.tsx`): a new tab, เพลง, between สติกเกอร์ and เสียง, on devices that can shrink clips. You pick a song from `MUSIC_TRACKS` (`lib/media/musicLibrary.ts`) or ไม่ใส่เพลง, then set where the song starts and how loud it is. The preview plays the song next to the clip and keeps it in step. With เสียง → ปิดเสียง, the post has only the song.
+  - **Posting** (`lib/media/clipCompress.ts`): the picture is made as before without sound. `OfflineAudioContext` mixes the song (looped, 0.2 s fade in, 1 s fade out) with the clip's own sound and passes it through a limiter, then the picture is copied as it is into a new MP4 with that mix as the AAC track. The post is still one plain MP4, so playing it needs nothing new. Where it fails, posting stops with "ลองเอาเพลงออก" and the original file is not uploaded.
+  - **Songs (8):** 3 samples that `scripts/make-sample-music.mjs` makes from code (ours, WAV), and 5 CC0 songs by HoliznaCC0 from Free Music Archive (albums "Spring at last (LOFI TAPE)" and "Winter Lofi", both marked CC0 1.0). Each CC0 song is cut to its first 60 s as 128 kbps AAC `.m4a` (about 1 MB). The source link for each is in its `license` field.
+  - **Not stored:** which song a post uses. The server, API and database are unchanged. There is no admin page for songs yet; adding one is on the LAUNCH_CHECKLIST.
+- **What to do about it:**
+  - `compressClip` was tested in headless Chrome with 6 cases, using both a WAV and an m4a song: song plus own sound, song only, song on a silent clip, song with filter and text. All gave AVC + stereo AAC of the right length, and the paths without a song behave as before.
+  - The editor was walked on the dev server in no-database mode at 390 and 1280: sign up, pick a clip, เพลง tab, pick a song, move start and volume, mute the clip's own sound, speaker off, post. The song stays within 0.2 s of the clip; the six tool labels fit at 390; there is no sideways scroll and no page errors. The posted clip is 8 s with a stereo AAC track that carries the song.
+  - **Not tested:** iPhone. Safari ignores `audio.volume`, so the preview plays at full volume, but the volume in the posted mix is right. Please try it on a real phone.
+
+---
+
+### BE-443 · Profile picture: placed in the circle at onboarding, shown large on a tap (owner 2026-11-20)
+- **What changed:**
+  - **Onboarding:** a picked photo opens `AvatarCropDialog` (drag, pinch, zoom), as the profile editor does; "ปรับตำแหน่ง" opens it again. It saves the same 640 px square (was an 800 px photo as picked).
+  - **Profile:** tapping the picture shows it large (`components/members/AvatarViewer.tsx`, dark screen, X / tap outside / Escape). On my own profile the tap offers "ดูรูปโปรไฟล์" or "เปลี่ยนรูป"; with no picture it opens the editor. Uploads are shown as stored (640–800 px); sample accounts' Unsplash pictures are asked for at 640.
+  - The viewer's dark backdrop is an inline style: the dev server did not build `bg-black/90` for the new file.
+- **What to do about it:** checked in headless Edge at 390: another member's picture opens large and Escape closes it; my profile without a picture opens the editor. **Not seen in a browser:** the onboarding crop (the test could not get past the สาย cards in preview mode); please try a sign-up with a photo on dev.
+
+---
+
+### BE-442 · Feed ⋯ menu: "เอาแท็กฉันออก" and "เลิกติดตาม" (TR-013, owner 2026-11-20)
+- **What changed:** the menu on someone else's post in the feed (`HomeMomentFeed.tsx`) adds "เอาแท็กฉันออก" when `isTaggedMe` (the existing `untag` action, as the moment page has) and "เลิกติดตาม" when `isFollowingAuthor` and the post is not a sample (`POST /api/members/{id}/actions` `unfollow`); every post by that author changes at once and goes back with a message if the server refuses. The "กำลังติดตาม" note by the name now gives way to the ติดตาม button after an unfollow. "ไม่สนใจโพสต์นี้" is still open (needs a table).
+- **What to do about it:** checked in headless Edge at 390 with the feed answer altered in the test browser (local data has only sample posts): the menu shows both, unfollow flips the button and the toast. "เอาแท็กฉันออก" was not pressed (no tagged post locally); it reuses the moment page's call.
+
+---
+
+### BE-441 · Search at IG/TikTok level: every kind at once, recent searches, things to tap, arrow keys, /search with tabs (owner 2026-11-20)
+- **What changed** (owner picked items 1–7 of the search plan):
+  1. **Every kind while typing:** the dropdown (computer) and the phone search screen show people, ที่เที่ยว, ตี้, อีเวนต์, ชาเลนจ์ and tags, three each, with picture and one line ("คาเฟ่ & ร้านกาแฟ · อารีย์", "22 พ.ย. 2569 · สวนเบญจกิติ", "430 คนกำลังทำ"). The kinds are ordered by their best match (`order` from the server): "วิ่ง" shows ตี้ named "วิ่ง…" before places that only mention running. Matching is ค้นพบ's own (`matchesQuery` with synonyms); ranking is new (`lib/search/siteSearch.ts`).
+  2. **Recent searches:** up to 8 on this device, each removable, "ล้างทั้งหมด"; a word is kept when Enter is pressed or a result opened from it.
+  3. **Before typing:** recent searches, people worth following (members), this weekend (province first), the busiest challenges, popular tags. The dropdown now opens on focus.
+  4. **Arrow keys:** down from the box into the results, up back to the box, Escape closes and returns focus.
+  5. **Fresh tags:** the hashtag counts are kept 30 minutes (was 6 hours) and cleared when a post, edit or delete has a `#` (`forgetTagsOf` in `lib/moments/service.ts`; other servers catch up within the half hour).
+  6. **`/search?q=&tab=`:** all results with a tab per kind and counts; "ทั้งหมด" six of each with "ดูทั้งหมด"; a tab up to 30, with a link to the ค้นพบ page and its filters for places, ตี้ and อีเวนต์. Server-rendered and `noindex`. Enter in every box comes here (`#tag` still opens the tag page); typing a new word on the page shows live results until Enter.
+  7. **Moments by words:** `listMoments`' `q` also matches the title of the place, ตี้ or อีเวนต์ a post is tied to (both repositories); moments show as a photo grid on `/search`.
+  - The dropdown's old first row "ค้นหา … ในตี้ อีเวนต์ ที่เที่ยว" became "ดูผลทั้งหมดของ …" (→ `/search`). `GET /api/search` grew `type`, `limit`, `province`, `moments`, the empty-word `start`, and `counts` / `order` (`docs/API.md`).
+- **What to do about it:** checked in headless Edge at 1280 and 390 with the local sample data: the empty dropdown and phone screen, "วิ่ง" ordering, arrow keys, Enter to `/search`, the ที่เที่ยว tab, moments for "กาแฟ", a guest's results, recent searches; no page errors; `/search` sends `noindex, nofollow` with the results in the server HTML. Not tried: the tag cache clearing after a real post (needs a post on dev). Tester: TR-012 re-test now covers this.
+
+---
+
+### BE-440 · Search finds people and #hashtags (TR-012, owner 2026-11-20)
+- **What changed:**
+  - **API:** `GET /api/search?q=` (`app/api/search/route.ts`, contract in `docs/API.md`): people by name for signed-in members (`searchMembers` in `lib/members/safety.ts`, on a new name-only `memberRepository.searchByName`: the staff `query` also matches emails, which a public search must not) and tags (`searchHashtags` in `lib/moments/service.ts`, on the cached hashtag counts).
+  - **Top bar (md and up):** typing in `SiteSearch` opens a dropdown (`components/discover/SearchResults.tsx`): first a row "ค้นหา “…” ในตี้ อีเวนต์ ที่เที่ยว" (what Enter always did), then people with ติดตาม buttons (`PeopleList`), then tags. "#tag" + Enter opens the tag page. Placeholder "ค้นหากิจกรรม คน #แท็ก" (`DiscoverSearch` takes `placeholder`).
+  - **Phones:** the top bar's search icon opened `/community`; it now opens a full-screen search (`components/discover/SearchSheet.tsx`, loaded on first tap) with ตี้ / อีเวนต์ / ที่เที่ยว tiles and popular tags before typing, the same results while typing.
+  - Guests get tags and "เข้าสู่ระบบเพื่อค้นหาเพื่อน" instead of people.
+- **What to do about it:** tested against the API and the local member file (no database on the office notebook), and in headless Edge at 1280 and 390: the dropdown for a member and a guest, tags for "#", Escape closes it, the phone screen before and while typing, and ติดตาม → กำลังติดตาม from the list. Tester: please re-test TR-012 at 390 and 1280 wide. A tag first used in the last few hours is not listed until the hashtag cache refreshes (up to 6 hours), but "#tag" + Enter reaches it. Name search scans `display_name` with `ilike`; add a trigram index when members reach the tens of thousands.
+
+---
+
+### BE-439 · Small photo copies made on the phone; Circles: gold for finished, one "ทำอยู่" Circle; moment tabs hidden (owner 2026-11-20)
+- **What changed:**
+  - **Small copies (shared utility change):** every photo upload (moments and their edits, clip covers, profile pictures in onboarding and the profile editor, ตี้/อีเวนต์ images, Spot Buddy, admin image fields) builds its form with `photoUploadForm` (`lib/media/uploadPhoto.ts`), which adds an 800 px copy (384 px for `avatars`) when the photo is bigger than that. `/api/upload` takes it as `small`; the R2 adapter stores `name.s.webp` first, then the photo as `name.o.webp`. `optimizedImage` returns the copy for widths up to 640 (grid cards, tiles, avatars), the original above that. Only `.o.` names have a copy, so older photos are untouched. Deleting a photo through the adapter deletes its copy; the daily moment orphan cleanup keeps a copy while its original is used. `docs/API.md` has the `/api/upload` contract.
+  - **Circles:** a friends Circle's corner faces were clipped by the scrolling row (the row now has 4 px above). My finished challenges are gold (`RING_DONE` / `BADGE_DONE` / `NAME_DONE` in `circleLook.ts`) instead of the same orange as ongoing ones. Two or more of my challenges still going ("ทำอยู่" or "2/3") share one Circle "ทำอยู่ N" with their pictures split inside it; a tap lists them (`AllCirclesSheet` takes a `title`) and each opens in the viewer, which still swipes through all Circles.
+  - **/moments:** the type tabs (สถานที่, ตี้, อีเวนต์, ชาเลนจ์) are hidden while there are few posts (`SHOW_TYPE_TABS` in `MomentShowcase.tsx`). Posts keep their type and `?type=` links still filter; such a link shows the tabs so the reader can get back.
+- **What to do about it:** the Circles row (gold finish, "ทำอยู่ 3" with three pictures, corner faces no longer clipped, the list it opens) and /moments without tabs were checked in headless Edge with sample Circles. The office notebook has no R2 settings, so the copy upload was not tried against a bucket. On the main computer, post a photo on dev and check that `media-dev` holds both `.o.` and `.s.` files and the /moments grid loads the `.s.` file. Turn the tabs back on when each type has enough posts to fill a page.
+
+---
+
+### BE-438 · Photos without Vercel resizes, running challenges count only their own posts, Circles show new friends, moment page tidy (owner 2026-11-20)
+- **What changed:**
+  - **Broken photos on /moments:** Vercel's 5,000 monthly image resizes ran out; every new resize answers **402**, so posts from the night before showed broken in the grid (the feed and the post page fell back to the original). Uploads on R2 (`media.chillwaa.com`, `media-dev.`) are no longer resized (`OPTIMIZED_REMOTE_IMAGES` in `lib/optimizedImage.ts`, so also not in `images.remotePatterns`): they are already at most 1600 px / 1 MB from the phone and R2 has no egress charge. `/icons/` is not resized either. The grid card (`CardPhoto` in `MomentShowcase.tsx`) now tries the original once when a resize fails, as `FramePhoto` does. **Shared utility change:** `optimizedImage` / `avatarImage` return R2 links as they are.
+  - **Bell:** the Chillwaa notice icon (BE-435) went through the resizer too; avatars there are `ImgOr` with the initial as fallback.
+  - **Running challenges (`posts.tagged`):** the ATMBKK "ซ้อม 3 ครั้ง" challenge counted any post with a place, so a food post finished it. New rule option `posts.tagged`: only posts made from the challenge count (its "โพสต์โมเมนต์" or Circle; the post keeps `achievement.questId`). `db/seed-atmbkk-2026.mjs` sets it on both ATMBKK challenges and now updates the rule of a challenge that already exists. The owner's wrong finish on live is left as it is (owner's choice).
+  - **Circles:** a friends-on-one-challenge Circle (`c:<questId>`) kept its "opened" grey after someone new joined it, and its corner faces were the closest friends, so a friend just followed who finished a starter challenge never showed. The opened mark now includes the newest person's time (`seenKey`), and the newest face comes first.
+  - **Moment page (own photo post):** the trash icon is now an eye with the view count (only the author sees it); delete moved into a "…" menu. The amber box keeps only "โพสต์นี้พาเพื่อนๆ ออกไปแล้ว" (a clip keeps the views line there, having no author row).
+  - **Reel:** the sound button sits below the iPhone status bar in full screen (`fullScreen` on `ClipPlayer`).
+- **What to do about it:** after merge, run `db/seed-atmbkk-2026.mjs` against live so the two ATMBKK challenges get `tagged`. Decide later whether to turn on Cloudflare image resizing for `media.chillwaa.com` (to add to LAUNCH_CHECKLIST). The video picker's "คลังรูปภาพ" is iOS's own menu and cannot be renamed from the page.
+
+---
+### BE-437 · Friend plans carry a meeting time; the invite sheet picks any day (owner 2026-11-18)
+- **What changed:** the ชวนไป sheet offers "วันอื่น" (a calendar) beside เสาร์นี้ / อาทิตย์นี้, and once a day is picked an optional "กี่โมง". The plan chat's day picker (My Hub) sets or clears the time too. `POST /api/invites` takes `time` with `day`; `PATCH /api/plans/{id}` takes `time` (left out keeps it, `''`/`null` clears it); `PlanView.time`; every `dateLabel` reads "ส. 22 พ.ย. 18:30 น." (`planDayLabel` in `lib/social/friendPlans.ts`).
+- **What to do about it:** run **migration 0066** (`app.friend_plans.plan_time`) on dev and live. Until then plans work as before, but saving a time fails. Written on the office notebook, not run anywhere yet.
+
+---
+
+### BE-436 · Staff-made ตี้ get a host account (owner 2026-11-18)
+- **What changed:** the ATM 5K run (seeded with only `hostName: 'ทีม Chillwaa'`) had no `createdByMemberId`, so nobody could scan tickets. The admin ตี้ editor has "บัญชีโฮสต์ (สแกนเช็กอิน)": search a member and pick them; `/api/admin/events` `create` / `update_fields` accept `createdByMemberId` (active member, ตี้ only, set or changed, never cleared). That account checks people in, sees the list and leads the chat; `hostName` stays the shown name. The moderation list marks ตี้ with no host account in red. `db/seed-atmbkk-2026.mjs` takes `HOST_MEMBER_ID`.
+- **What to do about it:** set a host account on every staff-made ตี้ still ahead (the remaining ATM runs first). Searching needs `members.manage`.
+
+---
+
+### BE-435 · Circles: no strangers' faces, hot challenges and "หาเพื่อน" instead; pictures mend; Chillwaa notices show the app icon (owner 2026-11-18)
+- **What changed:**
+  - The fill of the site's newest Circles for readers with few friend Circles is gone (`CIRCLES_FILL_BELOW` removed): a new member saw strangers as if followed.
+  - A reader following fewer than `CIRCLES_SUGGEST_BELOW` (5) people gets up to `CIRCLES_HOT_MAX` (2) hot challenges at the end of the row (`h:<questId>`, `ChallengeCircle.suggested.total`, violet ring (orange means mine since BE-421), challenge picture only; opened: recent people on it, each with ติดตาม) and a "หาเพื่อน" Circle (`findPeople` on `GET /api/circles` and `HomeFeedStart`) that opens `FollowRow`.
+  - A circle picture that fails to load tries the original file once, then the fallback icon (a second `ImgOr` in `AchievementRowCircle`, `components/home/Circles.tsx`): own challenge pictures showed a broken "?" on the first home after an Apple sign-up on iPad. Root cause not found; the links load fine.
+  - Notifications from Chillwaa itself carry `actorAvatar: '/icons/icon-192.png'` (was `''`).
+- **What to do about it:** check on a fresh iPad sign-up that the "?" no longer shows.
+
+---
+
 ### BE-434 · สัปดาห์นี้: the first view of กิจกรรม, the next 7 days by day (owner 2026-11-19)
 - **What changed:** new page `/this-week`. The job: "I have a free day: what is on, and who is going", answered at a glance. It began as a weekend-only page from the canvas draft; the owner then chose the next 7 days laid out as a schedule, which also tells it apart from the landing (rows by category). Top to bottom: tabs "สัปดาห์นี้ · ตี้ · อีเวนต์ · ที่เที่ยว", "สัปดาห์นี้ไปไหนดี" with the dates; the province is the search box's (top bar, or above the tabs on phones, as on the other กิจกรรม pages; a member starts in their own when it has something this week, remembered on the device; a search word opens the ตี้ list), a sticky day strip (วันนี้, พรุ่งนี้, ส. 21 … with how many, "ว่าง" when none; tap jumps to the day), "เพื่อนๆ จะไปกัน" (signed in only), "ชาเลนจ์ที่คุณทำอยู่" (the member's joined, unfinished challenges with progress, from `/api/rewards`), then one row per day mixing ตี้ and อีเวนต์ in start-time order, each tile labelled "ตี้" or "อีเวนต์" in its pillar color (same tile size as the 2/3/4/6 grids, sliding like the landing rows; weekend days in orange), empty days folded to one line ("ยังไม่มีตี้วันนี้", no button: making a ตี้ is offered once at the end), อีเวนต์ already running listed once as "อีเวนต์ที่กำลังจัดอยู่" (ending soonest first) instead of on every day, "ที่น่าไปวันว่าง" (6 places with a photo, no chain branches, for the province; each with "ชวนไป", which opens the "ไปกัน" invite sheet, or sign-in for a visitor), "ชาเลนจ์ยอดนิยม" (the 6 open challenges most people are doing, leaving out the member's own), and "ยังไม่เจอที่ชอบ?". Server HTML with its own metadata and the ตี้ as JSON-LD; in the sitemap. `lib/thisWeek.ts` (days in Bangkok, lists), `lib/thisWeekFriends.ts` + `GET /api/this-week/friends`. Shared `components/discover/PillarTabs.tsx` puts the new tab first on `/community`, `/events`, `/spots`. "กิจกรรม" in the top bar and the phone bar opens `/this-week`.
 - **What to do about it:** nothing to run (no migration). Checked on dev at 390 px and 1440 px, signed out and in, tile width equal to /community (183 px at 1440); the friends row with two real attendees followed for the check (unfollowed after) and with one blocked; no console errors (a hydration mismatch from the province default was found and fixed). Not built: "ใกล้ฉัน" (needs location); save hearts are off on this page.

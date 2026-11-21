@@ -332,6 +332,34 @@ export async function followLists(member: Member) {
   return { followers: visible.filter((p) => p.followsMe), following: visible.filter((p) => p.isFollowing) };
 }
 
+/** Longest search word read; a name is at most about 40 letters */
+export const SEARCH_WORD_MAX = 40;
+
+/**
+ * Members found by name for the site's search (TR-012, BE-440), for a signed-in viewer only. Leaves out the viewer,
+ * anyone either side has blocked, and members with open risk flags. People the viewer follows or who follow them
+ * come first, then names that start with the word.
+ */
+export async function searchMembers(viewer: Member, word: string, limit = 6) {
+  const text = word.replace(/\s+/g, ' ').trim().slice(0, SEARCH_WORD_MAX);
+  if (!text) return [];
+  const ids = await memberRepository.searchByName(text, 40);
+  const byId = await memberRepository.findByIds(ids);
+  const following = new Set(viewer.followingIds ?? []);
+  const lower = text.toLowerCase();
+  return ids
+    .map((id) => byId.get(id))
+    .filter((m): m is Member => Boolean(m) && m!.status === 'active' && m!.id !== viewer.id && !viewer.blockedIds?.includes(m!.id) && !m!.blockedIds?.includes(viewer.id) && !hasOpenRisk(m!))
+    .map((m, at) => {
+      const name = toPublicMember(m).displayName;
+      const followsMe = Boolean(m.followingIds?.includes(viewer.id));
+      return { person: { id: m.id, name, avatar: m.avatarUrl ?? '', isFollowing: following.has(m.id), followsMe }, rank: (following.has(m.id) || followsMe ? 2 : 0) + (name.toLowerCase().startsWith(lower) ? 1 : 0), at };
+    })
+    .sort((a, b) => b.rank - a.rank || a.at - b.at)
+    .slice(0, limit)
+    .map(({ person }) => person);
+}
+
 /**
  * Members worth following: active, verified, with published moments, most recent posters first.
  * Leaves out the viewer, members they already follow or blocked, and members with open risk flags.

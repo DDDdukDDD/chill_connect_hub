@@ -12,6 +12,11 @@ export interface UploadOptions {
   maxSizeBytes?: number;
   /** Custom base filename (without path) */
   filename?: string;
+  /**
+   * The phone's smaller copy of this photo, same type (lib/media/uploadPhoto.ts). Kept beside it only where links are
+   * read by name (R2: `name.o.webp` + `name.s.webp`, lib/media/ownMedia.ts); other drivers ignore it.
+   */
+  smallCopy?: Buffer;
 }
 
 export interface UploadResult {

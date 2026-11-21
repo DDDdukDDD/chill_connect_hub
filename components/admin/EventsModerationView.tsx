@@ -429,6 +429,10 @@ export function EventsModerationView({ type, initialQuery = '' }: EventsModerati
                           </span>
                         )}
                         {ev.hostName && <span className="text-slate-500">โดย: {ev.hostName}</span>}
+                        {/* A staff-made ตี้ with no member account running it: nobody can scan tickets (owner 2026-11-18) */}
+                        {isCommunity && !(ev as { createdByMemberId?: string }).createdByMemberId && (
+                          <span className="font-semibold text-rose-600">ยังไม่มีบัญชีโฮสต์ (เช็กอินไม่ได้)</span>
+                        )}
                       </div>
 
                       {ev.description && (

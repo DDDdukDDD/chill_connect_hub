@@ -186,8 +186,10 @@ export interface QuestRule {
    * minute from the sofa): published moments posted since they joined the challenge; `withPlace` needs a place or a
    * location on the post. There is no location proof, so such a challenge is meant to be easy and finishes once.
    * targetTypes stays empty.
+   * `tagged` (owner 2026-11-20): only posts made from this challenge (its page or Circle opens the posting form tied
+   * to it) count, so a food post with a place no longer finishes a running challenge.
    */
-  posts?: { withPlace?: boolean };
+  posts?: { withPlace?: boolean; tagged?: boolean };
   /**
    * Counts a simple thing done in the app instead of visits (owner 2026-11-14, the first steps on the onboarding
    * summary): a like on someone's moment, a member followed, something saved (a ตี้, an อีเวนต์ or a place, by

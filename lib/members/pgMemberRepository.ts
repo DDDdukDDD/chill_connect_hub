@@ -342,6 +342,19 @@ export const pgMemberRepository: MemberRepository = {
     const list = await cacheManager.getOrSet(`members:${JSON.stringify(params)}`, () => queryMembers(params), { ttlMs: 30 * 1000, staleMs: 5 * 60 * 1000, tags: ['member-lists'] });
     return structuredClone(list);
   },
+  // Ids only: the caller reads the few it shows through findByIds (cached). A plain scan of display_name is fine at
+  // today's size; add a trigram index when members reach the tens of thousands
+  async searchByName(text, limit) {
+    const word = text.trim();
+    if (!word) return [];
+    const like = word.replace(/[\\%_]/g, '\\$&');
+    const rows = await sql()`
+      select m.legacy_id as id from app.members m
+      where m.status = 'active' and m.display_name ilike ${`%${like}%`}
+      order by (m.display_name ilike ${`${like}%`}) desc, length(m.display_name), m.created_at desc
+      limit ${limit}`;
+    return rows.map((r) => r.id as string);
+  },
 };
 
 async function queryMembers({ q, status = 'all', page, limit }: MemberQuery) {

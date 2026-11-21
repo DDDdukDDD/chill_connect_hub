@@ -10,6 +10,7 @@ import type { EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { DialogShell, dialogButton, useDialogBehavior } from '@/components/auth/DialogShell';
 import { ClipEditor } from '@/components/moments/ClipEditor';
+import type { ClipMusic } from '@/lib/media/musicLibrary';
 import { PhotoEditor } from '@/components/moments/PhotoEditor';
 import { VerifyToPostDialog } from '@/components/moments/VerifyToPostDialog';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
@@ -121,7 +122,7 @@ function EditedThumb({ photo, shape, width = 200, className = 'w-full h-full obj
 }
 
 /** A clip on its way to a post: the chosen part, its filter, text and stickers, and whether it keeps its sound */
-type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number; filter: string; texts: PhotoText[]; stickers: FunSticker[]; muted: boolean; cover?: string };
+type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number; filter: string; texts: PhotoText[]; stickers: FunSticker[]; muted: boolean; music: ClipMusic | null; cover?: string };
 /** The cover is this far into the chosen part: the very first frame is often dark or blurred (owner 2026-11-09) */
 const COVER_OFFSET_S = 0.5;
 
@@ -287,7 +288,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     try {
       const fullSeconds = await readClipDuration(file);
       // A clip within the limit starts whole; a longer one starts with the first DEFAULT_CLIP_SECONDS (owner 2026-11-09)
-      setClip({ file, fullSeconds, startS: 0, endS: fullSeconds <= MAX_VIDEO_SECONDS ? fullSeconds : DEFAULT_CLIP_SECONDS, filter: 'none', texts: [], stickers: [], muted: false });
+      setClip({ file, fullSeconds, startS: 0, endS: fullSeconds <= MAX_VIDEO_SECONDS ? fullSeconds : DEFAULT_CLIP_SECONDS, filter: 'none', texts: [], stickers: [], muted: false, music: null });
       setStep('clip');
     } catch {
       onToast('อุปกรณ์นี้เปิดคลิปนี้ไม่ได้ ลองเลือกจากมือถือ หรือแปลงเป็น MP4 นะ');
@@ -331,7 +332,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
     const draft = {
       photos,
       shape,
-      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, endS: clip.endS, filter: clip.filter, texts: clip.texts, stickers: clip.stickers, muted: clip.muted, cover: clip.cover } : null,
+      clip: clip?.cover ? { file: clip.file, fullSeconds: clip.fullSeconds, startS: clip.startS, endS: clip.endS, filter: clip.filter, texts: clip.texts, stickers: clip.stickers, muted: clip.muted, music: clip.music, cover: clip.cover } : null,
       caption: caption.trim(),
       location,
       target: linkedTarget,
@@ -532,6 +533,8 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
             onStickersChange={(stickers) => setClip({ ...clip, stickers })}
             muted={clip.muted}
             onMutedChange={(muted) => setClip({ ...clip, muted })}
+            music={clip.music}
+            onMusicChange={(music) => setClip({ ...clip, music })}
             canEdit={canShrinkClips()}
             isBusy={isPreparing}
             onBack={leave}

@@ -259,6 +259,11 @@ export interface MemberRepository {
   update(id: string, changes: Partial<Member>): Promise<Member>;
   remove(id: string): Promise<boolean>;
   query(query: MemberQuery): Promise<{ items: Member[]; totalCount: number; counts: Record<MemberStatus | 'all', number> }>;
+  /**
+   * Ids of active members whose shown name contains `text`, names starting with it first (the site's search, BE-440).
+   * Names only: never emails or ids, which `query` (staff) also matches.
+   */
+  searchByName(text: string, limit: number): Promise<string[]>;
 }
 
 const sampleName = (name: string, member: Member) => (member.email?.endsWith('@sample.invalid') ? withoutSampleHandle(name) : name);

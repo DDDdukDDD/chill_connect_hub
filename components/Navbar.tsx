@@ -26,6 +26,8 @@ import { avatarImage } from '@/lib/optimizedImage';
 
 // The create dialog loads only when someone opens it from the profile menu
 const CreateEventModal = dynamic(() => import('./CreateEventModal').then((m) => m.CreateEventModal), { ssr: false });
+// The phone search screen loads on its first tap
+const SearchSheet = dynamic(() => import('./discover/SearchSheet').then((m) => m.SearchSheet), { ssr: false });
 
 const MENU_ROW = 'flex items-center gap-2.5 min-h-10 px-3 rounded-xl hover:bg-slate-100 hover:text-slate-900 transition-colors';
 
@@ -61,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isOwnSignupOpen, setIsOwnSignupOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const router = useRouter();
   // XP for the "แลกของรางวัล" row, read when the menu opens (not on every page load)
   const [menuXp, setMenuXp] = useState<number | null>(null);
@@ -154,16 +157,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Phones: the search lives at the top of ค้นพบ */}
+            {/* Phones: a full-screen search for กิจกรรม, people and tags (BE-440); ค้นพบ pages keep their own box */}
             {!searchSlot && (
-              <Link
-                href="/community"
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
                 aria-label="ค้นหา"
-                className="md:hidden w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-800 active:scale-95"
+                aria-haspopup="dialog"
+                className="md:hidden w-9 h-9 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-800 active:scale-95 cursor-pointer"
               >
                 <Search className="w-4 h-4" aria-hidden="true" />
-              </Link>
+              </button>
             )}
+            {isSearchOpen && <SearchSheet onClose={() => setIsSearchOpen(false)} />}
 
             {/* Chats and notifications (render only for a signed-in member; chats only once there is one) */}
             {isAuthReady && isLoggedIn && <ChatInbox />}
