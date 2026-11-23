@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-454 · Event import no longer dies on one item without a province (2026-11-23)
+- **What changed:** no event source had run since 2026-10-04, so live had 5 อีเวนต์ in the next 7 days. Running the scraper failed on `events_province_or_online`: 3 ThaiTicketMajor items had no province, and the single save took the other 119 down with them. `runScraperAndAIEngine` now leaves out items with no known province (`MASTER_77_PROVINCES` or `PROVINCE_ALIASES`) or no `location`, and reports `skipped` per source (docs/API.md; admin shows "ข้าม N"). Ran on dev 2026-11-23: 119 new, pending, 94 starting within 45 days, all with a picture.
+- **What to do about it:** after this reaches `main`, run อีเวนต์ sources once in admin on live and approve in the review queue. Live has no `iconsiam` source (dev does). The scraper writes each source's last run to `data/chill_database.json` locally; do not commit that file.
+
 ### BE-453 · Past ตี้ and อีเวนต์ get status ended every night; audit's live command fixed (owner 2026-11-23)
 - **What changed:** the 2026-11-23 audit found 87 past items on live still not `ended` (AGENTS.md section 2): nothing wrote the status, pages only hid them by date. New `lib/db/endPastEvents.ts` runs in `/api/cron/hourly` after `shortTrips`: one `update app.events` sets `details.status = 'ended'` and `registration_open = false` where `ends_at < now()`, skipping recurring, already ended/cancelled, and the seed ตี้ whose dates roll (`ROLLING_SAMPLE_IDS`, new export of `lib/sampleEventDates.ts`; not `is_sample`, which also marks staff-made ตี้ without a host). Safe to run twice; the write moves `table_versions`, so caches refresh. Ran on dev: 157 rows, audit now 0. `db/audit-content.ts` now stops with an error when a database URL is set without `DATA_STORE=postgres`, and the live command in its header and in BE-451 is fixed.
 - **What to do about it:** live is fixed by the first cron run after this reaches `main` (GitHub Actions hourly, Vercel daily). No migration.
