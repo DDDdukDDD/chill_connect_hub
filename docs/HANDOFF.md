@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-453 · Past ตี้ and อีเวนต์ get status ended every night; audit's live command fixed (owner 2026-11-23)
+- **What changed:** the 2026-11-23 audit found 87 past items on live still not `ended` (AGENTS.md section 2): nothing wrote the status, pages only hid them by date. New `lib/db/endPastEvents.ts` runs in `/api/cron/hourly` after `shortTrips`: one `update app.events` sets `details.status = 'ended'` and `registration_open = false` where `ends_at < now()`, skipping recurring, already ended/cancelled, and the seed ตี้ whose dates roll (`ROLLING_SAMPLE_IDS`, new export of `lib/sampleEventDates.ts`; not `is_sample`, which also marks staff-made ตี้ without a host). Safe to run twice; the write moves `table_versions`, so caches refresh. Ran on dev: 157 rows, audit now 0. `db/audit-content.ts` now stops with an error when a database URL is set without `DATA_STORE=postgres`, and the live command in its header and in BE-451 is fixed.
+- **What to do about it:** live is fixed by the first cron run after this reaches `main` (GitHub Actions hourly, Vercel daily). No migration.
+
 ### BE-452 · Docs tidied before the data week (owner 2026-11-23)
 - **What changed:** this board kept BE-420 onward; BE-235..BE-419 moved to [archive/handoff-2026-11-03-to-2026-11-18.md](archive/handoff-2026-11-03-to-2026-11-18.md) (1,045 → about 280 lines). `TEST_REPORTS.md`: the 22 `Confirmed fixed` reports moved to [archive/test-reports-fixed.md](archive/test-reports-fixed.md), and "Fixed" now links there. `LAUNCH_CHECKLIST.md`: the 45 done `[x]` items and the 0061/0062 reminders (both on live) were removed, as its own rule says; the 0067 item now covers 0066 too. Migrations 0066 and 0067 ran on dev on 2026-11-23; live still needs both.
 - **What to do about it:** on `office-notebook` and `tester`, an edit to an old item in these files will conflict at the next merge. Keep the new files and put the edit in the archive or in a new item.
@@ -28,7 +32,7 @@ Item template:
 - **What changed:** `db/audit-content.ts` reads through the app's own `db` (never writes) and prints a Thai report: totals by origin (member, source, sample, `lib/contentOrigin.ts`); per province the open ตี้ and อีเวนต์ starting in 7 and 30 days, real ones apart from samples, with "บาง" where the 7 days have fewer than 6 (สัปดาห์นี้'s thin mode); places published, with a photo and a description, drafts by source; open challenges; problems to fix (missing province, place, time, organizer or source link; under the form's minimums; past but not marked ended; likely duplicates; published places without photo, hours or coordinates; pictures pointing at files missing from public/). `--json=` keeps a snapshot, and `--diff=a.json,b.json` lists what the first database has that the second lacks, matched by source link or name and province (for the TAT places still only on dev).
 - **How to run** (on the main computer; the office notebook has no database env files):
   - `npx tsx --env-file=.env.development.local db/audit-content.ts --out=audit-dev.md --json=audit-dev.json`
-  - `npx tsx --env-file=.env.local db/audit-content.ts --out=audit-live.md --json=audit-live.json` (live, read only)
+  - live, read only (fixed in BE-453; `.env.local` alone has no `DATA_STORE`, so the old command read the JSON files): `DATA_STORE=postgres DATABASE_URL="$(grep ^POSTGRES_URL_NON_POOLING= .env.local | cut -d= -f2- | tr -d '"\r')" npx tsx db/audit-content.ts --out=audit-live.md --json=audit-live.json`
   - `npx tsx db/audit-content.ts --diff=audit-dev.json,audit-live.json --out=audit-dev-not-live.md`
   - Report files are git-ignored (`/audit-*`). Tried on the no-database JSON files only: 69 ตี้ (57 sample), 295 อีเวนต์, 2,217 places, 8 provinces with anything in 30 days.
 

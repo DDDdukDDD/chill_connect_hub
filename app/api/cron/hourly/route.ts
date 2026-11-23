@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
+import { endPastEvents } from '@/lib/db/endPastEvents';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
@@ -33,6 +34,8 @@ export async function GET(request: Request) {
     }
   };
   await run('shortTrips', () => cancelShortTrips());
+  // ตี้ and อีเวนต์ past their end get status ended (after trips are called off, so those stay cancelled)
+  await run('endPastEvents', () => endPastEvents());
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question
