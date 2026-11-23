@@ -7,7 +7,6 @@ import { HOME_CARD_WIDTH, memberHomeData, sizedImage, type HomeFeedStart } from 
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { listMoments } from '@/lib/moments/service';
 import { circleItems, wantsFindPeople } from '@/lib/social/circles';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import type { Member } from '@/lib/members/types';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { homeEvents } from '@/lib/homeFairs';
@@ -17,6 +16,7 @@ import { getPageMember } from '@/lib/members/session';
 import { toPublicMember } from '@/lib/members';
 import { providerStatus } from '@/lib/members/oauth';
 import HomeView from './HomeView';
+import { landingMoments } from '@/lib/landingMoments';
 
 // The home page's own address: invite and share links (/?invite=…, /?share=…) point search engines here
 export const metadata: Metadata = { alternates: { canonical: '/' } };
@@ -29,10 +29,11 @@ export default async function HomePage() {
   const [upcoming, quests, member] = await Promise.all([listUpcomingEvents(), listPublicQuests(), getPageMember()]);
   // Every ตี้, and of the อีเวนต์ only what the page shows (the row, and a member's band pool)
   const { events, fairTotal } = homeEvents(upcoming, Boolean(member));
-  const [memberData, spotTotal, feedStart] = await Promise.all([
+  const [memberData, spotTotal, feedStart, wall] = await Promise.all([
     member ? memberHomeData(member, events) : null,
     member ? null : discoverCounts('', ALL_PROVINCES).then((counts) => counts.spots),
     member ? homeFeedStart(member) : null,
+    member ? [] : landingMoments(),
   ]);
   // As list items: the tiles and rows never read the detail-only fields, which were most of the page's weight.
   // Each ตี้ comes with its สาย worked out here: the browser matched keywords for every ตี้ on every สาย card
@@ -57,6 +58,7 @@ export default async function HomePage() {
       memberData={memberData && feedStart ? { ...memberData, feedStart } : memberData}
       spotTotal={spotTotal}
       fairTotal={fairTotal}
+      landingMoments={wall}
     />
   );
 }
@@ -64,7 +66,6 @@ export default async function HomePage() {
 /** The member feed's first page and Circles, with the page: the same answers /api/moments?tab=foryou and /api/circles give. A failure leaves them to the browser as before */
 async function homeFeedStart(member: Member): Promise<HomeFeedStart | null> {
   try {
-    await ensureSampleMembers();
     const [feed, circles] = await Promise.all([listMoments(member, { tab: 'foryou', page: 1, limit: HOME_FEED_PAGE_SIZE }), circleItems(member)]);
     return { items: feed.moments, hasNext: Boolean(feed.pagination?.hasNextPage), nextCursor: feed.pagination?.nextCursor, circles, findPeople: wantsFindPeople(member) };
   } catch {

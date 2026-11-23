@@ -110,7 +110,9 @@ const store: CatalogStore = USE_POSTGRES ? pgCatalog() : jsonCatalog();
 /** Every reward, hidden ones too (a member's redeemed reward must still read), in the staff's order */
 export async function listRewards(): Promise<RewardShopItem[]> {
   const items = await cacheManager.getOrSet(CACHE_KEY, () => store.all(), { ttlMs: CACHE_MS, tags: [CACHE_KEY] });
-  return items.length ? items : REWARD_SHOP_ITEMS;
+  // The sample rows stand in only for a clone without a database; on Postgres an empty table means no rewards yet
+  // (2026-11-24: the sample shops are switched off before launch, db/remove-sample-data.mjs)
+  return items.length || USE_POSTGRES ? items : REWARD_SHOP_ITEMS;
 }
 
 export const findReward = async (id: string | undefined): Promise<RewardShopItem | null> => (id ? ((await listRewards()).find((item) => item.id === id) ?? null) : null);

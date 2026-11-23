@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { captionMentions, createMoment, withoutMentions, listMoments, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
@@ -17,7 +16,6 @@ import { traceAction } from '@/lib/social/actionLog';
  * "saved", "mine" and "following" need a signed-in member (otherwise an empty list with requiresLogin).
  */
 export async function GET(request: Request) {
-  await ensureSampleMembers(); // development sample accounts for the sample posts
   const { searchParams } = new URL(request.url);
   const viewer = await getSessionMember(request);
   const { moments, requiresLogin, pagination } = await listMoments(viewer, {

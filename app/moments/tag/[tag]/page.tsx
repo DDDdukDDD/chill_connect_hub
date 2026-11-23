@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { listMoments, relatedHashtags, TAG_PAGE_MIN_POSTS } from '@/lib/moments/service';
 import { HASHTAG, hashtagHref, normalTag } from '@/lib/moments/hashtags';
 import { metaDescription, pageMetadata } from '@/lib/site';
@@ -23,7 +22,6 @@ function tagOf(raw: string): string | null {
 }
 
 const firstPage = cache(async (tag: string) => {
-  await ensureSampleMembers(); // development sample accounts for the sample posts
   return listMoments(null, { tag, limit: 24 });
 });
 

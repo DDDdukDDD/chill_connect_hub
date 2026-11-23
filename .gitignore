@@ -74,3 +74,4 @@ next-env.d.ts
 # Content audit reports (db/audit-content.ts): stale in a day, kept on each computer
 /audit-*.md
 /audit-*.json
+/data/.backups/

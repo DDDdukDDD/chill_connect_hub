@@ -20,6 +20,7 @@ import { LocationPinPicker, Pin } from './LocationPinPicker';
 import { SUBMISSION_SENT_EVENT } from './MySubmissions';
 import { CreateStepGuide } from './CreateStepGuide';
 import { CoverPreview } from './CoverPreview';
+import type { TeeIdea } from '@/data/teeIdeas';
 import { CategoryIconComponent, fairCategoryIcon, meetupCategoryIcon, placeTypeIcon } from './icons/CategoryIcons';
 import { RichTextEditor, renderDescriptionContent, stripHtmlToPlainText } from './RichTextEditor';
 
@@ -109,13 +110,14 @@ function recurrenceText(days: DayOfWeek[], frequency: 'weekly' | 'biweekly' | 'm
   return `${names}${frequency === 'biweekly' ? ' (เว้นสัปดาห์)' : frequency === 'monthly' ? ' (เดือนละครั้ง)' : ''}`;
 }
 
-type Seed = { title?: string; location?: string; category?: Category; image?: string; place?: PlacePick; itinerary?: Array<{ time: string; title: string }>; date?: string; province?: string };
+type Seed = { title?: string; location?: string; category?: Category; image?: string; place?: PlacePick; itinerary?: Array<{ time: string; title: string }>; date?: string; province?: string; idea?: TeeIdea };
 
+// A ไอเดียตี้ (data/teeIdeas.ts) fills what it knows; the day, place and meeting point stay for the member
 const initialForm = (type: CreationEntityType, seed: Seed) => ({
-  title: seed.title ?? '',
-  category: seed.category ?? ('chill' as Category),
-  image: seed.image || PRESET_IMAGES[type][0].url,
-  description: '',
+  title: seed.title ?? seed.idea?.title ?? '',
+  category: seed.category ?? seed.idea?.mood ?? ('chill' as Category),
+  image: seed.image || (seed.idea && PRESET_IMAGES[type][MOOD_PRESET[seed.idea.mood] ?? 0]?.url) || PRESET_IMAGES[type][0].url,
+  description: seed.idea?.description ?? '',
   province: seed.place?.province && ALL_THAI_PROVINCES.includes(seed.place.province) ? seed.place.province : seed.province && ALL_THAI_PROVINCES.includes(seed.province) ? seed.province : 'กรุงเทพฯ',
   district: seed.place?.district ?? '',
   locationName: seed.location ?? seed.place?.name ?? '',
@@ -126,8 +128,8 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   scheduleType: 'single' as 'single' | 'recurring',
   // A day picked on สัปดาห์นี้ ("ตั้งตี้วันนั้น", BE-450), as YYYY-MM-DD
   date: seed.date && /^\d{4}-\d{2}-\d{2}$/.test(seed.date) ? seed.date : '',
-  startTime: '',
-  endTime: '',
+  startTime: seed.idea?.startTime ?? '',
+  endTime: seed.idea?.endTime ?? '',
   frequency: 'weekly' as 'weekly' | 'biweekly' | 'monthly',
   days: [] as DayOfWeek[],
   repeatUntil: '',
@@ -137,13 +139,13 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   placeId: seed.place?.placeId ?? '',
   onlinePlatform: 'zoom',
   onlineJoinUrl: '',
-  maxParticipants: 8,
+  maxParticipants: seed.idea?.maxParticipants ?? 8,
   targetGender: 'all' as 'all' | 'female_only' | 'male_only',
   targetAge: '',
-  whatToBring: [] as string[],
+  whatToBring: (seed.idea?.whatToBring ?? []) as string[],
   transportation: '',
   isSoloFriendly: true,
-  isBeginnerFriendly: true,
+  isBeginnerFriendly: seed.idea?.beginnerFriendly ?? true,
   isPetFriendly: false,
   isIntrovertFriendly: false,
   canBringFriend: false,
@@ -153,7 +155,9 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   // fair
   organizer: '',
   // The group on the ค้นพบ tabs: a meetup category (its mood follows) or a fair group
-  lifestyleCategory: '',
+  lifestyleCategory: seed.idea?.category ?? '',
+  // Which idea this draft started from, so a draft of another idea (or none) is not brought back over it
+  ideaId: seed.idea?.id ?? '',
   fairCategory: '',
   venueId: 'qsncc',
   startDate: '',
@@ -513,6 +517,8 @@ interface CreateEventModalProps {
   initialDate?: string;
   /** The province to start from when no place is given */
   initialProvince?: string;
+  /** A ไอเดียตี้ to start the ตี้ from */
+  initialIdea?: TeeIdea;
   /** When opened from /admin, bypasses member gates and publishes via admin APIs */
   adminMode?: boolean;
   onAdminCreated?: (message: string) => void;
@@ -521,15 +527,15 @@ interface CreateEventModalProps {
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = (props) => (props.isOpen ? <CreateDialog {...props} /> : null);
 
-function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, initialDate, initialProvince, adminMode = false, onAdminCreated, onCreateSuccess }: CreateEventModalProps) {
+function CreateDialog({ onClose, initialType, initialCategory, initialLocation, initialTitle, initialImage, initialPlace, initialItinerary, initialDate, initialProvince, initialIdea, adminMode = false, onAdminCreated, onCreateSuccess }: CreateEventModalProps) {
   const { userProfile, isOrganizer, isVenueOwner, isHost } = useAuth();
   const { member, isLoaded } = useMemberSession();
   const titleId = useId();
   const uid = useId();
   const bodyRef = useRef<HTMLDivElement>(null);
   const seed = useMemo<Seed>(
-    () => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage, place: initialPlace, itinerary: initialItinerary, date: initialDate, province: initialProvince }),
-    [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary, initialDate, initialProvince],
+    () => ({ title: initialTitle, location: initialLocation, category: initialCategory, image: initialImage, place: initialPlace, itinerary: initialItinerary, date: initialDate, province: initialProvince, idea: initialIdea }),
+    [initialTitle, initialLocation, initialCategory, initialImage, initialPlace, initialItinerary, initialDate, initialProvince, initialIdea],
   );
 
   const canCreate = adminMode || (Boolean(member) && member?.trust?.level !== 'new');
@@ -564,8 +570,10 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     let fromDraft = false;
     try {
       const saved = sessionStorage.getItem(draftKey(next));
-      if (saved) {
-        nextForm = { ...nextForm, ...(JSON.parse(saved) as Partial<Form>) };
+      const draft = saved ? (JSON.parse(saved) as Partial<Form>) : null;
+      // Tapping an idea starts from that idea; only a draft of the same idea comes back over it
+      if (draft && (!seed.idea || draft.ideaId === seed.idea.id)) {
+        nextForm = { ...nextForm, ...draft };
         // A plan the page hands over wins over an older draft's schedule
         if (seed.itinerary?.length) nextForm.itinerary = seed.itinerary;
         fromDraft = true;
@@ -1544,6 +1552,11 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       </header>
 
       <div ref={bodyRef} className="px-5 sm:px-8 py-5 overflow-y-auto flex-1 space-y-5">
+        {seed.idea && !restored && step === 0 && (
+          <p className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 leading-relaxed">
+            เริ่มจากไอเดีย &ldquo;{seed.idea.title}&rdquo; แล้ว แก้ได้ทุกช่อง เหลือเลือกวันกับที่นัด
+          </p>
+        )}
         {restored && step === 0 && (
           <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
             <p className="text-sm font-medium text-slate-700">นำข้อมูลที่กรอกค้างไว้กลับมาให้แล้ว</p>
