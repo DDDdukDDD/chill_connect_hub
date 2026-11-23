@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-457 · Songs on clips work where the browser has no AAC encoder; CSP allows WebAssembly and blob: workers (member report 2026-11-23)
+- **What changed:** a member's friend got "เครื่องนี้ใส่เพลงในคลิปไม่สำเร็จ…" on every clip with a song. The editor offers songs wherever WebCodecs video works (`canShrinkClips`), but mixing a song needs an AAC encoder, which Safari before 26 and Firefox do not have. `lib/media/clipCompress.ts` now loads `@mediabunny/aac-encoder` 1.62.1 (FFmpeg AAC in WebAssembly, own 1.3 MB chunk, matched to `mediabunny` 1.62.1) only when posting a clip with a song on such a device. **CSP (next.config.ts):** `script-src` gains `'wasm-unsafe-eval'` (WebAssembly compile, not JS eval) and a new `worker-src 'self' blob:` (the encoder's Worker; `/sw.js` still allowed). Checked in headless Chrome with the exact CSP: new policy encodes a 3 s AAC track through the WebAssembly encoder; the old policy blocks its blob: Worker. Production build passes.
+- **What to do about it:** after it reaches `main`, ask the friend to post a clip with a song again, and tell me the phone and browser (iPhone iOS version, or Android + browser) if it still fails. Not tried on a real phone yet.
+
 ### BE-456 · TR-035 smoke starters, TR-036 song sheet plays late (2026-11-23)
 - **What changed:** `scripts/smoke.mjs` counts as starter challenges only `rule.posts` without `posts.tagged` and with `count` 1 (dev: 10 → 5). `SongSheet` in `components/moments/SongBadge.tsx`: `unlock()` runs inside the tap; a `listenTurn` ref moved on by every tap, stop and close keeps a song that finishes loading late from starting in the background; a failed load sets the button back to "ฟังเพลง". TR-030..034 confirmed fixed and moved to `docs/archive/test-reports-fixed.md`; TR-035/036 ready to re-test.
 - **What to do about it:** try "ฟังเพลง" on a real iPhone (first tap plays; closing the sheet while it loads stays quiet).
