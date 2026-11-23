@@ -44,7 +44,8 @@ export function extractVisitBangkokFeed(xml: string, locale: string, now: number
 
     const rawDate = formatThaiDay(range.start);
     const rawEndDate = formatThaiDay(range.end);
-    const image = entry.match(/<enclosure url="([^"]+)"/)?.[1];
+    // The feed links Strapi's 156 px thumbnail; the same name without `thumbnail_` is the full poster (BE-459)
+    const image = entry.match(/<enclosure url="([^"]+)"/)?.[1]?.replace('/uploads/thumbnail_', '/uploads/');
 
     return [{
       source: 'Visit Bangkok (กทม.)',

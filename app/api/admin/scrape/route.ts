@@ -7,6 +7,9 @@ import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import type { SpotScrapeOptions } from '@/lib/scrapers/types';
 import { recomputeCuration } from '@/lib/spotCurationStore';
 
+// A full run also copies new posters to our storage (BE-459)
+export const maxDuration = 300;
+
 const DEFAULT_SPOT_LIMIT = 30;
 const MAX_SPOT_LIMIT = 100;
 
