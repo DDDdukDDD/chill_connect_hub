@@ -15,6 +15,9 @@ const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 const SAMPLE_IDS = new Set(MOCK_EVENTS.map((event) => event.id));
 
+/** Ids of the ตี้ whose dates roll forward, so jobs that act on past dates leave them alone (lib/db/endPastEvents.ts) */
+export const ROLLING_SAMPLE_IDS: readonly string[] = MOCK_EVENTS.filter((event) => event.eventType === 'community').map((event) => event.id);
+
 const toUtcDay = (day: CalendarDay) => Date.UTC(day.year, day.month, day.day);
 const fromUtcDay = (time: number): CalendarDay => {
   const date = new Date(time);

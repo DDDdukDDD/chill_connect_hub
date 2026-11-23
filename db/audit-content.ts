@@ -3,7 +3,9 @@
  * methods and never writes, so it is safe on the live database too.
  *
  *   npx tsx --env-file=.env.development.local db/audit-content.ts [--out=audit-dev.md] [--json=audit-dev.json]
- *   npx tsx --env-file=.env.local db/audit-content.ts --out=audit-live.md --json=audit-live.json
+ *   live (Git Bash; .env.local has no DATA_STORE or DATABASE_URL, so pass the direct connection; this script only reads):
+ *   DATA_STORE=postgres DATABASE_URL="$(grep ^POSTGRES_URL_NON_POOLING= .env.local | cut -d= -f2- | tr -d '"\r')" \
+ *     npx tsx db/audit-content.ts --out=audit-live.md --json=audit-live.json
  *   npx tsx db/audit-content.ts                      no database: the JSON files in data/
  *   npx tsx db/audit-content.ts --diff=audit-dev.json,audit-live.json
  *                                                    what the first has that the second does not (TAT places on dev)
@@ -325,6 +327,11 @@ async function main() {
     if (out) fs.writeFileSync(out, text);
     console.log(text);
     return;
+  }
+  // .env.local holds the live database's POSTGRES_* settings but not DATA_STORE / DATABASE_URL (Vercel sets those),
+  // so `--env-file=.env.local` alone would quietly audit the JSON files instead
+  if (!USE_POSTGRES && (process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL)) {
+    throw new Error('A database URL is set but DATA_STORE is not "postgres", so this would read data/*.json. See the header of db/audit-content.ts.');
   }
   const { report, snapshot } = await audit();
   const out = arg('out');

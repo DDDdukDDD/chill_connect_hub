@@ -31,7 +31,7 @@ interface ScrapeResultData {
   newCount: number;
   duplicateCount: number;
   duplicateDetails?: { rawTitle: string; reason: string }[];
-  sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; error?: string }>;
+  sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; skipped?: number; error?: string }>;
 }
 
 /** `initialProvince` opens the Spots tab with that province selected (e.g. from the coverage table) */
@@ -465,7 +465,7 @@ export function ScraperEngineView({ initialProvince }: { initialProvince?: strin
                 <div key={result.sourceId} className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2 text-xs last:border-0">
                   <span className="font-semibold text-slate-700">{result.sourceName}</span>
                   <span className={result.error ? 'text-rose-700' : 'text-slate-500'}>
-                    {result.error ? `ผิดพลาด · ${result.error}` : `พบ ${result.scanned} · ใหม่ ${result.imported} · ซ้ำ ${result.duplicates}`}
+                    {result.error ? `ผิดพลาด · ${result.error}` : `พบ ${result.scanned} · ใหม่ ${result.imported} · ซ้ำ ${result.duplicates}${result.skipped ? ` · ข้าม ${result.skipped} (ไม่มีจังหวัดหรือสถานที่)` : ''}`}
                   </span>
                 </div>
               ))}
