@@ -141,8 +141,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   - `scope: 'imported'` ควรรวมทั้ง `ttd-`, `osm-`, `osmb-` และ `tat-`
   - `scope: 'curated'` ต้องไม่รวม `osmb-` และ `tat-`
 - **Actual:** `scopeMatchers` เช็กเฉพาะ `id.startsWith('ttd-')` และ `id.startsWith('osm-')` ทำให้ `scope: 'osm'` และ `'imported'` ข้าม `osmb-` กับ `tat-` ทั้งหมด ขณะที่ `scope: 'curated'` (`!ttd- && !osm-`) เหมารวม draft ของ `tat-` และสาขาเชน `osmb-` เข้าไปด้วย
-- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 302–307)
-- **Status:** Ready to re-test
+- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 302–307) (Re-test 2026-11-23 on `a970630`: ตรวจ `scopeMatchers` ใน `app/api/admin/spots/route.ts` บรรทัด 302–310 — `osm` รวม `osm-`/`osmb-`, เพิ่ม `tat` (`tat-`), `imported` รวม `ttd-`/`tat-`/`osm-`/`osmb-` และ `curated` แยกเป็น `!isImported(id)` ครบถ้วน)
+- **Status:** Confirmed fixed
 - **Fix:** BE-431: `osm` รวม `osm-` และ `osmb-`, เพิ่ม scope `tat`, `imported` รวม `ttd-` `tat-` `osm-` `osmb-` และ `curated` คือที่เหลือทั้งหมด
 
 ### TR-031 · `db/migrations/0063_circle_events.sql`: ตาราง `app.circle_events` ยังไม่ได้เปิด Row Level Security (RLS)
@@ -153,8 +153,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   1. ตรวจสอบไฟล์ migration `db/migrations/0063_circle_events.sql` เทียบกับตารางอื่นใน schema `app` (เช่น `0059_pending_joins.sql`)
 - **Expected:** ตาราง `app.circle_events` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ตามมาตรฐานความปลอดภัยของฐานข้อมูลในโปรเจกต์
 - **Actual:** `0063_circle_events.sql` มีเฉพาะ `create table`, `create index` และ `grant` แต่ยังไม่ได้เปิด RLS และไม่ได้สร้าง policy
-- **Evidence:** `db/migrations/0063_circle_events.sql` (บรรทัด 1–12) เทียบกับ `db/migrations/0059_pending_joins.sql` (บรรทัด 13–15)
-- **Status:** Ready to re-test
+- **Evidence:** `db/migrations/0063_circle_events.sql` (บรรทัด 1–12) เทียบกับ `db/migrations/0059_pending_joins.sql` (บรรทัด 13–15) (Re-test 2026-11-23 on `a970630`: รัน `node --env-file=.env.development.local db/verify-security.mjs` บน dev DB — `PASS RLS on and forced on all 78 tables`)
+- **Status:** Confirmed fixed
 - **Fix:** BE-431: migration 0065 เปิดและบังคับ RLS พร้อม policy `runtime_all` บน `app.circle_events` (รันบน dev แล้ว `db/verify-security.mjs` ผ่าน 78/78 ตาราง; live ต้องรัน 0065)
 
 ### TR-032 · `GET /api/spots`: กรอง `chainBrand` หลังแบ่งหน้า ทำให้หน้าแรกๆ คืนรายการว่าง `[]` (`0.1 KB`) และ `totalCount` นับรวมสาขาเชน
@@ -165,8 +165,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   1. เรียก `GET /api/spots?limit=20` (โดยไม่ส่ง `q`) บน dev server ที่มีสาขาเชน `osmb-` (BE-424)
 - **Expected:** คืนรายชื่อสถานที่ท่องเที่ยว/คาเฟ่ที่ไม่ใช่สาขาเชนจำนวน 20 รายการ และ `pagination.totalCount` ไม่นับรวมสาขาเชนที่ซ่อนจากหน้าหลัก
 - **Actual:** `app/api/spots/route.ts` เรียก `db.findSpots({ page, limit })` ก่อนแล้วค่อย `.filter((spot) => !spot.chainBrand)` ทีหลัง เนื่องจากสาขาเชน 516 แห่งอยู่ช่วงบนของลำดับ หน้าแรกจึงได้สาขาเชนล้วนแล้วถูกกรองทิ้งหมด เหลือ `spots: []` (`0.1 KB`) และ `totalCount` ยังนับรวมสาขาเชน
-- **Evidence:** `app/api/spots/route.ts` (บรรทัด 49–65) — ผลทดสอบจริงบน dev server `GET /api/spots?limit=20` ตอบกลับ `200` ขนาด `0.1 KB` (`spots: []`)
-- **Status:** Ready to re-test
+- **Evidence:** `app/api/spots/route.ts` (บรรทัด 49–65) — ผลทดสอบจริงบน dev server `GET /api/spots?limit=20` ตอบกลับ `200` ขนาด `0.1 KB` (`spots: []`) (Re-test 2026-11-23 on `a970630`: ทดสอบจริงบน dev server `GET /api/spots?limit=20` ได้ `spots=20, chains=0, totalCount=2179` และ `GET /api/spots?q=Starbucks&limit=10` ได้ `spots=10, chains=10`)
+- **Status:** Confirmed fixed
 - **Fix:** BE-431: เพิ่ม `excludeChains` ใน `filterSpots` กรองสาขาเชนก่อนแบ่งหน้า บน dev หน้าแรกได้ 20 รายการ ไม่มีสาขาเชน และ `totalCount` ลดจาก 2,695 เหลือ 2,179 ค้นด้วย `q` ยังเจอสาขาเชนตามเดิม
 
 ### TR-033 · `/api/admin/spots`: Response ใหญ่ถึง `14.2 MB` เกินลิมิต Vercel Serverless (`4.5 MB`) และกิน Supabase Egress สูงมาก
@@ -178,8 +178,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   2. ตรวจสอบโค้ด `action: 'update'` ใน `app/api/admin/spots/route.ts`
 - **Expected:** `GET /api/admin/spots` แบ่งหน้า (pagination) และส่งเฉพาะฟิลด์ที่ตารางต้องใช้ให้อยู่ในขนาดที่ปลอดภัยต่อลิมิต Vercel Serverless (`4.5 MB`) และ `action: 'update'` ส่งเฉพาะ `updatedSpot` กลับ (ไม่ส่ง `spots: await getAllSpots()` ทั้งหมด)
 - **Actual:** `GET /api/admin/spots` ตอบกลับขนาด `14,156.9 KB` (~14.2 MB) และ `action: 'update'` ยังเรียก `spots: await getAllSpots()` ส่งกลับทั้งก้อนทุกครั้งที่แก้ไข 1 สถานที่ ซึ่งจะพังด้วย `FUNCTION_PAYLOAD_TOO_LARGE` บน Vercel Production ทันทีที่โปรโมตข้อมูล TAT/OSM ขึ้นเว็บจริง
-- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 260–268) — วัดขนาดจริงบน dev server ได้ `14,156.9 KB`
-- **Status:** Ready to re-test
+- **Evidence:** `app/api/admin/spots/route.ts` (บรรทัด 260–268) — วัดขนาดจริงบน dev server ได้ `14,156.9 KB` (Re-test 2026-11-23 on `a970630`: ล็อกอินแอดมินเรียก `GET /api/admin/spots` บน dev server ได้ `spots=20`, ขนาด `28.2 KB` จากทั้งหมด `6535` แห่ง; เรียก `?limit=999` ถูกจำกัดปลอดภัยที่ `100` รายการ `139.0 KB`; และ `POST` คืนเฉพาะ `spot` ที่แก้)
+- **Status:** Confirmed fixed
 - **Fix:** BE-431: GET แบ่งหน้าเสมอ (ไม่ส่ง `page` = หน้า 1, ค่าเริ่มต้น 20 สูงสุด 200 รายการ) หน้าละ 20 รายการหนัก 27.5 KB บน dev (ทั้งก้อนเดิม 14 MB) และ POST ทุกแบบส่งกลับเฉพาะ `spot` ที่แก้ ไม่ส่ง `spots` ทั้งหมดแล้ว หน้าแอดมินทุกจุดส่ง `page` อยู่แล้ว ไม่กระทบหน้าจอ
 
 ### TR-034 · `db/migrations/0064_apple_tokens.sql`: ตาราง `app.apple_tokens` ยังไม่ได้เปิด Row Level Security (RLS)
@@ -190,9 +190,35 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   1. รันตรวจสอบ `relrowsecurity` และ `relforcerowsecurity` ของทุกตารางใน schema `app` บน dev DB (ตาม `db/verify-security.mjs`)
 - **Expected:** ตาราง `app.apple_tokens` เปิด `enable row level security`, `force row level security` และสร้าง policy `runtime_all` สำหรับ `app_runtime` ครบเหมือนตารางอื่น (76/78 ตารางผ่านแล้ว)
 - **Actual:** `app.apple_tokens` มี `relrowsecurity = false` และ `relforcerowsecurity = false` ทำให้ `db/verify-security.mjs` ไม่ผ่าน (พร้อมกับ `app.circle_events` ใน `TR-031`)
-- **Evidence:** `db/migrations/0064_apple_tokens.sql` (บรรทัด 1–9) — ตรวจจาก `pg_class` บน dev DB: `apple_tokens(rls=false,force=false)`
-- **Status:** Ready to re-test
+- **Evidence:** `db/migrations/0064_apple_tokens.sql` (บรรทัด 1–9) — ตรวจจาก `pg_class` บน dev DB: `apple_tokens(rls=false,force=false)` (Re-test 2026-11-23 on `a970630`: รัน `node --env-file=.env.development.local db/verify-security.mjs` บน dev DB — `PASS RLS on and forced on all 78 tables`)
+- **Status:** Confirmed fixed
 - **Fix:** BE-431: migration 0065 เปิดและบังคับ RLS พร้อม policy `runtime_all` บน `app.apple_tokens` (dev ผ่าน 78/78 ตาราง; live ต้องรัน 0065 พร้อม 0064)
+
+### TR-035 · `scripts/smoke.mjs`: `npm run smoke` ไม่ผ่าน 2 ข้อ (`5/10` ชาเลนจ์เริ่มต้น) หลังมีชาเลนจ์ที่ใช้ `posts.tagged` / โพสต์หลายครั้ง (BE-438)
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/main` `a970630`), 2026-11-23
+- **Page and screen:** `npm run smoke` (dev server + dev DB)
+- **Steps:**
+  1. รัน `npm run dev` แล้วรัน `npm run smoke`
+- **Expected:** `scripts/smoke.mjs` กรองเฉพาะชาเลนจ์เริ่มต้นที่จบได้ด้วยโพสต์สถานที่ 1 ครั้งโดยไม่ต้องแท็กจากหน้าชาเลนจ์ (`!q.rule.posts.tagged` และจำนวนโพสต์ 1 ครั้ง) เพื่อให้ smoke test ผ่านครบทั้ง 28 ข้อ
+- **Actual:** บรรทัด 86 ใช้ `const starters = quests.filter((q) => q.rule?.posts);` ทำให้เหมารวมชาเลนจ์วิ่ง ATMBKK ที่ตั้ง `posts.tagged: true` (BE-438) และชาเลนจ์ที่ต้องโพสต์มากกว่า 1 ครั้ง เข้าไปด้วย (รวม 10 ชาเลนจ์) ส่งผลให้ไม่ผ่าน 2 ข้อ: `one post at a place finishes every starter challenge taken (5/10)` และ `starter XP counts (fromQuests 310 of 1560)`
+- **Evidence:** `scripts/smoke.mjs` (บรรทัด 86, 102–105) — ผลรัน `npm run smoke` บน `a970630`: `26 passed, 2 failed`
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
+
+### TR-036 · `SongBadge` (`SongSheet`): กด "ฟังเพลง" แล้วหยุดหรือปิดหน้าต่างระหว่างโหลด เพลงจะเริ่มเล่นค้างในพื้นหลัง และไม่เรียก `unlock()` ในจังหวะแตะ
+- **Severity:** Medium
+- **Tested on:** `tester` branch (merged `origin/main` `a970630`), 2026-11-23
+- **Page and screen:** `SongSheet` (หน้าต่างเพลงเมื่อแตะชื่อเพลงบนคลิป), มือถือ/iOS และเดสก์ท็อป
+- **Steps:**
+  1. เปิดหน้าต่างเพลง (`SongSheet`) บนคลิปที่ใส่เพลง (`BE-446`/`BE-448`)
+  2. กดปุ่ม `ฟังเพลง` ขณะเพลงยังไม่ถูกแคชในหน่วยความจำ (เช่น เน็ตช้า) แล้วกด `หยุดฟัง` หรือปิดหน้าต่างก่อน `loadSong(track.src)` โหลดเสร็จ
+  3. (บน iPhone/Safari) กด `ฟังเพลง` ครั้งแรกบนหน้าที่ยังไม่เคยปลดล็อก `AudioContext`
+- **Expected:** เรียก `own.unlock()` ทันทีในจังหวะแตะก่อนรอโหลด, ถ้าผู้ใช้กดหยุดหรือปิดหน้าต่างก่อนโหลดเสร็จต้องไม่เริ่มเล่นเพลง, และถ้าโหลดเพลงล้มเหลวต้องคืนปุ่มกลับเป็น `ฟังเพลง` (`setListening(false)`)
+- **Actual:** `SongSheet.listen()` ใน `components/moments/SongBadge.tsx` รอ `loadSong(track.src)` ให้เสร็จก่อนค่อยเรียก `own.play(...)` โดยไม่ได้เรียก `own.unlock()` ในจังหวะคลิก และไม่ได้ตรวจว่าผู้ใช้กดหยุดหรือปิดหน้าต่างไปแล้ว (`own.stop()` ถูกเรียกก่อน `.then()` จะเรียก `own.play(...)` ซึ่งเพิ่ม `this.turn` ใหม่และเริ่มเล่นเสียงค้างในพื้นหลัง) รวมถึง `.catch(() => undefined)` ไม่ได้รีเซ็ต `setListening(false)`
+- **Evidence:** `components/moments/SongBadge.tsx` (บรรทัด 114–130) เทียบกับ `lib/media/songPlayer.ts` (บรรทัด 121–145)
+- **Status:** Open
+- **Fix:** (Claude Code adds the commit)
 
 ---
 
