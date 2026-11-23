@@ -260,6 +260,15 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
     setStatusFilter('upcoming');
   };
 
+  // Anything that narrows the list: the summary offers to clear it, and an empty list says "nothing matches"
+  const filtersOn = Boolean(
+    searchQuery || selectedCategory !== 'all' || customStartDate || priceFilter !== 'all' || openOnly || sortBy !== 'soonest' || statusFilter !== 'upcoming',
+  );
+  // No ตี้ open at all (a quiet week, or before the first member hosts): the ideas take the list's place instead of a
+  // "nothing matches your filters" box with a reset button that resets nothing
+  // (a province with none still says so: other provinces may have some)
+  const nothingOpen = !filtersOn && selectedProvince === 'all' && filteredEvents.length === 0;
+
   const handleResetAll = () => {
     setSearchQuery('');
     setSelectedCategory('all');
@@ -331,13 +340,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
             </button>
           }
           summary={
-            (searchQuery ||
-              selectedCategory !== 'all' ||
-              customStartDate ||
-              priceFilter !== 'all' ||
-              openOnly ||
-              sortBy !== 'soonest' ||
-              statusFilter !== 'upcoming') && (
+            filtersOn && (
               <button type="button" onClick={handleResetAll} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer">
                 ล้างตัวกรองทั้งหมด
               </button>
@@ -406,7 +409,7 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
               <li key={event.id}>{tileFor(event, event.id === sponsoredId)}</li>
             ))}
           </ul>
-        ) : (
+        ) : nothingOpen ? null : (
           <EmptyResults isFavoritesOnly={sortBy === 'favorites'} onReset={handleResetAll} />
         )}
 
@@ -416,8 +419,9 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         {/* Ideas to start from, once the list has been looked through, not on top of it (owner 2026-11-24: instead of
             sample ตี้, so a quiet week does not look empty) */}
         {sortBy !== 'favorites' && (
-          <div className="pt-4">
+          <div className={nothingOpen ? '' : 'pt-4'}>
             <TeeIdeaRail
+              inSection={nothingOpen}
               onPick={(idea) => {
                 setPickedIdea(idea);
                 openCreate();

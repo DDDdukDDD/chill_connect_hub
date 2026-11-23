@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-464 · Sample ตี้ stop coming back; idea row arrows; no ตี้ open = ideas, not "nothing matches" (owner 2026-11-24)
+- **What changed:** after BE-462 ran on live, 62 sample ตี้/อีเวนต์ came back a minute later: every server start put the missing `MOCK_EVENTS` back (`normalizeStoredEvents` in `lib/eventNormalization.ts`). It now takes `{ addCore }`; the Postgres adapter passes `false`, and admin "reset and seed" (`resetAndSeedAllEvents`) adds no sample ตี้ on Postgres. The JSON store still starts with them. The idea row (`TeeIdeaRail`) uses the shared `ScrollRow` arrows from iPad up. On /community, when no ตี้ is open and nothing narrows the list (any province), the ideas take the list's place under the heading "ยังไม่มีตี้เปิดอยู่ตอนนี้…" instead of the "ไม่พบ… รีเซ็ตตัวกรอง" box. Dev: removal re-run, server restarted, 0 came back.
+- **What to do about it:** merge to `main`, wait for the deploy, then owner runs on live again: `node db/remove-sample-data.mjs` (expect 62 ตี้/อีเวนต์, nothing else) then `--apply`. BE-463 needs no re-run (already applied).
+
+---
+
 ### BE-463 · Launch set of 35 real challenges (owner 2026-11-24)
 - **What changed:** Antigravity's blueprint (`docs/CHALLENGE_BLUEPRINT_2027.md`, on `origin/tester`, not merged: the same commit rewrote LEGAL_DRAFT clause 7 back to licensed draws, against BE-458) is now data: `db/content/challenges-2027.json` + `db/apply-challenges.mjs` (dry run by default). 27 items take over an existing challenge (same id, joins, moments; new title, rule, dates, XP; stale steps, totals and made-up partner rewards dropped; cover kept), 8 are new with borrowed covers, 6 close. Rules checked against `QuestRule`; the plan challenge has no `rule` (plan counting needs `!rule`). Starter slugs differ between dev and live, so the script falls back to the title. Applied on dev.
 - **What to do about it:** owner runs on live after BE-462's removal: `node db/apply-challenges.mjs db/content/challenges-2027.json` then `--apply`. Covers: when Antigravity's 35 images arrive, put them on R2 (or `public/images/challenges/<cover>.webp`) and set each item's `image`; `cover` in the file is the image name.
