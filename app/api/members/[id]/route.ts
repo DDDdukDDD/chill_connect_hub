@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { finishesOf } from '@/lib/social/questFinishes';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { memberRepository } from '@/lib/members';
 import { followerCount, publicProfileOf } from '@/lib/members/safety';
 import { hostReviewSummary } from '@/lib/social/reviews';
@@ -9,7 +8,6 @@ import { getSessionMember, refreshMemberStatus } from '@/lib/members/session';
 
 // Public profile of a member: only what they chose to show, plus badges the server really checked
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
-  await ensureSampleMembers(); // development sample accounts for the sample posts
   const { id } = await context.params;
   const viewer = await getSessionMember(request);
   const found = await memberRepository.findById(id);

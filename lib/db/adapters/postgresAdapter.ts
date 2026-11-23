@@ -1,4 +1,4 @@
-import { EventItem, ChallengeQuest, MOCK_CHALLENGES } from '@/data/mockData';
+import { EventItem, ChallengeQuest } from '@/data/mockData';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { IDataRepository } from '../repository';
 import {
@@ -19,7 +19,7 @@ import { filterEvents, filterSpots, filterQuests, paginateArray, isEventEnded } 
 import { hasMeetupStarted } from '../../dateUtils';
 import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
-import { SEED_QUEST_TEXT_VERSION, addNewSeedQuests, applyQuestLifecycle, copySeedQuestRules, refreshSeedQuestTexts, upgradeLegacySeedQuests } from '../../questLifecycle';
+import { applyQuestLifecycle } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
 import { unstable_cache } from 'next/cache';
 import { cacheManager } from '../../cache';
@@ -118,24 +118,9 @@ export class PostgresAdapter implements IDataRepository {
       cacheManager.invalidateTag('events');
     }
 
-    const quests = await this.loadQuests();
-    const [seedRow] = await sql()`select value from app.app_settings where key = 'quest_seeds'`;
-    const seeds = (seedRow?.value ?? {}) as { ids?: string[]; textVersion?: number };
-    const upgraded = upgradeLegacySeedQuests(quests, MOCK_CHALLENGES);
-    const ruled = copySeedQuestRules(upgraded.quests, MOCK_CHALLENGES);
-    const seeded = addNewSeedQuests(ruled.quests, MOCK_CHALLENGES, seeds.ids);
-    const refreshed = refreshSeedQuestTexts(seeded.quests, MOCK_CHALLENGES, seeds.textVersion ?? SEED_QUEST_TEXT_VERSION);
-    if (upgraded.changed || ruled.changed || seeded.changed || refreshed.changed) {
-      const before = new Map(quests.map((q) => [q.id, JSON.stringify(q)]));
-      const touched = refreshed.quests.filter((q) => before.get(q.id) !== JSON.stringify(q));
-      const seedIds = new Set(seeded.seededIds);
-      await sql().begin(async (tx) => {
-        await upsert(tx, 'quests', touched.map((q) => questToRow(q, { isSample: seedIds.has(q.id) })));
-        await tx`insert into app.app_settings (key, value) values ('quest_seeds', ${tx.json({ ids: seeded.seededIds, textVersion: SEED_QUEST_TEXT_VERSION })})
-                 on conflict (key) do update set value = excluded.value, updated_at = now()`;
-      });
-      cacheManager.invalidateTag('quests');
-    }
+    // Challenges are no longer copied in from the sample list (MOCK_CHALLENGES) or have their texts and rules
+    // rewritten from it (2026-11-24, sample data removed before launch): the database holds only what staff and
+    // the content scripts put there. The JSON store (no-database mode) still seeds them.
   }
 
   /** Inside a transaction this must use its `tx`: a server has one connection, which that transaction is holding */

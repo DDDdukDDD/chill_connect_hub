@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { findPublicMoment } from '@/lib/moments/service';
 import { metaDescription, pageMetadata } from '@/lib/site';
 import { breadcrumbJsonLd, jsonLdHtml, momentJsonLd } from '@/lib/structuredData';
@@ -11,7 +10,6 @@ import { momentTargetHref, momentTitle } from '@/components/moments/momentTarget
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ full?: string }> };
 
 const getMoment = cache(async (id: string) => {
-  await ensureSampleMembers(); // development sample accounts for the sample posts
   return findPublicMoment(id);
 });
 

@@ -11,11 +11,16 @@ import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRa
  * plainly they are ideas. Tapping one opens the create dialog filled in from it (data/teeIdeas.ts); the member picks
  * the day and the place. Open layout, one row that scrolls sideways at every width.
  */
-export function TeeIdeaRail({ onPick }: { onPick: (idea: TeeIdea) => void }) {
+/** `inSection`: placed inside a section that has its own heading (the landing's ตี้ row when none is open), so a
+ * smaller heading that says why the ideas are there */
+export function TeeIdeaRail({ onPick, inSection = false }: { onPick: (idea: TeeIdea) => void; inSection?: boolean }) {
+  const Heading = inSection ? 'h3' : 'h2';
   return (
     <section aria-labelledby="tee-ideas-title">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="tee-ideas-title" className="text-lg font-bold text-slate-900">ไม่รู้จะตั้งตี้อะไร เริ่มจากไอเดียนี้ได้เลย</h2>
+        <Heading id="tee-ideas-title" className={inSection ? 'text-base font-semibold text-slate-900' : 'text-lg font-bold text-slate-900'}>
+          {inSection ? 'ยังไม่มีตี้เปิดอยู่ตอนนี้ เริ่มตี้แรกจากไอเดียนี้ได้เลย' : 'ไม่รู้จะตั้งตี้อะไร เริ่มจากไอเดียนี้ได้เลย'}
+        </Heading>
       </div>
       <p className="mt-0.5 text-sm text-slate-600">กดไอเดียที่ชอบ ฟอร์มจะกรอกไว้ให้ เหลือเลือกวันกับที่นัด</p>
       <ul className="mt-3 flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
