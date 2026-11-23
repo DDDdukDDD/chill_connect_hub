@@ -20,6 +20,10 @@ Item template:
 
 ---
 
+### BE-456 · TR-035 smoke starters, TR-036 song sheet plays late (2026-11-23)
+- **What changed:** `scripts/smoke.mjs` counts as starter challenges only `rule.posts` without `posts.tagged` and with `count` 1 (dev: 10 → 5). `SongSheet` in `components/moments/SongBadge.tsx`: `unlock()` runs inside the tap; a `listenTurn` ref moved on by every tap, stop and close keeps a song that finishes loading late from starting in the background; a failed load sets the button back to "ฟังเพลง". TR-030..034 confirmed fixed and moved to `docs/archive/test-reports-fixed.md`; TR-035/036 ready to re-test.
+- **What to do about it:** try "ฟังเพลง" on a real iPhone (first tap plays; closing the sheet while it loads stays quiet).
+
 ### BE-455 · อีเวนต์ sources are scraped every week (owner 2026-11-23)
 - **What changed:** new `GET /api/cron/weekly` (`maxDuration` 300) runs `lib/weeklyEventScrape.ts`: every active อีเวนต์ source once, the same as the admin button, so new items wait in the review queue. `.github/workflows/weekly-jobs.yml` calls it Monday 03:17 Bangkok; a second call within `WEEKLY_SCRAPE_GAP_DAYS` (6, `lib/eventImportRules.ts`) does nothing, kept in `app.app_settings` key `weekly_event_scrape`. Each run writes a `scrape.events` line to the admin audit log. The cron secret check moved to `lib/cronAuth.ts` (hourly uses it too). Admin "วิธีคิดของระบบ" has a new topic, `event-imports`. Tried on dev: 13.5 s, 0 new / 140 duplicates, second call skipped.
 - **What to do about it:** nothing; it uses the existing `CRON_SECRET` GitHub secret. Run it now from GitHub > Actions > Weekly jobs > Run workflow after the merge if you do not want to wait for Monday.

@@ -83,7 +83,9 @@ async function run() {
 
   console.log('\nStarter challenges and the life map');
   const quests = (await A.call('/api/quests?limit=100')).quests ?? [];
-  const starters = quests.filter((q) => q.rule?.posts);
+  // Starters finish with one post at a place; challenges that need posts made from their page (posts.tagged, BE-438)
+  // or more than one post are not starters (TR-035)
+  const starters = quests.filter((q) => q.rule?.posts && !q.rule.posts.tagged && (q.rule.count ?? 1) <= 1);
   check('five starter challenges exist', starters.length >= 5, `${starters.length} found; run node db/seed-starter-quests.mjs`);
   for (const q of starters) await A.call('/api/quests/join', 'POST', { questId: q.id, action: 'join' });
   const row = (await A.call('/api/circles')).items ?? [];

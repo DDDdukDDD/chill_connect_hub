@@ -87,6 +87,8 @@ type ClipCard = { id: string; images: string[] };
 /** The song's own sheet: listen, save for one's own clip, and the clips that use it */
 function SongSheet({ track, onClose }: { track: MusicTrack; onClose: () => void }) {
   const player = useRef<SongPlayer | null>(null);
+  /** Moved on by every tap, stop and close, so a song that finishes loading late stays quiet (TR-036) */
+  const listenTurn = useRef(0);
   const [listening, setListening] = useState(false);
   const [loadingSong, setLoadingSong] = useState(false);
   const [saved, setSaved] = useState(() => readSavedSongs().includes(track.id));
@@ -105,8 +107,10 @@ function SongSheet({ track, onClose }: { track: MusicTrack; onClose: () => void 
         setTotal(typeof data?.pagination?.totalCount === 'number' ? data.pagination.totalCount : null);
       })
       .catch(() => live && setClips([]));
+    const turns = listenTurn;
     return () => {
       live = false;
+      turns.current += 1;
       own.stop();
     };
   }, [track.id]);
@@ -114,19 +118,30 @@ function SongSheet({ track, onClose }: { track: MusicTrack; onClose: () => void 
   const listen = () => {
     const own = player.current;
     if (!own) return;
+    const turn = ++listenTurn.current;
     if (listening) {
       own.stop();
+      setLoadingSong(false);
       return setListening(false);
     }
+    // Phones allow sound only from inside the tap, before anything is awaited
+    own.unlock();
     // The clip behind would sing along with its own copy of the song
     document.querySelectorAll('video').forEach((v) => v.pause());
     setListening(true);
     setLoadingSong(true);
     // From the song's best part, as the editor starts it (BE-448)
     void loadSong(track.src)
-      .then((song) => own.play(track.src, songHook(song, 15), 0.9))
-      .catch(() => undefined)
-      .finally(() => setLoadingSong(false));
+      .then((song) => {
+        if (turn !== listenTurn.current) return;
+        return own.play(track.src, songHook(song, 15), 0.9);
+      })
+      .catch(() => {
+        if (turn === listenTurn.current) setListening(false);
+      })
+      .finally(() => {
+        if (turn === listenTurn.current) setLoadingSong(false);
+      });
   };
 
   return (
