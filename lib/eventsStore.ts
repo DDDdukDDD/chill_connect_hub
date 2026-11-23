@@ -11,6 +11,7 @@ import { notifyReview } from './social/notifications';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import { PROVINCE_ALIASES } from './db/postgres/rows.mjs';
 import { copyPosterToOwnMedia, eachLimited } from './media/posterCopy';
+import { USE_POSTGRES } from './db/postgres/client';
 
 export { getCoreCommunityEvents };
 
@@ -153,7 +154,8 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
 
 // Reset and seed database with BOTH Core Community Events AND Fresh Scraped Bangkok Events
 export async function resetAndSeedAllEvents(): Promise<{ totalCount: number; events: AdminEventItem[] }> {
-  const coreCommunityEvents = getCoreCommunityEvents();
+  // The database gets no sample ตี้ back (2026-11-24); the JSON store still starts with them
+  const coreCommunityEvents = USE_POSTGRES ? [] : getCoreCommunityEvents();
   const rawEvents = await fetchLiveRawEvents();
   const allScrapedFresh: AdminEventItem[] = rawEvents.map((raw, idx) => ({
     ...processRawEventWithAI(raw, idx + 1),
