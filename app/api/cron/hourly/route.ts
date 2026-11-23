@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
 import { endPastEvents } from '@/lib/db/endPastEvents';
+import { copyEventPosters } from '@/lib/media/eventPosterBackfill';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
@@ -28,6 +29,8 @@ export async function GET(request: Request) {
   await run('shortTrips', () => cancelShortTrips());
   // ตี้ and อีเวนต์ past their end get status ended (after trips are called off, so those stay cancelled)
   await run('endPastEvents', () => endPastEvents());
+  // อีเวนต์ posters onto our own storage, 25 an hour (BE-459)
+  await run('eventPosters', () => copyEventPosters());
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question

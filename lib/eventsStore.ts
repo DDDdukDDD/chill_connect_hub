@@ -10,6 +10,7 @@ import { sanitizeRichHtml } from './safeHtml';
 import { notifyReview } from './social/notifications';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import { PROVINCE_ALIASES } from './db/postgres/rows.mjs';
+import { copyPosterToOwnMedia, eachLimited } from './media/posterCopy';
 
 export { getCoreCommunityEvents };
 
@@ -111,6 +112,13 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
       }
     }
   }
+
+  // Posters are kept on our own storage (BE-459); one that cannot be copied keeps its source link and is tried again
+  // by the hourly poster job
+  await eachLimited(newItems, 4, async (item) => {
+    const own = await copyPosterToOwnMedia(item.image);
+    if (own) item.image = own;
+  });
 
   // Prepend new non-duplicate items through the repository (single writer for events)
   await db.createEvents(newItems);
