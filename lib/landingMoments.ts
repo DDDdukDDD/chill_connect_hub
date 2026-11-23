@@ -17,7 +17,7 @@ export async function landingMoments(): Promise<WallMoment[]> {
     const people = new Set<string>();
     const picked: WallMoment[] = [];
     const ranked = moments
-      .filter((m) => m.images?.[0] && !m.video && m.authorId && m.userAvatar)
+      .filter((m) => m.images?.[0] && !m.video && !m.isSample && m.authorId && m.userAvatar)
       .sort((a, b) => Number(Boolean(b.caption?.trim())) - Number(Boolean(a.caption?.trim())));
     for (const m of ranked) {
       if (people.has(m.authorId!)) continue;

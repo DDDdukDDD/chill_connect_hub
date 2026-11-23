@@ -127,6 +127,13 @@ Supabase แจ้งว่า egress เกินโควตา 5.5 GB แล�
 
 ถ้าลบเร็วไปหน้าเว็บจะดูโล่งระหว่างทดสอบ ต้องสำรองข้อมูลก่อนลบ
 
+**24 พ.ย.: โค้ดและสคริปต์เสร็จแล้ว (BE-461..463) ทำบน dev แล้ว เหลือเจ้าของรันบน live ตามลำดับ:**
+- [ ] `เจ้าของ` **ก่อน:** merge `claude` เข้า `main` แล้วรอ deploy เสร็จ (โค้ดเก่าบนเว็บจริงจะเติมชาเลนจ์ตัวอย่างกลับเมื่อเซิร์ฟเวอร์เริ่มใหม่ ถ้าลบก่อน merge)
+- [ ] `เจ้าของ` `node db/remove-sample-data.mjs` ดูตัวเลข แล้วรันอีกครั้งพร้อม `--apply` (สำรองข้อมูลให้เองก่อนลบ)
+- [ ] `เจ้าของ` `node db/apply-challenges.mjs db/content/challenges-2027.json` ดูรายการ แล้วรันพร้อม `--apply`
+- [ ] `เจ้าของ` ตรวจวัน เวลา สถานที่ และลิงก์ทางการของ ATMBKK (`/events/live-agg-30`) ก่อนตั้งตี้
+- [ ] `Antigravity` รูปปกชาเลนจ์ 35 รูปตามชื่อในช่อง `cover` ของ `db/content/challenges-2027.json` ตอนนี้ 8 อันใหม่ยืมรูปไปก่อน
+
 **โค้ดและบัญชี** (`Claude`)
 - [ ] บัญชีตัวอย่าง 24 บัญชี (`@sample.invalid`) พร้อมโพสต์: ลบ `withoutSampleHandle`, `data/sampleMembers.ts`, `lib/members/sampleMembers.ts` และการเรียก `ensureSampleMembers()` ใน `app/api/members/[id]`, `app/api/members/suggested`, `app/api/moments`, `app/moments/page.tsx`, `app/moments/[id]/page.tsx`
 - [ ] โพสต์ตัวอย่าง: `MOCK_POSTS` และการสร้างอัตโนมัติใน `lib/moments/jsonMomentRepository.ts`
