@@ -6,6 +6,7 @@ import { AdminPageHeader, AdminBadge } from './AdminUI';
 import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou';
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
+import { WEEKLY_SCRAPE_GAP_DAYS } from '@/lib/eventImportRules';
 import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
@@ -488,6 +489,23 @@ const TOPICS: Topic[] = [
           'คาเฟ่ เบเกอรี่ บาร์ และแกลเลอรีจาก OSM (รหัส osmb-…) ไม่มีรูปมา จึงเผยแพร่ไม่ได้จนกว่าจะใส่รูปจริงของร้าน รูปสต็อกไม่นับ และปุ่มเติมรูปอัตโนมัติข้ามร้านเหล่านี้',
           'คำบรรยายของร้านจาก OSM เขียนจากข้อมูลจริงเท่านั้น (ประเภท ย่าน Wi-Fi ที่นั่งด้านนอก) ไม่แต่งบรรยากาศเอง',
           'สาขาร้านเครือ (Starbucks คาเฟ่ อเมซอน ฯลฯ) เผยแพร่ทันทีโดยไม่ต้องมีรูป แต่ซ่อนจากหน้ารวม ร้านใกล้เคียง หน้าแรก sitemap และ Google ค้นเจอเฉพาะตอนเลือกสถานที่ในโมเมนต์หรือจุดนัดตี้ ชื่อสาขาตั้งจากห้างที่อยู่ใกล้ ถ้าไม่มีใช้ถนนหรือเขต',
+        ]}
+      />
+    ),
+  },
+  {
+    id: 'event-imports',
+    title: 'อีเวนต์ที่ดึงมาและอีเวนต์ที่จบแล้ว',
+    summary: 'ระบบดึงอีเวนต์จากแหล่งทางการทุกสัปดาห์ เข้าคิวรอทีมงานอนุมัติ และตั้งสถานะจบแล้วให้เองทุกคืน',
+    updated: 'BE-455',
+    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/db/endPastEvents.ts', '.github/workflows/weekly-jobs.yml'],
+    body: (
+      <List
+        items={[
+          `ทุกวันจันทร์ตี 3 (เวลาไทย) ระบบดึงอีเวนต์จากทุกแหล่งที่เปิดอยู่ในหน้าแหล่งข้อมูล ครั้งเดียวต่อสัปดาห์ เรียกซ้ำภายใน ${WEEKLY_SCRAPE_GAP_DAYS} วันจะไม่ดึงอีก ผลขึ้นในประวัติการทำงานของแอดมิน`,
+          'อีเวนต์ใหม่เข้าคิวตรวจเหมือนกดปุ่มดึงเอง ยังไม่ขึ้นเว็บจนกว่าทีมงานอนุมัติ (ยกเว้นเปิดเผยแพร่อัตโนมัติไว้)',
+          'อีเวนต์ที่ซ้ำกับที่มีอยู่ไม่ถูกเพิ่ม ส่วนรายการที่ไม่มีจังหวัดหรือสถานที่ถูกข้ามและนับเป็น "ข้าม"',
+          'ทุกคืน ตี้และอีเวนต์ที่เลยเวลาจบแล้วถูกตั้งสถานะ "จบแล้ว" และปิดรับคน ยกเว้นตี้ตัวอย่างที่เลื่อนวันเอง กิจกรรมประจำ และที่ยกเลิกไปแล้ว',
         ]}
       />
     ),
