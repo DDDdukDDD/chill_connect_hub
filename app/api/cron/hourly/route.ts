@@ -3,6 +3,7 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
 import { endPastEvents } from '@/lib/db/endPastEvents';
 import { copyEventPosters } from '@/lib/media/eventPosterBackfill';
+import { copyPlacePhotos } from '@/lib/media/placePhotoBackfill';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
@@ -14,6 +15,8 @@ import { rebuildCreatorDaily } from '@/lib/social/creatorDaily';
  * allows only daily crons. Both send `Authorization: Bearer <CRON_SECRET>`. Each job is safe to run twice.
  */
 export const dynamic = 'force-dynamic';
+// Photo copies take up to a minute of a run; the caller waits 120 s
+export const maxDuration = 120;
 
 export async function GET(request: Request) {
   if (!isCronAuthorized(request)) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -31,6 +34,8 @@ export async function GET(request: Request) {
   await run('endPastEvents', () => endPastEvents());
   // อีเวนต์ posters onto our own storage, 25 an hour (BE-459)
   await run('eventPosters', () => copyEventPosters());
+  // Place photos from Wikimedia and TAT onto our own storage, one batch and one write a run (2026-11-23)
+  await run('placePhotos', () => copyPlacePhotos());
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question

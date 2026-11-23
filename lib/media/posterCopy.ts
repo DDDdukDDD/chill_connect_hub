@@ -61,15 +61,16 @@ async function put(config: R2Config, key: string, body: Buffer): Promise<boolean
 
 /**
  * The link of our copy of `src` (made now if it is not stored yet), `src` itself when it is already ours, or null when
- * the poster cannot be copied (no R2 settings, the site refuses, not an image). Never throws.
+ * the poster cannot be copied (no R2 settings, the site refuses, not an image). Never throws. Place photos use the same
+ * copy in their own `folder` (lib/media/placePhotoBackfill.ts).
  */
-export async function copyPosterToOwnMedia(src: string | undefined): Promise<string | null> {
+export async function copyPosterToOwnMedia(src: string | undefined, folder = FOLDER): Promise<string | null> {
   if (!src) return null;
   if (isOwnMedia(src)) return src;
   const config = r2Config();
   if (!config) return null;
   try {
-    const { original, small } = smallCopyKeys(`${FOLDER}/${createHash('sha256').update(src).digest('hex').slice(0, 32)}.webp`);
+    const { original, small } = smallCopyKeys(`${folder}/${createHash('sha256').update(src).digest('hex').slice(0, 32)}.webp`);
     const publicUrl = `${config.publicUrl}/${original}`;
     // Already copied by an earlier import: nothing to download
     const head = await r2Fetch(config, r2ObjectUrl(config, original), { method: 'HEAD' });
