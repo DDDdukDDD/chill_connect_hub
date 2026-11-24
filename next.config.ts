@@ -9,7 +9,10 @@ const isDev = process.env.NODE_ENV === 'development';
 // frames only for Google Maps.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  // wasm-unsafe-eval lets WebAssembly compile (not JS eval): the AAC encoder for songs on clips where the browser has none
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}`,
+  // That encoder runs in a Worker made from a blob: URL; /sw.js is the app's own service worker
+  "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",

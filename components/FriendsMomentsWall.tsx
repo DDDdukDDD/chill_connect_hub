@@ -3,10 +3,27 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, Heart, MessageCircle } from 'lucide-react';
-import { LANDING_MOMENTS_SAMPLE, type WallMoment } from '@/data/landingMomentsSample';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
 
-// "คุณกี้ (Kee_Explorer)" reads as "คุณกี้"
+/** One moment on the landing's wall (lib/landingMoments.ts) */
+export interface WallMoment {
+  id: string;
+  authorId: string | null;
+  userName: string;
+  userAvatar: string;
+  images: string[];
+  caption: string;
+  location: string;
+  targetTitle?: string;
+  targetType?: string;
+  targetId?: string;
+  likesCount: number;
+  commentsCount: number;
+  timeAgo: string;
+  comments: { userName: string; userAvatar: string; text: string; isMine: boolean }[];
+}
+
+// "ชื่อ (handle)" reads as "ชื่อ"
 const shortName = (name: string) => name.split(' (')[0];
 
 const targetHref = (m: WallMoment) => {
@@ -24,11 +41,11 @@ const targetHref = (m: WallMoment) => {
  * moment told openly: photos, their words, a friend's reply. A mood piece, not a way out (owner 2026-10-29):
  * only the place line links on, "ดูทั้งหมด" in the section head goes to /moments. No card frames.
  */
-export function FriendsMomentsWall() {
-  // Always the fixed example set (owner 2026-10-23): the landing should not show whatever was posted last,
-  // test posts included. Being static, it is also in the server HTML
-  const moments: WallMoment[] = LANDING_MOMENTS_SAMPLE;
+export function FriendsMomentsWall({ moments }: { moments: WallMoment[] }) {
+  // Real public moments picked on the server (lib/landingMoments.ts, 2026-11-24); the page leaves the section out
+  // when there are too few
   const [activeId, setActiveId] = useState<string | null>(null);
+  if (moments.length === 0) return null;
 
   const active = moments.find((m) => m.id === activeId) ?? moments[0];
   const reply = active.comments?.find((c) => !c.isMine);

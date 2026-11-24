@@ -212,18 +212,9 @@ export function LiveTicker({ live }: { live: LiveState }) {
 }
 
 /** Visitors: one short line of last week's numbers, no names. Hidden while there is nothing to count. */
-// Sample base added to the real counts so the landing page does not look empty during the prototype.
-// Remove before launch (docs/LAUNCH_CHECKLIST.md).
-const SAMPLE_COUNTS = { meetupJoins: 1147, questJoins: 343, moments: 525 };
-
-function withSampleCounts<T extends typeof SAMPLE_COUNTS>(counts: T): T {
-  return {
-    ...counts,
-    meetupJoins: counts.meetupJoins + SAMPLE_COUNTS.meetupJoins,
-    questJoins: counts.questJoins + SAMPLE_COUNTS.questJoins,
-    moments: counts.moments + SAMPLE_COUNTS.moments,
-  };
-}
+// Real counts only since 2026-11-24 (the sample base is gone). A count shows once it reaches this, so a quiet week
+// shows fewer items instead of "เข้าร่วมตี้ 2 ครั้ง"
+const STRIP_COUNT_MIN = 10;
 
 /** Below this many real joins a week the hero shows a warm line instead of a number (owner 2026-10-26: no padded numbers) */
 const HERO_JOINS_MIN = 1000;
@@ -256,11 +247,11 @@ export function LiveJoinsLine({ faces, short = false }: { faces?: React.ReactNod
 export function LiveCountsRow({ className = '' }: { className?: string }) {
   const live = useLiveActivity();
   if (!live.counts) return null;
-  const counts = withSampleCounts(live.counts);
+  const counts = live.counts;
   const parts = [
-    counts.meetupJoins > 0 && { Icon: Users, fg: 'text-[#F26430]', text: `เข้าร่วมตี้ ${counts.meetupJoins.toLocaleString()} ครั้ง` },
-    counts.questJoins > 0 && { Icon: Flag, fg: 'text-[#7C3AED]', text: `เริ่มชาเลนจ์ ${counts.questJoins.toLocaleString()} คน` },
-    counts.moments > 0 && { Icon: Camera, fg: 'text-[#F43F5E]', text: `แชร์โมเมนต์ ${counts.moments.toLocaleString()} ครั้ง` },
+    counts.meetupJoins >= STRIP_COUNT_MIN && { Icon: Users, fg: 'text-[#F26430]', text: `เข้าร่วมตี้ ${counts.meetupJoins.toLocaleString()} ครั้ง` },
+    counts.questJoins >= STRIP_COUNT_MIN && { Icon: Flag, fg: 'text-[#7C3AED]', text: `เริ่มชาเลนจ์ ${counts.questJoins.toLocaleString()} คน` },
+    counts.moments >= STRIP_COUNT_MIN && { Icon: Camera, fg: 'text-[#F43F5E]', text: `แชร์โมเมนต์ ${counts.moments.toLocaleString()} ครั้ง` },
   ].filter((p): p is { Icon: typeof Users; fg: string; text: string } => Boolean(p));
   if (parts.length === 0) return null;
 

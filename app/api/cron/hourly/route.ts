@@ -1,6 +1,9 @@
-import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
+import { isCronAuthorized } from '@/lib/cronAuth';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
+import { endPastEvents } from '@/lib/db/endPastEvents';
+import { copyEventPosters } from '@/lib/media/eventPosterBackfill';
+import { copyPlacePhotos } from '@/lib/media/placePhotoBackfill';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
@@ -12,17 +15,11 @@ import { rebuildCreatorDaily } from '@/lib/social/creatorDaily';
  * allows only daily crons. Both send `Authorization: Bearer <CRON_SECRET>`. Each job is safe to run twice.
  */
 export const dynamic = 'force-dynamic';
-
-function authorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const expected = Buffer.from(`Bearer ${secret}`);
-  const provided = Buffer.from(request.headers.get('authorization') ?? '');
-  return expected.length === provided.length && timingSafeEqual(expected, provided);
-}
+// Photo copies take up to a minute of a run; the caller waits 120 s
+export const maxDuration = 120;
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  if (!isCronAuthorized(request)) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   const results: Record<string, unknown> = {};
   const run = async (name: string, job: () => Promise<unknown>) => {
     try {
@@ -33,6 +30,12 @@ export async function GET(request: Request) {
     }
   };
   await run('shortTrips', () => cancelShortTrips());
+  // ตี้ and อีเวนต์ past their end get status ended (after trips are called off, so those stay cancelled)
+  await run('endPastEvents', () => endPastEvents());
+  // อีเวนต์ posters onto our own storage, 25 an hour (BE-459)
+  await run('eventPosters', () => copyEventPosters());
+  // Place photos from Wikimedia and TAT onto our own storage, one batch and one write a run (2026-11-23)
+  await run('placePhotos', () => copyPlacePhotos());
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question

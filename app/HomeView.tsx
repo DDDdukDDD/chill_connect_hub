@@ -8,7 +8,7 @@ import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { MobileNav } from '@/components/MobileNav';
 import { ChallengePicks } from '@/components/ChallengePicks';
-import { FriendsMomentsWall } from '@/components/FriendsMomentsWall';
+import { FriendsMomentsWall, type WallMoment } from '@/components/FriendsMomentsWall';
 import { OpenMeetupTiles } from '@/components/OpenMeetupTiles';
 import { ScrollRow } from '@/components/ScrollRow';
 import { CategoryStickerCards, communityCategoryCards } from '@/components/CategoryStickerCards';
@@ -22,6 +22,8 @@ import type { MemberHomeData } from '@/lib/homeData';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
+import { TeeIdeaRail } from '@/components/community/TeeIdeaRail';
+import type { TeeIdea } from '@/data/teeIdeas';
 // Types only: the bundled sample data (~900 KB) is not shipped to the browser (2026-10-28)
 import type { EventItem, ChallengeQuest } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
@@ -145,9 +147,11 @@ type InitialContent = {
   session?: SessionSeed;
   /** How many อีเวนต์ are coming up (the page gets only the ones it shows) */
   fairTotal?: number;
+  /** Real moments for the visitor landing's "เพื่อน & โมเมนต์" (lib/landingMoments.ts); empty leaves it out */
+  landingMoments?: WallMoment[];
 };
 
-function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn = false, memberData = null, spotTotal: serverSpotTotal = null, session, fairTotal }: InitialContent) {
+function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn = false, memberData = null, spotTotal: serverSpotTotal = null, session, fairTotal, landingMoments = [] }: InitialContent) {
   // Before useAuth below reads the store: no wait for GET /api/auth/member after hydration
   useState(() => session && seedMemberSession(session));
   useState(() => signedIn && typeof window !== 'undefined' && void loadMemberHome());
@@ -174,6 +178,8 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  // A ไอเดียตี้ the create dialog starts from (data/teeIdeas.ts)
+  const [pickedIdea, setPickedIdea] = useState<TeeIdea | undefined>();
 
   const { isLoggedIn, isAuthReady, handleSetIsLoggedIn } = useAuth();
   // Joined challenges and their progress come from the account, as on /challenges
@@ -579,10 +585,12 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
             <div id="journey-top" className={`${CONTAINER} pt-8 sm:pt-12 space-y-12 sm:space-y-16 scroll-mt-20`}>
               {/* 2. Proof of the social platform the hero names: people and their moments
                   first, then how to start (owner 2026-10-23) */}
-              <section id="journey-moments" className="space-y-4 scroll-mt-24">
-                {sectionHead('เพื่อน & โมเมนต์', '/moments')}
-                <FriendsMomentsWall />
-              </section>
+              {landingMoments.length > 0 && (
+                <section id="journey-moments" className="space-y-4 scroll-mt-24">
+                  {sectionHead('เพื่อน & โมเมนต์', '/moments')}
+                  <FriendsMomentsWall moments={landingMoments} />
+                </section>
+              )}
 
               {/* 3. Meetups, picked by the category cards; company is offered, never required */}
               <section id="journey-meetups" className="space-y-4 scroll-mt-24">
@@ -597,7 +605,17 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
                 {/* The category cards filter the row right below; one row that slides (phones swipe, iPad and up get arrows) */}
                 <CategoryStickerCards cards={categoryCards} selectedId={meetupCategory} onSelect={setMeetupCategory} label="เลือกสาย" countUnit="ตี้เปิดรับ" fadeEmpty />
 
-                {isEventsLoaded && landingMeetups.length === 0 && (
+                {/* No ตี้ open at all: ideas to start one instead of an empty row (owner 2026-11-24, no sample ตี้) */}
+                {isEventsLoaded && landingMeetups.length === 0 && meetupCategory === 'all' && (
+                  <TeeIdeaRail
+                    inSection
+                    onPick={(idea) => {
+                      setPickedIdea(idea);
+                      openCreateMeetup();
+                    }}
+                  />
+                )}
+                {isEventsLoaded && landingMeetups.length === 0 && meetupCategory !== 'all' && (
                   <p className="text-sm text-slate-500">ยังไม่มีตี้แบบนี้ เปิดตี้แรกเองเลยไหม?</p>
                 )}
                 {/* The hero's "หากิจกรรมที่ใช่" lands on the section heading, so "ดูตี้ตามสายที่ชอบ" and the สาย cards show too (owner 2026-10-23) */}
@@ -735,7 +753,11 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
 
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
-        onClose={() => setIsCreateEventModalOpen(false)}
+        initialIdea={pickedIdea}
+        onClose={() => {
+          setIsCreateEventModalOpen(false);
+          setPickedIdea(undefined);
+        }}
         onCreateSuccess={(newEvent) => {
           setEventsList((prev) => [newEvent, ...prev]);
           setIsCreateEventModalOpen(false);

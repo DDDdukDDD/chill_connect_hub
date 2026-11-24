@@ -167,9 +167,28 @@ async function mixSound(mb: Mediabunny, file: File, startS: number, endS: number
   return ctx.startRendering();
 }
 
+let aacReady: Promise<boolean> | null = null;
+/**
+ * Whether AAC can be made here. Safari before 26 and Firefox have no AAC encoder of their own, so a song could not be
+ * put on a clip there (a member's report 2026-11-23, BE-457); FFmpeg's encoder in WebAssembly (about 1 MB) is loaded
+ * for them, only when a clip with a song is posted. Needs 'wasm-unsafe-eval' and worker-src blob: in the CSP.
+ */
+function aacEncoderReady(mb: Mediabunny): Promise<boolean> {
+  aacReady ??= (async () => {
+    if (await mb.canEncodeAudio('aac')) return true;
+    const { registerAacEncoder } = await import('@mediabunny/aac-encoder');
+    registerAacEncoder();
+    return mb.canEncodeAudio('aac');
+  })().catch(() => {
+    aacReady = null;
+    return false;
+  });
+  return aacReady;
+}
+
 /** The finished picture, copied as it is, with the mixed sound as its one sound track; null when this device cannot make AAC */
 async function withSound(mb: Mediabunny, picture: ArrayBuffer, sound: AudioBuffer): Promise<ArrayBuffer | null> {
-  if (!(await mb.canEncodeAudio('aac'))) return null;
+  if (!(await aacEncoderReady(mb))) return null;
   const input = new mb.Input({ source: new mb.BlobSource(new Blob([picture])), formats: mb.ALL_FORMATS });
   const video = await input.getPrimaryVideoTrack();
   const decoderConfig = await video?.getDecoderConfig();

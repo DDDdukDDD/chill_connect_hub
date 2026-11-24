@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { MEMBER_SESSION_COOKIE } from '@/lib/members/session';
-import { ensureSampleMembers } from '@/lib/members/sampleMembers';
 import { listMoments, trendingHashtags } from '@/lib/moments/service';
 import { hashtagHref } from '@/lib/moments/hashtags';
 import { jsonLdHtml, momentCollectionJsonLd } from '@/lib/structuredData';
@@ -39,7 +38,6 @@ export default async function MomentsPage({ searchParams }: Props) {
   const type = one(params.type);
   const chip = !place && isMomentTarget(type) ? type : 'all';
 
-  await ensureSampleMembers(); // development sample accounts for the sample posts
   const [list, trending, jar] = await Promise.all([
     listMoments(null, {
       // ทั้งหมด is popular mixed with new (the grid's next pages ask for the same)

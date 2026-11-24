@@ -22,6 +22,8 @@ import { CustomDatePickerModal } from '@/components/CustomDatePickerModal';
 import { AuthModal, LogoutConfirmModal } from '@/components/AuthModal';
 import { RequireMembershipModal } from '@/components/RequireMembershipModal';
 import { CreateEventModal } from '@/components/LazyCreateEventModal';
+import { TeeIdeaRail } from '@/components/community/TeeIdeaRail';
+import type { TeeIdea } from '@/data/teeIdeas';
 import { useAuth } from '@/lib/useAuth';
 import { activityActions, useMyActivity } from '@/lib/useMyActivity';
 import { fetchAllContentPages } from '@/lib/contentClient';
@@ -110,6 +112,8 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
   const [isRequireMembershipOpen, setIsRequireMembershipOpen] = useState(false);
   const [membershipActionTitle, setMembershipActionTitle] = useState('เพื่อดำเนินการต่อ');
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  // A ไอเดียตี้ the create dialog starts from (kept through sign-in, cleared when the dialog closes)
+  const [pickedIdea, setPickedIdea] = useState<TeeIdea | undefined>();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -409,14 +413,17 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         {viewMode === 'grid' && filteredEvents.length > itemsPerPage && (
           <ShowMoreButton shown={paginatedEvents.length} total={filteredEvents.length} onClick={() => setCurrentPage(currentPage + 1)} />
         )}
-        {/* A visitor learns they can start one too, once they have looked through the list, not on top of it */}
-        {isAuthReady && !isLoggedIn && filteredEvents.length > 0 && (
-          <p className="pt-2 text-center text-sm text-slate-600">
-            ไม่เจอที่ชอบ?{' '}
-            <button type="button" onClick={openCreate} className="font-semibold text-[#C2410C] hover:underline underline-offset-4 cursor-pointer">
-              ตั้งตี้เองเลย
-            </button>
-          </p>
+        {/* Ideas to start from, once the list has been looked through, not on top of it (owner 2026-11-24: instead of
+            sample ตี้, so a quiet week does not look empty) */}
+        {sortBy !== 'favorites' && (
+          <div className="pt-4">
+            <TeeIdeaRail
+              onPick={(idea) => {
+                setPickedIdea(idea);
+                openCreate();
+              }}
+            />
+          </div>
         )}
       </main>
 
@@ -458,7 +465,11 @@ function CommunityPageContent({ initialEvents, initialCounts, sponsoredId = null
         initialType="community"
         initialDate={createSeed.date}
         initialProvince={createSeed.province}
-        onClose={() => setIsCreateEventModalOpen(false)}
+        initialIdea={pickedIdea}
+        onClose={() => {
+          setIsCreateEventModalOpen(false);
+          setPickedIdea(undefined);
+        }}
         onCreateSuccess={(newEvent: EventItem) => {
           setEventsList([newEvent, ...eventsList]);
           if (newEvent.approvalStatus === 'pending') {

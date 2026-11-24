@@ -8,6 +8,9 @@ import { getAllDataSources, recordSourceScrape } from './sourcesStore';
 import { scrapeEventSource } from './structuredDataScraper';
 import { sanitizeRichHtml } from './safeHtml';
 import { notifyReview } from './social/notifications';
+import { MASTER_77_PROVINCES } from '@/data/masterHub';
+import { PROVINCE_ALIASES } from './db/postgres/rows.mjs';
+import { copyPosterToOwnMedia, eachLimited } from './media/posterCopy';
 
 export { getCoreCommunityEvents };
 
@@ -44,7 +47,7 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
   totalScanned: number;
   events: AdminEventItem[];
   duplicateDetails: { rawTitle: string; reason: string }[];
-  sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; error?: string }>;
+  sourceResults: Array<{ sourceId: string; sourceName: string; scanned: number; imported: number; duplicates: number; skipped: number; error?: string }>;
 }> {
   const [currentEvents, autoPublish] = await Promise.all([listAdminEvents(), getAutoPublish()]);
   const normalizedTarget = targetSource?.trim().toLowerCase();
@@ -74,6 +77,12 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
   const duplicateDetails: { rawTitle: string; reason: string }[] = [];
   const duplicatesBySource = new Map<string, number>();
   const importedBySource = new Map<string, number>();
+  // Items without a known province or a place cannot be shown (form rules) and would fail the database's province check,
+  // which used to abort the whole import (2026-11-23, BE-454). They are counted and left out.
+  const skippedBySource = new Map<string, number>();
+  const knownProvinces = new Set<string>(MASTER_77_PROVINCES);
+  const showable = (e: { province?: string; location?: string }) =>
+    Boolean(e.location?.trim()) && Boolean(e.province) && (knownProvinces.has(e.province!) || Boolean((PROVINCE_ALIASES as Record<string, string | null>)[e.province!]));
 
   for (const sourceScrape of sourceScrapes) {
     for (const raw of sourceScrape.items) {
@@ -88,6 +97,10 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
         });
       } else {
         const processed = processRawEventWithAI(raw, newItems.length + 1);
+        if (!showable(processed)) {
+          skippedBySource.set(sourceScrape.sourceId, (skippedBySource.get(sourceScrape.sourceId) || 0) + 1);
+          continue;
+        }
         const adminItem: AdminEventItem = {
           ...processed,
           approvalStatus: autoPublish ? 'approved' : 'pending',
@@ -99,6 +112,13 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
       }
     }
   }
+
+  // Posters are kept on our own storage (BE-459); one that cannot be copied keeps its source link and is tried again
+  // by the hourly poster job
+  await eachLimited(newItems, 4, async (item) => {
+    const own = await copyPosterToOwnMedia(item.image);
+    if (own) item.image = own;
+  });
 
   // Prepend new non-duplicate items through the repository (single writer for events)
   await db.createEvents(newItems);
@@ -124,6 +144,7 @@ export async function runScraperAndAIEngine(targetSource?: string): Promise<{
       scanned: result.scannedCount,
       imported: importedBySource.get(result.sourceId) || 0,
       duplicates: duplicatesBySource.get(result.sourceId) || 0,
+      skipped: skippedBySource.get(result.sourceId) || 0,
       error: result.error,
     })),
   };
