@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-469 · BE-468 walked end to end; the email link brings a ตี้ host back to the form (owner 2026-11-24)
+- **What changed:** walked BE-468 on dev at 390 and 1440 px with a LINE account without an email: creation gate → add email → link → verified → ตี้ form opens. API answers checked (401, 400 bad/throwaway, 409 taken, 429 after 5 an hour), and an unproven email is released when its real owner signs up (the old link then fails). Two fixes: `OrganizerGateDialog` takes `returnTo`, and `CreateEventModal` passes `/community?create=1` for a ตี้, so the verified page's button "กลับไปตั้งตี้ต่อ" reopens the form; the verified page says "ตอนนี้คุณตั้งตี้ เข้าร่วมตี้ และโพสต์โมเมนต์ได้แล้ว" only when `organizerNeeds` is empty after confirming.
+- **What to do about it:** nothing in code. The real email still needs Resend on live (EMAIL.md). Testing note: a local server asks for a phone, not an email (`phoneCheckIsOn` is on without `VERCEL`), and `VERCEL=1 next dev` reloads every page about every 2 s, so the walk used a temporary local edit of `phoneCheckIsOn` (not committed).
+
+---
+
 ### BE-468 · LINE members add an email to open ตี้; no SMS for launch (owner 2026-11-24)
 - **What changed:** the owner chose email instead of SMS for launch (SMS costs money; launch moved to Thu 26 Nov). The live site already asked for a confirmed email to open ตี้, challenges, trips and groups (`organizerNeeds`), but a LINE account has no email and had no way to add one. Now `POST /api/auth/member/email` (`addEmail` in `lib/members/accounts.ts`) puts an email on an account without a password and mails the link; `AddEmailForm` shows in the creation gate (`OrganizerGateDialog`), under "ชวนเพื่อนไปที่นี่" (`needsEmail` from `/api/spots/[id]/trips`) and on the settings trust card. Safety: an added, unconfirmed email is an "unproven claim". A Google/Apple sign-in or an email sign-up with that address takes it off the account (`releaseEmail`) instead of signing in to it, so nobody can catch someone else's login by typing their address. `SKIP_EMAIL_VERIFICATION` no longer confirms an added email, a first password needs a confirmed email, and a confirmation link on an account with no email left fails.
 - **What to do about it:** this needs the mailer on live (Resend, `RESEND_API_KEY` + `MAIL_FROM`); without it the endpoint answers 503. Owner steps: [EMAIL.md](EMAIL.md) steps 1–4. Not yet tested end to end on dev.

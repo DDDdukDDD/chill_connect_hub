@@ -9,8 +9,11 @@ import { PhoneVerifyForm } from './PhoneVerifyForm';
 /** An account without a password (LINE, Google, Facebook, Apple) adds or changes its email here; a sub-account uses its owner's */
 export const canAddEmail = (member: PublicMember | null | undefined) => Boolean(member && !member.isSubAccount && !member.loginMethods.includes('email'));
 
-/** What a member still has to do before opening something that brings people out to meet (lib/members/trust.ts, organizerNeeds) */
-export function OrganizerGateDialog({ need, member, onClose }: { need: OrganizerNeed; member: PublicMember | null | undefined; onClose: () => void }) {
+/**
+ * What a member still has to do before opening something that brings people out to meet (lib/members/trust.ts, organizerNeeds).
+ * `returnTo`: where the email link sends them back (/community?create=1 reopens the ตี้ form); default is this page.
+ */
+export function OrganizerGateDialog({ need, member, onClose, returnTo }: { need: OrganizerNeed; member: PublicMember | null | undefined; onClose: () => void; returnTo?: string }) {
   const hasEmail = Boolean(member?.trust?.hasEmail);
   const addsEmail = need === 'email' && canAddEmail(member);
   return (
@@ -33,7 +36,7 @@ export function OrganizerGateDialog({ need, member, onClose }: { need: Organizer
       {need === 'phone' ? (
         <PhoneVerifyForm />
       ) : addsEmail ? (
-        <AddEmailForm initialEmail={member?.email} returnTo={typeof window === 'undefined' ? undefined : window.location.pathname} />
+        <AddEmailForm initialEmail={member?.email} returnTo={returnTo ?? (typeof window === 'undefined' ? undefined : window.location.pathname)} />
       ) : need === 'email' && !hasEmail ? (
         <div className="flex justify-center">
           <button type="button" className={dialogButton.primary} onClick={onClose}>เข้าใจแล้ว</button>
