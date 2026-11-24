@@ -83,11 +83,15 @@ async function run() {
 
   console.log('\nStarter challenges and the life map');
   const quests = (await A.call('/api/quests?limit=100')).quests ?? [];
-  // Starters finish with one post at a place; challenges that need posts made from their page (posts.tagged, BE-438)
-  // or more than one post are not starters (TR-035)
-  const starters = quests.filter((q) => q.rule?.posts && !q.rule.posts.tagged && (q.rule.count ?? 1) <= 1);
-  check('five starter challenges exist', starters.length >= 5, `${starters.length} found; run node db/seed-starter-quests.mjs`);
+  // Starters finish with any one post (at a place); challenges that need more than one post are not starters (TR-035).
+  // Since BE-438 some one-post starters count only posts made from their own page (posts.tagged): an ordinary post
+  // must leave those open, so A takes one of them too.
+  const onePost = quests.filter((q) => q.rule?.posts && (q.rule.count ?? 1) <= 1);
+  const starters = onePost.filter((q) => !q.rule.posts.tagged);
+  const taggedStarter = onePost.find((q) => q.rule.posts.tagged);
+  check('starter challenges a post finishes exist', starters.length >= 1, `${starters.length} found; run node db/seed-starter-quests.mjs`);
   for (const q of starters) await A.call('/api/quests/join', 'POST', { questId: q.id, action: 'join' });
+  if (taggedStarter) await A.call('/api/quests/join', 'POST', { questId: taggedStarter.id, action: 'join' });
   const row = (await A.call('/api/circles')).items ?? [];
   check('home row shows the challenge A took on', row.some((i) => i.isMe && i.kind === 'doing'), JSON.stringify(row[0] ?? null).slice(0, 80));
   const spots = (await A.call('/api/spots?province=%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E%E0%B8%AF&limit=5&hasImageOnly=true')).spots ?? [];
@@ -103,6 +107,10 @@ async function run() {
   const rewards = await A.call('/api/rewards');
   const finished = (rewards.quests ?? []).filter((q) => starters.some((s) => s.id === q.questId) && q.completed);
   check('one post at a place finishes every starter challenge taken', finished.length === starters.length, `${finished.length}/${starters.length}`);
+  if (taggedStarter) {
+    const tagged = (rewards.quests ?? []).find((q) => q.questId === taggedStarter.id);
+    check('a post not made from a challenge page leaves that challenge open', !tagged?.completed, taggedStarter.title);
+  }
   const starterXp = starters.reduce((sum, q) => sum + (q.rewardPoints ?? 0), 0);
   check('starter XP counts', (rewards.points?.fromQuests ?? 0) >= starterXp, `fromQuests ${rewards.points?.fromQuests} of ${starterXp}`);
 
