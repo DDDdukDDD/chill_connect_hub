@@ -1487,7 +1487,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   // Everything but a place suggestion waits for the organizer check, before any typing goes to waste
   const organizerGate = isLoaded && type !== 'spot' && member?.trust?.organizerNeeds;
   if (type && organizerGate) {
-    return <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={onClose} />;
+    return <OrganizerGateDialog need={organizerGate} member={member} onClose={onClose} />;
   }
 
   if (!type || !info) {

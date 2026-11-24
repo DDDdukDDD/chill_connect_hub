@@ -11,8 +11,9 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
   if (member.emailVerified) return NextResponse.json({ success: true, alreadyVerified: true });
   if (!member.email) return NextResponse.json({ success: false, message: 'บัญชีนี้ยังไม่มีอีเมล' }, { status: 400 });
-  // Prototype deployments without a mailer: accounts made before the switch verify with this button
-  if (isEmailVerificationSkipped()) {
+  // Prototype deployments without a mailer: accounts made before the switch verify with this button.
+  // Only email sign-ups: an email added to a LINE/Google account (accounts.ts addEmail) must be proven by a real link
+  if (isEmailVerificationSkipped() && member.hasPassword) {
     await autoVerifyEmail(member);
     return NextResponse.json({ success: true, alreadyVerified: true });
   }

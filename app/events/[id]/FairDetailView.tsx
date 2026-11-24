@@ -1112,7 +1112,7 @@ export default function FairDetailPage({
       {eventData && (
         <>
           {/* A group brings people out to meet, so it asks for the same check as a ตี้, before any typing goes to waste; the form opens once it passes */}
-          {isFairBuddyModalOpen && organizerGate && <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={() => setIsFairBuddyModalOpen(false)} />}
+          {isFairBuddyModalOpen && organizerGate && <OrganizerGateDialog need={organizerGate} member={member} onClose={() => setIsFairBuddyModalOpen(false)} />}
           {isFairBuddyModalOpen && !organizerGate && (
             <FairGroupDialog event={{ title: cleanText(eventData.title), date: eventData.date, endDate: eventData.endDate }} isRun={isRun} onClose={() => setIsFairBuddyModalOpen(false)} onCreate={createGroup} />
           )}

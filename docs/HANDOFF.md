@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-468 · LINE members add an email to open ตี้; no SMS for launch (owner 2026-11-24)
+- **What changed:** the owner chose email instead of SMS for launch (SMS costs money; launch moved to Thu 26 Nov). The live site already asked for a confirmed email to open ตี้, challenges, trips and groups (`organizerNeeds`), but a LINE account has no email and had no way to add one. Now `POST /api/auth/member/email` (`addEmail` in `lib/members/accounts.ts`) puts an email on an account without a password and mails the link; `AddEmailForm` shows in the creation gate (`OrganizerGateDialog`), under "ชวนเพื่อนไปที่นี่" (`needsEmail` from `/api/spots/[id]/trips`) and on the settings trust card. Safety: an added, unconfirmed email is an "unproven claim". A Google/Apple sign-in or an email sign-up with that address takes it off the account (`releaseEmail`) instead of signing in to it, so nobody can catch someone else's login by typing their address. `SKIP_EMAIL_VERIFICATION` no longer confirms an added email, a first password needs a confirmed email, and a confirmation link on an account with no email left fails.
+- **What to do about it:** this needs the mailer on live (Resend, `RESEND_API_KEY` + `MAIL_FROM`); without it the endpoint answers 503. Owner steps: [EMAIL.md](EMAIL.md) steps 1–4. Not yet tested end to end on dev.
+
+---
+
 ### BE-467 · Place photo copying moved off Vercel to GitHub Actions (owner 2026-11-24)
 - **What changed:** Vercel's free Fluid Active CPU (4 h a month) reached 75%; the owner upgraded to Pro. Turning place photos into webp is CPU work, so `placePhotos` left the hourly cron and runs as `.github/workflows/place-photos.yml` (every 3 hours + Run workflow): `scripts/place-photos.ts` calls `copyPlacePhotos({ places: 300, photos: 600, timeBudgetMs: 8 min })`, still one transaction a run. Tested on dev (3 places, 3 copied).
 - **What to do about it:** owner adds repository secrets (GitHub > Settings > Secrets and variables > Actions): `PLACES_DATABASE_URL` (= Vercel Production `DATABASE_URL`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (= Vercel Production values). Without them the job skips. After merge to `main`, press Run workflow on "Place photos" once.

@@ -80,7 +80,8 @@ export async function verifyEmailWithToken(tokenInput: unknown): Promise<Member>
   const member = await memberRepository.findById(token.slice(0, dot));
   if (member?.emailVerified) return member; // opening the link twice is fine
   const pending = member?.emailVerification;
-  if (!member || !pending || new Date(pending.expiresAt).getTime() < Date.now()) throw invalid;
+  // No email left (released to the person who proved it, accounts.ts releaseEmail): nothing to confirm
+  if (!member || !member.email || !pending || new Date(pending.expiresAt).getTime() < Date.now()) throw invalid;
   const given = Buffer.from(hashToken(token.slice(dot + 1)));
   const stored = Buffer.from(pending.tokenHash);
   if (given.length !== stored.length || !timingSafeEqual(given, stored)) throw invalid;

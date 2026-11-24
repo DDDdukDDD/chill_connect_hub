@@ -4,6 +4,7 @@ import { NEW_MEMBER_NAME, nameKey, reservedNameProblem, tidyDisplayName } from '
 import { memberRepository } from './index';
 import { MIN_MEMBER_AGE, cleanPreferences, newConsent } from './preferences';
 import { refreshMemberStatus } from './session';
+import { isDisposableEmail } from './trust';
 import type { LoginMethod, Member, OAuthProvider } from './types';
 
 export const MIN_MEMBER_PASSWORD = 8;
@@ -16,6 +17,42 @@ export class MemberAuthError extends Error {
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const isEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+/**
+ * An email a member typed into an account that signs in only with LINE, Google, Facebook or Apple (addEmail) and has
+ * not confirmed yet. It proves nothing, so it never decides who owns that address: whoever proves it takes it over.
+ */
+const isUnprovenClaim = (member: Member) => Boolean(member.email) && !member.emailVerified && !member.hasPassword && member.providers.length > 0;
+
+/** Takes an unproven email (and its pending link) off an account, so the person who proves the address can have it */
+async function releaseEmail(member: Member): Promise<void> {
+  await memberRepository.update(member.id, { email: undefined, emailVerified: false, emailVerification: undefined });
+}
+
+/**
+ * Adds an email to an account that has none (LINE gives none), or changes one that is not confirmed yet, so the
+ * member can confirm it and open ตี้ while the live site has no SMS (owner 2026-11-24). Only for accounts without a
+ * password: an email sign-up logs in with its email and keeps it. The caller sends the link (sendVerification).
+ */
+export async function addEmail(member: Member, emailInput: unknown): Promise<Member> {
+  if (member.ownerId) throw new MemberAuthError('บัญชีย่อยใช้อีเมลของบัญชีหลัก');
+  if (member.emailVerified) throw new MemberAuthError('บัญชีนี้ยืนยันอีเมลแล้ว');
+  if (member.hasPassword) throw new MemberAuthError('บัญชีนี้ใช้อีเมลที่สมัครไว้ กดส่งลิงก์ยืนยันได้เลย');
+  const email = typeof emailInput === 'string' ? normalizeEmail(emailInput) : '';
+  if (!isEmail(email) || email.length > 254) throw new MemberAuthError('อีเมลไม่ถูกต้อง');
+  if (isDisposableEmail(email)) throw new MemberAuthError('ใช้อีเมลแบบใช้แล้วทิ้งไม่ได้ ใส่อีเมลที่คุณใช้จริงนะ');
+  if (member.email === email) return member;
+  const owner = await memberRepository.findByEmail(email);
+  if (owner && owner.id !== member.id) throw new MemberAuthError('อีเมลนี้ใช้กับบัญชีอื่นแล้ว', 409);
+  try {
+    // A new address drops the old pending link, so a link sent to the old one stops working
+    return await memberRepository.update(member.id, { email, emailVerified: false, emailVerification: undefined });
+  } catch (error) {
+    // Two accounts adding the same address at the same moment: the unique index lets one through
+    if ((error as { code?: string }).code === '23505') throw new MemberAuthError('อีเมลนี้ใช้กับบัญชีอื่นแล้ว', 409);
+    throw error;
+  }
+}
 
 export function cleanDisplayName(name: unknown): string {
   const value = typeof name === 'string' ? tidyDisplayName(name).trim().slice(0, 40) : '';
@@ -69,8 +106,10 @@ export async function registerWithEmail(input: { displayName?: unknown; email: u
   if (typeof input.password !== 'string' || input.password.length < MIN_MEMBER_PASSWORD) {
     throw new MemberAuthError(`รหัสผ่านต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
   }
-  if (await memberRepository.findByEmail(email)) throw new MemberAuthError('อีเมลนี้มีบัญชีอยู่แล้ว ลองเข้าสู่ระบบแทน', 409);
+  const existing = await memberRepository.findByEmail(email);
+  if (existing && !isUnprovenClaim(existing)) throw new MemberAuthError('อีเมลนี้มีบัญชีอยู่แล้ว ลองเข้าสู่ระบบแทน', 409);
   await ensureNameFree(displayName);
+  if (existing) await releaseEmail(existing);
   const now = new Date().toISOString();
   const member = await memberRepository.create({
     id: `mem_${randomUUID()}`,
@@ -130,7 +169,9 @@ export async function signInWithOAuth(profile: OAuthProfile, options: { consente
 
   if (!member && email && profile.emailVerified) {
     const byEmail = await memberRepository.findByEmail(email);
-    if (byEmail) {
+    // Never sign someone into an account because it typed their address in: the unproven claim is dropped instead
+    if (byEmail && isUnprovenClaim(byEmail)) await releaseEmail(byEmail);
+    else if (byEmail) {
       member = await memberRepository.update(byEmail.id, {
         providers: [...byEmail.providers, { provider: profile.provider, subject: profile.subject, linkedAt: new Date().toISOString() }],
         emailVerified: true,
@@ -195,6 +236,8 @@ export async function changePassword(member: Member, current: unknown, next: unk
   }
   if (typeof next !== 'string' || next.length < MIN_MEMBER_PASSWORD) throw new MemberAuthError(`รหัสผ่านใหม่ต้องมีอย่างน้อย ${MIN_MEMBER_PASSWORD} ตัวอักษร`);
   if (!member.email) throw new MemberAuthError('บัญชีนี้ยังไม่มีอีเมล จึงตั้งรหัสผ่านไม่ได้');
+  // A first password turns the email into a login: it must be the member's own (an added email, addEmail)
+  if (!hash && !member.emailVerified) throw new MemberAuthError('ยืนยันอีเมลก่อนนะ แล้วจึงตั้งรหัสผ่านได้');
   return memberRepository.update(member.id, { passwordHash: hashPassword(next), sessionVersion: member.sessionVersion + 1 });
 }
 

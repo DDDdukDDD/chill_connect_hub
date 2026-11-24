@@ -47,7 +47,7 @@ export function guardOrganizer(member: Member): void {
   guardCreator(member);
   const needs = organizerNeeds(member);
   if (needs === 'phone') throw new MemberAuthError('ยืนยันเบอร์โทรก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้ (ดูที่หน้าโปรไฟล์)', 403);
-  if (needs === 'email') throw new MemberAuthError(member.email ? 'ยืนยันอีเมลก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้ (ดูที่หน้าโปรไฟล์)' : 'ตอนนี้การสร้างเปิดให้บัญชีที่ยืนยันอีเมลก่อน อีกไม่นานจะยืนยันด้วยเบอร์โทรได้', 403);
+  if (needs === 'email') throw new MemberAuthError(member.ownerId ? 'บัญชีหลักต้องยืนยันอีเมลก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้' : 'ยืนยันอีเมลก่อนนะ แล้วจะสร้างตี้ ชาเลนจ์ ทริป และกลุ่มในอีเวนต์ได้ (ดูที่หน้าตั้งค่าบัญชี)', 403);
 }
 
 async function allSpots(): Promise<LifestyleSpotItem[]> {
