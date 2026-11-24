@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-465 · ATMBKK อีเวนต์ fixed to the official facts (owner 2026-11-24)
+- **What changed:** `db/fix-atmbkk.mjs` (dry run by default, `--apply` writes) puts amazingthailandmarathon.com's facts on `live-agg-30`: two days (Sat 28 Nov 04:00 half marathon from MBK, Sun 29 Nov marathon 02:00, 10K 06:00, Family Run 4.5K 07:00 at Sanam Luang, ends 09:30), all four distances in the description, organiser ATMBOC (Sports Authority of Thailand) instead of ThaiRun, price ฿600 - 1,800, official site as link and source, category งานวิ่ง, registration closed (window ended 31 Oct). Drops the seed's made-up stars, reviews, "ยอดนิยม" badge and 500-person cap. Applied on dev and checked on the page.
+- **What to do about it:** owner runs on live: `node db/fix-atmbkk.mjs` then `--apply`. Pages show it within about a minute (server cache).
+
+---
+
 ### BE-464 · Sample ตี้ stop coming back; idea row arrows; no ตี้ open = ideas, not "nothing matches" (owner 2026-11-24)
 - **What changed:** after BE-462 ran on live, 62 sample ตี้/อีเวนต์ came back a minute later: every server start put the missing `MOCK_EVENTS` back (`normalizeStoredEvents` in `lib/eventNormalization.ts`). It now takes `{ addCore }`; the Postgres adapter passes `false`, and admin "reset and seed" (`resetAndSeedAllEvents`) adds no sample ตี้ on Postgres. The JSON store still starts with them. The idea row (`TeeIdeaRail`) uses the shared `ScrollRow` arrows from iPad up. On /community, when no ตี้ is open and nothing narrows the list (any province), the ideas take the list's place under the heading "ยังไม่มีตี้เปิดอยู่ตอนนี้…" instead of the "ไม่พบ… รีเซ็ตตัวกรอง" box. Dev: removal re-run, server restarted, 0 came back.
 - **What to do about it:** merge to `main`, wait for the deploy, then owner runs on live again: `node db/remove-sample-data.mjs` (expect 62 ตี้/อีเวนต์, nothing else) then `--apply`. BE-463 needs no re-run (already applied).
