@@ -5,11 +5,12 @@ import { Plus, Lightbulb } from 'lucide-react';
 import { TEE_IDEAS, type TeeIdea } from '@/data/teeIdeas';
 import { meetupCategoryIcon } from '@/components/icons/CategoryIcons';
 import { COMMUNITY_LIFESTYLE_CATEGORIES } from '@/components/CommunityCategoryRail';
+import { ScrollRow } from '@/components/ScrollRow';
 
 /**
  * "ไอเดียตี้" on /community (owner 2026-11-24): instead of sample ตี้ with made-up people, a row of ideas that say
  * plainly they are ideas. Tapping one opens the create dialog filled in from it (data/teeIdeas.ts); the member picks
- * the day and the place. Open layout, one row that scrolls sideways at every width.
+ * the day and the place. Open layout, one row that scrolls sideways at every width, with the shared floating arrows from iPad up.
  */
 /** `inSection`: placed inside a section that has its own heading (the landing's ตี้ row when none is open), so a
  * smaller heading that says why the ideas are there */
@@ -23,7 +24,7 @@ export function TeeIdeaRail({ onPick, inSection = false }: { onPick: (idea: TeeI
         </Heading>
       </div>
       <p className="mt-0.5 text-sm text-slate-600">กดไอเดียที่ชอบ ฟอร์มจะกรอกไว้ให้ เหลือเลือกวันกับที่นัด</p>
-      <ul className="mt-3 flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+      <ScrollRow as="ul" label="ไอเดียตี้" className="mt-3 flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {TEE_IDEAS.map((idea) => {
           const category = COMMUNITY_LIFESTYLE_CATEGORIES.find((c) => c.id === idea.category);
           const Icon = meetupCategoryIcon(idea.category) ?? category?.icon ?? Lightbulb;
@@ -31,6 +32,7 @@ export function TeeIdeaRail({ onPick, inSection = false }: { onPick: (idea: TeeI
             <li key={idea.id} className="snap-start shrink-0 w-[200px] sm:w-[220px]">
               <button
                 type="button"
+                data-row-photo
                 onClick={() => onPick(idea)}
                 className="group w-full h-full text-left rounded-2xl bg-[#FFF4EE] hover:bg-[#FFE9DC] p-4 flex flex-col gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
               >
@@ -47,7 +49,7 @@ export function TeeIdeaRail({ onPick, inSection = false }: { onPick: (idea: TeeI
             </li>
           );
         })}
-      </ul>
+      </ScrollRow>
     </section>
   );
 }

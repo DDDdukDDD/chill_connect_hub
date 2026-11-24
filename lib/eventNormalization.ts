@@ -76,7 +76,11 @@ function normalizeEvent(ev: AdminEventItem): AdminEventItem {
  * Normalizes events loaded from storage and guarantees every core seed event exists.
  * Returns `changed: true` when the result differs from what was stored.
  */
-export function normalizeStoredEvents(stored: AdminEventItem[]): { events: AdminEventItem[]; changed: boolean } {
+/**
+ * `addCore`: put back the bundled sample ตี้ (MOCK_EVENTS) that are missing. Only the JSON store (no-database mode)
+ * does; the database holds what members, staff and the content scripts put there (sample data removed 2026-11-24).
+ */
+export function normalizeStoredEvents(stored: AdminEventItem[], { addCore = true }: { addCore?: boolean } = {}): { events: AdminEventItem[]; changed: boolean } {
   let changed = false;
   const normalized = stored.map((ev) => {
     const next = normalizeEvent(ev);
@@ -85,7 +89,7 @@ export function normalizeStoredEvents(stored: AdminEventItem[]): { events: Admin
   });
 
   const existingIds = new Set(stored.map((e) => e.id));
-  const missingCoreEvents = getCoreCommunityEvents().filter((ev) => !existingIds.has(ev.id));
+  const missingCoreEvents = addCore ? getCoreCommunityEvents().filter((ev) => !existingIds.has(ev.id)) : [];
   if (missingCoreEvents.length > 0) changed = true;
 
   return { events: [...missingCoreEvents, ...normalized], changed };

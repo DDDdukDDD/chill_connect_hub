@@ -99,7 +99,7 @@ export class PostgresAdapter implements IDataRepository {
   private refs: { provinceCodes: Set<string>; venueCodes: Set<string>; at: number } | null = null;
   private snapshots = new Map<string, { version: string; items: unknown[] }>();
 
-  /** Once per server: the same start-up clean-ups the JSON adapter runs (core ตี้, seed challenges) */
+  /** Once per server: the start-up clean-ups of stored ตี้ (no sample ตี้ or challenges are added back) */
   private ensureInitialized(): Promise<void> {
     this.initialized ??= this.initialize().catch((error) => {
       this.initialized = null;
@@ -110,7 +110,7 @@ export class PostgresAdapter implements IDataRepository {
 
   private async initialize(): Promise<void> {
     const stored = await this.loadEvents();
-    const { events, changed } = normalizeStoredEvents(stored as AdminEventItem[]);
+    const { events, changed } = normalizeStoredEvents(stored as AdminEventItem[], { addCore: false });
     if (changed) {
       const before = new Map(stored.map((e) => [e.id, JSON.stringify(e)]));
       const touched = events.filter((e) => before.get(e.id) !== JSON.stringify(e));

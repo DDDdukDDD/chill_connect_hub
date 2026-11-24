@@ -47,6 +47,8 @@ interface EventForm {
   image: string;
   galleryImages: string;
   officialUrl: string;
+  /** อีเวนต์ sign-ups: not known ('') / open / closed */
+  registration: '' | 'open' | 'closed';
 }
 
 function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
@@ -73,6 +75,7 @@ function toForm(event: AdminEventItem | null, isCommunity: boolean): EventForm {
     image: mainImage,
     galleryImages: (event?.galleryImages ?? []).filter((img) => img && img !== mainImage).join('\n'),
     officialUrl: event?.externalUrl || event?.sourceUrl || event?.link || '',
+    registration: event?.registrationOpen === true ? 'open' : event?.registrationOpen === false ? 'closed' : '',
   };
 }
 
@@ -119,6 +122,8 @@ function toEventFields(form: EventForm, isCommunity: boolean, groupName: string)
     externalUrl: officialUrl || undefined,
     sourceUrl: officialUrl || undefined,
     link: officialUrl || undefined,
+    // null clears it (not known): the page then says nothing about sign-ups
+    registrationOpen: (form.registration === 'open' ? true : form.registration === 'closed' ? false : null) as boolean | undefined,
   };
 }
 
@@ -347,6 +352,15 @@ export function EventEditorDrawer({ event, type, onClose, onSaved }: EventEditor
                 </a>
               )}
             </div>
+          </Field>
+        )}
+        {!isCommunity && (
+          <Field label="การรับสมัคร / ขายบัตร:" htmlFor="event-registration" hint="ปิดแล้ว: หน้างานซ่อนปุ่มสมัครหรือซื้อบัตร และบอกว่าปิดรับแล้ว ไม่ทราบ: ไม่บอกอะไร">
+            <select id="event-registration" value={form.registration} onChange={set('registration')} className={fieldInputClass}>
+              <option value="">ไม่ทราบ</option>
+              <option value="open">เปิดรับอยู่</option>
+              <option value="closed">ปิดรับแล้ว</option>
+            </select>
           </Field>
         )}
       </FormSection>
