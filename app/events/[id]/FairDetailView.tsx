@@ -516,7 +516,10 @@ export default function FairDetailPage({
   const groupWord = isRun ? 'ไปวิ่ง' : 'เดินงาน';
   // Only a link that gets people what they came for sits in the header (owner 2026-11-14): sign-ups and tickets. The
   // site of a free or unpriced งาน is information, so it stays in the organizer box below
-  const ticketLabel = !officialWebsiteUrl ? null : isRun ? 'สมัครวิ่ง' : parsedPrice.isFree || priceUnknown ? null : 'ซื้อบัตร';
+  // Staff or the import marked sign-ups closed (owner 2026-11-24): no sign-up button, a line under the title says so;
+  // unknown (most อีเวนต์) shows nothing, as nobody can say
+  const registrationClosed = eventData?.registrationOpen === false;
+  const ticketLabel = !officialWebsiteUrl || registrationClosed ? null : isRun ? 'สมัครวิ่ง' : parsedPrice.isFree || priceUnknown ? null : 'ซื้อบัตร';
   const relatedFairs = useMemo(() => {
     if (initialRelated) return initialRelated.filter((e) => !isEventEnded(e));
     if (!eventData) return [];
@@ -652,7 +655,7 @@ export default function FairDetailPage({
             setActivePhotoIndex(0);
             setIsLightboxOpen(true);
           }}
-          highlight={isEnded ? { icon: CalendarCheck, text: 'งานจบแล้ว', tone: 'closed' } : isOngoing ? { icon: CalendarCheck, text: 'กำลังจัดอยู่ตอนนี้', tone: 'open' } : undefined}
+          highlight={isEnded ? { icon: CalendarCheck, text: 'งานจบแล้ว', tone: 'closed' } : registrationClosed ? { icon: CalendarCheck, text: 'ปิดรับสมัครแล้ว', tone: 'closed' } : isOngoing ? { icon: CalendarCheck, text: 'กำลังจัดอยู่ตอนนี้', tone: 'open' } : undefined}
           title={cleanText(eventData.title)}
           facts={[
             // "ไม่ระบุ…" is not a fact: leave it out rather than print it
@@ -799,7 +802,7 @@ export default function FairDetailPage({
                 { label: 'ค่าสมัคร', value: isRun && !priceUnknown ? `${parsedPrice.displayPrice} ตามระยะและแบบบัตร` : '' },
                 {
                   label: 'การรับสมัคร',
-                  value: eventData.registrationOpen === undefined ? '' : eventData.registrationOpen ? 'เปิดรับสมัครอยู่ สมัครที่เว็บไซต์ผู้จัด' : 'ปิดรับสมัครแล้ว',
+                  value: eventData.registrationOpen == null ? '' : eventData.registrationOpen ? 'เปิดรับสมัครอยู่ สมัครที่เว็บไซต์ผู้จัด' : 'ปิดรับสมัครแล้ว',
                 },
                 {
                   label: 'บัตร',
