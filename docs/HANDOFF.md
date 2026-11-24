@@ -20,6 +20,24 @@ Item template:
 
 ---
 
+### BE-467 · Place photo copying moved off Vercel to GitHub Actions (owner 2026-11-24)
+- **What changed:** Vercel's free Fluid Active CPU (4 h a month) reached 75%; the owner upgraded to Pro. Turning place photos into webp is CPU work, so `placePhotos` left the hourly cron and runs as `.github/workflows/place-photos.yml` (every 3 hours + Run workflow): `scripts/place-photos.ts` calls `copyPlacePhotos({ places: 300, photos: 600, timeBudgetMs: 8 min })`, still one transaction a run. Tested on dev (3 places, 3 copied).
+- **What to do about it:** owner adds repository secrets (GitHub > Settings > Secrets and variables > Actions): `PLACES_DATABASE_URL` (= Vercel Production `DATABASE_URL`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (= Vercel Production values). Without them the job skips. After merge to `main`, press Run workflow on "Place photos" once.
+
+---
+
+### BE-466 · อีเวนต์ sign-ups: open, closed or not known (owner 2026-11-24)
+- **What changed:** a closed อีเวนต์ (`registrationOpen: false`) has no สมัครวิ่ง/ซื้อบัตร button in its header and says "ปิดรับสมัครแล้ว" under the title (the official site stays in the organiser box). The admin event editor has "การรับสมัคร / ขายบัตร" (ไม่ทราบ / เปิดรับอยู่ / ปิดรับแล้ว) for อีเวนต์. Migration 0068 lets `app.events.registration_open` be null (= not known) and clears the default `true` on อีเวนต์ not from ThaiRun: before, every อีเวนต์ page said "เปิดรับสมัครอยู่" though nobody knew. ตี้ keep true/false. Dates never guess it (each งาน closes differently). Checked on dev: 0068 applied, ATMBKK page at 390.
+- **What to do about it:** owner runs `! npm run db:migrate` on live BEFORE merging (new code writes null, which the old column refuses; old code keeps working after 0068). Then merge.
+
+---
+
+### BE-465 · ATMBKK อีเวนต์ fixed to the official facts (owner 2026-11-24)
+- **What changed:** `db/fix-atmbkk.mjs` (dry run by default, `--apply` writes) puts amazingthailandmarathon.com's facts on `live-agg-30`: two days (Sat 28 Nov 04:00 half marathon from MBK, Sun 29 Nov marathon 02:00, 10K 06:00, Family Run 4.5K 07:00 at Sanam Luang, ends 09:30), all four distances in the description, organiser ATMBOC (Sports Authority of Thailand) instead of ThaiRun, price ฿600 - 1,800, official site as link and source, category งานวิ่ง, registration closed (window ended 31 Oct). Drops the seed's made-up stars, reviews, "ยอดนิยม" badge and 500-person cap. Applied on dev and checked on the page.
+- **What to do about it:** owner runs on live: `node db/fix-atmbkk.mjs` then `--apply`. Pages show it within about a minute (server cache).
+
+---
+
 ### BE-464 · Sample ตี้ stop coming back; idea row arrows; no ตี้ open = ideas, not "nothing matches" (owner 2026-11-24)
 - **What changed:** after BE-462 ran on live, 62 sample ตี้/อีเวนต์ came back a minute later: every server start put the missing `MOCK_EVENTS` back (`normalizeStoredEvents` in `lib/eventNormalization.ts`). It now takes `{ addCore }`; the Postgres adapter passes `false`, and admin "reset and seed" (`resetAndSeedAllEvents`) adds no sample ตี้ on Postgres. The JSON store still starts with them. The idea row (`TeeIdeaRail`) uses the shared `ScrollRow` arrows from iPad up. On /community, when no ตี้ is open and nothing narrows the list (any province), the ideas take the list's place under the heading "ยังไม่มีตี้เปิดอยู่ตอนนี้…" instead of the "ไม่พบ… รีเซ็ตตัวกรอง" box. Dev: removal re-run, server restarted, 0 came back.
 - **What to do about it:** merge to `main`, wait for the deploy, then owner runs on live again: `node db/remove-sample-data.mjs` (expect 62 ตี้/อีเวนต์, nothing else) then `--apply`. BE-463 needs no re-run (already applied).

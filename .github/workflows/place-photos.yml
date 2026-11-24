@@ -1,0 +1,49 @@
+# Copies place photos (Wikimedia, TAT) onto our own storage (R2) every few hours: scripts/place-photos.ts.
+# Runs here, not on Vercel, since 2026-11-24: turning photos into webp is CPU time, which Vercel counts.
+# Needs repository secrets: PLACES_DATABASE_URL (the site's DATABASE_URL from Vercel Production) and R2_ACCOUNT_ID,
+# R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_URL (the same values as on Vercel Production).
+# Without them the job is skipped. Nothing left to copy = a quick run that changes nothing.
+name: Place photos
+
+on:
+  schedule:
+    - cron: '37 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: place-photos
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATA_STORE: postgres
+      DATABASE_URL: ${{ secrets.PLACES_DATABASE_URL }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+    steps:
+      - name: Check secrets
+        id: check
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$R2_SECRET_ACCESS_KEY" ]; then echo "Secrets not set; skipping"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != '1'
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != '1'
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install
+        if: steps.check.outputs.skip != '1'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Copy photos
+        if: steps.check.outputs.skip != '1'
+        run: npx -y tsx@4.19.2 scripts/place-photos.ts --places 300 --photos 600 --minutes 8
