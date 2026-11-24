@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-470 · Popular TAT restaurants and cafés in the dev database; storytelling first-visit plan (owner 2026-11-25)
+- **What changed:**
+  - `db/import-tat-attractions.ts --food [--top=N]` + `tatFoodCategory` in `lib/scrapers/tatDataApi.ts`: TAT category 8, the 800 most viewed plus those with text and a picture in the list. On dev: 453 new drafts (436 restaurants, 14 cafés, 2 bars, 1 market), 712 calls. Food matches are left alone (both fills in the first run were wrong and were put back from the backup). Details and numbers in [TAT_IMPORT.md](TAT_IMPORT.md) "Restaurants and cafés run".
+  - [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md): the owner's storytelling first-visit idea merged with Gemini's spec and Claude's notes; [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) "Our own core: going out for real".
+- **What to do about it:** staff approve the food drafts on dev (check the place still runs); nothing reaches live. The landing plan waits for the owner's answers at the end of the file. `npm run smoke` on dev: 26 passed, 1 failed ("five starter challenges exist": 2 found). After BE-377 and the 2027 challenge set, the check no longer matches the data; decide whether starters should be re-seeded or the check changed.
+
+---
+
 ### BE-469 · BE-468 walked end to end; the email link brings a ตี้ host back to the form (owner 2026-11-24)
 - **What changed:** walked BE-468 on dev at 390 and 1440 px with a LINE account without an email: creation gate → add email → link → verified → ตี้ form opens. API answers checked (401, 400 bad/throwaway, 409 taken, 429 after 5 an hour), and an unproven email is released when its real owner signs up (the old link then fails). Two fixes: `OrganizerGateDialog` takes `returnTo`, and `CreateEventModal` passes `/community?create=1` for a ตี้, so the verified page's button "กลับไปตั้งตี้ต่อ" reopens the form; the verified page says "ตอนนี้คุณตั้งตี้ เข้าร่วมตี้ และโพสต์โมเมนต์ได้แล้ว" only when `organizerNeeds` is empty after confirming.
 - **What to do about it:** nothing in code. The real email still needs Resend on live (EMAIL.md). Testing note: a local server asks for a phone, not an email (`phoneCheckIsOn` is on without `VERCEL`), and `VERCEL=1 next dev` reloads every page about every 2 s, so the walk used a temporary local edit of `phoneCheckIsOn` (not committed).

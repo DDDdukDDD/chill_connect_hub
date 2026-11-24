@@ -54,7 +54,7 @@ Not "a social app" in general terms: people then compare us with IG and we lose.
 
 ### Open idea: storytelling first visit (owner, 2026-11-25)
 
-A first-visit page that tells the story (who we are, what we have, why it is worth it) and leads straight to sign-up, instead of today's landing that invites people to explore first. A small "ดูก่อน" link keeps exploring possible. Not built. Conditions: it applies only to a first visit to `/`; links friends share (ตี้, moments, "ไปกัน", invite links) open what was shared; public pages stay readable for Google and AI search (AGENTS.md section 4).
+A first-visit page that tells the story (who we are, what we have, why it is worth it) and leads straight to sign-up, instead of today's landing that invites people to explore first. A small "ดูก่อน" link keeps exploring possible. Not built; plan in [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md). Conditions: it applies only to a first visit to `/`; links friends share (ตี้, moments, "ไปกัน", invite links) open what was shared; public pages stay readable for Google and AI search (AGENTS.md section 4).
 
 ## The core loop (2026-10-16, now part of the loop above)
 

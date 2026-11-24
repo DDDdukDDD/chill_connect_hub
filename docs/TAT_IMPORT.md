@@ -54,3 +54,14 @@ Owner decisions 2026-11-18: TAT's text first (our vibe text later, for places th
 - Left for the owner: Gemini's earlier Bangkok run overwrote pictures and texts of three published places on dev (ซาฟารีเวิลด์, มิวเซียมสยาม, พิพิธภัณฑ์ศิริราชพิมุขสถาน), with no record of the old values; the credit now names TAT. Its five uncredited drafts got the credit from this run.
 
 Next: staff approval on dev, then a promote step to live (copy pictures to R2, insert the approved places), then restaurants.
+
+## Restaurants and cafés run (2026-11-25, dev only)
+
+Owner 2026-11-25: "เตรียมข้อมูลคาเฟ่ร้านอาหารดังจาก TAT API".
+
+- Same importer with `--food [--top=N]`: TAT category 8 ("ร้านอาหาร กาแฟ เบเกอรี่", 9,166 places). Popular = the 800 most viewed on TAT (`viewer`) plus the 472 whose list entry already has text and a picture; details are opened for all of them, most viewed first. In a sample of the top 30, 26 had text and pictures in the details although the list showed little.
+- Category from the name only (`tatFoodCategory`): TAT's sub-categories here are moods, and even "คาเฟ่" and "ผับและบาร์" sit on plain restaurants (ครัวจิปาถะ, เฮือนเพ็ญ). A name with ครัว, ร้านอาหาร, ภัตตาคาร, เรสเตอรอง, ซีฟู้ด, restaurant, bistro, kitchen or seafood is `restaurant`; a separate word ผับ or บาร์, pub, bar or brewery is `bar`; กาแฟ, คาเฟ่, คอฟฟี่, เบเกอรี่, ขนมหวาน, ไอศกรีม, coffee, café, bakery, roaster, dessert or tea house is `cafe`; a name starting ตลาด or ถนนคนเดิน stays `market`; the rest `restaurant`. Up to three moods become vibe tags (ริมน้ำ, วิวสวย, โรแมนติก เดตแรก, ชิลล์เอาต์, ราคาประหยัด and others in `FOOD_MOODS`). Price is "ไม่ระบุ".
+- Matching is strict for food (the OSM venue setting: only a close place with an overlapping name), and **a match is left alone, never filled in**: in the first run both matches were wrong (the restaurant "บ้านป้อมเพชร" gave its hours to ป้อมเพชร the fort; a TAT restaurant gave its pictures to a Starbucks branch). Both were put back from the backup the same night. With the attraction setting a dry run also gave "กับข้าวกับปลา"'s pictures to a Starbucks 50 m away.
+- Result: 941 looked at, **453 new drafts** (`tat-<placeId>`, credited to TAT): 436 restaurants, 14 cafés, 2 bars, 1 market; Bangkok 95, Chiang Mai 71, Phuket 70, Kanchanaburi 55. 485 rejected (no text, picture or map point), 712 calls. Backup of every place before the run in `data/.tat-cache/places-before-*.json`.
+- **TAT is a restaurant source, not a café source:** 14 cafés in the 941 most popular. Cafés come from OpenStreetMap (BE-424: 2,030 Bangkok drafts waiting for photos).
+- **Check before approving:** TAT's restaurant records are old in places, so staff should confirm a place still runs; 170 of the 453 have opening hours. Pictures still point at `dmc.tatdataapi.io` (copy to R2 when promoting, as for attractions).
