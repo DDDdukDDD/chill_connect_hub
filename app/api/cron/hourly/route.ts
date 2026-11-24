@@ -3,7 +3,6 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { cancelShortTrips } from '@/lib/social/tripAutoCancel';
 import { endPastEvents } from '@/lib/db/endPastEvents';
 import { copyEventPosters } from '@/lib/media/eventPosterBackfill';
-import { copyPlacePhotos } from '@/lib/media/placePhotoBackfill';
 import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
@@ -34,8 +33,7 @@ export async function GET(request: Request) {
   await run('endPastEvents', () => endPastEvents());
   // อีเวนต์ posters onto our own storage, 25 an hour (BE-459)
   await run('eventPosters', () => copyEventPosters());
-  // Place photos from Wikimedia and TAT onto our own storage, one batch and one write a run (2026-11-23)
-  await run('placePhotos', () => copyPlacePhotos());
+  // Place photos moved to GitHub Actions on 2026-11-24 (.github/workflows/place-photos.yml): webp work is CPU time
   // After trips are called off, so seats freed there are offered in the same run
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question

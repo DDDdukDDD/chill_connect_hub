@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-467 · Place photo copying moved off Vercel to GitHub Actions (owner 2026-11-24)
+- **What changed:** Vercel's free Fluid Active CPU (4 h a month) reached 75%; the owner upgraded to Pro. Turning place photos into webp is CPU work, so `placePhotos` left the hourly cron and runs as `.github/workflows/place-photos.yml` (every 3 hours + Run workflow): `scripts/place-photos.ts` calls `copyPlacePhotos({ places: 300, photos: 600, timeBudgetMs: 8 min })`, still one transaction a run. Tested on dev (3 places, 3 copied).
+- **What to do about it:** owner adds repository secrets (GitHub > Settings > Secrets and variables > Actions): `PLACES_DATABASE_URL` (= Vercel Production `DATABASE_URL`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (= Vercel Production values). Without them the job skips. After merge to `main`, press Run workflow on "Place photos" once.
+
+---
+
 ### BE-466 · อีเวนต์ sign-ups: open, closed or not known (owner 2026-11-24)
 - **What changed:** a closed อีเวนต์ (`registrationOpen: false`) has no สมัครวิ่ง/ซื้อบัตร button in its header and says "ปิดรับสมัครแล้ว" under the title (the official site stays in the organiser box). The admin event editor has "การรับสมัคร / ขายบัตร" (ไม่ทราบ / เปิดรับอยู่ / ปิดรับแล้ว) for อีเวนต์. Migration 0068 lets `app.events.registration_open` be null (= not known) and clears the default `true` on อีเวนต์ not from ThaiRun: before, every อีเวนต์ page said "เปิดรับสมัครอยู่" though nobody knew. ตี้ keep true/false. Dates never guess it (each งาน closes differently). Checked on dev: 0068 applied, ATMBKK page at 390.
 - **What to do about it:** owner runs `! npm run db:migrate` on live BEFORE merging (new code writes null, which the old column refuses; old code keeps working after 0068). Then merge.

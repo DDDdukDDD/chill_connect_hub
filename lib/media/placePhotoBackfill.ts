@@ -11,16 +11,22 @@ import { copyPosterToOwnMedia, eachLimited, isOwnMedia } from './posterCopy';
  *   10 GB. Later gallery photos keep their link.
  * - Every write to app.places makes every server read the whole catalog again (lib/db/postgres/tableVersions.ts,
  *   Supabase egress), so a run copies a large batch and writes it in ONE transaction, never row by row.
- * - A run stops starting copies after TIME_BUDGET_MS: the hourly cron is called with a 120 s limit.
+ * - Runs on GitHub Actions (scripts/place-photos.ts, .github/workflows/place-photos.yml), not on Vercel, since
+ *   2026-11-24: turning photos into webp is CPU work, and Vercel's free CPU hours ran low. A run stops starting
+ *   copies after its time budget.
  * - A place whose photo cannot be copied is marked and tried again after RETRY_AFTER; its link stays as it was.
  * Thailand Tourism Directory photos are left alone: that server sends an incomplete certificate chain, which Node
  * refuses (browsers fill it in), and there are 10,000+ of them.
  */
 const COPY_HOSTS = ['upload.wikimedia.org', 'thumb.wikimedia.org', 'commons.wikimedia.org', 'dmc.tatdataapi.io'];
 const GALLERY_KEEP = 3;
-const PLACES_PER_RUN = 60;
-const PHOTOS_PER_RUN = 150;
-const TIME_BUDGET_MS = 60_000;
+/** One run's size; the GitHub job passes larger ones */
+export interface PlacePhotoLimits {
+  places?: number;
+  photos?: number;
+  timeBudgetMs?: number;
+}
+const DEFAULT_LIMITS = { places: 60, photos: 150, timeBudgetMs: 60_000 };
 const RETRY_AFTER = '7 days';
 
 const shouldCopy = (url: unknown): url is string => {
@@ -38,8 +44,9 @@ interface PlaceRow {
   gallery: unknown;
 }
 
-export async function copyPlacePhotos(): Promise<{ places: number; copied: number; failed: number } | { skipped: string }> {
+export async function copyPlacePhotos(limits: PlacePhotoLimits = {}): Promise<{ places: number; copied: number; failed: number } | { skipped: string }> {
   if (!USE_POSTGRES) return { skipped: 'no database' };
+  const { places, photos, timeBudgetMs } = { ...DEFAULT_LIMITS, ...limits };
   const hostPatterns = COPY_HOSTS.map((host) => `https://${host}/%`);
   const rows = (await sql()`
     select id, details->>'image' as image, details->'galleryImages' as gallery from app.places
@@ -50,7 +57,7 @@ export async function copyPlacePhotos(): Promise<{ places: number; copied: numbe
             or exists (select 1 from jsonb_array_elements_text(case when jsonb_typeof(details->'galleryImages') = 'array' then details->'galleryImages' else '[]'::jsonb end) with ordinality g(url, n)
                         where g.n <= ${GALLERY_KEEP} and g.url like any(${hostPatterns})))
      order by popularity desc, slug
-     limit ${PLACES_PER_RUN}`) as unknown as PlaceRow[];
+     limit ${places}`) as unknown as PlaceRow[];
   if (rows.length === 0) return { places: 0, copied: 0, failed: 0 };
 
   // Links to copy this run, each once even when several places share a photo
@@ -61,8 +68,8 @@ export async function copyPlacePhotos(): Promise<{ places: number; copied: numbe
   }
   const started = Date.now();
   const copies = new Map<string, string | null>();
-  await eachLimited(wanted.slice(0, PHOTOS_PER_RUN), 6, async (url) => {
-    if (Date.now() - started > TIME_BUDGET_MS) return;
+  await eachLimited(wanted.slice(0, photos), 6, async (url) => {
+    if (Date.now() - started > timeBudgetMs) return;
     copies.set(url, await copyPosterToOwnMedia(url, 'places'));
   });
 
