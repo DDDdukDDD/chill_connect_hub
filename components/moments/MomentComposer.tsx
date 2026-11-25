@@ -75,6 +75,8 @@ export interface MomentComposerProps {
   onPosted: (moment: { id: string } & Record<string, unknown>, counted: CountedQuest | null) => void;
   onToast: (message: string) => void;
   initial?: MomentComposerInitial | null;
+  /** "โพสต์" was pressed (the upload goes on in the background), as opposed to the form being closed: ＋ away from Home goes to Home then */
+  onSubmitted?: () => void;
 }
 
 const LINK_TYPE_LABELS: Record<MomentLinkTarget['type'], string> = { community: 'ตี้', fair: 'อีเวนต์', spot: 'ที่เที่ยว' };
@@ -126,7 +128,7 @@ type ClipDraft = { file: File; fullSeconds: number; startS: number; endS: number
 /** The cover is this far into the chosen part: the very first frame is often dark or blurred (owner 2026-11-09) */
 const COVER_OFFSET_S = 0.5;
 
-export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentComposerProps) {
+export function MomentComposer({ onClose, onPosted, onToast, initial, onSubmitted }: MomentComposerProps) {
   const session = useMemberSession();
   const trust = session.member?.trust;
   const needsVerification = Boolean(trust && !(trust.identityConfirmed && trust.pledged));
@@ -349,6 +351,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial }: MomentCo
       onPosted(moment, counted);
     });
     onClose();
+    onSubmitted?.();
   };
 
   if (needsVerification) return <VerifyToPostDialog onClose={onClose} />;

@@ -23,3 +23,27 @@ export function onComposeLinkClick(event: MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
   window.dispatchEvent(new Event(COMPOSE_EVENT));
 }
+
+/**
+ * A post made with ＋ away from Home (owner 2026-11-26, like IG): the form opens over that page, "โพสต์" takes the member
+ * to Home, and the post joins the top of the feed when its upload finishes. Kept here too, in case the upload ends
+ * before Home is on screen; Home takes it once.
+ */
+export const MOMENT_POSTED_EVENT = 'chillwaa:moment-posted';
+export interface PostedHandoff {
+  moment: { id: string } & Record<string, unknown>;
+  counted: unknown;
+}
+let pendingPosted: PostedHandoff | null = null;
+export function announcePosted(posted: PostedHandoff) {
+  pendingPosted = posted;
+  window.dispatchEvent(new Event(MOMENT_POSTED_EVENT));
+}
+export function takePosted(): PostedHandoff | null {
+  const posted = pendingPosted;
+  pendingPosted = null;
+  return posted;
+}
+
+/** Home's last mode on this device (MemberLiveHome); ＋ away from Home sets it to สำหรับคุณ so the new post shows */
+export const HOME_MODE_KEY = 'chillwaa:home-mode';

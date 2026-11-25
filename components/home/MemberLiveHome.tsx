@@ -1,6 +1,7 @@
 'use client';
 
 import { SHARE_ASK_DAYS } from '@/lib/social/socialRules';
+import { HOME_MODE_KEY } from '@/lib/homeAgain';
 import React, { useEffect, useState } from 'react';
 import { CampaignShelf, type CampaignMemberState } from '@/components/CampaignStrip';
 import type { Campaign } from '@/lib/campaigns/types';
@@ -75,7 +76,7 @@ export interface MemberLiveHomeProps {
  * ถัดไปของคุณ move above the feed, in the feed's column); phones keep one column with picks between the posts.
  * Without plans the feed still comes first: the first-meetup picks sit after the first post, never in front of it.
  */
-const FEED_MODE_KEY = 'chillwaa:home-mode';
+const FEED_MODE_KEY = HOME_MODE_KEY;
 
 export function MemberLiveHome(props: MemberLiveHomeProps) {
   const { name, plans, isLoaded } = props;
