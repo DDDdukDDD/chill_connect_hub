@@ -23,7 +23,7 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
-import { COMPOSE_EVENT, HOME_AGAIN_EVENT } from '@/lib/homeAgain';
+import { COMPOSE_EVENT, HOME_AGAIN_EVENT, MOMENT_POSTED_EVENT, takePosted } from '@/lib/homeAgain';
 import { HomeDiscoverGrid } from '@/components/home/HomeDiscoverGrid';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
@@ -652,6 +652,16 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [inviting, setInviting] = useState<FeedItem | null>(null);
   const [circlesVersion, setCirclesVersion] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
+  const modesAnchor = useRef<HTMLDivElement>(null);
+  // Picked while the row is stuck far down: the page goes back to where the row belongs, so the new list starts at its top
+  const pickMode = (view: FeedView) => {
+    setSort(view);
+    const anchor = modesAnchor.current;
+    if (!anchor) return;
+    const top = anchor.getBoundingClientRect().top;
+    // 72 px: about the height of the top bar, which comes back on the way up
+    if (top < 0) window.scrollTo({ top: Math.max(0, top + window.scrollY - 72), behavior: 'instant' });
+  };
   // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
   useEffect(() => flushSeen, []);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -994,6 +1004,22 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
     return () => window.removeEventListener(COMPOSE_EVENT, compose);
   }, []);
 
+  // A post made with ＋ on another page (QuickCompose): it joins the top of the feed once its upload is done, here or
+  // before Home was on screen (takePosted), as Home's own form does
+  useEffect(() => {
+    const receive = () => {
+      const posted = takePosted();
+      if (!posted) return;
+      const moment = posted.moment as unknown as FeedItem;
+      setMoments((list) => [moment, ...list.filter((m) => m.id !== moment.id)]);
+      if (posted.counted) setCounted(posted.counted as CountedQuest);
+      setCirclesVersion((v) => v + 1);
+    };
+    receive();
+    window.addEventListener(MOMENT_POSTED_EVENT, receive);
+    return () => window.removeEventListener(MOMENT_POSTED_EVENT, receive);
+  }, []);
+
   const showNew = () => {
     reload(sort);
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1027,7 +1053,11 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       )}
 
       {/* The title is for screen readers only (owner 2026-11-13): the tabs already say this is the feed, and the circles sit above */}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      {/* Where the modes row sits before it sticks: a mode picked far down the feed starts its list from here */}
+      <div ref={modesAnchor} aria-hidden="true" />
+      {/* The modes stay in reach while reading down (owner 2026-11-26): stuck under the top bar, and in its place while it
+          is away (html[data-header-tucked], Navbar). White edge to edge on phones, where the photos run full width */}
+      <div className="sticky z-30 -mx-4 px-4 sm:mx-0 sm:px-0 bg-white transition-[top] duration-300 top-[calc(env(safe-area-inset-top)+4rem)] sm:top-[calc(env(safe-area-inset-top)+4.25rem)] max-xl:[html[data-header-tucked]_&]:top-[env(safe-area-inset-top)] flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="sr-only shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
         {PERSONAL[sort] ? (
           <button
@@ -1047,7 +1077,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
             <button
               key={value}
               type="button"
-              onClick={() => setSort(value)}
+              onClick={() => pickMode(value)}
               aria-pressed={sort === value}
               className={`relative flex-1 sm:flex-none sm:px-5 h-11 text-[15px] whitespace-nowrap cursor-pointer transition-colors ${
                 sort === value ? 'font-semibold text-slate-900' : 'font-medium text-slate-500 hover:text-slate-800'

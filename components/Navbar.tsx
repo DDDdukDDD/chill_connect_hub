@@ -136,10 +136,19 @@ export const Navbar: React.FC<NavbarProps> = ({
       setIsTucked(false);
     };
   }, [hidesOnScroll]);
+  const tucked = hidesOnScroll && isTucked && !isProfileDropdownOpen;
+  // Rows that stick under the bar (Home's mode tabs) move up into its place while it is away: html[data-header-tucked]
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-header-tucked', tucked);
+    return () => document.documentElement.removeAttribute('data-header-tucked');
+  }, [tucked]);
 
   return (
     <>
-      <header className={`sticky top-0 z-50 pt-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs ${hidesOnScroll && isTucked && !isProfileDropdownOpen ? 'max-xl:-translate-y-[calc(100%_-_env(safe-area-inset-top))]' : ''}`}>
+      {/* While the bar is away, a strip of its glass stays behind the phone's status bar, so the clock never sits on a photo
+          (the bar used to stop short and left its own logo row showing there, owner 2026-11-26) */}
+      {hidesOnScroll && <div className="xl:hidden fixed top-0 inset-x-0 z-50 h-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-xl pointer-events-none" aria-hidden="true" />}
+      <header className={`sticky top-0 z-50 pt-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs ${tucked ? 'max-xl:-translate-y-full' : ''}`}>
         <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Brand Logo & Name */}

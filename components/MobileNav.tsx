@@ -2,9 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { CalendarHeart, Camera, Footprints, Home, Plus, Zap } from 'lucide-react';
 import { useMemberSession } from '@/lib/useMemberSession';
 import { COMPOSE_HREF, onComposeLinkClick, onHomeLinkClick } from '@/lib/homeAgain';
+
+// The posting form for ＋ away from Home loads on the first tap
+const QuickCompose = dynamic(() => import('./moments/QuickCompose'), { ssr: false });
 
 interface MobileNavProps {
   activeTab: string;
@@ -20,6 +24,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   actionBar,
 }) => {
   const { isLoggedIn } = useMemberSession();
+  // ＋ away from Home: each tap opens a fresh form over the page (owner 2026-11-26); Home opens its own (onComposeLinkClick)
+  const [composeKey, setComposeKey] = useState<number | null>(null);
   const [heroActionsGone, setHeroActionsGone] = useState(false);
   useEffect(() => {
     if (!actionBar) return;
@@ -43,9 +49,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   ];
 
   return (
-    // Every width below the top bar's links (xl), so no screen is left without a menu (owner 2026-11-01)
-    // z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones.
-    // On short screens (a phone or folded phone turned sideways, 416 high) icon and label sit side by side, so the bar takes ~45 px, not ~70
+    <>
+    {/* Outside the bar: the bar is z-40 and hidden from xl, the form is a z-50 dialog */}
+    {composeKey !== null && <QuickCompose key={composeKey} />}
+    {/* Every width below the top bar's links (xl), so no screen is left without a menu (owner 2026-11-01)
+        z-40, under dialogs and sheets (z-50): at z-50 it covered the moment composer's โพสต์ button on phones.
+        On short screens (a phone or folded phone turned sideways, 416 high) icon and label sit side by side, so the bar takes ~45 px, not ~70 */}
     <div className="fixed bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)_-_0.75rem))] left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] z-40 xl:hidden">
       {actionBar && (
         <div
@@ -58,7 +67,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           {actionBar}
         </div>
       )}
-      <div className="bg-white/95 supports-[backdrop-filter]:bg-white/70 backdrop-blur-2xl backdrop-saturate-150 text-slate-900 rounded-3xl p-1.5 [@media(max-height:500px)]:p-1 border border-white/60 shadow-[0_8px_32px_rgba(15,23,42,0.18)] flex items-center justify-around max-w-md mx-auto">
+      <div className="bg-white/95 supports-[backdrop-filter]:bg-white/70 backdrop-blur-2xl backdrop-saturate-150 text-slate-900 rounded-3xl p-1 border border-white/60 shadow-[0_8px_32px_rgba(15,23,42,0.18)] flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -68,12 +77,17 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               <Link
                 key={item.id}
                 href={item.href}
-                onClick={onComposeLinkClick}
+                onClick={(event) => {
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                  if (window.location.pathname === '/') return onComposeLinkClick(event);
+                  event.preventDefault();
+                  setComposeKey(Date.now());
+                }}
                 aria-label={item.label}
                 title={item.label}
-                className="mx-1 w-12 h-12 [@media(max-height:500px)]:w-10 [@media(max-height:500px)]:h-10 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform select-none cursor-pointer"
+                className="mx-1 w-10 h-10 [@media(max-height:500px)]:w-9 [@media(max-height:500px)]:h-9 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform select-none cursor-pointer"
               >
-                <Icon className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
+                <Icon className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
               </Link>
             );
           }
@@ -85,7 +99,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 setActiveTab(item.id);
                 if (item.href === '/') onHomeLinkClick(event);
               }}
-              className={`flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 items-center justify-center py-2 [@media(max-height:500px)]:py-1.5 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
+              className={`flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 items-center justify-center py-1.5 [@media(max-height:500px)]:py-1 px-3 rounded-2xl transition-all duration-200 relative select-none cursor-pointer ${
                 isActive
                   ? 'bg-white/80 text-slate-900 font-bold scale-105 shadow-sm'
                   : 'text-slate-700 hover:text-slate-900'
@@ -102,5 +116,6 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         })}
       </div>
     </div>
+    </>
   );
 };
