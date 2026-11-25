@@ -10,3 +10,16 @@ export function onHomeLinkClick(event: MouseEvent<HTMLAnchorElement>) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   window.dispatchEvent(new Event(HOME_AGAIN_EVENT));
 }
+
+/** Fired by the phone bar's ＋ while on Home: the feed opens its posting form in place (owner 2026-11-26) */
+export const COMPOSE_EVENT = 'chillwaa:compose';
+
+/** The ＋ link's address from any other page: Home opens the posting form for ?share=new */
+export const COMPOSE_HREF = '/?share=new';
+
+/** onClick for the ＋ link: on Home it opens the form without a page change */
+export function onComposeLinkClick(event: MouseEvent<HTMLAnchorElement>) {
+  if (window.location.pathname !== '/' || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+  event.preventDefault();
+  window.dispatchEvent(new Event(COMPOSE_EVENT));
+}

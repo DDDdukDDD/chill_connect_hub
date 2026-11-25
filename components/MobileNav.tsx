@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarHeart, Camera, Footprints, Home, Zap } from 'lucide-react';
+import { CalendarHeart, Camera, Footprints, Home, Plus, Zap } from 'lucide-react';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { onHomeLinkClick } from '@/lib/homeAgain';
+import { COMPOSE_HREF, onComposeLinkClick, onHomeLinkClick } from '@/lib/homeAgain';
 
 interface MobileNavProps {
   activeTab: string;
@@ -30,11 +30,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     return () => observer.disconnect();
   }, [Boolean(actionBar)]); // eslint-disable-line react-hooks/exhaustive-deps -- only whether there is a bar matters
 
+  // Members (owner 2026-11-26): หน้าหลัก | กิจกรรม | ＋ | ชาเลนจ์ | มายฮับ. ＋ posts a moment from any page and any scroll;
+  // โมเมนต์ moved into Home as its ค้นพบ mode. Visitors keep หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ until the landing is decided
   const navItems = [
     // Home is the member's live feed (and the visitor's landing), so it stays one tap away
     { id: 'home', label: 'หน้าหลัก', href: '/', icon: Home },
     { id: 'explore', label: 'กิจกรรม', href: '/this-week', icon: Footprints },
-    { id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera },
+    ...(isLoggedIn ? [{ id: 'compose', label: 'โพสต์โมเมนต์', href: COMPOSE_HREF, icon: Plus }] : [{ id: 'moments', label: 'โมเมนต์', href: '/moments', icon: Camera }]),
     { id: 'challenges', label: 'ชาเลนจ์', href: '/challenges', icon: Zap },
     // My Hub is personal: a visitor who is not signed in has nothing there
     ...(isLoggedIn ? [{ id: 'myhub', label: 'มายฮับ', href: '/myhub', icon: CalendarHeart }] : []),
@@ -60,6 +62,21 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          if (item.id === 'compose') {
+            return (
+              // The one dark round button in the bar: posting is the main thing a member does here
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={onComposeLinkClick}
+                aria-label={item.label}
+                title={item.label}
+                className="mx-1 w-12 h-12 [@media(max-height:500px)]:w-10 [@media(max-height:500px)]:h-10 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform select-none cursor-pointer"
+              >
+                <Icon className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
+              </Link>
+            );
+          }
           return (
             <Link
               key={item.id}

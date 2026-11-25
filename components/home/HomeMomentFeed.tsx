@@ -7,7 +7,7 @@ import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/c
 import Link from 'next/link';
 import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUp, Bookmark, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Tag, Trash2, UserMinus, Video, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Tag, Trash2, UserMinus, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
@@ -23,7 +23,8 @@ import { Toast } from '@/components/Toast';
 import { EditPhotosRow, postRatio, type EditablePhoto } from '@/components/moments/EditPhotosRow';
 import { uploadPicture } from '@/components/moments/publishMoment';
 import { recall, remember } from '@/lib/clientMemory';
-import { HOME_AGAIN_EVENT } from '@/lib/homeAgain';
+import { COMPOSE_EVENT, HOME_AGAIN_EVENT } from '@/lib/homeAgain';
+import { HomeDiscoverGrid } from '@/components/home/HomeDiscoverGrid';
 import { flushSeen, watchSeen } from '@/lib/moments/seenTracker';
 import { targetLiveText } from '@/components/moments/targetLiveText';
 import { inviteViaLine } from '@/components/moments/lineInvite';
@@ -52,16 +53,21 @@ const TARGETS = MOMENT_TARGETS;
  * Four tabs (owner 2026-11-13: ยอดฮิต out, ล่าสุด and ของฉัน in from the ⋯), plus saved posts behind the bookmark
  * next to them (FEED_PLAN step 1: สำหรับคุณ comes first)
  */
-export type FeedView = 'foryou' | 'all' | 'following' | 'saved' | 'mine';
+// Three modes since 2026-11-26 (owner): สำหรับคุณ · ค้นพบ · ติดตาม. ค้นพบ is the /moments photo grid inside Home; ล่าสุด
+// left (ติดตาม is newest first), ของฉัน and saved posts moved to the profile's tabs. 'all', 'saved' and 'mine' stay as
+// views the API knows, for links and code that still name them
+export type FeedView = 'foryou' | 'discover' | 'all' | 'following' | 'saved' | 'mine';
 const TABS: [FeedView, string][] = [
   ['foryou', 'สำหรับคุณ'],
+  ['discover', 'ค้นพบ'],
   ['following', 'ติดตาม'],
-  ['all', 'ล่าสุด'],
-  ['mine', 'ของฉัน'],
 ];
+/** The grid mode: its own list (HomeDiscoverGrid), not the feed's */
+const isGrid = (view: FeedView) => view === 'discover';
 const PERSONAL: Partial<Record<FeedView, string>> = { saved: 'โมเมนต์ที่บันทึก' };
 const EMPTY: Record<FeedView, string> = {
   foryou: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
+  discover: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   all: 'ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน',
   following: 'ยังไม่ได้ติดตามใครเลย ติดตามเพื่อนที่ชอบออกไปไหนมาไหน แล้วโมเมนต์ของเขาจะมาอยู่ตรงนี้',
   saved: 'ยังไม่ได้บันทึกโมเมนต์ไหน กดรูปที่คั่นหนังสือใต้โพสต์ที่ชอบ แล้วจะมาอยู่ตรงนี้',
@@ -197,7 +203,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         )}
         <div className="min-w-0 flex-1">
           {/* What they went out and did, first thing in the post (owner 2026-11-18, option B): "มายด์ ไปตี้ <title>" */}
-          <p className="flex items-baseline gap-1.5 min-w-0 text-sm">
+          <p className="flex items-baseline gap-1.5 min-w-0 text-[15px]">
             {/* The name opens the profile like the avatar does (BE-425) */}
             {moment.authorId ? (
               <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className={`font-semibold text-slate-900 truncate hover:underline underline-offset-4 ${target ? 'max-w-[45%] shrink-0' : ''}`}>
@@ -220,7 +226,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             )}
           </p>
           {/* The check-in stays where it always was; left out when it only repeats the place named above */}
-          <p className="text-xs text-slate-500 truncate">
+          <p className="text-[13px] text-slate-500 truncate">
             {/* The time opens the post's own page, so it can be read and its link copied (BE-425) */}
             <Link href={`/moments/${encodeURIComponent(moment.id)}`} className="hover:underline underline-offset-4">
               {moment.timeAgo}
@@ -282,17 +288,18 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         </div>
       </div>
 
-      {moment.images.length > 0 && <MomentPhotos images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => {
+      {/* Full screen width on phones (owner 2026-11-26): the page's 16 px gutter is pulled back under the photo */}
+      {moment.images.length > 0 && <div className="-mx-4 sm:mx-0"><MomentPhotos bleed images={moment.images} video={moment.video} ratio={moment.imageRatio} alt={moment.caption || moment.location} onOpen={(index) => {
         if (!moment.video) return handlers.onPhotos(moment.images, index);
         handlers.onLeaveToClip(moment.id);
         router.push(`/moments/${encodeURIComponent(moment.id)}?full=1`);
-      }} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && handlers.onToggle(moment.id, 'like')} />}
+      }} onDoubleTap={moment.likesOff ? undefined : () => !moment.isLiked && handlers.onToggle(moment.id, 'like')} /></div>}
 
       {/*
         Reactions sit right under the photo, like IG (owner 2026-11-10); the words, the challenge and the place follow.
         Design 1 (owner 2026-11-10): the usual icons stay quiet, "ชวนไป" is the one action with a shape.
       */}
-      <div className="-my-1.5 flex items-center gap-1 text-[13px] font-semibold text-slate-800">
+      <div className="-my-1.5 flex items-center gap-1 text-[15px] font-semibold text-slate-800">
         {!moment.likesOff && (
         <button
           type="button"
@@ -301,7 +308,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'}
           className={`inline-flex items-center justify-center min-h-11 min-w-11 cursor-pointer hover:text-[#F43F5E] ${moment.isLiked ? 'text-[#E11D48]' : ''}`}
         >
-          <LikeIcon active={moment.isLiked} />
+          <LikeIcon active={moment.isLiked} className="w-7 h-7" />
         </button>
         )}
         {!moment.likesOff && moment.likesCount > 0 && (
@@ -322,20 +329,20 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label="ความคิดเห็น"
           className={`inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800 ${showComments ? 'text-slate-900' : ''}`}
         >
-          <CommentIcon />
+          <CommentIcon className="w-7 h-7" />
           {moment.commentsCount > 0 && <span className="tabular-nums">{moment.commentsCount.toLocaleString()}</span>}
         </button>
         )}
         {/* Icons only (owner 2026-11-13): แชร์ on every post, then ชวนไป, in its own colours, only on a post with a place to go */}
         {mayShare && (
         <button type="button" onClick={() => handlers.onMenu(moment, 'share')} aria-label={moment.sharesCount > 0 ? `แชร์ (แชร์แล้ว ${moment.sharesCount.toLocaleString()} คน)` : 'แชร์'} className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 cursor-pointer hover:text-slate-800">
-          <SendIcon />
+          <SendIcon className="w-7 h-7" />
           {moment.sharesCount > 0 && <span className="tabular-nums">{moment.sharesCount.toLocaleString()}</span>}
         </button>
         )}
         {mayShare && momentHasPlace(moment) && (
         <button type="button" onClick={() => handlers.onMenu(moment, 'send')} aria-label={moment.invitesCount > 0 ? `ชวนเพื่อนไปด้วยกัน (ชวนแล้ว ${moment.invitesCount.toLocaleString()} คน)` : 'ชวนเพื่อนไปด้วยกัน'} className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-11 px-1 cursor-pointer hover:opacity-80">
-          <InviteIcon className="h-[17px] w-[39px] shrink-0" />
+          <InviteIcon className="h-5 w-[46px] shrink-0" />
           {moment.invitesCount > 0 && <span className="tabular-nums">{moment.invitesCount.toLocaleString()}</span>}
         </button>
         )}
@@ -346,13 +353,13 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'}
           className={`inline-flex items-center justify-center min-h-11 min-w-11 ml-auto cursor-pointer hover:text-slate-900 ${moment.isSaved ? 'text-slate-900' : ''}`}
         >
-          <SaveIcon active={moment.isSaved} />
+          <SaveIcon active={moment.isSaved} className="w-7 h-7" />
         </button>
       </div>
 
       {/* A friend in the likes says more than a number (social proof, 2026-11-09): only someone the reader follows; the whole line opens the list */}
       {friendLike && (
-        <button type="button" onClick={() => setLikersOpen(true)} className="-mt-2 -mb-1 min-h-9 self-start text-left text-[13px] text-slate-600 cursor-pointer hover:text-slate-800">
+        <button type="button" onClick={() => setLikersOpen(true)} className="-mt-2 -mb-1 min-h-9 self-start text-left text-sm text-slate-600 cursor-pointer hover:text-slate-800">
           ถูกใจโดย <span className="font-semibold text-slate-900">{friendLike.name}</span>
           {moment.likesCount > 1 && <> และอีก <span className="tabular-nums">{(moment.likesCount - 1).toLocaleString()}</span> คน</>}
         </button>
@@ -361,8 +368,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
 
       {/* Tagged friends follow the author's name in this line, not under it at the top (owner 2026-11-16) */}
       {(moment.caption || moment.tagged?.length) && (
-        <div>
-          <p ref={captionRef} className={`text-sm leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
+        <div className="relative">
+          <p ref={captionRef} className={`text-[15px] leading-relaxed text-slate-800 whitespace-pre-line break-words ${showWholeCaption ? '' : 'line-clamp-2'}`}>
             {moment.authorId ? (
               <Link href={`/profile?id=${encodeURIComponent(moment.authorId)}`} className="font-semibold text-slate-900 hover:underline underline-offset-4">
                 {moment.userName}
@@ -373,9 +380,14 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
             {moment.tagged?.length ? <> <TaggedFriends people={moment.tagged} inline className="text-slate-700" /></> : null}
             {moment.caption && <> <CaptionText text={moment.caption} mentions={moment.tagged} /></>}
           </p>
+          {/* At the end of the second line, not on a line of its own (owner 2026-11-26): fades in over the cut text; the tap area reaches past the line */}
           {!showWholeCaption && captionCut && (
-            <button type="button" onClick={() => setShowWholeCaption(true)} className="inline-flex items-center min-h-11 -my-3 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
-              ดูเพิ่มเติม
+            <button
+              type="button"
+              onClick={() => setShowWholeCaption(true)}
+              className="absolute right-0 bottom-0 pl-8 text-[15px] leading-relaxed font-semibold text-slate-500 bg-[linear-gradient(to_right,transparent,white_1.75rem)] hover:text-slate-800 cursor-pointer before:absolute before:content-[''] before:-inset-y-3 before:inset-x-0"
+            >
+              … ดูเพิ่มเติม
             </button>
           )}
         </div>
@@ -401,7 +413,7 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
         <CommentThread momentId={moment.id} comments={shownComments} isLoggedIn onNeedLogin={() => undefined} onAct={(body) => handlers.onCommentAct(moment.id, body)} onReply={answer} />
       )}
       {!showComments && moment.commentsCount > 1 && (
-        <button type="button" onClick={() => setShowComments(true)} className="inline-flex items-center min-h-11 -my-2 text-[13px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+        <button type="button" onClick={() => setShowComments(true)} className="inline-flex items-center min-h-11 -my-2 text-sm font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
           ดูความคิดเห็นทั้งหมด {moment.commentsCount} รายการ
         </button>
       )}
@@ -721,8 +733,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       restored.current = false;
       return;
     }
-    // The server's page (or the restored list) is this view already: fetch only when the member changes the view
-    if (fetchedView.current === sort) return;
+    // The server's page (or the restored list) is this view already: fetch only when the member changes the view.
+    // ค้นพบ loads its own grid
+    if (fetchedView.current === sort || isGrid(sort)) return;
     fetchedView.current = sort;
     reload(sort);
   }, [sort, reload]);
@@ -966,10 +979,20 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
 
   // หน้าหลัก tapped again while on Home: the nav scrolls up, the feed refreshes the view being read (BE-425)
   useEffect(() => {
-    const again = () => reload(sort);
+    const again = () => !isGrid(sort) && reload(sort);
     window.addEventListener(HOME_AGAIN_EVENT, again);
     return () => window.removeEventListener(HOME_AGAIN_EVENT, again);
   }, [reload, sort]);
+
+  // The phone bar's ＋ while on Home (owner 2026-11-26): the form opens here, like the old "วันนี้ไปไหนมา?" row
+  useEffect(() => {
+    const compose = () => {
+      setComposerInitial(null);
+      setIsComposerOpen(true);
+    };
+    window.addEventListener(COMPOSE_EVENT, compose);
+    return () => window.removeEventListener(COMPOSE_EVENT, compose);
+  }, []);
 
   const showNew = () => {
     reload(sort);
@@ -1018,35 +1041,28 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
           </button>
         ) : (
         // On a narrow phone (or larger text) the tabs scroll inside the row instead of pushing the page wider
-        <div className="flex items-center gap-0.5 min-w-0 max-w-full overflow-x-auto no-scrollbar [&>button]:shrink-0" role="group" aria-label="เลือกโมเมนต์">
+        // Three modes as quiet text tabs with a dark underline (owner 2026-11-26): an equal share of a phone's width, side by side from sm
+        <div className="flex w-full border-b border-slate-200" role="group" aria-label="เลือกโมเมนต์">
           {TABS.map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setSort(value)}
               aria-pressed={sort === value}
-              className={`h-8 px-3 rounded-full text-[13px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                sort === value ? 'bg-[#FFF1F2] text-[#BE123C]' : 'text-slate-500 hover:bg-slate-100'
+              className={`relative flex-1 sm:flex-none sm:px-5 h-11 text-[15px] whitespace-nowrap cursor-pointer transition-colors ${
+                sort === value ? 'font-semibold text-slate-900' : 'font-medium text-slate-500 hover:text-slate-800'
               }`}
             >
               {label}
+              {sort === value && <span className="absolute inset-x-6 sm:inset-x-4 -bottom-px h-0.5 rounded-full bg-slate-900" aria-hidden="true" />}
             </button>
           ))}
-          {/* Saved posts: one bookmark, the only view left behind the old ⋯ (the left column has it as a shortcut too) */}
-          <button
-            type="button"
-            onClick={() => setSort('saved')}
-            aria-label="โมเมนต์ที่บันทึก"
-            title="โมเมนต์ที่บันทึก"
-            className="w-8 h-8 rounded-full text-slate-500 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
-          >
-            <Bookmark className="w-4 h-4" aria-hidden="true" />
-          </button>
         </div>
         )}
       </div>
 
-      <div className="mt-3">
+      {/* Computers only (owner 2026-11-26): below xl the bottom bar's ＋ opens the form from anywhere in the feed. Not in ค้นพบ, a grid to browse */}
+      <div className={`mt-4 hidden ${isGrid(sort) ? '' : 'xl:block'}`}>
         {/* Photos and clips are two ways in (owner 2026-11-02); each button goes straight to the phone's picker */}
         <div className="flex items-center gap-1 rounded-full border border-slate-200 p-1.5">
           <button type="button" onClick={() => setIsComposerOpen(true)} className="flex-1 min-w-0 flex items-center gap-3 rounded-full py-0.5 pl-0.5 pr-2 text-left hover:bg-slate-50 transition-colors cursor-pointer">
@@ -1086,7 +1102,9 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         </div>
       )}
 
-      {loadedView !== sort ? (
+      {isGrid(sort) ? (
+        <HomeDiscoverGrid onToast={showToast} />
+      ) : loadedView !== sort ? (
         <div className="space-y-6 pt-5" aria-hidden="true">
           {[0, 1].map((i) => (
             <div key={i} className="space-y-3">
