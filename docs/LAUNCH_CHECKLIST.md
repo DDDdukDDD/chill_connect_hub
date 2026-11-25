@@ -98,7 +98,7 @@
 **ใช้ประโยชน์จาก Vercel Pro** (เสนอ 25 พ.ย.; เพดานค่าใช้จ่าย $200 พร้อมหยุดเว็บที่ 100% ตั้งแล้ว 25 พ.ย.)
 - [ ] `ร่วม` **Firewall สัปดาห์แรกเป็นโหมด Log** (25 พ.ย.) กฎ: ข้าม `/api/cron` และ `/.well-known/` (GitHub Actions, Apple และ Google ต้องเข้าได้), จำกัด `/api/*` 600 ครั้ง/นาที/IP, หน้าเว็บ 600 ครั้ง/นาที/IP, Bot Protection = Log, AI Bots = ปิด (ห้ามบล็อก GPTBot/ClaudeBot ตามกฎ AI search) ราว 2 ธ.ค. ดูยอดใน Firewall ด้วยกัน แล้วปรับตัวเลขและเปลี่ยนเป็น Deny (429) ระวังคนไทยบนมือถือที่ใช้ IP ร่วมกัน (CGNAT) และบอทพรีวิวลิงก์ของ LINE/Facebook
 - [ ] `เจ้าของ` **เช็ก Vercel Cron หลัง merge** (BE-471 ย้ายจาก GitHub Actions แล้ว) Settings > Cron Jobs ต้องมี 2 งาน และ Logs มี `/api/cron/hourly` 200 ทุกชั่วโมง
-- [ ] `Claude` **Speed Insights + Web Analytics** (ไม่ใช้คุกกี้) เพิ่มหนึ่งบรรทัดในนโยบายความเป็นส่วนตัว และเช็ก CSP
+- [ ] `เจ้าของ` **เปิด Analytics และ Speed Insights ในแดชบอร์ด Vercel** (โค้ดพร้อมแล้ว BE-473) โปรเจกต์ → Analytics → Enable และ Speed Insights → Enable ข้อมูลเริ่มเก็บหลัง merge
 - [ ] `เจ้าของ` **Deployment Protection** เปิด Vercel Authentication ให้ Preview
 - [ ] `ร่วม` **Log Drains** สำหรับ log 90 วัน (ดูหมวด 5 ข้อ พ.ร.บ.คอมพิวเตอร์) เลือกปลายทางก่อน
 

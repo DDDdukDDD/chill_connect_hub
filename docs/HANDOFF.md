@@ -20,6 +20,12 @@ Item template:
 
 ---
 
+### BE-473 · Vercel Web Analytics + Speed Insights (owner 2026-11-25)
+- **What changed:** `@vercel/analytics` 2.0.1 and `@vercel/speed-insights` 2.1.0; `components/SiteAnalytics.tsx` in the root layout. `beforeSend` drops the query and hash (reset/confirm tokens, `?s=` share and profile ids), turns `/i/<code>` into `/i/[code]` and skips `/admin`. Both are cookieless; scripts and beacons are same-origin (`/_vercel/...`), so the CSP needs no change. Privacy text: `TermsPrivacyModal` sections 2 and 4, `docs/LEGAL_DRAFT.md` section 6 (question for the lawyer added). The detail pages stay `●` (checked with `next build`).
+- **What to do about it:** owner turns both on in Vercel (project → Analytics → Enable; Speed Insights → Enable); until then the scripts get 404 and nothing is counted, which is harmless. Data starts after the merge into `main`. Check the event quota on the Pro plan.
+
+---
+
 ### BE-472 · Public detail pages served from the CDN (owner 2026-11-25)
 - **What changed:** `/spots/[id]`, `/events/[id]`, `/community/[id]` and `/challenges/[id]` were rendered on every request (`Cache-Control: private, no-store` on live), so every guest or bot visit read the database. A dynamic route without `generateStaticParams` is always dynamic in Next 16 (previous caching model; `cacheComponents` is off). Each page now exports `generateStaticParams() { return [] }` and `revalidate` (places 600 s, อีเวนต์ and challenges 300 s, ตี้ 60 s): built on the first visit, then served from the CDN. `lib/pageCache.ts` `refreshEventPage(id)` calls `revalidatePath` for the ตี้/อีเวนต์ page after a join and a host edit (`app/api/events/route.ts`), so seats show at once. `/moments/[id]` is unchanged (a deleted or hidden post must vanish at once).
 - **Rule from now on:** these server pages render public data only. Never read cookies or the session in them or in what they call; anything about the viewer (joined, saved, own progress) loads in the browser, as today. A cookie read would turn the page dynamic again (build shows `ƒ` instead of `●`) or, worse, cache one person's data for everyone.
