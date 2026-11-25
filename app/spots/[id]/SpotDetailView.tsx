@@ -196,6 +196,30 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // "ที่นี่ปิดแล้ว?" (owner 2026-11-26): a tap asks once more, the second sends it; two members (old enough accounts) hide the place
+  const [closedStep, setClosedStep] = useState<'idle' | 'confirm' | 'sending' | 'sent'>('idle');
+  const reportClosed = async (spotId: string) => {
+    if (!isLoggedIn) {
+      setMembershipActionTitle('เพื่อบอกเราว่าที่นี่ปิดแล้ว');
+      setIsRequireMembershipOpen(true);
+      return;
+    }
+    if (closedStep === 'idle') return setClosedStep('confirm');
+    setClosedStep('sending');
+    const res = await fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetType: 'spot', targetId: spotId, reason: 'place_closed' }),
+    }).catch(() => null);
+    const json = res ? await res.json().catch(() => null) : null;
+    if (res?.ok || res?.status === 409) {
+      setClosedStep('sent');
+      return showToast(json?.placeHidden ? 'ขอบคุณนะ เราซ่อนที่นี่ไว้ก่อนแล้ว ทีมงานจะตรวจอีกที' : res?.status === 409 ? 'คุณบอกเราไปแล้ว ขอบคุณนะ' : 'ขอบคุณที่บอกเรา ทีมงานจะตรวจสอบ');
+    }
+    setClosedStep('confirm');
+    showToast(json?.message || 'ส่งไม่สำเร็จ ลองอีกครั้งนะ');
+  };
+
   const toggleFavorite = (spotId: string) => {
     if (!isLoggedIn) {
       setMembershipActionTitle('เพื่อบันทึกที่ที่ไปมาแล้ว');
@@ -405,6 +429,20 @@ export default function SpotDetailPage({ initialSpot = null, nearbyPool, station
                     <Flag className="w-3.5 h-3.5" aria-hidden="true" />
                     แจ้งข้อมูลผิด
                   </button>
+                </div>
+                {/* Imported places can be out of date: whoever finds one closed says so in two taps (owner 2026-11-26) */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs sm:text-sm">
+                  <span className="text-slate-600">{closedStep === 'sent' ? 'ขอบคุณที่ช่วยกันนะ' : 'ไปแล้วเจอว่าปิด บอกเราได้'}</span>
+                  {closedStep !== 'sent' && (
+                    <button
+                      type="button"
+                      onClick={() => void reportClosed(spot.id)}
+                      disabled={closedStep === 'sending'}
+                      className={`min-h-11 px-3 -mr-3 rounded-full font-semibold cursor-pointer disabled:opacity-60 ${closedStep === 'idle' ? 'text-slate-700 hover:text-slate-900' : 'text-[#B91C1C] hover:text-[#991B1B]'}`}
+                    >
+                      {closedStep === 'idle' ? 'ที่นี่ปิดแล้ว?' : 'ยืนยัน ที่นี่ปิดแล้ว'}
+                    </button>
+                  )}
                 </div>
               </section>
             )}

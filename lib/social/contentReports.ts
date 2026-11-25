@@ -8,6 +8,7 @@ import { chatMessageForReport, chatRoomForStaff, removeChatMessageAsStaff } from
 import { contentReportStore, questionStore } from './stores';
 import { removeReview, reviewById } from './reviews';
 import { pairMembersOf } from './meetAgain';
+import { PLACE_CLOSED_REASON, hideIfClosedEnough } from './placeClosedReports';
 
 /**
  * Safety reports members send about an event, a fair or a place (the "รายงาน" button on detail pages),
@@ -24,6 +25,8 @@ export const CONTENT_REPORT_REASONS = [
   { id: 'unsafe_location', label: 'นัดพบในที่ลับตาคนหรือไม่ปลอดภัย' },
   { id: 'fake_or_spam', label: 'ข้อมูลปลอม สแปม หรือไม่มาตามนัด' },
   { id: 'wrong_info', label: 'ข้อมูลไม่ถูกต้องหรือไม่อัปเดต' },
+  // The one-tap "ที่นี่ปิดแล้ว?" on a place page; enough of them hide the place (placeClosedReports.ts)
+  { id: 'place_closed', label: 'ที่นี่ปิดแล้ว' },
   { id: 'other', label: 'เรื่องอื่น' },
 ] as const;
 const REASON_IDS = new Set<string>(CONTENT_REPORT_REASONS.map((reason) => reason.id));
@@ -52,7 +55,7 @@ export interface ContentReport {
 const MAX_PER_DAY = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export async function fileContentReport(reporter: Member, input: Record<string, unknown>): Promise<ContentReport> {
+export async function fileContentReport(reporter: Member, input: Record<string, unknown>): Promise<ContentReport & { placeHidden?: boolean }> {
   if (reporter.status !== 'active') throw new MemberAuthError('บัญชีนี้ยังส่งรายงานไม่ได้', 403);
   const targetType = input.targetType as ReportTargetType;
   const targetId = typeof input.targetId === 'string' ? input.targetId.trim().slice(0, 120) : '';
@@ -112,7 +115,16 @@ export async function fileContentReport(reporter: Member, input: Record<string, 
     throw new MemberAuthError('วันนี้ส่งรายงานครบจำนวนแล้ว ลองใหม่พรุ่งนี้', 429);
   }
 
-  return contentReportStore.add({ targetType, targetId, targetTitle, hostMemberId, excerpt, roomId, reason, details, reporterId: reporter.id });
+  // "ที่นี่ปิดแล้ว": enough members hide the place at once; the report says so for staff
+  let hidden = false;
+  if (reason === PLACE_CLOSED_REASON) {
+    if (targetType !== 'spot') throw new MemberAuthError('ไม่พบสิ่งที่ต้องการรายงาน', 400);
+    const earlier = everything.filter((report) => report.targetId === targetId && report.reason === PLACE_CLOSED_REASON && report.status === 'open').map((report) => report.reporterId);
+    hidden = await hideIfClosedEnough(targetId, reporter, earlier);
+  }
+  const note = hidden ? 'ระบบซ่อนสถานที่นี้ไว้ก่อนแล้ว เพราะสมาชิกแจ้งว่าปิดครบตามเกณฑ์ ถ้ายังเปิดอยู่ ให้เผยแพร่อีกครั้งในหน้าสถานที่' : '';
+  const report = await contentReportStore.add({ targetType, targetId, targetTitle, hostMemberId, excerpt, roomId, reason, details: [details, note].filter(Boolean).join(' · '), reporterId: reporter.id });
+  return Object.assign(report, { placeHidden: hidden });
 }
 
 /** For the admin console: reports with the names staff need to act */
