@@ -501,7 +501,7 @@ const TOPICS: Topic[] = [
     title: 'อีเวนต์ที่ดึงมาและอีเวนต์ที่จบแล้ว',
     summary: 'ระบบดึงอีเวนต์จากแหล่งทางการทุกสัปดาห์ เข้าคิวรอทีมงานอนุมัติ และตั้งสถานะจบแล้วให้เองทุกคืน',
     updated: 'BE-459',
-    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', '.github/workflows/weekly-jobs.yml'],
+    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', 'vercel.json'],
     body: (
       <List
         items={[
@@ -530,6 +530,62 @@ const TOPICS: Topic[] = [
           'คูปองจากร้านยังแลกได้คนละครั้งเสมอ',
         ]}
       />
+    ),
+  },
+  {
+    id: 'services-config',
+    title: 'บริการภายนอกและการตั้งค่า',
+    summary: 'บริการที่เว็บใช้ ตั้งค่าไว้ที่ไหน และค่าที่ตกลงกันไว้ หน้านี้มีแค่ชื่อตัวแปร ห้ามใส่รหัสหรือคีย์จริง (เปิดดูค่าจริงในแดชบอร์ดของแต่ละบริการ)',
+    updated: 'BE-474 (25 พ.ย. 2569)',
+    files: ['vercel.json', 'next.config.ts', 'lib/pageCache.ts', 'components/SiteAnalytics.tsx', 'lib/members/mailer.ts', 'docs/EMAIL.md', 'docs/LAUNCH_CHECKLIST.md'],
+    body: (
+      <>
+        <H>Vercel (เว็บ) · แผน Pro ตั้งแต่ 24 พ.ย. 2569</H>
+        <List
+          items={[
+            'เซิร์ฟเวอร์อยู่สิงคโปร์ (sin1) ใกล้ฐานข้อมูลและผู้ใช้ไทย',
+            'เพดานค่าใช้จ่าย: ทีม Settings > Billing > Spend Management งบ $200 ต่อเดือน เตือนทางอีเมลที่ 50/75/100% และหยุดเว็บทั้งทีมเมื่อถึง 100% (ต้องเข้าไปกด resume เอง) ขยับเพดานขึ้นก่อนเริ่มโปรโมต',
+            'Firewall (โปรเจกต์ > Firewall > Rules) เรียงจากบนลงล่าง: (1) Allow system paths = ข้ามทุกกฎสำหรับ /api/cron และ /.well-known/ (งานตามเวลา และไฟล์ผูกแอปของ Apple/Google) (2) Detail page guard = หน้ารายละเอียด /spots /events /community /moments /challenges เกิน 120 ครั้งต่อนาทีต่อ IP ถูกกันทันที (ใช้งานจริงตั้งแต่ 25 พ.ย.) (3) API rate limit = /api/* 600 ครั้งต่อนาทีต่อ IP (4) Page rate limit = หน้าเว็บ 600 ครั้งต่อนาทีต่อ IP ข้อ 3–4 สัปดาห์แรกตั้งเป็น Log (บันทึกอย่างเดียว) ราว 2 ธ.ค. ดูยอดแล้วเปลี่ยนเป็น Deny',
+            'Bot Management: Bot Protection = Log (ยังไม่ Challenge เพราะบอทพรีวิวลิงก์ของ LINE ไม่อยู่ในรายชื่อที่ยืนยันได้) · AI Bots = Allow ห้ามบล็อก เพราะต้องการให้ ChatGPT, Claude, Perplexity เจอเว็บ',
+            'ปุ่มฉุกเฉิน: Firewall > Attack Challenge Mode ใช้ตอนโดนยิงหนัก ทุกคนต้องผ่านหน้าตรวจก่อนเข้า ใช้ชั่วคราวแล้วปิด',
+            'งานตามเวลา (Vercel Cron, vercel.json): /api/cron/hourly ทุกชั่วโมงนาทีที่ 7 และ /api/cron/weekly วันจันทร์ 03:17 เวลาไทย ทำงานเฉพาะบน Production ส่งรหัส CRON_SECRET ให้เอง ถ้าต้องรันเองให้กด Actions > Hourly jobs / Weekly jobs > Run workflow บน GitHub',
+            'Web Analytics และ Speed Insights: เปิดแล้ว ไม่ใช้คุกกี้ ตัดส่วนท้ายของลิงก์ (รหัสยืนยัน รหัสชวน) ก่อนส่ง และไม่นับหน้าแอดมิน เกินโควตาคิด $30 ต่อ 1 ล้าน event ไม่ต้องใช้ Analytics Plus จนกว่าจะทำแคมเปญที่ต้องวัดผลละเอียด',
+            'หน้ารายละเอียดเก็บที่ CDN: สถานที่สร้างใหม่ทุก 10 นาที อีเวนต์และชาเลนจ์ทุก 5 นาที ตี้ทุก 1 นาที (มีคนเข้าร่วมหรือโฮสต์แก้แล้วสร้างใหม่ทันที) ทีมงานแก้ข้อมูลแล้วจะเห็นบนเว็บหลังเวลานี้ หน้าโมเมนต์ไม่เก็บ เพราะโพสต์ที่ลบต้องหายทันที',
+            'ตัวแปรสำคัญบน Production (Settings > Environment Variables): DATABASE_URL, DATA_STORE, AUTH_SECRET, ADMIN_PASSWORD, CRON_SECRET, RESEND_API_KEY, MAIL_FROM, MAIL_REPLY_TO, R2_* (ที่เก็บรูป), APNS_KEY_ID และ APNS_PRIVATE_KEY (แจ้งเตือน iPhone), SITE_INDEXING (เปิดให้ค้นหาเจอ ยังไม่เปิดจนกว่าจะพร้อม) ค่าเป็นแบบ Sensitive ดูย้อนหลังไม่ได้ เก็บต้นฉบับไว้ที่บริการต้นทาง',
+          ]}
+        />
+
+        <H>อีเมล</H>
+        <List
+          items={[
+            'รับอีเมล: Cloudflare > chillwaa.com > Email Routing ส่งต่อ hello@ และ privacy@chillwaa.com เข้ากล่องของทีม (chillwaa.official@gmail.com) ไม่เปิด catch-all',
+            'ส่งอีเมล: Resend โดเมน chillwaa.com ภูมิภาค Tokyo ส่งจาก no-reply@chillwaa.com ตอบกลับไปที่ hello@ แผนฟรีส่งได้วันละ 100 เดือนละ 3,000 ฉบับ (Pro $20 ต่อเดือนเมื่อคนสมัครเยอะ) ใน Resend ปิด "Enable receiving" ไว้ เพราะการรับอีเมลอยู่ที่ Cloudflare',
+            'DNS ใน Cloudflare (DNS only ทุกตัว): DKIM ที่ resend._domainkey, ระเบียนส่งของ Resend ที่ send และ rsend, DMARC ที่ _dmarc (p=none รายงานเข้า hello@) ห้ามแก้ MX ของโดเมนหลัก เพราะเป็นของ Email Routing',
+            'อีเมลที่ระบบส่ง: ยืนยันอีเมล ตั้งรหัสผ่านใหม่ และแจ้งผล ถ้าอีเมลไม่มาให้ดู Vercel > Logs ค้นคำว่า [mailer]',
+            'SKIP_EMAIL_VERIFICATION: ข้ามการยืนยันอีเมลเฉพาะเมื่อตั้งเป็น true เท่านั้น บน Production ต้องไม่มีตัวแปรนี้ (เช็ก 25 พ.ย.: ไม่พบใน Production) ถ้าวันหนึ่งมีคนใส่ สมัครแล้วจะถือว่ายืนยันอีเมลทันที',
+          ]}
+        />
+
+        <H>ฐานข้อมูล ที่เก็บรูป และ GitHub</H>
+        <List
+          items={[
+            'Supabase (Postgres): ฐานจริงกับฐานพัฒนาแยกกัน npm run dev ใช้ฐานพัฒนาเสมอ ห้ามเขียนข้อมูลทดสอบลงฐานจริง migration บนฐานจริงเจ้าของเป็นคนรัน (npm run db:migrate) ช่องเชื่อมต่อ (Pool Size) 29 ซึ่งสูงสุดของแผนฟรี',
+            'egress ของ Supabase เต็มโควตาฟรี (5 GB) แล้ว ต้องอัปเกรดเป็น Pro ก่อน 3 ธ.ค. 2569 ดูได้ที่ Supabase > Usage > Egress',
+            'ห้ามเปลี่ยนรหัสผ่านของผู้ใช้ฐานข้อมูล app_runtime เพราะเว็บจริงจะเชื่อมต่อไม่ได้ทันที',
+            'รูปและคลิป: Cloudflare R2 เปิดผ่าน media.chillwaa.com (ไม่คิดค่า egress)',
+            'GitHub > Settings > Secrets and variables > Actions: CRON_SECRET (ใช้กดรันงานตามเวลาเอง), PLACES_DATABASE_URL และ R2_* (งานย้ายรูปที่เที่ยวทุก 3 ชั่วโมง ถ้ายังไม่ใส่งานจะข้ามเฉยๆ)',
+          ]}
+        />
+
+        <H>เปลี่ยนการตั้งค่าแล้วต้องทำอะไร</H>
+        <List
+          items={[
+            'แก้หัวข้อนี้ในโค้ด (components/admin/SystemLogicView.tsx) ในงานเดียวกัน และเขียนใน docs/HANDOFF.md',
+            'เพิ่มโดเมนภายนอกใหม่ (สคริปต์ รูป API) ต้องเพิ่มใน CSP ที่ next.config.ts ด้วย ไม่อย่างนั้นเบราว์เซอร์จะบล็อก',
+            'ตัวแปรบน Vercel เปลี่ยนแล้วต้อง Redeploy ถึงจะมีผล',
+          ]}
+        />
+      </>
     ),
   },
 ];

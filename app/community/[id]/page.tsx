@@ -9,6 +9,16 @@ import { questionsOf } from '@/lib/social/eventQuestions';
 
 type Props = { params: Promise<{ id: string }> };
 
+// Cached on the CDN and rebuilt at most every 60 s (BE-472): guests and bots read the cached page, not the database.
+// Seats change often: joining or a host edit rebuilds the page at once (refreshEventPage); other changes within a minute.
+// Only public data is rendered here; anything about the viewer loads in the browser.
+export const revalidate = 60;
+
+// Empty list: no page is built at deploy time; each one is built on its first visit, then cached (Next ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 const titleOf = (title: string) => title.replace(/^\[ตัวอย่าง\]\s*/, '');
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

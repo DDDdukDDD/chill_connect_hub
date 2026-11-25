@@ -20,6 +20,34 @@ Item template:
 
 ---
 
+### BE-474 · Admin knowledge: services and settings (owner 2026-11-25)
+- **What changed:** /admin "วิธีคิดของระบบ" has a new topic "บริการภายนอกและการตั้งค่า" (`services-config` in `components/admin/SystemLogicView.tsx`): Vercel Pro (budget $200 with pause, firewall rule order and log-only week, bot settings, cron times, analytics, CDN revalidate times, env var names), email (Cloudflare Email Routing, Resend, DNS names, `SKIP_EMAIL_VERIFICATION`), Supabase, R2 and GitHub secrets. Names only, never a secret value.
+- **Rule from now on:** when a service setting changes (dashboard or code), update that topic in the same change.
+- **Firewall 2026-11-25:** `Detail page guard` (detail pages, 120/min/IP, enforced) set by the owner, second in order after `Allow system paths`. `SKIP_EMAIL_VERIFICATION` was not found on Production (the code skips only when it equals `true`, `lib/members/safety.ts`), so email confirmation should already be on.
+- **Open at end of 2026-11-25 (owner):** test sign-up on live with a mailbox you own (confirm email must arrive), then delete the test account; run 0068 on live, try the `claude` preview signed in, then merge (BE-466..474 not on main); Supabase Pro before 3 Dec; review firewall logs ~2 Dec. Note: the topic "สิทธิ์ลุ้นและการจับรางวัล" still describes prize draws, which the owner dropped on 2026-11-23; rewrite when the draw code is decided (checklist section 7).
+
+---
+
+### BE-473 · Vercel Web Analytics + Speed Insights (owner 2026-11-25)
+- **What changed:** `@vercel/analytics` 2.0.1 and `@vercel/speed-insights` 2.1.0; `components/SiteAnalytics.tsx` in the root layout. `beforeSend` drops the query and hash (reset/confirm tokens, `?s=` share and profile ids), turns `/i/<code>` into `/i/[code]` and skips `/admin`. Both are cookieless; scripts and beacons are same-origin (`/_vercel/...`), so the CSP needs no change. Privacy text: `TermsPrivacyModal` sections 2 and 4, `docs/LEGAL_DRAFT.md` section 6 (question for the lawyer added). The detail pages stay `●` (checked with `next build`).
+- **What to do about it:** owner turns both on in Vercel (project → Analytics → Enable; Speed Insights → Enable); until then the scripts get 404 and nothing is counted, which is harmless. Data starts after the merge into `main`. Check the event quota on the Pro plan.
+
+---
+
+### BE-472 · Public detail pages served from the CDN (owner 2026-11-25)
+- **What changed:** `/spots/[id]`, `/events/[id]`, `/community/[id]` and `/challenges/[id]` were rendered on every request (`Cache-Control: private, no-store` on live), so every guest or bot visit read the database. A dynamic route without `generateStaticParams` is always dynamic in Next 16 (previous caching model; `cacheComponents` is off). Each page now exports `generateStaticParams() { return [] }` and `revalidate` (places 600 s, อีเวนต์ and challenges 300 s, ตี้ 60 s): built on the first visit, then served from the CDN. `lib/pageCache.ts` `refreshEventPage(id)` calls `revalidatePath` for the ตี้/อีเวนต์ page after a join and a host edit (`app/api/events/route.ts`), so seats show at once. `/moments/[id]` is unchanged (a deleted or hidden post must vanish at once).
+- **Rule from now on:** these server pages render public data only. Never read cookies or the session in them or in what they call; anything about the viewer (joined, saved, own progress) loads in the browser, as today. A cookie read would turn the page dynamic again (build shows `ƒ` instead of `●`) or, worse, cache one person's data for everyone.
+- **Checked:** `next build` on the dev database shows the four routes as `●`; `next start`: first request `x-nextjs-cache: MISS`, second `HIT`, `Cache-Control: s-maxage=<revalidate>, stale-while-revalidate`; one h1; unknown id 404. Not walked signed in (page code passes no member data, unchanged views).
+- **What to do about it:** after merge, check live with `curl -sI https://www.chillwaa.com/spots/<id>` twice: the second shows `X-Vercel-Cache: HIT`. Watch Supabase egress the following days. Edits by staff appear after the revalidate time, not at once.
+
+---
+
+### BE-471 · Timed jobs on Vercel Cron, not GitHub Actions (owner 2026-11-25)
+- **What changed:** the team is on Vercel Pro, which allows crons at any interval. `vercel.json` now calls `/api/cron/hourly` every hour at :07 and `/api/cron/weekly` Sunday 20:17 UTC (Monday 03:17 Bangkok), the same times as before. The schedules in `.github/workflows/hourly-jobs.yml` and `weekly-jobs.yml` are removed (GitHub ran them late or skipped them); both workflows stay for a run by hand. Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` from the Production env, which the routes already check. The firewall rule "Allow system paths" (set 2026-11-25, log-only rate limits for week 1) bypasses `/api/cron` and `/.well-known/`.
+- **What to do about it:** Vercel Cron runs only on the Production deployment, so it starts when `claude` is merged into `main` (the old schedules stop at the same merge). Afterwards check Vercel > Settings > Cron Jobs shows two jobs and Logs show `/api/cron/hourly` 200 each hour.
+
+---
+
 ### BE-470 · Popular TAT restaurants and cafés in the dev database; storytelling first-visit plan (owner 2026-11-25)
 - **What changed:**
   - `db/import-tat-attractions.ts --food [--top=N]` + `tatFoodCategory` in `lib/scrapers/tatDataApi.ts`: TAT category 8, the 800 most viewed plus those with text and a picture in the list. On dev: 453 new drafts (436 restaurants, 14 cafés, 2 bars, 1 market), 712 calls. Food matches are left alone (both fills in the first run were wrong and were put back from the backup). Details and numbers in [TAT_IMPORT.md](TAT_IMPORT.md) "Restaurants and cafés run".

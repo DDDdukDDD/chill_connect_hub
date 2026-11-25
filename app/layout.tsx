@@ -3,6 +3,7 @@ import { SEARCH_INDEXING_ON, SITE_URL } from "@/lib/site";
 import { IBM_Plex_Sans_Thai, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AppSetup } from "@/components/AppSetup";
+import { SiteAnalytics } from "@/components/SiteAnalytics";
 import { SkipToContent } from '@/components/SkipToContent';
 import { InviteRefCapture } from "@/components/InviteRefCapture";
 import { OnboardingResume } from "@/components/OnboardingResume";
@@ -143,6 +144,7 @@ export default function RootLayout({
         <OnboardingResume />
         <PostingProgress />
         {children}
+        <SiteAnalytics />
       </body>
     </html>
   );

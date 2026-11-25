@@ -9,9 +9,9 @@ import { runPlanReminders } from '@/lib/social/friendPlans';
 import { rebuildCreatorDaily } from '@/lib/social/creatorDaily';
 
 /**
- * Work that must happen at a time, not when someone opens a page. Called every hour by the GitHub Actions schedule
- * (.github/workflows/hourly-jobs.yml) and once a day by Vercel Cron as a back-up (vercel.json); Vercel Hobby
- * allows only daily crons. Both send `Authorization: Bearer <CRON_SECRET>`. Each job is safe to run twice.
+ * Work that must happen at a time, not when someone opens a page. Called every hour at :07 by Vercel Cron (vercel.json,
+ * Pro plan since 2026-11-25), which sends `Authorization: Bearer <CRON_SECRET>`; .github/workflows/hourly-jobs.yml can
+ * call it by hand with the same header. Each job is safe to run twice.
  */
 export const dynamic = 'force-dynamic';
 // Photo copies take up to a minute of a run; the caller waits 120 s
