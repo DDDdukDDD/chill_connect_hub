@@ -20,6 +20,14 @@ Item template:
 
 ---
 
+### BE-474 · Admin knowledge: services and settings (owner 2026-11-25)
+- **What changed:** /admin "วิธีคิดของระบบ" has a new topic "บริการภายนอกและการตั้งค่า" (`services-config` in `components/admin/SystemLogicView.tsx`): Vercel Pro (budget $200 with pause, firewall rule order and log-only week, bot settings, cron times, analytics, CDN revalidate times, env var names), email (Cloudflare Email Routing, Resend, DNS names, `SKIP_EMAIL_VERIFICATION`), Supabase, R2 and GitHub secrets. Names only, never a secret value.
+- **Rule from now on:** when a service setting changes (dashboard or code), update that topic in the same change.
+- **Firewall 2026-11-25:** `Detail page guard` (detail pages, 120/min/IP, enforced) set by the owner, second in order after `Allow system paths`. `SKIP_EMAIL_VERIFICATION` was not found on Production (the code skips only when it equals `true`, `lib/members/safety.ts`), so email confirmation should already be on.
+- **Open at end of 2026-11-25 (owner):** test sign-up on live with a mailbox you own (confirm email must arrive), then delete the test account; run 0068 on live, try the `claude` preview signed in, then merge (BE-466..474 not on main); Supabase Pro before 3 Dec; review firewall logs ~2 Dec. Note: the topic "สิทธิ์ลุ้นและการจับรางวัล" still describes prize draws, which the owner dropped on 2026-11-23; rewrite when the draw code is decided (checklist section 7).
+
+---
+
 ### BE-473 · Vercel Web Analytics + Speed Insights (owner 2026-11-25)
 - **What changed:** `@vercel/analytics` 2.0.1 and `@vercel/speed-insights` 2.1.0; `components/SiteAnalytics.tsx` in the root layout. `beforeSend` drops the query and hash (reset/confirm tokens, `?s=` share and profile ids), turns `/i/<code>` into `/i/[code]` and skips `/admin`. Both are cookieless; scripts and beacons are same-origin (`/_vercel/...`), so the CSP needs no change. Privacy text: `TermsPrivacyModal` sections 2 and 4, `docs/LEGAL_DRAFT.md` section 6 (question for the lawyer added). The detail pages stay `●` (checked with `next build`).
 - **What to do about it:** owner turns both on in Vercel (project → Analytics → Enable; Speed Insights → Enable); until then the scripts get 404 and nothing is counted, which is harmless. Data starts after the merge into `main`. Check the event quota on the Pro plan.
