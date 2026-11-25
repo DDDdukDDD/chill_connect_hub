@@ -43,6 +43,38 @@ function setSound(on: boolean) {
   soundListeners.forEach((listener) => listener());
 }
 
+/**
+ * The Reel opens with the sound on (owner 2026-11-26); leaving it puts the sound back as it was, so feed clips stay
+ * silent. Swiping from clip to clip inside the Reel keeps whatever the reader chose there. If the browser refuses
+ * sound without a fresh tap, `start` falls back to silent and the speaker button shows it.
+ */
+let reelDepth = 0;
+let soundBeforeReel = false;
+let leaveReelTimer: ReturnType<typeof setTimeout> | null = null;
+function enterReel() {
+  reelDepth += 1;
+  if (leaveReelTimer) {
+    // Still the same Reel (the next clip mounted as the last one left): keep the reader's choice
+    clearTimeout(leaveReelTimer);
+    leaveReelTimer = null;
+    return;
+  }
+  if (reelDepth > 1) return;
+  soundBeforeReel = soundOn;
+  setSound(true);
+  // A clip already playing silently may be paused by the browser when its sound comes on: start it again (silent if refused)
+  const el = playing;
+  if (el) setTimeout(() => el.paused && !pausedByReader.has(el) && start(el), 60);
+}
+function leaveReel() {
+  reelDepth = Math.max(0, reelDepth - 1);
+  if (reelDepth > 0) return;
+  leaveReelTimer = setTimeout(() => {
+    leaveReelTimer = null;
+    setSound(soundBeforeReel);
+  }, 800);
+}
+
 /** A reader on a data saver, or who asked for less motion, starts clips with a tap */
 function mayAutoplay(): boolean {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
@@ -166,6 +198,13 @@ export function ClipPlayer({ url, preview, startS = 0, durationS, poster, label,
   // The full file, rather than the preview or nothing; switched on by the reader, never back
   const [isFull, setIsFull] = useState(preview === undefined);
   const switchedToFull = useRef(false);
+
+  // Full screen is the Reel: sound on while it is open
+  useEffect(() => {
+    if (!fullScreen) return;
+    enterReel();
+    return leaveReel;
+  }, [fullScreen]);
 
   useEffect(() => {
     const el = video.current;
