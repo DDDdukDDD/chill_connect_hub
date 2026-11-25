@@ -7,7 +7,8 @@ import { FOR_YOU_WEIGHTS as W, POPULAR_WEIGHTS as P } from '@/lib/moments/forYou
 import { SEEN_BATCH, SEEN_LOOK_MS } from '@/lib/moments/seenTracker';
 import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { WEEKLY_SCRAPE_GAP_DAYS } from '@/lib/eventImportRules';
-import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS } from '@/lib/social/socialRules';
+import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS , PLACE_CLOSED_HIDE_AT } from '@/lib/social/socialRules';
+import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -478,16 +479,19 @@ const TOPICS: Topic[] = [
   {
     id: 'spot-imports',
     title: 'ที่เที่ยวที่นำเข้า (TAT และ OpenStreetMap)',
-    summary: 'ที่ที่นำเข้ามาเป็นร่างเสมอ ทีมงานอนุมัติก่อนขึ้นเว็บ และรูปต้องเป็นของที่นั้นจริง',
-    updated: 'BE-424',
-    files: ['db/import-tat-attractions.ts', 'db/import-osm-venues.ts', 'lib/scrapers/osmVenues.ts', 'lib/spotPhotoRule.ts'],
+    summary: 'ที่ที่นำเข้ามาเป็นร่างเสมอ ทีมงานอนุมัติก่อนขึ้นเว็บ รูปต้องเป็นของที่นั้นจริง และสมาชิกช่วยกันแจ้งที่ที่ปิดแล้ว',
+    updated: 'BE-477',
+    files: ['db/import-tat-attractions.ts', 'db/import-osm-venues.ts', 'lib/scrapers/osmVenues.ts', 'lib/spotPhotoRule.ts', 'lib/social/placeClosedReports.ts'],
     body: (
       <List
         items={[
           'ทุกที่เข้ามาเป็นร่างบนฐาน dev ก่อน แล้วย้ายขึ้นเว็บจริงด้วย db/copy-places-to-live.mjs เฉพาะที่เผยแพร่แล้ว ร่างอยู่บน dev ต่อ (ร่างบนเว็บจริงทำให้การโหลดรายการทั้งหมดหนักขึ้น)',
           'ที่เที่ยวจาก ททท. ไม่มีคะแนนหรือรีวิว จึงวัดว่าคนรู้จักแค่ไหนจากบทความ Wikipedia ภาษาไทยของที่นั้น (ชื่อตรงกันในระยะ 1.5 กม.): คนอ่านเฉลี่ยตั้งแต่ 300 ครั้งต่อเดือนขึ้นไปเผยแพร่เอง พระอารามหลวงใช้ 150 ครั้ง ที่เหลือเป็นร่างต่อ ไม่ต้องมีคนเลือก (เจ้าของ 23 พ.ย.)',
           'ตอนย้ายขึ้นเว็บจริง สิ่งที่ทีมงานตัดสินบนเว็บจริงไม่ถูกทับ: สถานะเผยแพร่ อนุญาตนัดตี้ การปฏิเสธ และระดับที่ทีมงานตั้งเอง',
-          'รูปจาก Wikimedia และ ททท. ถูกเก็บสำเนาไว้ที่ media.chillwaa.com เองชั่วโมงละไม่เกิน 150 รูป (รูปปกและรูปในแกลเลอรี 3 รูปแรก) เขียนลงฐานครั้งเดียวต่อรอบ เพื่อไม่ให้ทุกเซิร์ฟเวอร์ต้องโหลดรายการใหม่บ่อย',
+          'รูปจาก Wikimedia และ ททท. ถูกเก็บสำเนาไว้ที่ media.chillwaa.com เองทุก 3 ชั่วโมง รอบละไม่เกิน 150 รูป (รูปปกและรูปในแกลเลอรี 3 รูปแรก) เขียนลงฐานครั้งเดียวต่อรอบ เพื่อไม่ให้ทุกเซิร์ฟเวอร์ต้องโหลดรายการใหม่บ่อย',
+          'ร้านอาหารจาก ททท. (26 พ.ย.) เผยแพร่เฉพาะร้านที่มีเวลาเปิดปิดจริง รูป และคำอธิบาย ทีมงานไม่ต้องไล่เช็กทีละร้าน เพราะสมาชิกช่วยแจ้งร้านที่ปิดแล้ว',
+          `"ที่นี่ปิดแล้ว?" ในหน้าสถานที่: เมื่อสมาชิกต่างคนกันแจ้งครบ ${PLACE_CLOSED_HIDE_AT} คน (นับเฉพาะบัญชีอายุ ${NEW_ACCOUNT_DAYS} วันขึ้นไป กันคนสมัครใหม่มากดซ่อนร้านคู่แข่ง) ที่นั้นกลับเป็นร่างทันที และรายงานในคิวบอกทีมงานว่าซ่อนแล้ว ถ้ายังเปิดอยู่ ทีมงานกดเผยแพร่คืนในหน้าพิกัดเที่ยว คนที่บัญชียังใหม่แจ้งได้ แต่ไม่นับเข้าเกณฑ์`,
+          'หน้าพิกัดเที่ยวมีปุ่ม "เผยแพร่ทั้งหมดที่กรองไว้" เมื่อกรองเป็นแบบร่าง เผยแพร่ทุกที่ที่ตรงกับตัวกรองทุกหน้า ร้าน OSM ที่ยังไม่มีรูปจริงถูกข้ามเหมือนเดิม',
           'ที่ที่เรามีอยู่แล้วไม่ถูกเพิ่มซ้ำ: คาเฟ่และบาร์จาก OSM นับว่าซ้ำเมื่ออยู่ห่างไม่เกิน 250 ม. และชื่อคล้ายกัน',
           'คาเฟ่ เบเกอรี่ บาร์ และแกลเลอรีจาก OSM (รหัส osmb-…) ไม่มีรูปมา จึงเผยแพร่ไม่ได้จนกว่าจะใส่รูปจริงของร้าน รูปสต็อกไม่นับ และปุ่มเติมรูปอัตโนมัติข้ามร้านเหล่านี้',
           'คำบรรยายของร้านจาก OSM เขียนจากข้อมูลจริงเท่านั้น (ประเภท ย่าน Wi-Fi ที่นั่งด้านนอก) ไม่แต่งบรรยากาศเอง',
@@ -500,8 +504,8 @@ const TOPICS: Topic[] = [
     id: 'event-imports',
     title: 'อีเวนต์ที่ดึงมาและอีเวนต์ที่จบแล้ว',
     summary: 'ระบบดึงอีเวนต์จากแหล่งทางการทุกสัปดาห์ เข้าคิวรอทีมงานอนุมัติ และตั้งสถานะจบแล้วให้เองทุกคืน',
-    updated: 'BE-459',
-    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', 'vercel.json'],
+    updated: 'BE-478',
+    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/sourcesStore.ts', 'lib/scrapers/siteAdapters.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', 'vercel.json'],
     body: (
       <List
         items={[
@@ -509,6 +513,7 @@ const TOPICS: Topic[] = [
           'อีเวนต์ใหม่เข้าคิวตรวจเหมือนกดปุ่มดึงเอง ยังไม่ขึ้นเว็บจนกว่าทีมงานอนุมัติ (ยกเว้นเปิดเผยแพร่อัตโนมัติไว้)',
           'รูปโปสเตอร์ถูกเก็บสำเนาไว้ในพื้นที่ของเราเอง (media.chillwaa.com) ตั้งแต่ตอนดึงมา ทั้งขนาดเต็มและขนาดเล็ก รูปจึงไม่หายเมื่อเว็บต้นทางลบหรือกันลิงก์ และไม่ใช้โควตาย่อรูปของ Vercel อีเวนต์เก่าถูกย้ายรูปให้เองชั่วโมงละ 25 รายการ',
           'อีเวนต์ที่ซ้ำกับที่มีอยู่ไม่ถูกเพิ่ม ส่วนรายการที่ไม่มีจังหวัดหรือสถานที่ถูกข้ามและนับเป็น "ข้าม"',
+          'ดึงเฉพาะแหล่งทางการที่ robots.txt และข้อตกลงของเว็บอนุญาต: สนามจัดงาน ผู้ขายตั๋ว หอศิลป์ (BACC และ River City เพิ่ม 26 พ.ย. สำหรับคนรุ่นใหม่) ไม่ดึงตี้หรือกลุ่มจากแพลตฟอร์มคอมมูนิตี้อื่น Eventpop ยังปิด เพราะข้อตกลงห้ามใช้เนื้อหาเชิงพาณิชย์โดยไม่ขออนุญาต',
           'ทุกคืน ตี้และอีเวนต์ที่เลยเวลาจบแล้วถูกตั้งสถานะ "จบแล้ว" และปิดรับคน ยกเว้นตี้ตัวอย่างที่เลื่อนวันเอง กิจกรรมประจำ และที่ยกเลิกไปแล้ว',
         ]}
       />
