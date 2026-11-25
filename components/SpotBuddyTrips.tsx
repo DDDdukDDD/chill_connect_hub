@@ -10,6 +10,7 @@ import { resolveSpotImage } from '@/lib/spotImageResolver';
 import { isTripConfirmed, SPOT_TRIP_MIN_PEOPLE } from '@/lib/spotTripRules';
 import { SpotBuddyGatheringModal } from '@/components/SpotBuddyGatheringModal';
 import { PhoneVerifyForm } from '@/components/auth/PhoneVerifyForm';
+import { AddEmailForm } from '@/components/auth/AddEmailForm';
 
 interface SpotBuddyTripsProps {
   spot: LifestyleSpotItem;
@@ -22,7 +23,7 @@ interface SpotBuddyTripsProps {
 interface TripsAnswer {
   meetupAllowed: boolean;
   trips: EventItem[];
-  host?: { canHost: boolean; reason?: string; needsPhone?: boolean };
+  host?: { canHost: boolean; reason?: string; needsPhone?: boolean; needsEmail?: boolean };
 }
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -113,6 +114,7 @@ export function SpotBuddyTrips({ spot, isLoggedIn, onRequireLogin, onShowToast }
       </button>
       {blockedReason && <p className="text-xs text-slate-600">{blockedReason}</p>}
       {answer.host?.needsPhone && <PhoneVerifyForm onDone={load} />}
+      {answer.host?.needsEmail && <AddEmailForm returnTo={`/spots/${encodeURIComponent(spot.id)}`} />}
 
       <p className="flex items-start gap-1.5 text-[11px] sm:text-xs text-slate-500 leading-relaxed">
         <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />

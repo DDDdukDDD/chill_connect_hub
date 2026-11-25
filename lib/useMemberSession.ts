@@ -160,6 +160,12 @@ export const memberActions = {
     const json = await postJson('/api/auth/member/verify-email', returnTo ? { returnTo } : {});
     return { sent: Boolean(json.sent), alreadyVerified: Boolean(json.alreadyVerified), devVerifyUrl: json.devVerifyUrl as string | undefined };
   },
+  /** Puts an email on an account without a password (LINE) and sends the link that confirms it */
+  addEmail: async (email: string, returnTo?: string) => {
+    const json = await postJson('/api/auth/member/email', { email, ...(returnTo && { returnTo }) });
+    if (state.member && json.member && state.member.id === json.member.id) setState({ member: json.member });
+    return { sent: Boolean(json.sent), devVerifyUrl: json.devVerifyUrl as string | undefined };
+  },
   sendPhoneCode: async (phone: string) => {
     const json = await postJson('/api/auth/member/phone', { phone });
     return { devCode: json.devCode as string | undefined };

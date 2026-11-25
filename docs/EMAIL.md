@@ -5,8 +5,15 @@ Chillwaa sends three emails today: confirm your email, set a new password, and "
 nothing is sent, and Production runs with `SKIP_EMAIL_VERIFICATION=true` (every email counts as confirmed), which must go
 before launch.
 
-DNS for `chillwaa.com` is on **Cloudflare**. Checked 2026-11-19: the domain has no MX, SPF, DKIM or DMARC record, so
-nothing conflicts, and mail sent **to** any `@chillwaa.com` address (privacy@, hello@) currently reaches no one.
+DNS for `chillwaa.com` is on **Cloudflare**.
+
+**Status 2026-11-24:** step 1 done: Email Routing is on (Cloudflare MX + SPF on the root domain), `hello@` and
+`privacy@chillwaa.com` forward to `chillwaa.official@gmail.com`, catch-all off; the owner sent test mail to both on
+2026-11-25 and it arrived. Steps 2–4 (Resend, Vercel, turning the
+skip off) are still to do; until then the live site sends no email and LINE members cannot confirm an email to open ตี้
+(BE-468). The three wrong Pending destination addresses were deleted on 2026-11-25 (one destination left). The Resend
+domain (Tokyo) shows DKIM and SPF Verified on 2026-11-25, and the DMARC record is live (checked on 1.1.1.1 and 8.8.8.8); keep Resend "Enable receiving" off, because receiving stays on
+Cloudflare Email Routing.
 
 ## Owner steps
 

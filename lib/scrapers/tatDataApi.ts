@@ -12,6 +12,8 @@ import { BEST_TIME, DEFAULT_LABELS, categorize } from './tourismDirectory';
 export const TAT_ORIGIN = 'https://tatdataapi.io';
 export const TAT_SOURCE_NAME = 'การท่องเที่ยวแห่งประเทศไทย (TAT Data API)';
 export const TAT_ATTRACTIONS = 3;
+/** "ร้านอาหาร กาแฟ เบเกอรี่": 9,166 places on 2026-11-25 */
+export const TAT_FOOD = 8;
 export const tatSourceUrl = (placeId: string | number) => `${TAT_ORIGIN}/api/v2/places/${placeId}`;
 
 interface Named { name?: string | null }
@@ -64,12 +66,12 @@ export class TatBudget {
  * Every attraction in TAT's list. `categoryId` is ignored by the API (2026-11-18: every page holds all 20,159 places)
  * and pages come a few short of 1,000, so this walks every page by the total (about 21 calls) and keeps category 3.
  */
-export async function listTatAttractions(budget: TatBudget): Promise<TatListPlace[]> {
+export async function listTatAttractions(budget: TatBudget, categoryId = TAT_ATTRACTIONS): Promise<TatListPlace[]> {
   const seen = new Map<string, TatListPlace>();
   for (let page = 1; page <= 60; page += 1) {
-    const body = await budget.get<{ data?: TatListPlace[]; pagination?: { total?: number; pageSize?: number } }>(`/api/v2/places?categoryId=${TAT_ATTRACTIONS}&limit=1000&page=${page}`);
+    const body = await budget.get<{ data?: TatListPlace[]; pagination?: { total?: number; pageSize?: number } }>(`/api/v2/places?categoryId=${categoryId}&limit=1000&page=${page}`);
     const rows = body.data ?? [];
-    for (const row of rows) if (row.category?.categoryId === TAT_ATTRACTIONS && row.placeId) seen.set(String(row.placeId), row);
+    for (const row of rows) if (row.category?.categoryId === categoryId && row.placeId) seen.set(String(row.placeId), row);
     if (rows.length === 0 || page * (body.pagination?.pageSize || 1000) >= (body.pagination?.total ?? 0)) break;
   }
   return [...seen.values()];
@@ -186,10 +188,28 @@ export function tatCategory(title: string, detail: TatDetail | null, typeNames: 
   return categorize(title, typeNames, false);
 }
 
-const stripAdminPrefix = (name: string) => name.replace(/^(เขต|อำเภอ|แขวง|ตำบล|กิ่งอำเภอ)\s*/, '').trim();
+/**
+ * Our category for a TAT restaurant, café or bakery (category 8), from the name only. TAT's sub-categories there are
+ * moods ("ริมน้ำ", "โรแมนติก เดตแรก"), and even "คาเฟ่" and "ผับและบาร์" sit on plain restaurants ("ครัวจิปาถะ",
+ * "เฮือนเพ็ญ"), so they never decide. A name that says restaurant wins over a drink word ("ครัวออฟโรดแอนด์กาแฟสด");
+ * a market filed as food ("ตลาดกลางคืน เยาวราช") stays a market.
+ */
+export function tatFoodCategory(title: string): Category {
+  const name = title.trim();
+  if (/^(ตลาด|ถนนคนเดิน)/.test(name)) return 'market';
+  if (/ครัว|ร้านอาหาร|ภัตตาคาร|เรสเตอรอง|เรสเทอรองท์|เรสโตรองต์|ซีฟู้ด|\b(restaurant|bistro|kitchen|seafood)\b/i.test(name)) return 'restaurant';
+  if (/(^|\s)(ผับ|บาร์)(\s|$)|\b(pub|bar|brewery)\b/i.test(name)) return 'bar';
+  if (/กาแฟ|คาเฟ่|คอฟฟี่|เบเกอรี่|เบเกอรี|ขนมหวาน|ไอศกรีม|\b(coffee|caf[eé]|bakery|roaster|dessert|tea\s?house)\b/i.test(name)) return 'cafe';
+  return 'restaurant';
+}
 
-/** One TAT attraction as a draft place; null when it lacks a map point, a picture or real text */
-export function tatToSpot(list: TatListPlace, detail: TatDetail | null): LifestyleSpotItem | null {
+/** TAT's mood sub-categories that read well as vibe tags on a food place (at most three are kept) */
+const FOOD_MOODS = new Set(['ชิลล์เอาต์', 'ริมน้ำ', 'วิวสวย', 'ร้านในสวน', 'ร้านกลางแจ้ง', 'โรแมนติก เดตแรก', 'บรรยากาศส่วนตัว', 'ครอบครัว', 'ราคาประหยัด', 'เล่นดนตรีสด', 'บรันช์', 'บุฟเฟต์']);
+
+const stripAdminPrefix =(name: string) => name.replace(/^(เขต|อำเภอ|แขวง|ตำบล|กิ่งอำเภอ)\s*/, '').trim();
+
+/** One TAT attraction (or, with `food`, a restaurant, café or bakery) as a draft place; null when it lacks a map point, a picture or real text */
+export function tatToSpot(list: TatListPlace, detail: TatDetail | null, food = false): LifestyleSpotItem | null {
   const latitude = Number(detail?.latitude ?? list.latitude);
   const longitude = Number(detail?.longitude ?? list.longitude);
   if (!isThaiCoordinate(latitude, longitude)) return null;
@@ -218,8 +238,9 @@ export function tatToSpot(list: TatListPlace, detail: TatDetail | null): Lifesty
   if (images.length === 0) return null;
 
   const typeNames = [...(detail?.category?.subCategories ?? []).map((s) => s.name || ''), ...(list.tags ?? [])].filter(Boolean);
-  const category = tatCategory(title, detail, typeNames);
+  const category = food ? tatFoodCategory(title) : tatCategory(title, detail, typeNames);
   const label = DEFAULT_LABELS[category];
+  const moods = food ? (detail?.category?.subCategories ?? []).map((s) => (s.name || '').trim()).filter((name) => FOOD_MOODS.has(name)).slice(0, 3) : [];
   const district = stripAdminPrefix(cleanTatText((detail?.location ?? list.location)?.district?.name));
   const phone = [...(detail?.contact?.phones ?? []), ...(detail?.contact?.mobiles ?? [])].find(Boolean);
   const website = (detail?.contact?.urls ?? []).find((url) => /^https?:\/\//.test(url));
@@ -237,9 +258,9 @@ export function tatToSpot(list: TatListPlace, detail: TatDetail | null): Lifesty
     image: images[0],
     galleryImages: images,
     openHours: special ? `${openHours} (${special})` : openHours,
-    ...tatPrice(detail?.information?.fee),
+    ...(food ? { price: 'ไม่ระบุ' } : tatPrice(detail?.information?.fee)),
     bestTime: BEST_TIME[category] || 'ในเวลาทำการ',
-    vibeTags: [label, ...(subtype && subtype !== label ? [subtype] : [])],
+    vibeTags: food ? [label, ...moods] : [label, ...(subtype && subtype !== label ? [subtype] : [])],
     description,
     highlights: [],
     facilities,

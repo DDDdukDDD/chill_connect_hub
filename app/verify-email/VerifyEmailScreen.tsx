@@ -10,7 +10,7 @@ import { memberActions } from '@/lib/useMemberSession';
 
 /** A ตี้ signed up for before the email was confirmed, and what became of it (BE-392) */
 type Settled = { eventId: string; title: string; outcome: 'joined' | 'waitlist' | 'closed' };
-type State = { status: 'working' } | { status: 'done'; settled: Settled[]; needsPledge: boolean } | { status: 'error'; message: string };
+type State = { status: 'working' } | { status: 'done'; settled: Settled[]; needsPledge: boolean; canHost: boolean } | { status: 'error'; message: string };
 
 const OUTCOME: Record<Settled['outcome'], string> = {
   joined: 'ได้ที่นั่งแล้ว',
@@ -33,7 +33,7 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
         } catch {
           /* storage unavailable */
         }
-        if (active) setState({ status: 'done', settled, needsPledge: !member?.trust?.pledged });
+        if (active) setState({ status: 'done', settled, needsPledge: !member?.trust?.pledged, canHost: Boolean(member?.trust && !member.trust.organizerNeeds) });
       })
       .catch((err) => {
         if (active) setState({ status: 'error', message: err instanceof Error ? err.message : 'ยืนยันอีเมลไม่สำเร็จ' });
@@ -66,7 +66,7 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
               </span>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">ยืนยันอีเมลแล้ว</h1>
               <p className="text-sm text-slate-500 font-medium mt-2 mb-6">
-                <PhraseText text={state.needsPledge ? 'ขอบคุณที่ยืนยันอีเมล' : 'ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว'} />
+                <PhraseText text={state.needsPledge ? 'ขอบคุณที่ยืนยันอีเมล' : state.canHost ? 'ตอนนี้คุณตั้งตี้ เข้าร่วมตี้ และโพสต์โมเมนต์ได้แล้ว' : 'ตอนนี้คุณเข้าร่วมตี้ โพสต์โมเมนต์ และคอมเมนต์ได้แล้ว'} />
               </p>
               {state.settled.length > 0 && (
                 <ul className="mb-6 space-y-2 text-left">
@@ -98,7 +98,7 @@ export function VerifyEmailScreen({ token, next = '' }: { token: string; next?: 
               ) : next ? (
                 <>
                   <Link href={next} className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm sm:text-base font-bold shadow-sm">
-                    {next.startsWith('/community/') ? 'กลับไปเข้าร่วมตี้ต่อ' : 'ไปต่อจากที่ค้างไว้'}
+                    {next.startsWith('/community?create=1') ? 'กลับไปตั้งตี้ต่อ' : next.startsWith('/community/') ? 'กลับไปเข้าร่วมตี้ต่อ' : 'ไปต่อจากที่ค้างไว้'}
                   </Link>
                   <Link href="/profile" className="inline-block mt-4 text-sm font-bold text-slate-600 hover:text-slate-900">
                     ไปที่โปรไฟล์ของฉัน

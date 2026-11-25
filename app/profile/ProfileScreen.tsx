@@ -15,6 +15,8 @@ import { ReportSafetyModal } from '@/components/ReportSafetyModal';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { PhraseText } from '@/components/auth/PhraseText';
 import { PhoneVerifyForm } from '@/components/auth/PhoneVerifyForm';
+import { AddEmailForm } from '@/components/auth/AddEmailForm';
+import { canAddEmail } from '@/components/auth/OrganizerGateDialog';
 import { MOCK_PROFILES } from '@/data/profilesData';
 import { nameInitial } from '@/lib/displayName';
 import type { HostApplication, MemberPreferences, MemberProfile, ProfileFieldKey, PublicMember } from '@/lib/members/types';
@@ -205,6 +207,12 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
       desc: t.pledged ? 'รับแล้ว' : 'คำมั่น 4 ข้อที่สมาชิกทุกคนรับร่วมกัน',
       action: !t.pledged && <Link href="/onboarding?step=pledge&returnTo=%2Fprofile" className="text-sm font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline whitespace-nowrap">อ่านและรับ</Link>,
     },
+    // No SMS on the live site: opening ตี้ asks for a confirmed email instead, and a LINE account adds one here
+    ...(!t.phoneCheckOn && t.identityConfirmed && !t.emailVerified && !member.isSubAccount ? [{
+      done: false,
+      title: 'ยืนยันอีเมลเพื่อสร้างตี้',
+      desc: 'ต้องยืนยันก่อนสร้างตี้ ชาเลนจ์ ทริป หรือกลุ่มในอีเวนต์ เราไม่แสดงอีเมลให้ใครเห็น',
+    }] : []),
     ...(t.phoneCheckOn ? [{
       done: t.phoneVerified,
       title: 'ยืนยันเบอร์โทร',
@@ -235,6 +243,9 @@ export function TrustCard({ member, onChanged }: { member: PublicMember; onChang
         ))}
       </ul>
       {t.organizerNeeds === 'phone' && <div className="mt-4 pt-4 border-t border-slate-100"><PhoneVerifyForm /></div>}
+      {!t.phoneCheckOn && t.identityConfirmed && !t.emailVerified && canAddEmail(member) && (
+        <div className="mt-4 pt-4 border-t border-slate-100"><AddEmailForm initialEmail={member.email} /></div>
+      )}
       {note && <p className="mt-3 text-xs font-bold text-slate-600" role="status">{note}</p>}
       {devUrl && !t.identityConfirmed && (
         <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-200">

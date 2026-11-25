@@ -1487,7 +1487,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
   // Everything but a place suggestion waits for the organizer check, before any typing goes to waste
   const organizerGate = isLoaded && type !== 'spot' && member?.trust?.organizerNeeds;
   if (type && organizerGate) {
-    return <OrganizerGateDialog need={organizerGate} hasEmail={Boolean(member?.trust?.hasEmail)} onClose={onClose} />;
+    // A ตี้ comes back to /community?create=1, which opens this form again after the email link
+    return <OrganizerGateDialog need={organizerGate} member={member} onClose={onClose} returnTo={type === 'community' ? '/community?create=1' : undefined} />;
   }
 
   if (!type || !info) {

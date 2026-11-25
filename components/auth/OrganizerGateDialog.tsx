@@ -1,12 +1,21 @@
 'use client';
 
 import React from 'react';
-import type { OrganizerNeed } from '@/lib/members/types';
+import type { OrganizerNeed, PublicMember } from '@/lib/members/types';
+import { AddEmailForm } from './AddEmailForm';
 import { DialogShell, dialogButton } from './DialogShell';
 import { PhoneVerifyForm } from './PhoneVerifyForm';
 
-/** What a member still has to do before opening something that brings people out to meet (lib/members/trust.ts, organizerNeeds) */
-export function OrganizerGateDialog({ need, hasEmail, onClose }: { need: OrganizerNeed; hasEmail: boolean; onClose: () => void }) {
+/** An account without a password (LINE, Google, Facebook, Apple) adds or changes its email here; a sub-account uses its owner's */
+export const canAddEmail = (member: PublicMember | null | undefined) => Boolean(member && !member.isSubAccount && !member.loginMethods.includes('email'));
+
+/**
+ * What a member still has to do before opening something that brings people out to meet (lib/members/trust.ts, organizerNeeds).
+ * `returnTo`: where the email link sends them back (/community?create=1 reopens the ตี้ form); default is this page.
+ */
+export function OrganizerGateDialog({ need, member, onClose, returnTo }: { need: OrganizerNeed; member: PublicMember | null | undefined; onClose: () => void; returnTo?: string }) {
+  const hasEmail = Boolean(member?.trust?.hasEmail);
+  const addsEmail = need === 'email' && canAddEmail(member);
   return (
     <DialogShell
       onClose={onClose}
@@ -17,13 +26,17 @@ export function OrganizerGateDialog({ need, hasEmail, onClose }: { need: Organiz
           ? 'คนที่ชวนเพื่อนออกไปเจอกัน ต้องยืนยันเบอร์โทร เพื่อให้ทุกคนมั่นใจ ว่าไปกับคนจริง เราไม่แสดงเบอร์นี้ ให้ใครเห็น'
           : need === 'pledge'
             ? 'รับคำมั่นของคอมมูนิตี้ก่อน แล้วค่อยกลับมาสร้างได้เลย'
-            : hasEmail
-              ? 'ยืนยันอีเมลของคุณก่อน แล้วค่อยกลับมาสร้างได้เลย'
-              : 'ตอนนี้การสร้างเปิดให้บัญชีที่ยืนยันอีเมลก่อน อีกไม่นานจะยืนยันด้วยเบอร์โทรได้ โพสต์และเข้าร่วมตี้ได้ตามปกตินะ'
+            : addsEmail
+              ? 'คนที่ชวนเพื่อนออกไปเจอกัน ต้องยืนยันอีเมล ใส่อีเมลแล้วกดลิงก์ที่เราส่งไป ก็สร้างได้เลย'
+              : hasEmail
+                ? 'ยืนยันอีเมลของคุณก่อน แล้วค่อยกลับมาสร้างได้เลย'
+                : 'บัญชีหลักต้องยืนยันอีเมลก่อน แล้วบัญชีนี้ก็สร้างได้เลย'
       }
     >
       {need === 'phone' ? (
         <PhoneVerifyForm />
+      ) : addsEmail ? (
+        <AddEmailForm initialEmail={member?.email} returnTo={returnTo ?? (typeof window === 'undefined' ? undefined : window.location.pathname)} />
       ) : need === 'email' && !hasEmail ? (
         <div className="flex justify-center">
           <button type="button" className={dialogButton.primary} onClick={onClose}>เข้าใจแล้ว</button>

@@ -20,6 +20,26 @@ Item template:
 
 ---
 
+### BE-470 · Popular TAT restaurants and cafés in the dev database; storytelling first-visit plan (owner 2026-11-25)
+- **What changed:**
+  - `db/import-tat-attractions.ts --food [--top=N]` + `tatFoodCategory` in `lib/scrapers/tatDataApi.ts`: TAT category 8, the 800 most viewed plus those with text and a picture in the list. On dev: 453 new drafts (436 restaurants, 14 cafés, 2 bars, 1 market), 712 calls. Food matches are left alone (both fills in the first run were wrong and were put back from the backup). Details and numbers in [TAT_IMPORT.md](TAT_IMPORT.md) "Restaurants and cafés run".
+  - [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md): the owner's storytelling first-visit idea merged with Gemini's spec and Claude's notes; [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) "Our own core: going out for real".
+- **What to do about it:** staff approve the food drafts on dev (check the place still runs); nothing reaches live. The landing plan waits for the owner's answers at the end of the file. `npm run smoke` on dev: 26 passed, 1 failed ("five starter challenges exist": 2 found). After BE-377 and the 2027 challenge set, the check no longer matches the data; decide whether starters should be re-seeded or the check changed.
+
+---
+
+### BE-469 · BE-468 walked end to end; the email link brings a ตี้ host back to the form (owner 2026-11-24)
+- **What changed:** walked BE-468 on dev at 390 and 1440 px with a LINE account without an email: creation gate → add email → link → verified → ตี้ form opens. API answers checked (401, 400 bad/throwaway, 409 taken, 429 after 5 an hour), and an unproven email is released when its real owner signs up (the old link then fails). Two fixes: `OrganizerGateDialog` takes `returnTo`, and `CreateEventModal` passes `/community?create=1` for a ตี้, so the verified page's button "กลับไปตั้งตี้ต่อ" reopens the form; the verified page says "ตอนนี้คุณตั้งตี้ เข้าร่วมตี้ และโพสต์โมเมนต์ได้แล้ว" only when `organizerNeeds` is empty after confirming.
+- **What to do about it:** nothing in code. The real email still needs Resend on live (EMAIL.md). Testing note: a local server asks for a phone, not an email (`phoneCheckIsOn` is on without `VERCEL`), and `VERCEL=1 next dev` reloads every page about every 2 s, so the walk used a temporary local edit of `phoneCheckIsOn` (not committed).
+
+---
+
+### BE-468 · LINE members add an email to open ตี้; no SMS for launch (owner 2026-11-24)
+- **What changed:** the owner chose email instead of SMS for launch (SMS costs money; launch moved to Thu 26 Nov). The live site already asked for a confirmed email to open ตี้, challenges, trips and groups (`organizerNeeds`), but a LINE account has no email and had no way to add one. Now `POST /api/auth/member/email` (`addEmail` in `lib/members/accounts.ts`) puts an email on an account without a password and mails the link; `AddEmailForm` shows in the creation gate (`OrganizerGateDialog`), under "ชวนเพื่อนไปที่นี่" (`needsEmail` from `/api/spots/[id]/trips`) and on the settings trust card. Safety: an added, unconfirmed email is an "unproven claim". A Google/Apple sign-in or an email sign-up with that address takes it off the account (`releaseEmail`) instead of signing in to it, so nobody can catch someone else's login by typing their address. `SKIP_EMAIL_VERIFICATION` no longer confirms an added email, a first password needs a confirmed email, and a confirmation link on an account with no email left fails.
+- **What to do about it:** this needs the mailer on live (Resend, `RESEND_API_KEY` + `MAIL_FROM`); without it the endpoint answers 503. Owner steps: [EMAIL.md](EMAIL.md) steps 1–4. Not yet tested end to end on dev.
+
+---
+
 ### BE-467 · Place photo copying moved off Vercel to GitHub Actions (owner 2026-11-24)
 - **What changed:** Vercel's free Fluid Active CPU (4 h a month) reached 75%; the owner upgraded to Pro. Turning place photos into webp is CPU work, so `placePhotos` left the hourly cron and runs as `.github/workflows/place-photos.yml` (every 3 hours + Run workflow): `scripts/place-photos.ts` calls `copyPlacePhotos({ places: 300, photos: 600, timeBudgetMs: 8 min })`, still one transaction a run. Tested on dev (3 places, 3 copied).
 - **What to do about it:** owner adds repository secrets (GitHub > Settings > Secrets and variables > Actions): `PLACES_DATABASE_URL` (= Vercel Production `DATABASE_URL`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` (= Vercel Production values). Without them the job skips. After merge to `main`, press Run workflow on "Place photos" once.

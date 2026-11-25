@@ -13,6 +13,9 @@
  * - The list and each detail are cached under data/.tat-cache/ (git-ignored), so a rerun spends no calls on what was
  *   already fetched.
  * - --recategorize: puts the TAT places already imported into the category the current rules give (no calls). The key allows 3,000 calls a day for every clone together; --budget caps this run (default 1,800).
+ * - --food [--top=N]: restaurants, cafés and bakeries (TAT category 8, owner 2026-11-25 "คาเฟ่ร้านอาหารดัง") instead of
+ *   attractions. Popular = the N most viewed on TAT (default 800), plus any whose list entry already has text and a
+ *   picture. The list hides most text and pictures, so details are opened for all of them, most viewed first.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,13 +23,15 @@ import { db } from '@/lib/db';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { BEST_TIME, DEFAULT_LABELS } from '@/lib/scrapers/tourismDirectory';
 import { placeMatcher } from '@/lib/scrapers/placeMatch';
-import { TAT_SOURCE_NAME, TatBudget, tatCategory, listHasTextAndPicture, listTatAttractions, tatDetail, tatSourceUrl, tatToSpot, type TatDetail, type TatListPlace } from '@/lib/scrapers/tatDataApi';
+import { TAT_FOOD, TAT_SOURCE_NAME, TatBudget, tatCategory, tatFoodCategory, listHasTextAndPicture, listTatAttractions, tatDetail, tatSourceUrl, tatToSpot, type TatDetail, type TatListPlace } from '@/lib/scrapers/tatDataApi';
 
 const DEV_REF = 'womkobbjdlzefyrxspxh';
 const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
 const dryRun = process.argv.includes('--dry');
 const limit = Number(arg('limit') ?? Infinity);
 const budget = new TatBudget(Number(arg('budget') || 1800));
+const food = process.argv.includes('--food');
+const top = Number(arg('top') || 800);
 const skipProvinces = new Set((arg('skip-province') || '').split(',').map((p) => p.trim()).filter(Boolean));
 const CACHE = path.join(process.cwd(), 'data', '.tat-cache');
 const TAT_IMAGE = /^https:\/\/dmc\.tatdataapi\.io\//;
@@ -110,7 +115,9 @@ async function main() {
   const existing = await allSpots();
   // Every place as it was, before anything is written: an enrichment that turns out wrong can be put back from here
   if (!dryRun) fs.writeFileSync(path.join(CACHE, `places-before-${new Date().toISOString().replace(/[:.]/g, '-')}.json`), JSON.stringify(existing));
-  const matcher = placeMatcher(existing);
+  // Food places sit side by side and share names across branches: only a close place with an overlapping name is the
+  // same one ("กับข้าวกับปลา" is not the Starbucks 50 m away)
+  const matcher = placeMatcher(existing, food ? { nearbyMetres: 0, sameNameInProvince: false } : undefined);
   const matchOf = matcher.match;
 
   if (process.argv.includes('--recategorize')) {
@@ -118,7 +125,7 @@ async function main() {
     for (const spot of existing.filter((s) => s.id.startsWith('tat-'))) {
       const detail = readJson<TatDetail>(path.join(CACHE, 'detail', `${spot.id.slice(4).replace(/[^\w-]/g, '_')}.json`));
       if (!detail) continue;
-      const category = tatCategory(spot.title, detail, spot.vibeTags);
+      const category = detail.category?.categoryId === TAT_FOOD ? tatFoodCategory(spot.title) : tatCategory(spot.title, detail, spot.vibeTags);
       if (category === spot.category) continue;
       const label = DEFAULT_LABELS[category];
       const rest = spot.vibeTags.filter((tag) => tag !== spot.categoryLabel && tag !== label);
@@ -131,17 +138,19 @@ async function main() {
   }
 
   // The list, cached for the day
-  const listFile = path.join(CACHE, `attractions-${new Date().toISOString().slice(0, 10)}.json`);
+  const listFile = path.join(CACHE, `${food ? 'food' : 'attractions'}-${new Date().toISOString().slice(0, 10)}.json`);
   let list = readJson<TatListPlace[]>(listFile);
   if (!list) {
-    list = await listTatAttractions(budget);
+    list = await listTatAttractions(budget, food ? TAT_FOOD : undefined);
     fs.writeFileSync(listFile, JSON.stringify(list));
   }
+  // Food: the most viewed are the popular ones; their details usually hold the text and pictures the list leaves out
+  const popular = new Set(food ? [...list].sort((a, b) => (b.viewer ?? 0) - (a.viewer ?? 0)).slice(0, top).map((place) => place.placeId) : []);
 
   const counts: Record<string, number> = { listed: list.length, skippedProvince: 0, thin: 0, alreadyFromTat: 0, noDetail: 0, rejected: 0, imported: 0, enriched: 0, nothingToAdd: 0 };
   const work = list.filter((place) => {
     if (skipProvinces.has((place.location?.province?.name || '').trim())) return (counts.skippedProvince += 1, false);
-    if (!listHasTextAndPicture(place)) return (counts.thin += 1, false);
+    if (!listHasTextAndPicture(place) && !popular.has(place.placeId)) return (counts.thin += 1, false);
     const match = matchOf({ id: `tat-${place.placeId}`, title: place.name || '', province: place.location?.province?.name || '', latitude: Number(place.latitude), longitude: Number(place.longitude), sourceUrl: tatSourceUrl(place.placeId) });
     if (match && isTatRecord(match)) return (counts.alreadyFromTat += 1, false);
     return true;
@@ -178,7 +187,7 @@ async function main() {
         continue;
       }
     }
-    const spot = tatToSpot(place, detail);
+    const spot = tatToSpot(place, detail, food);
     if (!spot) {
       counts.rejected += 1;
       continue;
@@ -189,12 +198,18 @@ async function main() {
         counts.alreadyFromTat += 1;
         continue;
       }
+      // Food never fills in a place we have: on 2026-11-25 both matches were wrong ("บ้านป้อมเพชร" the restaurant
+      // gave its hours to ป้อมเพชร the fort, a TAT restaurant its pictures to a Starbucks branch)
+      if (food) {
+        counts.matchedLeftAlone = (counts.matchedLeftAlone ?? 0) + 1;
+        continue;
+      }
       const patch = enrich(match, spot);
       if (!patch) {
         counts.nothingToAdd += 1;
         continue;
       }
-      if (samples.length < 12) samples.push(`  enrich ${match.id} ${match.title} ← ${Object.keys(patch).join(', ')}`);
+      if (samples.length < 12) samples.push(`  enrich ${match.id} ${match.title} ← TAT "${spot.title}": ${Object.keys(patch).join(', ')}`);
       if (!dryRun) await db.updateSpot(match.id, patch);
       counts.enriched += 1;
       Object.assign(match, patch);

@@ -26,7 +26,37 @@ Agreed with the project owner on 2026-10-16. Read this before deciding what a pa
 - **Three main pillars: ตี้ + ชาเลนจ์ + โมเมนต์.** ตี้ and ชาเลนจ์ drive people out; โมเมนต์ is what makes it a social platform at all (people see each other, what they did, and want to go too). None of the three is optional.
 - **Support: อีเวนต์ (fairs, runs, concerts, sports; called งานแฟร์ before 2026-10-24) and สถานที่เที่ยว**, the places the pillars lead to.
 
-## The core loop
+## Our own core: going out for real (owner, 2026-11-25)
+
+Social is the core, because we are a social platform for people who love going out. To become number 1 we need a core that no one else has, and a reason for people to try us although they already have IG and TikTok.
+
+- **The core is "going out for real", not the activity.** IG measures how good you look and TikTok how fun you are. No one measures how much you really go out and with whom. This is what "ทำให้ทุกการใช้ชีวิตมีความหมาย" means in the product.
+- **The unit is one outing:** where, when, with whom, and a moment as proof. Feed, profile and challenges are built from outings, not from loose posts.
+- **The loop:** go out → record it as a moment with the place and the people → friends see where you went and with whom → they tap "ไปด้วย" or "ไปกัน" → you go out together and it becomes the group's shared record → go out again.
+- **What we already have:** moments with a place, tagging friends, "ไปกัน" group plans, "ชวนไป", challenges, the passport. The work is to join them into this one loop and tell it as one story, before building anything new.
+- **Social, made our own way:** people get to know each other because they went to the same ตี้, friends invite each other out, and moments prove they went together. We do not compete on feed, likes or follower counts.
+
+### Getting people to try us (three layers, in this order)
+
+1. **Useful before any friend joins.** Like Strava, where people log runs alone: a personal life map (places, areas, friends this year) and challenges that work solo. The first member gets value on day one and stays until friends follow.
+2. **Easier to invite existing friends than to plan in chat.** "ไปกัน" sent into a LINE group, answered without signing up first, is the main way in. Opening up to friends comes before opening up to strangers.
+3. **Safe enough to meet new people.** Identity checks, public places, small groups (lib/social/spotTrips.ts and the ตี้ rules). This layer grows once people trust the brand.
+
+### How we describe ourselves
+
+Not "a social app" in general terms: people then compare us with IG and we lose. Say what has no direct rival: **"ที่เก็บเรื่องการออกไปใช้ชีวิตของคุณกับเพื่อน"** (the place that keeps the story of you going out with your friends). Exact wording is the owner's call.
+
+### Numbers that tell us the core is working
+
+- Share of new members who came from an invite (`app.action_log`).
+- Share of people who went to a ตี้ and then followed someone they met or went out again with the same group.
+- ตี้ opened by members versus by the team. Team-opened ตี้ and challenges are scaffolding for launch, not the growth engine.
+
+### Open idea: storytelling first visit (owner, 2026-11-25)
+
+A first-visit page that tells the story (who we are, what we have, why it is worth it) and leads straight to sign-up, instead of today's landing that invites people to explore first. A small "ดูก่อน" link keeps exploring possible. Not built; plan in [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md). Conditions: it applies only to a first visit to `/`; links friends share (ตี้, moments, "ไปกัน", invite links) open what was shared; public pages stay readable for Google and AI search (AGENTS.md section 4).
+
+## The core loop (2026-10-16, now part of the loop above)
 
 Each part answers one question, and each feeds the next:
 
