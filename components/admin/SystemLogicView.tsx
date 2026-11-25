@@ -501,7 +501,7 @@ const TOPICS: Topic[] = [
     title: 'อีเวนต์ที่ดึงมาและอีเวนต์ที่จบแล้ว',
     summary: 'ระบบดึงอีเวนต์จากแหล่งทางการทุกสัปดาห์ เข้าคิวรอทีมงานอนุมัติ และตั้งสถานะจบแล้วให้เองทุกคืน',
     updated: 'BE-459',
-    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', '.github/workflows/weekly-jobs.yml'],
+    files: ['lib/weeklyEventScrape.ts', 'lib/eventsStore.ts', 'lib/media/posterCopy.ts', 'lib/db/endPastEvents.ts', 'vercel.json'],
     body: (
       <List
         items={[

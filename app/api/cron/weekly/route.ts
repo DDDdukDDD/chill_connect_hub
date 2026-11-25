@@ -3,7 +3,8 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { runWeeklyEventScrape } from '@/lib/weeklyEventScrape';
 
 /**
- * Weekly work, called by .github/workflows/weekly-jobs.yml with `Authorization: Bearer <CRON_SECRET>`.
+ * Weekly work, called Monday 03:17 Bangkok by Vercel Cron (vercel.json) with `Authorization: Bearer <CRON_SECRET>`;
+ * .github/workflows/weekly-jobs.yml can call it by hand.
  * Apart from the hourly route because a scrape of every source takes minutes. Safe to call twice (6-day guard).
  */
 export const dynamic = 'force-dynamic';
