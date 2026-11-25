@@ -20,6 +20,20 @@ Item template:
 
 ---
 
+### BE-472 · Public detail pages served from the CDN (owner 2026-11-25)
+- **What changed:** `/spots/[id]`, `/events/[id]`, `/community/[id]` and `/challenges/[id]` were rendered on every request (`Cache-Control: private, no-store` on live), so every guest or bot visit read the database. A dynamic route without `generateStaticParams` is always dynamic in Next 16 (previous caching model; `cacheComponents` is off). Each page now exports `generateStaticParams() { return [] }` and `revalidate` (places 600 s, อีเวนต์ and challenges 300 s, ตี้ 60 s): built on the first visit, then served from the CDN. `lib/pageCache.ts` `refreshEventPage(id)` calls `revalidatePath` for the ตี้/อีเวนต์ page after a join and a host edit (`app/api/events/route.ts`), so seats show at once. `/moments/[id]` is unchanged (a deleted or hidden post must vanish at once).
+- **Rule from now on:** these server pages render public data only. Never read cookies or the session in them or in what they call; anything about the viewer (joined, saved, own progress) loads in the browser, as today. A cookie read would turn the page dynamic again (build shows `ƒ` instead of `●`) or, worse, cache one person's data for everyone.
+- **Checked:** `next build` on the dev database shows the four routes as `●`; `next start`: first request `x-nextjs-cache: MISS`, second `HIT`, `Cache-Control: s-maxage=<revalidate>, stale-while-revalidate`; one h1; unknown id 404. Not walked signed in (page code passes no member data, unchanged views).
+- **What to do about it:** after merge, check live with `curl -sI https://www.chillwaa.com/spots/<id>` twice: the second shows `X-Vercel-Cache: HIT`. Watch Supabase egress the following days. Edits by staff appear after the revalidate time, not at once.
+
+---
+
+### BE-471 · Timed jobs on Vercel Cron, not GitHub Actions (owner 2026-11-25)
+- **What changed:** the team is on Vercel Pro, which allows crons at any interval. `vercel.json` now calls `/api/cron/hourly` every hour at :07 and `/api/cron/weekly` Sunday 20:17 UTC (Monday 03:17 Bangkok), the same times as before. The schedules in `.github/workflows/hourly-jobs.yml` and `weekly-jobs.yml` are removed (GitHub ran them late or skipped them); both workflows stay for a run by hand. Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` from the Production env, which the routes already check. The firewall rule "Allow system paths" (set 2026-11-25, log-only rate limits for week 1) bypasses `/api/cron` and `/.well-known/`.
+- **What to do about it:** Vercel Cron runs only on the Production deployment, so it starts when `claude` is merged into `main` (the old schedules stop at the same merge). Afterwards check Vercel > Settings > Cron Jobs shows two jobs and Logs show `/api/cron/hourly` 200 each hour.
+
+---
+
 ### BE-470 · Popular TAT restaurants and cafés in the dev database; storytelling first-visit plan (owner 2026-11-25)
 - **What changed:**
   - `db/import-tat-attractions.ts --food [--top=N]` + `tatFoodCategory` in `lib/scrapers/tatDataApi.ts`: TAT category 8, the 800 most viewed plus those with text and a picture in the list. On dev: 453 new drafts (436 restaurants, 14 cafés, 2 bars, 1 market), 712 calls. Food matches are left alone (both fills in the first run were wrong and were put back from the backup). Details and numbers in [TAT_IMPORT.md](TAT_IMPORT.md) "Restaurants and cafés run".

@@ -10,6 +10,16 @@ import ChallengeDetailView from './ChallengeDetailView';
 
 type Props = { params: Promise<{ id: string }> };
 
+// Cached on the CDN and rebuilt at most every 300 s (BE-472): guests and bots read the cached page, not the database.
+// Participant counts may lag up to 5 minutes; the viewer's own progress loads in the browser.
+// Only public data is rendered here; anything about the viewer loads in the browser.
+export const revalidate = 300;
+
+// Empty list: no page is built at deploy time; each one is built on its first visit, then cached (Next ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 const getPublicQuest = cache(async (id: string) => {
   const quest = await db.findQuestById(id);
   return quest && quest.status !== 'draft' ? quest : null;

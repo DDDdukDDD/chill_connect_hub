@@ -10,6 +10,16 @@ import SpotDetailView from './SpotDetailView';
 
 type Props = { params: Promise<{ id: string }> };
 
+// Cached on the CDN and rebuilt at most every 600 s (BE-472): guests and bots read the cached page, not the database.
+// Staff edits to a place show within 10 minutes.
+// Only public data is rendered here; anything about the viewer loads in the browser.
+export const revalidate = 600;
+
+// Empty list: no page is built at deploy time; each one is built on its first visit, then cached (Next ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const spot = await getPublicSpot(decodeURIComponent((await params).id));
   if (!spot) return { title: 'ที่เที่ยว' };

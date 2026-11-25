@@ -7,6 +7,7 @@ import { joinEvent, nightlifeAgeBlock } from '@/lib/members/activity';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
 import { traceAction } from '@/lib/social/actionLog';
+import { refreshEventPage } from '@/lib/pageCache';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardOrganizer } from '@/lib/members/submissions';
 import { BANNED_KEYWORDS, editTee } from '@/lib/social/editTee';
@@ -166,7 +167,10 @@ export async function POST(req: Request) {
       }
       const joinResult = await joinEvent(joiner, body.eventId);
       const joined = joinResult.status === 'joined' || joinResult.status === 'already_joined';
-      if (joinResult.status === 'joined') await traceAction(joiner, 'join', { type: joinResult.event?.eventType === 'community' ? 'community' : 'fair', ref: body.eventId });
+      if (joinResult.status === 'joined') {
+        await traceAction(joiner, 'join', { type: joinResult.event?.eventType === 'community' ? 'community' : 'fair', ref: body.eventId });
+        refreshEventPage(body.eventId);
+      }
       return NextResponse.json({ success: joined, ...joinResult, updatedEvent: joinResult.event }, { status: joined ? 200 : joinResult.status === 'not_allowed' ? 403 : 409 });
     }
 
@@ -179,7 +183,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' }, { status: 400 });
       }
       try {
-        return NextResponse.json({ success: true, ...(await editTee(host, body.eventId, body.edit)) });
+        const edited = await editTee(host, body.eventId, body.edit);
+        refreshEventPage(body.eventId);
+        return NextResponse.json({ success: true, ...edited });
       } catch (error) {
         if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
         throw error;

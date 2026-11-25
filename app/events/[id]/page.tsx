@@ -8,6 +8,16 @@ import FairDetailView from './FairDetailView';
 
 type Props = { params: Promise<{ id: string }> };
 
+// Cached on the CDN and rebuilt at most every 300 s (BE-472): guests and bots read the cached page, not the database.
+// Organiser and staff edits show within 5 minutes.
+// Only public data is rendered here; anything about the viewer loads in the browser.
+export const revalidate = 300;
+
+// Empty list: no page is built at deploy time; each one is built on its first visit, then cached (Next ISR).
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const event = await getPublicEvent(decodeURIComponent((await params).id), 'public_venue');
   if (!event) return { title: 'อีเวนต์' };
