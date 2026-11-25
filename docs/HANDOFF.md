@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-475 · Storytelling landing designed; Supabase was restricted on 25 Nov (owner 2026-11-25)
+- **What changed:** the guest first-visit page is designed and agreed: mockup [mockups/story-landing.html](mockups/story-landing.html), decisions and copy rules at the top of [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md). Owner wants it **before launch**, with the phone bottom bar hidden for every guest. Not built yet.
+- **Supabase:** the grace period ended 22 Nov; on 25 Nov live was restricted (402) for a while, then lifted by the new billing cycle (egress back to ~0 of 5 GB). Owner chose to **stay on Free** and upgrade when egress passes 2.5 GB; [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) section 2 rewritten (the "3 Dec" date there was wrong).
+- **What to do about it:** next session builds the page from the plan (answer the open points in the plan first). Owner checks Supabase > Usage daily after launch.
+
+---
+
 ### BE-474 · Admin knowledge: services and settings (owner 2026-11-25)
 - **What changed:** /admin "วิธีคิดของระบบ" has a new topic "บริการภายนอกและการตั้งค่า" (`services-config` in `components/admin/SystemLogicView.tsx`): Vercel Pro (budget $200 with pause, firewall rule order and log-only week, bot settings, cron times, analytics, CDN revalidate times, env var names), email (Cloudflare Email Routing, Resend, DNS names, `SKIP_EMAIL_VERIFICATION`), Supabase, R2 and GitHub secrets. Names only, never a secret value.
 - **Rule from now on:** when a service setting changes (dashboard or code), update that topic in the same change.
