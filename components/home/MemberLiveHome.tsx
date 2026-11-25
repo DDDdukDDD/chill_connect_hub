@@ -75,11 +75,31 @@ export interface MemberLiveHomeProps {
  * ถัดไปของคุณ move above the feed, in the feed's column); phones keep one column with picks between the posts.
  * Without plans the feed still comes first: the first-meetup picks sit after the first post, never in front of it.
  */
+const FEED_MODE_KEY = 'chillwaa:home-mode';
+
 export function MemberLiveHome(props: MemberLiveHomeProps) {
   const { name, plans, isLoaded } = props;
   // A page opened from here says "กลับหน้าหลัก" and comes back here (owner 2026-11-16)
   useHomeExitNote();
-  const [feedView, setFeedView] = useState<FeedView>('foryou');
+  // The mode picked last time comes back on this device (owner 2026-11-26): someone who browses ค้นพบ is not sent to
+  // สำหรับคุณ every visit. Read after the first paint, since the server's first page is สำหรับคุณ
+  const [feedView, setFeedViewState] = useState<FeedView>('foryou');
+  const setFeedView = (view: FeedView) => {
+    setFeedViewState(view);
+    try {
+      localStorage.setItem(FEED_MODE_KEY, view);
+    } catch {
+      // private window or blocked storage: the mode is simply not remembered
+    }
+  };
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(FEED_MODE_KEY);
+      if (saved === 'discover' || saved === 'following') setFeedViewState(saved);
+    } catch {
+      // as above
+    }
+  }, []);
   const hasPlans = plans.length > 0;
   const [shareRequest, setShareRequest] = useState<ShareRequest | null>(null);
   const showPicks = isLoaded && !hasPlans;
@@ -397,7 +417,8 @@ const FEWEST: Record<FeedCardKind, number> = { meetup: 1, challenge: 2, fair: 2,
 function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<number, React.ReactNode> {
   const cards: Record<number, React.ReactNode> = {};
   // Without plans the first post is followed by three ตี้ picks, so the invites start after them
-  if (showPicks) {
+  // Only when there is a ตี้ to pick: with none open, FirstPicks draws nothing and its frame left an empty band with two lines (owner 2026-11-26, seen live)
+  if (showPicks && props.meetups.length > 0) {
     cards[0] = (
       <section className="py-5 border-y border-slate-100 my-2">
         <FirstPicks {...props} />

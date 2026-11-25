@@ -1,6 +1,33 @@
-# Storytelling first visit: plan (draft, not built)
+# Storytelling first visit: plan (design agreed, not built)
 
-Owner idea 2026-11-25, with a spec from Gemini (tester) and notes from Claude Code. Waiting for the owner's OK on story and wording before any code. Direction: [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) "Our own core: going out for real".
+Owner idea 2026-11-25, with a spec from Gemini (tester) and notes from Claude Code. Direction: [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) "Our own core: going out for real".
+
+## Design agreed 2026-11-25 (owner) — supersedes the outline below where they differ
+
+**Mockup:** [mockups/story-landing.html](mockups/story-landing.html), open in a browser (phone width and desktop). Plain HTML, not app code.
+
+**Owner answers:** build it **before launch**; start from Gemini's headlines and improve them; **hide the phone bottom bar for every guest** (not only on `/`).
+
+**What the page says, top to bottom**
+1. **Header:** logo; เข้าสู่ระบบ (quiet, hidden on phones) + สมัครฟรี (secondary).
+2. **Hero:** pill "เพิ่งเปิด ชวนแก๊งของคุณมาเป็นกลุ่มแรก" (honest early-stage framing instead of member counts). H1 **"ออกไปจริง กับเพื่อนจริง / เก็บไว้เป็นเรื่องของเรา"** (second line `#C2410C`). One blue primary "เริ่มต้นใช้งานฟรี" + link "ดูว่าทำงานยังไง"; small lines ฟรี · ไม่ต้องโหลดแอป · ไม่ขายของ ไม่สแปม. Right side is **product, not lifestyle photos**: one moment card (place, date, "ไปกับเพื่อน 3 คน", "ไปมาแล้ว") with a small "ไปกันไหม? … เพื่อนตอบว่าไป 3 จาก 4 คน" card over it.
+3. **01 ชวน — "เลิกพูดว่า 'ไว้นัดกัน'":** three numbered steps: tap ชวนไป (the real `InviteIcon`, never a paper plane) → pick days for friends to vote → friends answer from the link without signing up or installing.
+4. **02 เก็บ — "ทุกครั้งที่ได้ไป กลายเป็นเรื่องของเรา":** one large profile card marked **ตัวอย่าง** (moments / places / ตี้ counts, place tiles, "ที่ต่อไปของคุณ"), plus a challenge card (progress, XP and badge) and a tag-friends card. Solo counts too.
+5. **03 เจอ — "อยากเจอคนใหม่ ก็มีตี้":** last and short (live has few ตี้). Four vibe chips swap one line of text; four safety points that the system enforces today: public places, 2–15 people, ตี้ host verified email, 18+ and Spot Buddy meets at the place (no shared rides).
+6. **Join:** "สุดสัปดาห์นี้ ชวนใครไปดี", the sign-up box in place (tabs สมัครสมาชิกใหม่ / เข้าสู่ระบบ; LINE first, then Google, Facebook/Apple, email). Then a strip "ยังไม่พร้อมสมัคร ดูก่อนก็ได้" with place and อีเวนต์ counts and a link to `/this-week`.
+7. **Phone:** no bottom bar for guests; a sticky "เริ่มต้นใช้งานฟรี / เข้าสู่ระบบ" bar after the hero, hidden once the sign-up box is on screen.
+
+**Copy rules learned in review**
+- **Never name or hint at other platforms** in page text (no IG, TikTok, "ปัดหน้า"). Say what we do, not what others do.
+- **Do not lean on LINE.** Sharing uses the phone's share sheet (any chat app); write "แชตกลุ่ม" / "แชตที่ใช้อยู่". LINE stays only as the first sign-in button.
+- **No feature that does not exist:** the "life map" is not built, so it is not on the page. Profile numbers are marked ตัวอย่าง.
+- **Photos:** only real photos. Most people photos in `public/images/onboarding` and `challenges` are AI-made or taken abroad; the mockup uses `public/images/venues/benjakitti.jpg` and `lumpini_park.jpg`. Real photos of the team or friends going out would raise trust most.
+
+**Open before building (Claude's recommendation, owner not yet decided)**
+- **Hybrid with today's landing:** keep a short real-content strip before the footer (4–6 upcoming อีเวนต์, the real moments wall once there are enough) for proof and for search crawlers, which the current `/` does well.
+- **Bring back the owner's positioning line** "ทำให้ทุกการใช้ชีวิตมีความหมาย" (H1 copy of 2026-11-09) as a closing line in the join section or footer.
+- Read the hero/explore numbers from Postgres at render time, rounded down.
+- `DESIGN_SYSTEM.md` still describes ชวนไป as a paper plane in a `slate-100` pill; the code uses `InviteIcon`. Fix the doc when building.
 
 ## Why
 

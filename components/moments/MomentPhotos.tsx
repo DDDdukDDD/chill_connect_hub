@@ -24,6 +24,8 @@ interface MomentPhotosProps {
   onOpen: (index: number) => void;
   /** Double tap: like the post. The heart shows either way. */
   onDoubleTap?: () => void;
+  /** Phones: the frame runs the full screen width with square corners, like IG (owner 2026-11-26). The parent pulls it out of its 16 px gutter */
+  bleed?: boolean;
 }
 
 /**
@@ -85,7 +87,8 @@ const isTall = (ratio?: number) => typeof ratio === 'number' && ratio > 0 && rat
 const isWide = (ratio?: number) => typeof ratio === 'number' && ratio >= 1.25;
 const frameOf = (ratio?: number) => (isTall(ratio) ? 'aspect-[4/5]' : isWide(ratio) ? 'aspect-video' : 'aspect-square');
 
-export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }: MomentPhotosProps) {
+export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap, bleed }: MomentPhotosProps) {
+  const corners = bleed ? 'rounded-none sm:rounded-2xl' : 'rounded-2xl';
   const [index, setIndex] = useState(0);
   const [hearts, setHearts] = useState(0);
   const track = useRef<HTMLDivElement>(null);
@@ -120,12 +123,12 @@ export function MomentPhotos({ images, video, ratio, alt, onOpen, onDoubleTap }:
   };
 
   if (video) {
-    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} musicId={video.musicId} className={`relative w-full ${frameOf(ratio)} overflow-hidden rounded-2xl bg-black`} />;
+    return <ClipPlayer url={video.url} preview={video.previewUrl ?? null} startS={video.startS} durationS={video.durationS} poster={optimizedImage(images[0], 828)} label={alt} fit="cover" onTap={() => onOpen(0)} onDoubleTap={onDoubleTap} musicId={video.musicId} className={`relative w-full ${frameOf(ratio)} overflow-hidden ${corners} bg-black`} />;
   }
 
   return (
     <div className="space-y-2">
-      <div className={`group/photos relative w-full ${isTall(ratio) ? 'aspect-[4/5]' : 'aspect-square'} overflow-hidden rounded-2xl bg-slate-100 select-none`}>
+      <div className={`group/photos relative w-full ${isTall(ratio) ? 'aspect-[4/5]' : 'aspect-square'} overflow-hidden ${corners} bg-slate-100 select-none`}>
         <div
           ref={track}
           onScroll={(e) => {

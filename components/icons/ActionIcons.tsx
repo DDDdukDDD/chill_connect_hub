@@ -31,7 +31,8 @@ function Frame({ className, pop, onDark, children }: { className: string; pop?: 
       viewBox="0 0 48 48"
       fill="none"
       stroke={onDark ? '#fff' : INK}
-      strokeWidth="3"
+      // 3.5 of 48 = 1.75 px at 24 px: a firmer line next to photos that now run edge to edge (owner 2026-11-26; was 3)
+      strokeWidth="3.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={`${className} shrink-0 ${pop ? 'motion-safe:animate-icon-pop' : ''}`}

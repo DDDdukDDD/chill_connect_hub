@@ -95,7 +95,53 @@ const FIRST_MOMENTS = 12;
 const PAGE_MOMENTS = 12;
 const FIRST_BADGES = 10;
 /** The tabs under the story, like IG (owner 2026-11-01): what they posted, ตี้ they went to, ตี้ they host, challenges they finished */
-type ProfileTab = 'moments' | 'went' | 'hosted' | 'challenges';
+type ProfileTab = 'moments' | 'saved' | 'went' | 'hosted' | 'challenges';
+/**
+ * Saved posts on one's own profile (owner 2026-11-26: moved here from the Home feed's bookmark, like IG). Loaded when
+ * the tab opens; nobody else sees the tab.
+ */
+function SavedMoments() {
+  const [items, setItems] = useState<{ id: string; image: string; caption: string }[] | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const loadPage = async (next: number) => {
+    setIsLoading(true);
+    const res = await getJson<{ moments: { id: string; images: string[]; caption: string }[]; pagination?: { hasNextPage?: boolean } }>(`/api/moments?tab=saved&limit=${PAGE_MOMENTS}&page=${next}`);
+    const more = (res.json?.moments ?? []).filter((m) => m.images?.[0]).map((m) => ({ id: m.id, image: m.images[0], caption: m.caption }));
+    setItems((now) => (next === 1 ? more : [...(now ?? []), ...more.filter((m) => !(now ?? []).some((had) => had.id === m.id))]));
+    setPage(next);
+    setHasMore(Boolean(res.json?.pagination?.hasNextPage));
+    setIsLoading(false);
+  };
+  useEffect(() => {
+    // once, when the tab opens
+    void loadPage(1);
+  }, []);
+  if (items === null) return <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-slate-400" aria-label="กำลังโหลด" /></div>;
+  if (items.length === 0) return <p className="text-sm font-medium text-slate-500">ยังไม่ได้บันทึกโมเมนต์ไหน กดที่คั่นหนังสือใต้โพสต์ที่ชอบ แล้วจะมาอยู่ตรงนี้</p>;
+  return (
+    <>
+      <ul className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2">
+        {items.map((m) => (
+          <li key={m.id} className="aspect-[4/5] rounded-xl overflow-hidden bg-slate-100">
+            <Link href={`/moments/${encodeURIComponent(m.id)}`} className="block w-full h-full group">
+              {/* eslint-disable-next-line @next/next/no-img-element -- remote content images */}
+              <img src={optimizedImage(m.image, 384)} alt={m.caption.slice(0, 60)} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {hasMore && (
+        <button type="button" onClick={() => void loadPage(page + 1)} disabled={isLoading} className={MORE_BUTTON}>
+          {isLoading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+          ดูเพิ่ม
+        </button>
+      )}
+    </>
+  );
+}
+
 const TILE_GRID = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8';
 const MORE_BUTTON = 'mt-5 inline-flex items-center gap-1.5 min-h-10 px-4 rounded-full border border-slate-300 hover:border-slate-900 text-sm font-bold text-slate-800 cursor-pointer disabled:opacity-60';
 /** About facts as short lines: an icon, a lead-in and the value ("ทำงานเป็น นักออกแบบ") */
@@ -714,9 +760,11 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
       ]
     : [];
   const went = profile?.wentTo ?? [];
-  const tabs: { key: ProfileTab; label: string; count: number }[] = profile
+  const tabs: { key: ProfileTab; label: string; count?: number }[] = profile
     ? [
         ...(state.moments.length > 0 || viewOwn ? [{ key: 'moments' as const, label: 'โมเมนต์', count: state.momentsTotal ?? state.moments.length }] : []),
+        // Own profile only, after โมเมนต์ (owner 2026-11-26); no count, it loads when opened
+        ...(viewOwn ? [{ key: 'saved' as const, label: 'บันทึกไว้' }] : []),
         ...(went.length > 0 ? [{ key: 'went' as const, label: 'ตี้ที่ไป', count: went.length }] : []),
         ...(hostedVisible.length > 0 ? [{ key: 'hosted' as const, label: 'ตี้ที่จัด', count: hostedVisible.length }] : []),
         ...(profile.challengeBadges && profile.challengeBadges.length > 0 ? [{ key: 'challenges' as const, label: 'ชาเลนจ์', count: profile.challengeBadges.length }] : []),
@@ -1061,7 +1109,7 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                               onClick={() => setTab(t.key)}
                               className={`-mb-px shrink-0 pb-3 border-b-2 text-base sm:text-lg font-bold whitespace-nowrap cursor-pointer transition-colors ${isOn ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
                             >
-                              {t.label} <span className={`text-sm font-semibold tabular-nums ${isOn ? 'text-slate-500' : 'text-slate-500'}`}>{t.count.toLocaleString()}</span>
+                              {t.label}{t.count !== undefined && <> <span className="text-sm font-semibold tabular-nums text-slate-500">{t.count.toLocaleString()}</span></>}
                             </button>
                           );
                         })}
@@ -1099,6 +1147,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                             <Link href="/?share=new" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">แชร์โมเมนต์แรก ›</Link>
                           </p>
                         ))}
+
+                      {activeTab === 'saved' && <SavedMoments />}
 
                       {activeTab === 'went' && (
                         <ul className={`${TILE_GRID} pt-2`}>

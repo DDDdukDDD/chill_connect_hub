@@ -108,15 +108,38 @@ export const Navbar: React.FC<NavbarProps> = ({
   const topLinks = [
     { label: 'หน้าหลัก', href: '/', match: ['/'] },
     { label: 'กิจกรรม', href: '/this-week', match: ['/this-week', '/community', '/events', '/spots'] },
-    // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13)
-    { label: 'โมเมนต์', href: '/moments', match: ['/moments'] },
+    // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13). Members since 2026-11-26: no โมเมนต์, it is Home's ค้นพบ mode
+    ...(isLoggedIn ? [] : [{ label: 'โมเมนต์', href: '/moments', match: ['/moments'] }]),
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
   ];
   const isOn = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
+  // A member's Home below xl (owner 2026-11-26): the bar slides up out of the way while reading down the feed and comes
+  // back on the first move up, so the photos get the screen. Other pages keep it fixed: their own sticky rows sit under it
+  const hidesOnScroll = isLoggedIn && pathname === '/';
+  const [isTucked, setIsTucked] = useState(false);
+  useEffect(() => {
+    if (!hidesOnScroll) return;
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 80) setIsTucked(false);
+      else if (y > last + 8) setIsTucked(true);
+      else if (y < last - 8) setIsTucked(false);
+      else return;
+      last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      // Back on Home later, the bar starts shown
+      setIsTucked(false);
+    };
+  }, [hidesOnScroll]);
+
   return (
     <>
-      <header className="sticky top-0 z-50 pt-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs">
+      <header className={`sticky top-0 z-50 pt-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-xl border-b border-slate-200/60 transition-all duration-300 shadow-2xs ${hidesOnScroll && isTucked && !isProfileDropdownOpen ? 'max-xl:-translate-y-[calc(100%_-_env(safe-area-inset-top))]' : ''}`}>
         <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-17 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Left: Brand Logo & Name */}

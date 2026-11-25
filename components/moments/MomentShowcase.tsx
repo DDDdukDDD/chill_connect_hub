@@ -268,10 +268,11 @@ function TagRow({ kind, tags }: NonNullable<MomentShowcaseProps['tags']>) {
 }
 
 /** Rows that line up: two across on phones and iPads, four on computers (like Lemon8) */
-export function MomentGrid({ items, onLike }: { items: FeedItem[]; onLike?: (moment: FeedItem) => void }) {
+/** `className`: the grid's columns and gaps where it sits in a narrower column (Home's ค้นพบ mode) */
+export function MomentGrid({ items, onLike, className }: { items: FeedItem[]; onLike?: (moment: FeedItem) => void; className?: string }) {
   if (items.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 lg:gap-x-6 lg:gap-y-8">
+    <div className={className ?? 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 lg:gap-x-6 lg:gap-y-8'}>
       {items.map((moment, i) => (
         <MomentCard key={moment.id} moment={moment} onLike={onLike} first={i < 4} />
       ))}

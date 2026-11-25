@@ -20,6 +20,26 @@ Item template:
 
 ---
 
+### BE-476 · Home feed redesign for phones: full-width photos, ＋ in the bottom bar, three modes (owner 2026-11-26)
+- **What changed:** compared with Instagram on an iPhone, the owner asked for a cleaner feed.
+  - Photos run the full screen width on phones (`MomentPhotos` `bleed`); the reaction icons are 28 px with a firmer line (`ActionIcons` stroke 3.5, also on `/moments/[id]`); post text is 15 px; "… ดูเพิ่มเติม" sits at the end of the second caption line.
+  - Members' phone/iPad bar (below xl) is `หน้าหลัก | กิจกรรม | ＋ | ชาเลนจ์ | มายฮับ`. ＋ opens the posting form on Home (`COMPOSE_EVENT` in `lib/homeAgain.ts`) or goes to `/?share=new` from other pages. Visitors keep `หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์` until the landing is decided (BE-475 left open by the owner).
+  - The "วันนี้ไปไหนมา?" row shows only from xl (no bottom bar there). On a member's Home below xl the top bar slides up while scrolling down and comes back on the first move up (`Navbar`).
+  - Home has three modes: สำหรับคุณ · ค้นพบ · ติดตาม. ค้นพบ is the `/moments` grid (`HomeDiscoverGrid`, `GET /api/moments?tab=mix`); ล่าสุด is gone; ของฉัน is the profile's โมเมนต์ tab; saved posts are a new "บันทึกไว้" tab on one's own profile. The last mode is remembered on the device (`localStorage` `chillwaa:home-mode`).
+  - The computer top bar has no โมเมนต์ for members. `/moments` stays public for visitors and search.
+  - Fix: the empty band with two lines after the first post (the "ตี้แรกของคุณ" card with no open ตี้, seen live) no longer shows.
+  - The Reel (a clip opened full screen) starts with the sound on; leaving it puts the sound back as it was, so feed clips stay silent (`enterReel`/`leaveReel` in `ClipPlayer`). If the browser refuses sound, the clip plays silent as before.
+- **What to do about it:** no API or migration change. Check on a real iPhone: the top bar sliding under the status bar in the app, ＋ from pages other than Home, and whether Safari lets the Reel start with sound.
+
+---
+
+### BE-475 · Storytelling landing designed; Supabase was restricted on 25 Nov (owner 2026-11-25)
+- **What changed:** the guest first-visit page is designed and agreed: mockup [mockups/story-landing.html](mockups/story-landing.html), decisions and copy rules at the top of [STORY_LANDING_PLAN.md](STORY_LANDING_PLAN.md). Owner wants it **before launch**, with the phone bottom bar hidden for every guest. Not built yet.
+- **Supabase:** the grace period ended 22 Nov; on 25 Nov live was restricted (402) for a while, then lifted by the new billing cycle (egress back to ~0 of 5 GB). Owner chose to **stay on Free** and upgrade when egress passes 2.5 GB; [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) section 2 rewritten (the "3 Dec" date there was wrong).
+- **What to do about it:** next session builds the page from the plan (answer the open points in the plan first). Owner checks Supabase > Usage daily after launch.
+
+---
+
 ### BE-474 · Admin knowledge: services and settings (owner 2026-11-25)
 - **What changed:** /admin "วิธีคิดของระบบ" has a new topic "บริการภายนอกและการตั้งค่า" (`services-config` in `components/admin/SystemLogicView.tsx`): Vercel Pro (budget $200 with pause, firewall rule order and log-only week, bot settings, cron times, analytics, CDN revalidate times, env var names), email (Cloudflare Email Routing, Resend, DNS names, `SKIP_EMAIL_VERIFICATION`), Supabase, R2 and GitHub secrets. Names only, never a secret value.
 - **Rule from now on:** when a service setting changes (dashboard or code), update that topic in the same change.

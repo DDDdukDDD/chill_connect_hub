@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chillwaa: ออกไปจริง กับเพื่อนจริง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --warm:#FAF7F2; --line:#E8E2D8; --ink:#0F172A; --body:#334155; --muted:#475569; --help:#64748B;
+  --blue:#2563EB; --blue-d:#1D4ED8; --amber:#F26430; --amber-d:#C2410C; --amber-t:#FFF4EE;
+  --green:#4A7C59; --green-t:#EBF3ED; --violet:#7C3AED; --violet-t:#F5F3FF; --rose:#F43F5E; --rose-d:#BE123C; --rose-t:#FFF1F2;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--warm);color:var(--ink);font-family:'IBM Plex Sans Thai','Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:var(--blue)} a:hover{color:var(--blue-d)}
+button{font-family:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+.nobr{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;font-weight:600;text-decoration:none;white-space:nowrap;border:0;transition:background-color .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(15,23,42,.08)} .btn-primary:hover{background:var(--blue-d);color:#fff}
+.btn-dark{background:var(--ink);color:#fff} .btn-dark:hover{background:#1E293B;color:#fff}
+.btn-quiet{background:#F1F5F9;color:var(--body)} .btn-quiet:hover{background:#E2E8F0;color:var(--body)}
+.btn-provider{background:#fff;color:#1E293B;border:1px solid #CBD5E1} .btn-provider:hover{background:#F8FAFC}
+.btn-md{height:40px;padding:0 16px;font-size:14px}
+.btn-lg{height:52px;padding:0 28px;font-size:16px}
+.btn-block{height:48px;width:100%;font-size:15px}
+
+.top{position:sticky;top:0;z-index:20;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px}
+.logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;color:var(--green);text-decoration:none}
+.top nav{display:flex;gap:8px}
+
+.eyebrow{margin:0;display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:var(--amber-d)}
+.eyebrow b{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;background:var(--amber-t);font-size:12px;font-family:'Plus Jakarta Sans',sans-serif}
+h1,h2,h3{margin:0;font-weight:700}
+.h2{font-size:clamp(26px,3vw,38px);line-height:1.28}
+.lead{margin:0;font-size:clamp(15px,1.4vw,17px);line-height:1.75;color:var(--muted);max-width:560px}
+.section{padding:clamp(64px,8vw,112px) 0}
+.section.white{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.head{display:flex;flex-direction:column;gap:14px;max-width:640px;margin-bottom:clamp(32px,4vw,48px)}
+
+.card{background:#fff;border:1px solid #E2E8F0;border-radius:24px;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.94);font-size:12px;font-weight:700;color:var(--ink)}
+.tag i{width:6px;height:6px;border-radius:999px;display:block}
+.meta{display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--muted)}
+.meta svg{flex:none;color:var(--help)}
+.av{width:32px;height:32px;border-radius:999px;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+.av + .av{margin-left:-10px}
+.label{margin:0;font-size:12px;font-weight:600;color:var(--help)}
+.sample{display:inline-flex;padding:2px 8px;border-radius:999px;background:#F1F5F9;font-size:11px;font-weight:600;color:var(--help)}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,5vw,72px);align-items:center;padding:clamp(40px,6vw,88px) 16px clamp(64px,8vw,104px)}
+.pill{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--body)}
+.pill i{width:8px;height:8px;border-radius:999px;background:#10B981;box-shadow:0 0 0 3px #D1FAE5}
+.hero h1{font-size:clamp(34px,4.8vw,58px);line-height:1.2}
+.hero h1 span{color:var(--amber-d)}
+.hero-copy{display:flex;flex-direction:column;gap:22px}
+.cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:4px}
+.fine{margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--help)}
+.fine span{display:inline-flex;align-items:center;gap:6px}
+.fine svg{color:var(--green)}
+.stage{position:relative;padding:0 0 56px}
+.outing{overflow:hidden;max-width:440px;margin-left:auto;box-shadow:0 24px 48px -12px rgba(15,23,42,.18)}
+.outing .ph{position:relative;aspect-ratio:16/11;background:#E2E8F0}
+.outing .ph img{width:100%;height:100%;object-fit:cover}
+.outing .ph .tag{position:absolute;top:14px;left:14px}
+.outing .bd{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px}
+.outing h3{font-size:18px;line-height:1.4}
+.with{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;margin-top:4px;border-top:1px solid #F1F5F9}
+.done{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;font-size:12px;font-weight:700;white-space:nowrap}
+.float{position:absolute;left:0;bottom:0;width:min(280px,72%);padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 36px -12px rgba(15,23,42,.22)}
+.float .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bar{height:6px;border-radius:999px;background:#F1F5F9;overflow:hidden}
+.bar i{display:block;height:100%;width:75%;background:var(--amber);border-radius:999px}
+
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.step{display:flex;flex-direction:column;gap:12px}
+.step-k{margin:0;display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--body)}
+.step-k b{width:26px;height:26px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif}
+.step .card{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.mini-ph{aspect-ratio:4/3;background:#E2E8F0}
+.mini-ph img{width:100%;height:100%;object-fit:cover}
+.pad{padding:16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.acts{display:flex;align-items:center;gap:16px;color:var(--muted);margin-top:auto}
+.invite{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:52px;height:40px;padding:0 6px;border-radius:999px;box-shadow:0 0 0 2px var(--amber);background:#fff}
+.opt{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:14px;border:1px solid #E2E8F0;font-size:14px;font-weight:600;color:var(--body)}
+.opt.on{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue);background:#EFF6FF;color:var(--blue-d)}
+.opt small{font-size:12px;font-weight:500;color:var(--help)}
+.bubble{align-self:flex-start;max-width:92%;padding:10px 14px;border-radius:18px 18px 18px 6px;background:#F1F5F9;font-size:14px;line-height:1.5}
+.answer{padding:14px;border-radius:16px;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+.bento{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+.bento .big{grid-row:span 2;padding:24px;display:flex;flex-direction:column;gap:20px}
+.prof{display:flex;align-items:center;gap:14px}
+.prof .me{width:56px;height:56px;border-radius:999px;background:var(--green-t);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stats div{padding:12px;border-radius:16px;background:var(--warm);text-align:center}
+.stats b{display:block;font-size:22px;font-family:'Plus Jakarta Sans',sans-serif}
+.stats span{font-size:12px;color:var(--help)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{position:relative;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:#E2E8F0}
+.tile img{width:100%;height:100%;object-fit:cover}
+.tile span{position:absolute;left:8px;right:8px;bottom:8px;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.tile.blank{display:flex;align-items:center;justify-content:center;background:var(--warm);border:1px dashed #CBD5E1}
+.tile.blank span{position:static;color:var(--help);text-shadow:none;text-align:center;line-height:1.5}
+.small{padding:22px;display:flex;flex-direction:column;gap:14px}
+.ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.small h3,.big h3{font-size:18px;line-height:1.4}
+.small p,.big p.t{margin:0;font-size:14px;line-height:1.7;color:var(--muted)}
+.quest{padding:14px;border-radius:16px;border:1px solid #EDE9FE;background:var(--violet-t);display:flex;flex-direction:column;gap:10px}
+.quest .bar{background:#fff}
+.quest .bar i{background:var(--violet);width:66%}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:#F8FAFC;border:1px solid #E2E8F0;font-size:12px;font-weight:600;color:var(--body)}
+.chip .av{width:22px;height:22px;border:0;font-size:11px}
+
+.meet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
+.vibes{display:flex;flex-wrap:wrap;gap:8px}
+.vibe{height:40px;padding:0 16px;border-radius:999px;border:1px solid #E2E8F0;background:#fff;color:var(--body);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.vibe:hover{border-color:#CBD5E1}
+.vibe[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue);background:#EFF6FF;color:var(--blue-d)}
+.vibe-line{margin:16px 0 0;min-height:52px;font-size:15px;line-height:1.75;color:var(--body)}
+.safe{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.safe div{padding:18px;border-radius:20px;background:var(--warm);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.safe svg{color:var(--green)}
+.safe b{font-size:15px}
+.safe span{font-size:13px;line-height:1.6;color:var(--muted)}
+
+.join{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:clamp(32px,5vw,72px);align-items:center}
+.auth{border-radius:32px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;background:#F1F5F9;border-radius:999px}
+.seg button{height:40px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:14px;font-weight:600;white-space:nowrap}
+.seg button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.or{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--help)} .or::before,.or::after{content:"";flex:1;height:1px;background:#E2E8F0}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.checks{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.checks li{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--body)}
+.checks svg{color:var(--green);flex:none}
+
+.explore{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 32px;padding:24px clamp(20px,3vw,32px);border-radius:24px;background:#fff;border:1px solid var(--line);margin-top:clamp(48px,6vw,72px)}
+.explore p{margin:0;font-size:14px;line-height:1.7;color:var(--muted)}
+.explore strong{color:var(--ink);font-weight:600}
+footer{border-top:1px solid var(--line)}
+footer .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-top:28px;padding-bottom:40px}
+footer nav{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
+footer nav a{color:var(--muted);text-decoration:none} footer nav a:hover{color:var(--ink)}
+
+.rv{opacity:0;transform:translateY(10px);transition:opacity .35s ease-out,transform .35s ease-out}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none} html{scroll-behavior:auto}}
+
+@media (max-width:900px){
+  .hero,.meet,.join{grid-template-columns:minmax(0,1fr)}
+  .outing{margin:0 auto}
+  .flow,.bento{grid-template-columns:minmax(0,1fr)}
+  .bento .big{grid-row:auto}
+}
+@media (max-width:640px){
+  .top nav .btn-quiet{display:none}
+  .hero{padding-top:28px}
+  .hero-copy{gap:18px}
+  .cta-row .btn-lg{width:100%}
+  .stage{padding-bottom:64px}
+  .float{left:8px}
+  .safe{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#top">Chillwaa</a>
+    <nav aria-label="บัญชี">
+      <a class="btn btn-quiet btn-md" href="#join">เข้าสู่ระบบ</a>
+      <a class="btn btn-dark btn-md" href="#join">สมัครฟรี</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="wrap hero">
+  <div class="hero-copy">
+    <span class="pill"><i></i>เพิ่งเปิด ชวนแก๊งของคุณมาเป็นกลุ่มแรก</span>
+    <h1>ออกไปจริง กับเพื่อนจริง<br><span>เก็บไว้เป็นเรื่องของเรา</span></h1>
+    <p class="lead">นัดกันในแชตกลุ่มให้ได้ไปจริงสักที แล้วทุกครั้งที่ไป Chillwaa เก็บไว้ให้ว่าไปที่ไหน กับใคร</p>
+    <div class="cta-row">
+      <a class="btn btn-primary btn-lg" href="#join">เริ่มต้นใช้งานฟรี
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      <a href="#how" class="nobr" style="font-size:15px;font-weight:600;color:var(--body)">ดูว่าทำงานยังไง</a>
+    </div>
+    <p class="fine">
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ฟรี</span>
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ไม่ต้องโหลดแอป</span>
+      <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ไม่ขายของ ไม่สแปม</span>
+    </p>
+  </div>
+
+  <div class="stage" role="img" aria-label="ตัวอย่างโมเมนต์ที่สวนเบญจกิติ ไปกับเพื่อน 3 คน และคำชวนไปสวนลุมพินีที่เพื่อนตอบแล้ว 3 จาก 4 คน">
+    <article class="card outing" aria-hidden="true">
+      <div class="ph">
+        <img src="../../public/images/venues/benjakitti.jpg" alt="">
+        <span class="tag"><i style="background:var(--rose)"></i>โมเมนต์</span>
+      </div>
+      <div class="bd">
+        <h3>เดินเล่นเย็นวันเสาร์ ก่อนหาอะไรกินต่อ</h3>
+        <p class="meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>สวนเบญจกิติ · กรุงเทพฯ</p>
+        <p class="meta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="num">ส. 21 พ.ย. · 16:30</span></p>
+        <div class="with">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex"><span class="av" style="background:#F26430">คุณ</span><span class="av" style="background:#4A7C59">+3</span></div>
+            <span style="font-size:13px;color:var(--muted)">ไปกับเพื่อน 3 คน</span>
+          </div>
+          <span class="done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ไปมาแล้ว</span>
+        </div>
+      </div>
+    </article>
+    <div class="card float" aria-hidden="true">
+      <div class="row"><span style="font-size:13px;font-weight:700">ไปกันไหม? สวนลุมพินี</span>
+        <svg viewBox="0.6 3.6 47.6 20.8" width="34" height="15" fill="none" stroke="#1E293B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="14" r="9" fill="#FFEDD5"/><circle cx="26" cy="14" r="9" fill="#D1FAE5"/><circle cx="8.4" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><circle cx="13.6" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><path d="M8.7 16.6c1.2 1.3 3.4 1.3 4.6 0" stroke-width="1.8"/><circle cx="23.4" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><path d="M27.4 11.4l1.8 1.4-1.8 1.4" stroke-width="1.7"/><path d="M23.7 16.6c1.2 1.3 3.4 1.3 4.6 0" stroke-width="1.8"/><path d="M38.5 14h8M46.5 14l-3.2-3.4M46.5 14l-3.2 3.4"/></svg></div>
+      <div class="bar"><i></i></div>
+      <span style="font-size:12px;color:var(--help)" class="num">เพื่อนตอบว่าไป 3 จาก 4 คน</span>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="section white">
+  <div class="wrap">
+    <div class="head rv">
+      <p class="eyebrow"><b>01</b>ชวน</p>
+      <h2 class="h2">เลิกพูดว่า "ไว้นัดกัน"</h2>
+      <p class="lead">เห็นที่ไหนน่าไป กดชวนไป เลือกวัน แล้วส่งเข้าแชตกลุ่มที่คุยกันอยู่แล้ว ไม่ต้องย้ายแก๊งมาแอปใหม่</p>
+    </div>
+    <div class="flow">
+      <div class="step rv">
+        <p class="step-k"><b>1</b>กดชวนไป</p>
+        <div class="card">
+          <div class="mini-ph"><img src="../../public/images/venues/lumpini_park.jpg" alt="สวนลุมพินี กรุงเทพฯ"></div>
+          <div class="pad">
+            <div><p style="margin:0;font-size:15px;font-weight:700">สวนลุมพินี</p><p class="meta" style="margin-top:2px">ที่เที่ยว · กรุงเทพฯ</p></div>
+            <div class="acts">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.050 3 5.5l7 7Z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              <span class="invite" role="img" aria-label="ชวนเพื่อนไปด้วยกัน"><svg viewBox="0.6 3.6 47.6 20.8" width="39" height="17" fill="none" stroke="#1E293B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="14" r="9" fill="#FFEDD5"/><circle cx="26" cy="14" r="9" fill="#D1FAE5"/><circle cx="8.4" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><circle cx="13.6" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><path d="M8.7 16.6c1.2 1.3 3.4 1.3 4.6 0" stroke-width="1.8"/><circle cx="23.4" cy="12.8" r="1.5" fill="#1E293B" stroke="none"/><path d="M27.4 11.4l1.8 1.4-1.8 1.4" stroke-width="1.7"/><path d="M23.7 16.6c1.2 1.3 3.4 1.3 4.6 0" stroke-width="1.8"/><path d="M38.5 14h8M46.5 14l-3.2-3.4M46.5 14l-3.2 3.4"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step rv">
+        <p class="step-k"><b>2</b>เลือกวันให้เพื่อนโหวต</p>
+        <div class="card"><div class="pad">
+          <p class="label">ไปกัน · สวนลุมพินี</p>
+          <div class="opt on"><span>ส. 28 พ.ย. <small>เย็น</small></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="opt"><span>อา. 29 พ.ย. <small>เช้า</small></span></div>
+          <div class="opt"><span>ส. 5 ธ.ค. <small>เย็น</small></span></div>
+          <span class="btn btn-dark" style="height:44px;font-size:14px;margin-top:auto">ส่งให้เพื่อน</span>
+        </div></div>
+      </div>
+      <div class="step rv">
+        <p class="step-k"><b>3</b>เพื่อนตอบจากลิงก์</p>
+        <div class="card"><div class="pad">
+          <p class="label" style="display:flex;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>ในแชตกลุ่มของคุณ</p>
+          <div class="bubble">ไปกันไหม? สวนลุมพินี ส. 28 พ.ย. เย็น</div>
+          <div class="answer">
+            <div><p style="margin:0;font-size:18px;font-weight:700" class="num">ไป 3 คน</p><p class="meta" style="margin-top:2px">ยังไม่แน่ใจ 1 คน</p></div>
+            <div style="display:flex"><span class="av" style="background:#F26430"></span><span class="av" style="background:#4A7C59"></span><span class="av" style="background:#7C3AED"></span></div>
+          </div>
+          <p style="margin:auto 0 0;font-size:13px;line-height:1.6;color:var(--help)">เพื่อนกดตอบได้เลย ไม่ต้องสมัคร ไม่ต้องโหลดแอป</p>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="head rv">
+      <p class="eyebrow"><b>02</b>เก็บ</p>
+      <h2 class="h2">ทุกครั้งที่ได้ไป กลายเป็นเรื่องของเรา</h2>
+      <p class="lead">ไปที่ไหน กับใคร วันไหน ถูกเก็บไว้ครบในที่เดียว ย้อนดูเมื่อไหร่ก็จำได้ ไปคนเดียวก็นับ</p>
+    </div>
+    <div class="bento">
+      <article class="card big rv">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div class="prof">
+            <div class="me"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div>
+            <div><h3>โปรไฟล์ของคุณ</h3><p class="meta" style="margin-top:2px">เล่าว่าคุณออกไปไหนมาบ้าง</p></div>
+          </div>
+          <span class="sample">ตัวอย่าง</span>
+        </div>
+        <div class="stats num">
+          <div><b>8</b><span>โมเมนต์</span></div>
+          <div><b>6</b><span>ที่ที่ไป</span></div>
+          <div><b>2</b><span>ตี้</span></div>
+        </div>
+        <div class="grid3">
+          <div class="tile"><img src="../../public/images/venues/benjakitti.jpg" alt=""><span>สวนเบญจกิติ</span></div>
+          <div class="tile"><img src="../../public/images/venues/lumpini_park.jpg" alt=""><span>สวนลุมพินี</span></div>
+          <div class="tile blank"><span>ที่ต่อไป<br>ของคุณ</span></div>
+        </div>
+        <p class="t">ทุกโมเมนต์ปักสถานที่ไว้ เพื่อนเห็นว่าไปไหนมา แล้วชวนกันไปต่อได้</p>
+      </article>
+      <article class="card small rv">
+        <div class="ico" style="background:var(--violet-t);color:var(--violet)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
+        <h3>ชาเลนจ์ ให้มีเหตุผลออกไป</h3>
+        <div class="quest">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:14px;font-weight:700">คาเฟ่ฮอปปิ้ง 3 ร้าน</span><span class="num" style="font-size:12px;font-weight:700;color:var(--violet)">2/3</span></div>
+          <div class="bar"><i></i></div>
+        </div>
+        <p>ทำสำเร็จได้ XP และเหรียญตรา ทำคนเดียวหรือชวนเพื่อนมาทำด้วยก็ได้</p>
+      </article>
+      <article class="card small rv">
+        <div class="ico" style="background:var(--rose-t);color:var(--rose-d)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
+        <h3>แท็กเพื่อนที่ไปด้วย</h3>
+        <div class="chips">
+          <span class="chip"><span class="av" style="background:#F26430">ค</span>คุณ</span>
+          <span class="chip"><span class="av" style="background:#4A7C59">+</span>เพื่อนที่ไปด้วย</span>
+        </div>
+        <p>โมเมนต์เดียวเป็นความทรงจำของทั้งแก๊ง ไม่ใช่โพสต์ของคนเดียว</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section white">
+  <div class="wrap meet">
+    <div class="rv">
+      <div class="head" style="margin-bottom:20px">
+        <p class="eyebrow"><b>03</b>เจอ</p>
+        <h2 class="h2">อยากเจอคนใหม่ ก็มีตี้</h2>
+        <p class="lead">ตี้เล็กๆ ของคนที่ชอบเรื่องเดียวกัน ได้ทำสิ่งที่ชอบด้วยกันก่อน แล้วค่อยรู้จักกันระหว่างทาง</p>
+      </div>
+      <div class="vibes" role="group" aria-label="ช่วงนี้อยากทำอะไร" id="vibes"></div>
+      <p class="vibe-line" id="vibe-line" aria-live="polite"></p>
+    </div>
+    <div class="safe rv">
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg><b>เจอกันในที่สาธารณะ</b><span>นัดที่ร้าน สวน หรือหน้างาน</span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><b>กลุ่มเล็ก 2–15 คน</b><span>คุยกันทั่วถึง ไม่หลงในคนเยอะ</span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg><b>คนตั้งตี้ยืนยันอีเมลแล้ว</b><span>ทุกตี้มีเจ้าของที่ติดต่อได้</span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><b>อายุ 18 ปีขึ้นไป</b><span>ทริปที่เที่ยวเจอกันที่หน้างาน ไม่นั่งรถคนแปลกหน้า</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="join" class="section">
+  <div class="wrap">
+    <div class="join">
+      <div class="rv" style="display:flex;flex-direction:column;gap:16px">
+        <h2 class="h2">สุดสัปดาห์นี้<br>ชวนใครไปดี</h2>
+        <p class="lead">สมัครฟรี แล้วเริ่มจากชวนแก๊งที่มีอยู่แล้ว เพื่อนตอบได้โดยไม่ต้องสมัคร</p>
+        <ul class="checks">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ชวนเพื่อนผ่านแชตที่ใช้อยู่ได้ทันที</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ทุกครั้งที่ไป ถูกเก็บเป็นเรื่องของคุณ</li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>ไม่ขายของ ไม่สแปม</li>
+        </ul>
+      </div>
+      <div class="card auth rv">
+        <div class="seg" role="tablist" aria-label="สมัครหรือเข้าสู่ระบบ">
+          <button type="button" role="tab" aria-selected="true" data-tab="signup">สมัครสมาชิกใหม่</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="login">เข้าสู่ระบบ</button>
+        </div>
+        <p id="auth-hint" style="margin:2px 0 0;text-align:center;font-size:13px;color:var(--help)">เลือกวิธีที่สะดวก ฟรีทุกวิธี</p>
+        <button type="button" class="btn btn-provider btn-block"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#06C755"/><path fill="#fff" d="M12 5.5c-3.9 0-7 2.5-7 5.6 0 2.8 2.5 5.1 5.8 5.5.2 0 .5.1.6.3.1.2.1.4 0 .6l-.1.6c0 .2-.2.7.6.4.8-.3 4.3-2.5 5.8-4.3 1.1-1.1 1.6-2.2 1.6-3.4C19 8 15.9 5.5 12 5.5Z"/></svg>ใช้ LINE</button>
+        <button type="button" class="btn btn-provider btn-block"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1-3.7 1-2.900 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8l3.7-2.8Z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4Z"/></svg>ใช้ Google</button>
+        <div class="two">
+          <button type="button" class="btn btn-provider btn-block">Facebook</button>
+          <button type="button" class="btn btn-provider btn-block">Apple</button>
+        </div>
+        <div class="or">หรือ</div>
+        <button type="button" class="btn btn-dark btn-block" id="email-btn">สมัครด้วยอีเมล</button>
+        <p style="margin:0;text-align:center;font-size:12px;line-height:1.6;color:var(--help)">เมื่อสมัคร ถือว่ายอมรับ <a href="#join">ข้อกำหนด</a> และ <a href="#join">นโยบายความเป็นส่วนตัว</a></p>
+      </div>
+    </div>
+
+    <div class="explore rv">
+      <p>ยังไม่พร้อมสมัคร ดูก่อนก็ได้ · ที่เที่ยว <strong class="num">2,000+</strong> แห่ง · อีเวนต์ <strong class="num">120+</strong> งาน</p>
+      <a href="#top" class="nobr" style="display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:600">ดูก่อนว่าสัปดาห์นี้มีอะไร
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="logo" style="font-size:18px">Chillwaa</span>
+    <nav aria-label="ลิงก์ท้ายหน้า"><a href="#top">เกี่ยวกับเรา</a><a href="#top">ข้อกำหนด</a><a href="#top">ความเป็นส่วนตัว</a><a href="#top">ติดต่อเรา</a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var vibes = [
+    ['cafe', 'คาเฟ่', 'ตี้นั่งคาเฟ่ใหม่ คุยกันสบายๆ ครั้งหน้าค่อยชวนกันไปร้านต่อไป'],
+    ['run', 'วิ่ง', 'ตี้วิ่งเย็นในสวน เพซไม่ต้องเร็ว ขอแค่ได้ออกมาด้วยกัน'],
+    ['board', 'บอร์ดเกม', 'บอร์ดเกมไม่กี่คนที่ร้าน เล่นจบแล้วกดติดตามคนที่คุยถูกคอ'],
+    ['trip', 'เที่ยว & ฮีลใจ', 'ทริปไปที่เที่ยวกับบัดดี้ นัดเจอกันที่หน้างานตอนกลางวัน']
+  ];
+  var box = document.getElementById('vibes'), line = document.getElementById('vibe-line');
+  var check = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  function pick(id) {
+    box.innerHTML = '';
+    vibes.forEach(function (v) {
+      var on = v[0] === id, b = document.createElement('button');
+      b.type = 'button'; b.className = 'vibe';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.innerHTML = (on ? check : '') + v[1];
+      b.onclick = function () { pick(v[0]); };
+      box.appendChild(b);
+      if (on) line.textContent = v[2];
+    });
+  }
+  pick('cafe');
+
+  var tabs = document.querySelectorAll('.seg button');
+  tabs.forEach(function (t) {
+    t.onclick = function () {
+      tabs.forEach(function (x) { x.setAttribute('aria-selected', x === t ? 'true' : 'false'); });
+      var s = t.dataset.tab === 'signup';
+      document.getElementById('auth-hint').textContent = s ? 'เลือกวิธีที่สะดวก ฟรีทุกวิธี' : 'ยินดีต้อนรับกลับมา';
+      document.getElementById('email-btn').textContent = s ? 'สมัครด้วยอีเมล' : 'เข้าสู่ระบบด้วยอีเมล';
+    };
+  });
+
+  var els = document.querySelectorAll('.rv');
+  if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { rootMargin: '0px 0px -8% 0px' });
+  els.forEach(function (e) { io.observe(e); });
+})();
+</script>
+</body>
+</html>
