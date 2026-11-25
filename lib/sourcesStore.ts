@@ -64,7 +64,7 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     icon: '🎟️',
     status: 'inactive',
     eventsCount: 0,
-    description: 'ยังดึงไม่ได้: หน้าเว็บโหลดรายการงานด้วย JavaScript จาก API ภายใน ไม่มีข้อมูลในหน้า HTML และ sitemap ไม่มีหน้างาน ต้องขอ feed หรือ API จาก Eventpop (partner)',
+    description: 'ยังดึงไม่ได้: หน้าเว็บโหลดรายการงานด้วย JavaScript จาก API ภายใน ไม่มีข้อมูลในหน้า HTML และ sitemap ไม่มีหน้างาน ต้องขอ feed หรือ API จาก Eventpop (partner) และข้อตกลงของ Eventpop ห้ามทำซ้ำหรือใช้เนื้อหาเชิงพาณิชย์โดยไม่ได้รับอนุญาต (เช็ก 26 พ.ย. 2569) จึงต้องขออนุญาตก่อน',
   },
   {
     id: 'ticketmelon',
@@ -211,6 +211,31 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
     status: 'inactive',
     eventsCount: 0,
     description: 'ยังดึงไม่ได้: pr-bangkok.com เป็นเว็บข่าวประชาสัมพันธ์ ไม่มีปฏิทินงานแบบมีโครงสร้าง ใช้แหล่ง "Visit Bangkok ปฏิทินเทศกาล" แทน',
+  },
+  // Art for Gen Z and Y (owner 2026-11-26): robots.txt of both allows these pages; new items wait in the review queue
+  {
+    id: 'bacc',
+    name: 'หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร (BACC)',
+    url: 'https://www.bacc.or.th/events',
+    targetType: 'events',
+    category: 'exhibition',
+    categoryLabel: '🎨 นิทรรศการศิลปะ ทอล์ก & เวิร์กช็อป',
+    icon: '🎨',
+    status: 'active',
+    eventsCount: 0,
+    description: 'นิทรรศการ ทอล์ก และเวิร์กช็อปที่หอศิลปกรุงเทพฯ อ่านหน้างานล่าสุดจาก sitemap ของ BACC (lib/scrapers/bacc.ts)',
+  },
+  {
+    id: 'river-city',
+    name: 'ริเวอร์ซิตี้ แบงค็อก (River City Bangkok)',
+    url: 'https://rivercitybangkok.com/category/exhibitions/',
+    targetType: 'events',
+    category: 'exhibition',
+    categoryLabel: '🖼️ นิทรรศการริมน้ำ',
+    icon: '🖼️',
+    status: 'active',
+    eventsCount: 0,
+    description: 'นิทรรศการศิลปะและภาพถ่ายที่กำลังจัดที่ริเวอร์ซิตี้ อ่านจากหน้า Current Listings (lib/scrapers/riverCity.ts)',
   },
 ];
 
