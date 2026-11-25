@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Bookmark, Star, MapPin, Clock, ArrowRight } from 'lucide-react';
 import { LifestyleSpotItem } from '@/data/spotsData';
 import { formatSpotBadgePrice } from '@/components/SpotCard';
+import { cardTag } from '@/lib/spotAudienceTags';
 import { motion } from 'framer-motion';
 
 interface SpotListItemProps {
@@ -30,6 +31,7 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
   isJoined = false,
   index = 0,
 }) => {
+  const tag = cardTag(spot);
   return (
     <motion.div
       id={`spot-list-${spot.id}`}
@@ -110,9 +112,10 @@ export const SpotListItem: React.FC<SpotListItemProps> = ({
                 </span>
               )}
 
-              {spot.vibeTags && spot.vibeTags.length > 0 && (
+              {/* Staff's tag, else how young people go there (lib/spotAudienceTags.ts, owner 2026-11-26) */}
+              {tag && (
                 <span className="hidden sm:inline-block text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md truncate max-w-[120px]">
-                  #{spot.vibeTags[0]}
+                  #{tag}
                 </span>
               )}
             </div>

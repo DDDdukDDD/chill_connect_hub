@@ -2,6 +2,7 @@ import type { ChallengeQuest, EventItem } from '@/data/mockData';
 import type { LifestyleSpotItem } from '@/data/spotsData';
 import { getQuestBrandReward } from '@/lib/questDisplay';
 import { matchSearchQuery } from '@/lib/searchUtils';
+import { audienceTags } from '@/lib/spotAudienceTags';
 
 /**
  * How the ค้นพบ pages (/community, /events, /spots) match a search word and a province.
@@ -37,8 +38,9 @@ export const meetupSearchText = (event: EventItem) =>
 export const fairSearchText = (event: EventItem) =>
   `${event.title} ${event.description || ''} ${event.tag || ''} ${event.location || ''} ${event.hostName || ''} ${event.venueTag || ''} ${event.province || ''}`.toLowerCase();
 
+// Audience tags too (owner 2026-11-26): "ถ่ายรูป", "กลางคืน" or "ฟรี" find places that never use those words
 export const spotSearchText = (spot: LifestyleSpotItem) =>
-  `${spot.province} ${spot.district || ''} ${spot.title} ${(spot.vibeTags || []).join(' ')} ${spot.categoryLabel || ''} ${spot.description}`.toLowerCase();
+  `${spot.province} ${spot.district || ''} ${spot.title} ${(spot.vibeTags || []).join(' ')} ${audienceTags(spot).join(' ')} ${spot.categoryLabel || ''} ${spot.description}`.toLowerCase();
 
 export const questSearchText = (quest: ChallengeQuest) => {
   const reward = getQuestBrandReward(quest);

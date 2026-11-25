@@ -50,6 +50,60 @@ function getSpotValidationError(spot: Partial<LifestyleSpotItem>): string | null
   return null;
 }
 
+/**
+ * The list filters (search, vibe, province, status, picture, "นัดเจอได้"), shared by the list and by "เผยแพร่ทั้งหมดที่กรองไว้",
+ * so a bulk change touches exactly what staff see in the list.
+ */
+function filterSpots(allSpots: LifestyleSpotItem[], searchParams: URLSearchParams): LifestyleSpotItem[] {
+  const province = searchParams.get('province');
+  const category = searchParams.get('category');
+  const query = searchParams.get('q');
+  const filter = searchParams.get('filter'); // 'missing_image' | 'all'
+  const publicationStatus = searchParams.get('status');
+  let filtered = [...allSpots];
+
+  if (province && province !== 'all') {
+    filtered = filtered.filter((s) => s.province.includes(province) || province.includes(s.province));
+  }
+
+  // `category` accepts a stored category (temple, cafe, …) or one of the 7 frontend vibes (sea_island, …)
+  if (category && category !== 'all') {
+    filtered = filtered.filter((s) => s.category === category || getSpotVibeCategory(s) === category);
+  }
+
+  if (query && query.trim() !== '') {
+    const q = query.toLowerCase().trim();
+    filtered = filtered.filter((s) =>
+      s.title.toLowerCase().includes(q) ||
+      s.province.toLowerCase().includes(q) ||
+      s.district.toLowerCase().includes(q) ||
+      s.description.toLowerCase().includes(q)
+    );
+  }
+
+  // image=missing | broken | problem (missing or broken); legacy filter=missing_image
+  const imageFilter = searchParams.get('image') || (filter === 'missing_image' ? 'missing' : null);
+  if (imageFilter === 'missing') {
+    filtered = filtered.filter((s) => getImageStatus(s.image) === 'missing');
+  } else if (imageFilter === 'broken') {
+    filtered = filtered.filter((s) => getImageStatus(s.image) === 'broken');
+  } else if (imageFilter === 'problem') {
+    filtered = filtered.filter((s) => ['missing', 'broken'].includes(getImageStatus(s.image)));
+  }
+
+  if (publicationStatus === 'draft') {
+    filtered = filtered.filter((spot) => spot.publicationStatus === 'draft');
+  } else if (publicationStatus === 'published') {
+    filtered = filtered.filter((spot) => spot.publicationStatus !== 'draft');
+  }
+
+  // meetup=yes | no: places staff opened for Spot Buddy trips (the "นัดเจอได้" tag)
+  const meetup = searchParams.get('meetup');
+  if (meetup === 'yes') filtered = filtered.filter((spot) => spot.meetupAllowed === true);
+  else if (meetup === 'no') filtered = filtered.filter((spot) => spot.meetupAllowed !== true);
+  return filtered;
+}
+
 export async function GET(request: Request) {
   const denied = await requireAdminApiAccess(request);
   if (denied) return denied;
@@ -65,54 +119,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, spot: { ...spot, imageStatus: getImageStatus(spot.image) } });
     }
 
-    const province = searchParams.get('province');
-    const category = searchParams.get('category');
-    const query = searchParams.get('q');
-    const filter = searchParams.get('filter'); // 'missing_image' | 'all'
-    const publicationStatus = searchParams.get('status');
-
     const allSpots = await getAllSpots();
-    let filtered = [...allSpots];
-
-    if (province && province !== 'all') {
-      filtered = filtered.filter((s) => s.province.includes(province) || province.includes(s.province));
-    }
-
-    // `category` accepts a stored category (temple, cafe, …) or one of the 7 frontend vibes (sea_island, …)
-    if (category && category !== 'all') {
-      filtered = filtered.filter((s) => s.category === category || getSpotVibeCategory(s) === category);
-    }
-
-    if (query && query.trim() !== '') {
-      const q = query.toLowerCase().trim();
-      filtered = filtered.filter((s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.province.toLowerCase().includes(q) ||
-        s.district.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q)
-      );
-    }
-
-    // image=missing | broken | problem (missing or broken); legacy filter=missing_image
-    const imageFilter = searchParams.get('image') || (filter === 'missing_image' ? 'missing' : null);
-    if (imageFilter === 'missing') {
-      filtered = filtered.filter((s) => getImageStatus(s.image) === 'missing');
-    } else if (imageFilter === 'broken') {
-      filtered = filtered.filter((s) => getImageStatus(s.image) === 'broken');
-    } else if (imageFilter === 'problem') {
-      filtered = filtered.filter((s) => ['missing', 'broken'].includes(getImageStatus(s.image)));
-    }
-
-    if (publicationStatus === 'draft') {
-      filtered = filtered.filter((spot) => spot.publicationStatus === 'draft');
-    } else if (publicationStatus === 'published') {
-      filtered = filtered.filter((spot) => spot.publicationStatus !== 'draft');
-    }
-
-    // meetup=yes | no: places staff opened for Spot Buddy trips (the "นัดเจอได้" tag)
-    const meetup = searchParams.get('meetup');
-    if (meetup === 'yes') filtered = filtered.filter((spot) => spot.meetupAllowed === true);
-    else if (meetup === 'no') filtered = filtered.filter((spot) => spot.meetupAllowed !== true);
+    const filtered = filterSpots(allSpots, searchParams);
 
     const imageStatuses = allSpots.map((s) => getImageStatus(s.image));
     const missingImagesCount = imageStatuses.filter((status) => status === 'missing').length;
@@ -295,7 +303,7 @@ export async function POST(request: Request) {
     // scopes: 'tourism_directory' (id "ttd-…"), 'osm' (OSM landmarks "osm-…" and venues "osmb-…", BE-424),
     // 'tat' (TAT Data API "tat-…", BE-423), 'imported' (all of these), 'curated' (everything else; TR-030)
     if (action === 'set_publication') {
-      const { spotIds, scope, status } = body as { spotIds?: unknown; scope?: unknown; status?: unknown };
+      const { spotIds, scope, status, filters } = body as { spotIds?: unknown; scope?: unknown; status?: unknown; filters?: unknown };
       if (status !== 'published' && status !== 'draft') {
         return NextResponse.json({ success: false, error: 'status must be published or draft' }, { status: 400 });
       }
@@ -311,7 +319,11 @@ export async function POST(request: Request) {
       if (scope !== undefined && (typeof scope !== 'string' || !scopeMatchers[scope])) {
         return NextResponse.json({ success: false, error: 'scope must be tourism_directory, osm, tat, imported or curated' }, { status: 400 });
       }
-      const ids = Array.isArray(spotIds) ? spotIds.filter((id): id is string => typeof id === 'string') : null;
+      // `filters`: the list's own filters ("เผยแพร่ทั้งหมดที่กรองไว้", owner 2026-11-26): every place they match, on every page
+      const filterIds = filters && typeof filters === 'object' && !Array.isArray(filters)
+        ? filterSpots(await getAllSpots(), new URLSearchParams(Object.entries(filters as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))).map((spot) => spot.id)
+        : null;
+      const ids = filterIds ?? (Array.isArray(spotIds) ? spotIds.filter((id): id is string => typeof id === 'string') : null);
       if (!ids && !scope) {
         return NextResponse.json({ success: false, error: 'กรุณาระบุ spotIds หรือ scope' }, { status: 400 });
       }

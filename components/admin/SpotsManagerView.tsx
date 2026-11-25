@@ -154,6 +154,19 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
     }
   };
 
+  // "เผยแพร่ทั้งหมดที่กรองไว้" (owner 2026-11-26): every draft the filters match, on every page, sent as the filters themselves
+  const filteredCount = pagination?.totalCount ?? 0;
+  const publishAllFiltered = () => {
+    if (!window.confirm(`เผยแพร่แบบร่างทั้งหมดที่ตรงกับตัวกรองตอนนี้ ${filteredCount.toLocaleString()} แห่ง?`)) return;
+    const filters: Record<string, string> = { status: 'draft' };
+    if (searchQuery) filters.q = searchQuery;
+    if (province !== 'all') filters.province = province;
+    if (category !== 'all') filters.category = category;
+    if (imageFilter !== 'all') filters.image = imageFilter;
+    if (meetupFilter !== 'all') filters.meetup = meetupFilter;
+    return postAction('pub-all', { action: 'set_publication', status: 'published', filters });
+  };
+
   const togglePublication = (spot: AdminSpot) => {
     const publicationStatus = spot.publicationStatus === 'draft' ? 'published' : 'draft';
     return postAction(
@@ -323,6 +336,12 @@ export function SpotsManagerView({ showToast, initialProvince, initialCategory, 
               <input type="checkbox" checked={wholePageSelected} onChange={toggleWholePage} className="w-4 h-4 accent-[#4A7C59]" />
               เลือกทั้งหน้า
             </label>
+            {/* Only while the list shows drafts, so the count on the button is exactly what gets published */}
+            {publication === 'draft' && !isLoading && filteredCount > 0 && selected.size === 0 && (
+              <button type="button" disabled={busyAction !== null} onClick={publishAllFiltered} className={adminButton.primary}>
+                {busyAction === 'pub-all' ? 'กำลังเผยแพร่…' : `เผยแพร่ทั้งหมดที่กรองไว้ (${filteredCount.toLocaleString()} แห่ง)`}
+              </button>
+            )}
             {selected.size > 0 && (
               <>
                 <span className="font-semibold text-slate-900 tabular-nums">เลือก {selected.size} แห่ง</span>

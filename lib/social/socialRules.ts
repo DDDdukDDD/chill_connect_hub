@@ -82,3 +82,10 @@ export const planTitleNamesPeople = (plan: { isQuest: boolean; title: string }) 
 
 /** Circles numbers (BE-420): days app.circle_events keeps (lib/social/circleStats.ts) */
 export const CIRCLE_EVENTS_KEEP_DAYS = 180;
+
+/**
+ * "ที่นี่ปิดแล้ว?" on a place page (owner 2026-11-26): when this many different members, each at least
+ * NEW_ACCOUNT_DAYS old, say a place has closed, it is hidden at once and waits for staff (lib/social/placeClosedReports.ts).
+ * Newer accounts' reports still reach staff, they just do not count toward hiding.
+ */
+export const PLACE_CLOSED_HIDE_AT = 2;

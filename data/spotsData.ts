@@ -61,6 +61,8 @@ export interface LifestyleSpotItem {
   /** Set when a draft was rejected in the admin review queue (it stays a hidden draft) */
   reviewRejectedAt?: string;
   rejectionReason?: string;
+  /** Hidden by members saying "ที่นี่ปิดแล้ว" (lib/social/placeClosedReports.ts); staff publish it again if it is still open */
+  closedReportedAt?: string;
   sourceName?: string;
   sourceUrl?: string;
   /** Set by the server when a member suggested this place (it starts as a draft for staff to review) */

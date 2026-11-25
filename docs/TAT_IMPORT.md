@@ -1,6 +1,16 @@
 # Places from TAT (TAT Data API)
 
-Status 2026-11-19: **attractions imported into the dev database** (1,642 new drafts, 346 existing places filled in), see "Import run" below. Live not touched.
+## Status 2026-11-26
+
+| | On dev | On live |
+| :--- | :--- | :--- |
+| Attractions (1,642 drafts, 2026-11-19) | 45 published, the rest drafts | not copied yet |
+| Restaurants and cafés (452 drafts, 2026-11-25) | **135 published** (real opening hours, picture and text; BE-477), 317 drafts | not copied yet |
+
+- **Going live:** `node db/copy-places-to-live.mjs` lists what would change; `--apply` copies every place published on dev. Live keeps its own publish state, staff choices and row ids. The photo job (`lib/media/placePhotoBackfill.ts`, GitHub Actions every 3 hours) then copies `dmc.tatdataapi.io` pictures to R2, as TAT's terms ask. Nothing new to build.
+- **Closed places:** no hand check of each place (owner 2026-11-26). Members tap "ที่นี่ปิดแล้ว?" on the place page; two members at least 7 days old hide it until staff publish it again (`lib/social/placeClosedReports.ts`).
+- **Credit:** the place page shows "ข้อมูล: การท่องเที่ยวแห่งประเทศไทย" with a link to the source.
+- Terms still unanswered: commercial use and keeping pictures (see "Terms").
 
 ## Access
 
@@ -50,10 +60,10 @@ Owner decisions 2026-11-18: TAT's text first (our vibe text later, for places th
 - Result: 4,325 listed, 2,005 without text or picture, 1,642 new places (drafts, `tat-<placeId>`, credited "การท่องเที่ยวแห่งประเทศไทย"), 346 places we had filled in, 314 we had with nothing to add, 18 already from TAT. 2,271 calls.
 - Filling in keeps what is there: a real cover stays the cover and TAT pictures follow (up to 8), a stock or missing cover is replaced; a description under 120 characters is replaced by a TAT text at least twice as long; opening hours, price, facilities and contact only where ours is empty or "ไม่ระบุ"; TAT is added to the credit ("OpenStreetMap · Wikipedia · การท่องเที่ยวแห่งประเทศไทย"). Every place as it was before the run is saved in `data/.tat-cache/places-before-*.json` (this computer only).
 - Categories: a telling start of the name first (วัด…, พิพิธภัณฑ์…, หาด…, น้ำตก…), then TAT's sub-category mapped name by name, then the name's words. Staff can still change it when approving.
-- Pictures still point at `dmc.tatdataapi.io`. Before any of this goes live they must be copied to our storage (TAT's terms); no R2 for dev on this computer.
+- Pictures point at `dmc.tatdataapi.io` on dev; on live the photo job copies them to R2 every 3 hours (see "Status").
 - Left for the owner: Gemini's earlier Bangkok run overwrote pictures and texts of three published places on dev (ซาฟารีเวิลด์, มิวเซียมสยาม, พิพิธภัณฑ์ศิริราชพิมุขสถาน), with no record of the old values; the credit now names TAT. Its five uncredited drafts got the credit from this run.
 
-Next: staff approval on dev, then a promote step to live (copy pictures to R2, insert the approved places), then restaurants.
+Next: see "Status" at the top.
 
 ## Restaurants and cafés run (2026-11-25, dev only)
 

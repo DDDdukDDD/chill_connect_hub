@@ -1,6 +1,6 @@
 # Email (Resend + Cloudflare)
 
-Chillwaa sends three emails today: confirm your email, set a new password, and "you won the draw". The code is in
+Chillwaa sends two emails today: confirm your email and set a new password. A third, "you won the draw" (`lib/campaigns/draw.ts`), is still in the code but unused: campaigns give guaranteed rewards only since 2026-11-23 (no prize draws). The code is in
 `lib/members/mailer.ts` and sends through [Resend](https://resend.com). Until `RESEND_API_KEY` and `MAIL_FROM` are set,
 nothing is sent, and Production runs with `SKIP_EMAIL_VERIFICATION=true` (every email counts as confirmed), which must go
 before launch.
