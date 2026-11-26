@@ -9,6 +9,7 @@ import { TaggedFriends } from '@/components/moments/TaggedFriends';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Flag, Image as ImageIcon, Link2, MoreHorizontal, Pencil, Send, Tag, Trash2, UserMinus, Video, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
+import { ClosedOptionsLine } from '@/components/moments/ClosedOptionsLine';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import type { FeedItem } from '@/lib/moments/service';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
@@ -365,6 +366,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
           <SaveIcon active={moment.isSaved} className="w-7 h-7" />
         </button>
       </div>
+
+      <ClosedOptionsLine moment={moment} className="-mt-2" />
 
       {/* A friend in the likes says more than a number (social proof, 2026-11-09): only someone the reader follows; the whole line opens the list */}
       {friendLike && (

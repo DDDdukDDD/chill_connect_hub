@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Eye, Flag, MoreHorizontal, Send, Trash2, UserMinus, X } from 'lucide-react';
 import { InviteIcon } from '@/components/icons/InviteIcon';
+import { ClosedOptionsLine } from '@/components/moments/ClosedOptionsLine';
 import { CommentIcon, LikeIcon, SaveIcon, SendIcon } from '@/components/icons/ActionIcons';
 import { CommentThread, MomentAvatar, ReplyingTo, type ThreadComment } from '@/components/moments/CommentThread';
 import { threadPeople, useMentionPicker } from '@/components/moments/MentionPicker';
@@ -43,7 +44,7 @@ const iconButton =
  * tap never moves the column (the heart jumped up when the first like split its number off, 2026-11-15)
  */
 const railBase =
-  'flex min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-xs font-bold text-white tabular-nums cursor-pointer active:scale-90 transition-transform [text-shadow:0_1px_3px_rgb(0_0_0/0.8)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white';
+  'flex min-w-14 flex-col items-center justify-center gap-1 rounded-full text-[13px] font-semibold text-white tabular-nums cursor-pointer active:scale-90 transition-transform [text-shadow:0_1px_3px_rgb(0_0_0/0.8)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white';
 const railButton = `${railBase} min-h-12`;
 
 interface DetailProps {
@@ -528,12 +529,12 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
               </div>
             </div>
 
-            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] ${isFull ? 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:bottom-[calc(2.25rem+env(safe-area-inset-bottom))]' : 'bottom-3 sm:bottom-6'} z-10 flex flex-col items-center gap-1 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
+            <div className={`absolute right-[max(0.375rem,env(safe-area-inset-right))] sm:right-[max(1.5rem,env(safe-area-inset-right))] ${isFull ? 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:bottom-[calc(2.25rem+env(safe-area-inset-bottom))]' : 'bottom-3 sm:bottom-6'} z-10 flex flex-col items-center gap-3 ${commentsOpen ? 'max-lg:hidden' : ''} ${besideClip ? 'lg:right-auto lg:left-[calc(50%+var(--clip-w)/2+0.75rem)]' : ''}`}>
               {!moment.likesOff && (
               // One slot: the heart, and its number under it, which opens who liked it once there is someone to see
               <div className="flex flex-col items-center">
-                <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={`${railBase} h-9`}>
-                  <LikeIcon active={moment.isLiked} onDark className="w-7 h-7 drop-shadow" />
+                <button type="button" onClick={() => toggle(moment.isLiked ? 'unlike' : 'like')} aria-pressed={moment.isLiked} aria-label={moment.isLiked ? 'เลิกถูกใจ' : 'ถูกใจ'} className={`${railBase} h-11`}>
+                  <LikeIcon active={moment.isLiked} onDark className="w-9 h-9 drop-shadow" />
                 </button>
                 {canSeeLikers ? (
                   <button type="button" onClick={() => setLikersOpen(true)} aria-label={`ดูคนที่ส่งหัวใจ ${moment.likesCount} คน`} className={`${railBase} h-6`}>
@@ -556,31 +557,32 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
                 aria-expanded={isFull ? commentsOpen : undefined}
                 className={railButton}
               >
-                <CommentIcon onDark className="w-7 h-7 drop-shadow" />
+                <CommentIcon onDark className="w-9 h-9 drop-shadow" />
                 {moment.commentsCount.toLocaleString()}
               </button>
               )}
               {mayShare && (
               <button type="button" onClick={() => void share()} aria-label="แชร์" className={railButton}>
-                <SendIcon onDark className="w-7 h-7 drop-shadow" />
-                {moment.sharesCount > 0 && moment.sharesCount.toLocaleString()}
+                <SendIcon onDark className="w-9 h-9 drop-shadow" />
+                {moment.sharesCount > 0 ? moment.sharesCount.toLocaleString() : 'แชร์'}
               </button>
               )}
               {mayShare && momentHasPlace(moment) && (
               <button type="button" onClick={() => setSharing(true)} aria-label="ชวนเพื่อนไปด้วยกัน" className={railButton}>
                 {/* 46 px wide, inside the rail's 48 px like the other icons: at 55 px it widened the column and pushed it
                     against the screen's edge (owner's phone, 2026-11-12) */}
-                <InviteIcon className="h-5 w-[46px] drop-shadow" mono />
-                {(moment.invitesCount ?? 0) > 0 && moment.invitesCount!.toLocaleString()}
+                <InviteIcon className="h-6 w-[52px] drop-shadow" mono />
+                {(moment.invitesCount ?? 0) > 0 ? moment.invitesCount!.toLocaleString() : 'ชวน'}
               </button>
               )}
               <button type="button" onClick={() => toggle(moment.isSaved ? 'unsave' : 'save')} aria-pressed={moment.isSaved} aria-label={moment.isSaved ? 'เลิกบันทึก' : 'บันทึก'} className={railButton}>
-                <SaveIcon active={moment.isSaved} onDark className="w-7 h-7 drop-shadow" />
+                <SaveIcon active={moment.isSaved} onDark className="w-9 h-9 drop-shadow" />
+                {moment.isSaved ? 'บันทึกแล้ว' : 'บันทึก'}
               </button>
               {/* Delete or report stay one step away, so they are not pressed by mistake */}
               <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setMoreOpen(false)}>
                 <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-label="ตัวเลือกเพิ่มเติม" aria-haspopup="menu" aria-expanded={moreOpen} className={railButton}>
-                  <MoreHorizontal className="w-7 h-7 drop-shadow" aria-hidden="true" />
+                  <MoreHorizontal className="w-8 h-8 drop-shadow" aria-hidden="true" />
                 </button>
                 {moreOpen && (
                   <>
@@ -774,6 +776,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
             </button>
           </div>
           )}
+
+          <ClosedOptionsLine moment={moment} />
 
           {/* A photo post shows its views as the eye beside the author; a clip has no such row, so its box keeps them */}
           {impact && (impact.people > 0 || (moment.video && impact.views?.total > 0)) && <ImpactLine impact={impact} showViews={Boolean(moment.video)} />}
