@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Hash, Image as ImageIcon, MapPin, Play, Route, Settings2, Trophy, UserPlus, Video, X } from 'lucide-react';
 import { FriendTagPicker, type TagFriend } from '@/components/moments/FriendTagPicker';
 import { useMentionPicker } from '@/components/moments/MentionPicker';
 import { PlacePicker } from '@/components/moments/PlacePicker';
@@ -23,6 +23,7 @@ import { DEFAULT_CLIP_SECONDS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from '@/lib/
 import { useMemberSession } from '@/lib/useMemberSession';
 import { useMyActivity } from '@/lib/useMyActivity';
 import { useMyRewards } from '@/lib/useMyRewards';
+import { localNow } from '@/lib/trips/story';
 
 /**
  * The "แชร์โมเมนต์" form, shared by the home feed and /moments. Mount it only while it is open
@@ -139,6 +140,21 @@ export function MomentComposer({ onClose, onPosted, onToast, initial, onSubmitte
   const [clip, setClip] = useState<ClipDraft | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [options, setOptions] = useState<PostOptions>({ commentsOff: false, likesOff: false, sharesOff: false });
+  // A trip going on today (docs/TRIPS_PLAN.md): the post joins it unless the member switches it off
+  const [activeTrip, setActiveTrip] = useState<{ id: string; title: string } | null>(null);
+  const [joinTrip, setJoinTrip] = useState(true);
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/trips?active=${localNow().slice(0, 10)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json: { trip?: { id: string; title: string } | null }) => {
+        if (live && json.trip) setActiveTrip(json.trip);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
   // Which photo the wide post step shows
   const [previewAt, setPreviewAt] = useState(0);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -341,6 +357,7 @@ export function MomentComposer({ onClose, onPosted, onToast, initial, onSubmitte
       taggedIds: [...new Set([...tagged.map((friend) => friend.id), ...mention.mentions.map((m) => m.id)])],
       options,
       ...(forQuest ? { questId: forQuest.id } : {}),
+      ...(activeTrip && joinTrip ? { tripId: activeTrip.id } : {}),
     };
     // The photo links must outlive the form: the background job still reads them, and they go with the page
     photoUrls.current = [];
@@ -643,6 +660,18 @@ export function MomentComposer({ onClose, onPosted, onToast, initial, onSubmitte
               </div>
 
               {placeField}
+
+              {activeTrip && (
+                <label className="-mt-5 flex items-center gap-3 border-b border-slate-100 py-3 cursor-pointer">
+                  <Route className="w-5 h-5 shrink-0 text-slate-500" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-slate-900">เพิ่มเข้าทริป</span>
+                    <span className="block text-xs text-slate-500 truncate">{activeTrip.title}</span>
+                  </span>
+                  <input type="checkbox" checked={joinTrip} onChange={(e) => setJoinTrip(e.target.checked)} className="sr-only peer" />
+                  <span aria-hidden="true" className="relative shrink-0 w-11 h-6 rounded-full bg-slate-200 peer-checked:bg-[#2563EB] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2563EB]/40 transition-colors after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+                </label>
+              )}
 
               {/* Most people never change these, so they fold away behind one row that says what is set (owner 2026-11-09) */}
               <details className="group -mt-5 border-b border-slate-100">

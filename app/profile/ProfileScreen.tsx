@@ -29,6 +29,8 @@ import type { EventItem } from '@/data/mockData';
 import { parseEventDateToTimestamp } from '@/lib/dateUtils';
 import { meetupCategoryIcon, type CategoryIconComponent } from '@/components/icons/CategoryIcons';
 import { EditProfileDialog, FIELD_LABELS, type EditTab } from './EditProfileDialog';
+import { ProfileTrips } from '@/components/trips/TripList';
+import type { TripSummary } from '@/lib/trips/service';
 import { FollowListDialog, type FollowTab } from './FollowListDialog';
 import { AvatarViewer } from '@/components/members/AvatarViewer';
 import { avatarImage, optimizedImage } from '@/lib/optimizedImage';
@@ -95,7 +97,7 @@ const FIRST_MOMENTS = 12;
 const PAGE_MOMENTS = 12;
 const FIRST_BADGES = 10;
 /** The tabs under the story, like IG (owner 2026-11-01): what they posted, ตี้ they went to, ตี้ they host, challenges they finished */
-type ProfileTab = 'moments' | 'saved' | 'went' | 'hosted' | 'challenges';
+type ProfileTab = 'moments' | 'trips' | 'saved' | 'went' | 'hosted' | 'challenges';
 /**
  * Saved posts on one's own profile (owner 2026-11-26: moved here from the Home feed's bookmark, like IG). Loaded when
  * the tab opens; nobody else sees the tab.
@@ -602,6 +604,20 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
   const wantsOwn = profileId === 'me' || (member !== null && profileId === member.id);
   const memberId = member?.id;
 
+  // Trip stories of this member: all of one's own (drafts too), others' published ones (docs/TRIPS_PLAN.md)
+  const [trips, setTrips] = useState<TripSummary[]>([]);
+  const tripsOfId = state.profile?.id;
+  useEffect(() => {
+    if (!tripsOfId) return;
+    let live = true;
+    getJson<{ trips?: TripSummary[] }>(`/api/trips?author=${encodeURIComponent(tripsOfId)}`).then((res) => {
+      if (live) setTrips((res.json?.trips ?? []).filter((t) => t.status === 'published'));
+    });
+    return () => {
+      live = false;
+    };
+  }, [tripsOfId]);
+
   // Events this member created: the owner sees every one, visitors only the published ones
   useEffect(() => {
     if (!isAuthReady) return;
@@ -764,6 +780,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
     ? [
         ...(state.moments.length > 0 || viewOwn ? [{ key: 'moments' as const, label: 'โมเมนต์', count: state.momentsTotal ?? state.moments.length }] : []),
         // Own profile only, after โมเมนต์ (owner 2026-11-26); no count, it loads when opened
+        // Told trips (docs/TRIPS_PLAN.md); new ones and drafts live in My Hub (owner 2026-11-26)
+        ...(trips.length > 0 ? [{ key: 'trips' as const, label: 'ทริป', count: trips.length }] : []),
         ...(viewOwn ? [{ key: 'saved' as const, label: 'บันทึกไว้' }] : []),
         ...(went.length > 0 ? [{ key: 'went' as const, label: 'ตี้ที่ไป', count: went.length }] : []),
         ...(hostedVisible.length > 0 ? [{ key: 'hosted' as const, label: 'ตี้ที่จัด', count: hostedVisible.length }] : []),
@@ -1149,6 +1167,8 @@ export function ProfileScreen({ profileId }: { profileId: string }) {
                         ))}
 
                       {activeTab === 'saved' && <SavedMoments />}
+
+                      {activeTab === 'trips' && <ProfileTrips trips={trips} />}
 
                       {activeTab === 'went' && (
                         <ul className={`${TILE_GRID} pt-2`}>

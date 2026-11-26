@@ -14,8 +14,13 @@ const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
 /** An 800 px WebP is 60–150 KB; anything far past that is not a small copy */
 const MAX_SMALL_BYTES = 512 * 1024;
 
-async function isUploadLimited(request: Request): Promise<boolean> {
+/** A trip is told from many photos at once (docs/TRIPS_PLAN.md): its own allowance, counted per member */
+const TRIP_UPLOAD_LIMIT = 320;
+const TRIP_UPLOAD_WINDOW_MS = 60 * 60 * 1000;
+
+async function isUploadLimited(request: Request, folder: string, memberId: string | undefined): Promise<boolean> {
   if (await hasAdminCredentials(request)) return false;
+  if (folder === 'trips' && memberId) return isRateLimited(`upload-trip:${memberId}`, TRIP_UPLOAD_LIMIT, TRIP_UPLOAD_WINDOW_MS);
   return isRateLimited(`upload:${clientIp(request)}`, UPLOAD_LIMIT, UPLOAD_WINDOW_MS);
 }
 
@@ -30,19 +35,20 @@ function detectImageType(buffer: Buffer): string | null {
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
-  if (!await hasAdminCredentials(request) && !(await getSessionMember(request))) {
+  const member = await getSessionMember(request);
+  if (!member && !await hasAdminCredentials(request)) {
     return NextResponse.json({ success: false, message: 'กรุณาเข้าสู่ระบบก่อนอัปโหลดรูป' }, { status: 401 });
-  }
-  if (await isUploadLimited(request)) {
-    return NextResponse.json(
-      { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },
-      { status: 429 }
-    );
   }
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const folder = (formData.get('folder') as string) || 'events';
+    if (await isUploadLimited(request, folder, member?.id)) {
+      return NextResponse.json(
+        { success: false, message: 'อัปโหลดบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่' },
+        { status: 429 }
+      );
+    }
 
     if (!file) {
       return NextResponse.json(

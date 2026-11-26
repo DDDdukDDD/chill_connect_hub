@@ -2,7 +2,7 @@ import { mediaStorage } from './index';
 import { ownUploadFolder } from './ownMedia';
 
 // Folders members upload into; event and place photos are never removed from here
-const MEMBER_FOLDERS = ['moments', 'avatars'];
+const MEMBER_FOLDERS = ['moments', 'avatars', 'trips'];
 
 /** The storage key of a member upload, or null for anything else (outside photos, event images) */
 function memberUploadKey(url: string): string | null {

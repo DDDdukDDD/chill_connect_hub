@@ -1,5 +1,6 @@
 'use client';
 
+import { localNow } from '@/lib/trips/story';
 import { uploadPresigned } from '@vercel/blob/client';
 import { compressClip } from '@/lib/media/clipCompress';
 import type { ClipMusic } from '@/lib/media/musicLibrary';
@@ -26,6 +27,8 @@ export interface MomentDraft {
   options: PostOptions;
   /** The challenge the form was opened for; the server gives the post its line */
   questId?: string;
+  /** The trip going on today that the post joins (docs/TRIPS_PLAN.md) */
+  tripId?: string;
 }
 
 export type PostedMoment = { id: string } & Record<string, unknown>;
@@ -152,6 +155,9 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
   report(0.95, 'กำลังโพสต์…');
   const { target } = draft;
   const capture = target && (target.type === 'spot' || target.type === 'fair') ? await currentPosition() : undefined;
+  // A trip keeps the phone's own time and the city it is in (rounded on the server), never the exact spot
+  const tripPosition = draft.tripId ? (capture ?? (await currentPosition())) : undefined;
+  const trip = draft.tripId ? { id: draft.tripId, takenLocal: localNow(), ...(tripPosition ? { lat: tripPosition.lat, lng: tripPosition.lng } : {}) } : undefined;
   const res = await fetch('/api/moments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -169,6 +175,7 @@ export async function publishMoment(draft: MomentDraft, report: ReportProgress, 
       taggedIds: draft.taggedIds,
       capture,
       ...(draft.questId ? { questId: draft.questId } : {}),
+      ...(trip ? { trip } : {}),
     }),
   }).catch(() => null);
   if (!res) throw new PostingError('เชื่อมต่อไม่ได้ ลองอีกครั้งนะ');

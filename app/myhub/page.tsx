@@ -15,6 +15,7 @@ import { PromoBoard } from '@/components/campaigns/PromoBoard';
 import { useCampaigns } from '@/components/campaigns/useCampaigns';
 import { MomentComposer, CountedQuestNotice, type CountedQuest, type MomentComposerInitial } from '@/components/moments/MomentComposer';
 import { TodayPlans } from '@/components/myhub/TodayPlans';
+import { MyTrips } from '@/components/myhub/MyTrips';
 import { ChallengeList } from '@/components/ChallengeList';
 import { useAuth } from '@/lib/useAuth';
 import { ETicketModal } from '@/components/ETicketModal';
@@ -2187,6 +2188,8 @@ function MyHubContent() {
                     )}
                     {/* Challenges done by plan: today's task and its stamp, first thing in the schedule (owner 2026-11-07) */}
                     {hubMainMode === 'calendar' && isLoggedIn && <TodayPlans onToast={showToast} />}
+                    {/* Trips start here (owner 2026-11-26, docs/TRIPS_PLAN.md): the one going on or coming up, drafts, a new one */}
+                    {hubMainMode === 'calendar' && isLoggedIn && <MyTrips />}
                     {hubMainMode === 'calendar' && renderDoingNow()}
                     {hubMainMode === 'calendar' && nextEvent && (() => {
                       const when = new Date(scheduleTs(nextEvent));
