@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-479 · Source run history and auto-publish kept in the database (owner 2026-11-26)
+- **What changed:** the admin source list (on/off, last run, run history) is stored in `app.app_settings` key `data_sources` instead of `chill_database.json` (`lib/sourcesStore.ts`). Writes use a locked transaction, so parallel scrape results never drop each other. The first read starts from the bundled JSON copy.
+- **Why:** on Vercel the JSON store is per server, so after a scan on live every card still said "ยังไม่เคยสแกน" and ประวัติ was empty (owner pressed สแกน on BACC and River City). The imported events themselves already went to Postgres.
+- **Auto-publish too:** the อีเวนต์ "เผยแพร่อัตโนมัติ" switch is stored in `app.app_settings` key `events_auto_publish` (`{enabled}`, `lib/eventsStore.ts`); until staff first set it, the bundled JSON value counts (`false`).
+
+---
+
 ### BE-478 · Art events from BACC and River City; Gen Z/Y tags on places (owner 2026-11-26)
 - **What changed:**
   - Two new event sources, built in (`DEFAULT_DATA_SOURCES`, active, so live picks them up on its own after deploy and the weekly cron reads them): `lib/scrapers/bacc.ts` (BACC: newest pages from `event-sitemap*.xml`, dates in the "เมื่อไร" box, kind such as "Main Exhibition" put first in the description for staff, 30 s wait as the site is slow) and `lib/scrapers/riverCity.ts` (River City Bangkok: "Current Listings" on `/category/exhibitions/`, English date lines). robots.txt of both allows these pages (checked 2026-11-26). New items wait in the review queue. On dev: BACC 17, River City 4 pending; some are not for visitors (an open call), reject them in the queue.

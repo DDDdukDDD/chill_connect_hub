@@ -11,7 +11,7 @@ import { notifyReview } from './social/notifications';
 import { MASTER_77_PROVINCES } from '@/data/masterHub';
 import { PROVINCE_ALIASES } from './db/postgres/rows.mjs';
 import { copyPosterToOwnMedia, eachLimited } from './media/posterCopy';
-import { USE_POSTGRES } from './db/postgres/client';
+import { sql, USE_POSTGRES } from './db/postgres/client';
 
 export { getCoreCommunityEvents };
 
@@ -32,11 +32,26 @@ export async function listAdminEvents(): Promise<AdminEventItem[]> {
   return (await db.listAllEvents()) as AdminEventItem[];
 }
 
+/**
+ * Auto-publish lives in app.app_settings when there is a database (BE-479): the JSON store is per server on Vercel,
+ * so the admin switch did not stick. Until staff first set it there, the bundled JSON value counts (false).
+ */
+const AUTO_PUBLISH_KEY = 'events_auto_publish';
+
 export async function getAutoPublish(): Promise<boolean> {
+  if (USE_POSTGRES) {
+    const [row] = await sql()`select value from app.app_settings where key = ${AUTO_PUBLISH_KEY}`;
+    if (row) return (row.value as { enabled?: boolean })?.enabled === true;
+  }
   return Boolean((await readDatabase()).autoPublish);
 }
 
 export async function setAutoPublish(enabled: boolean) {
+  if (USE_POSTGRES) {
+    await sql()`insert into app.app_settings (key, value) values (${AUTO_PUBLISH_KEY}, ${sql().json({ enabled })})
+                on conflict (key) do update set value = excluded.value, updated_at = now()`;
+    return;
+  }
   await updateDatabase((data) => {
     data.autoPublish = enabled;
   });
