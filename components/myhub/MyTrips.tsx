@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus, Route } from 'lucide-react';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { daysBetween, localNow, thaiDateRange } from '@/lib/trips/story';
+import { SuggestedTripCard } from '@/components/trips/SuggestedTripCard';
 import type { TripSummary } from '@/lib/trips/service';
 
 const SHOWN = 3;
@@ -55,6 +56,7 @@ export function MyTrips() {
           <Plus className="size-3.5" aria-hidden /> เล่าทริปใหม่
         </Link>
       </div>
+      <SuggestedTripCard className="mt-3" />
       {list.length === 0 ? (
         <Link href="/trips/new" className="group mt-3 flex items-center gap-3">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">

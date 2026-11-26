@@ -12,7 +12,8 @@ type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ play?: s
 
 const loadTrip = cache(async (id: string) => getTrip(id, await getPageMember()));
 
-const isPublic = (trip: { status: string; visibility: string }) => trip.status === 'published' && trip.visibility === 'public';
+// A trip held for followers until its owner is back stays out of search until then
+const isPublic = (trip: { status: string; visibility: string; heldUntilBack?: boolean }) => trip.status === 'published' && trip.visibility === 'public' && !trip.heldUntilBack;
 
 function describe(trip: NonNullable<Awaited<ReturnType<typeof loadTrip>>>): string {
   const { cities } = tripPlaces(trip);
