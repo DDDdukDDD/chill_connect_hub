@@ -111,6 +111,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     // หน้าหลัก · กิจกรรม · โมเมนต์ · ชาเลนจ์ (owner 2026-11-13). Members since 2026-11-26: no โมเมนต์, it is Home's ค้นพบ mode
     ...(isLoggedIn ? [] : [{ label: 'โมเมนต์', href: '/moments', match: ['/moments'] }]),
     { label: 'ชาเลนจ์', href: '/challenges', match: ['/challenges'] },
+    // Members get มายฮับ in โมเมนต์'s place (owner 2026-11-26), as in the phone bar; it stays in the profile menu too
+    ...(isLoggedIn ? [{ label: 'มายฮับ', href: '/myhub', match: ['/myhub'] }] : []),
   ];
   const isOn = (paths: string[]) => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
