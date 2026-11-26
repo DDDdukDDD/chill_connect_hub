@@ -20,6 +20,27 @@ Item template:
 
 ---
 
+### BE-486 · Owner's round: challenge chooser, bigger reel buttons, friend plans tidy-up, My Hub spacing (owner 2026-11-26)
+- **What changed:**
+  - **Challenge ＋:** a member's challenge first asks who it is for: ส่วนตัว, ทำกับเพื่อน or สาธารณะ (`audiencePicked` in `CreateEventModal`). The form then starts with that choice, which can still be changed there. This applies to the phone bar ＋ and the /challenges button alike; admin skips it.
+  - **Reels rail** (`MomentDetailView`): 36 px icons, 12 px between buttons, and a count or word under every button (แชร์, ชวน, บันทึก when there is no number), like TikTok. Checked at 390×844 and 860×416.
+  - **Friend plans in My Hub** (`FriendPlans.tsx`):
+    - The whole row opens the plan, past ones too, so the chat and "ออกจากแผน" / "ปิดแผนนี้" are always reachable. Before, a past plan showed only โพสต์โมเมนต์.
+    - Order: answers waiting, then coming up, then no day, then past. Five show before "ดูทั้งหมด".
+  - **New rule:** a plan whose day passed 14 days ago closes by itself (`PLAN_PAST_KEEP_DAYS`, in `runPlanReminders`). Who went stays recorded. Added to /admin วิธีคิดของระบบ.
+  - **My Hub:** "กำลังทำอยู่" and "ถัดไปของคุณ" keep their top line and spacing under "ทริปของฉัน".
+- **Posts with comments, likes or sharing turned off:** these were already working. Checked on dev with two members: the server refuses comments and shares, and other members do not see the buttons. The author still sees their own share button by design, so the setting looked as if it had not taken. The owner chose option ก: the author now sees "ปิด… · เห็นเฉพาะคุณ" under their own post (`ClosedOptionsLine`, in the feed and on the moment page).
+- **Not walked in a browser:** the new friend plans list (the dev account has no plans).
+
+### BE-485 · "ไปตามรอยทริปนี้" (owner 2026-11-26)
+- **What changed:**
+  - On a published trip that is not the viewer's own, there is a **ไปตามรอย** button on the page and **ไปตามรอยทริปนี้** at the end of the story. Both open `FollowTripDialog`.
+  - In the dialog the member picks a start day and sees the sub-trips moved to their own days. They get a draft trip of their own: same length, the sub-trips shifted, `follows_trip_id` set (a column added to 0069, which is still not on live).
+  - From a sub-trip link or after playing one sub-trip, the new trip covers only that sub-trip.
+  - The source trip shows "N คนไปตามรอยทริปนี้แล้ว". The new trip shows "ตามรอยทริป … ของ …".
+  - API: `POST /api/trips/[id]/follow`. `TripView.followedCount` and `follows` are new.
+- **Checked:** On dev with two members: a draft cannot be followed (404), nor one's own trip. A repeat returns the same trip, the shifted legs are right, a one-sub-trip follow worked, and the count is 1. Screenshots taken at 390 px. Test trips deleted.
+
 ### BE-484 · Trip stories: trips told as full-screen chapters, during the trip and after (owner 2026-11-26)
 - **What changed:** New feature, plan in [TRIPS_PLAN.md](TRIPS_PLAN.md), API in [API.md](API.md) "Trips". Migration `0069_trips.sql` (`app.trips`, `app.trip_items`, `app.geo_places`).
   - Pages: `/trips/new`, `/trips/[id]/edit`, `/trips/[id]` (server HTML + `TouristTrip` JSON-LD, noindex unless published and public). Player `components/trips/TripPlayer.tsx`: cover, route, day chapters, photos and clips, and an end screen of every moment as small pictures (owner).
