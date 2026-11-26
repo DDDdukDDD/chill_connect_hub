@@ -58,7 +58,34 @@ const CC0_SONGS: [string, string, string, string, number, string][] = [
   ['holizna-extra-life', 'Extra Life I Never Used', 'HoliznaCC0', 'สนุก', 60, 'https://freemusicarchive.org/music/holiznacc0/we-drove-all-night-game-soundtrack/extra-life-i-never-used/'],
 ];
 
+/**
+ * 11 CC0 travel & storytelling tracks added 2026-11-27 (Monplaisir, HoliznaCC0, Komiku on Free Music Archive).
+ * Each track page's rel="license" was checked to be CC0 1.0 on 2026-11-27. First 60 s, -16 LUFS, 2 s fade, 128 kbps AAC.
+ */
+const CC0_TRAVEL_SONGS: [string, string, string, string, number, string][] = [
+  ['monplaisir-sur-tout-le-trajet', 'Sur Tout Le Trajet', 'Monplaisir', 'ผจญภัย', 60, 'https://freemusicarchive.org/music/Monplaisir/Sur_Tout_Le_Trajet/Monplaisir_-_Sur_Tout_Le_Trajet_-_01_Sur_Tout_Le_Trajet/'],
+  ['monplaisir-fermons-une-plage', 'Fermons une plage', 'Monplaisir', 'ชิล', 60, 'https://freemusicarchive.org/music/Monplaisir/Sur_Tout_Le_Trajet/Monplaisir_-_Sur_Tout_Le_Trajet_-_02_Fermons_une_plage/'],
+  ['monplaisir-no-place-like-home', 'There is no place like Home', 'Monplaisir', 'อบอุ่น', 60, 'https://freemusicarchive.org/music/Monplaisir/American_Dreams_Soundtrack/Monplaisir_-_American_Dreams_Original_Soundtrack_-_02_There_is_no_place_like_Home/'],
+  ['monplaisir-on-est-bien-la', 'On est bien, là', 'Monplaisir', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Monplaisir/GOOD/Monplaisir_-_GOOD_-_08_On_est_bien_l/'],
+  ['holizna-summer-felt-longer', 'Summer Felt Longer Then', 'HoliznaCC0', 'ชิล', 60, 'https://freemusicarchive.org/music/holiznacc0/summer-air-lo-fi/summer-felt-longer-then/'],
+  ['holizna-last-long-day', 'The Last Long Day', 'HoliznaCC0', 'อบอุ่น', 60, 'https://freemusicarchive.org/music/holiznacc0/summer-air-lo-fi/the-last-long-day/'],
+  ['holizna-currents-we-used-to-know', 'Currents We Used to Know', 'HoliznaCC0', 'ชิล', 60, 'https://freemusicarchive.org/music/holiznacc0/ocean-memory-lo-fi-chill/currents-we-used-to-know/'],
+  ['komiku-down-the-river', 'Down the river', 'Komiku', 'ผจญภัย', 60, 'https://freemusicarchive.org/music/Komiku/Its_time_for_adventure__vol_2/Komiku_-_Its_time_for_adventure_vol_2_-_05_Down_the_river/'],
+  ['komiku-big-person-tiny-cities', 'Big person, tiny cities', 'Komiku', 'สนุก', 60, 'https://freemusicarchive.org/music/Komiku/Its_time_for_adventure__vol_3/Komiku_-_Its_time_for_adventure_vol_3_-_03_Big_person_tiny_cities_world_maps_theme/'],
+  ['komiku-place-never-get-old', 'The place that never get old', 'Komiku', 'ฟีลกู๊ด', 60, 'https://freemusicarchive.org/music/Komiku/Its_time_for_adventure__vol_3/Komiku_-_Its_time_for_adventure_vol_3_-_07_The_place_that_never_get_old/'],
+  ['komiku-chill-out-theme', 'Chill Out Theme', 'Komiku', 'ชิล', 60, 'https://freemusicarchive.org/music/Komiku/Its_time_for_adventure__vol_2/Komiku_-_Its_time_for_adventure_vol_2_-_02_Chill_Out_Theme/'],
+];
+
 export const MUSIC_TRACKS: MusicTrack[] = [
+  ...CC0_TRAVEL_SONGS.map(([id, title, artist, mood, durationS, page]) => ({
+    id,
+    title,
+    artist,
+    mood,
+    src: `/music/${id}.m4a`,
+    durationS,
+    license: `CC0 1.0, ${page} (downloaded 2026-11-27)`,
+  })),
   ...CC0_SONGS.map(([id, title, artist, mood, durationS, page]) => ({
     id,
     title,
