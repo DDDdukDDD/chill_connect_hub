@@ -20,6 +20,17 @@ Item template:
 
 ---
 
+### BE-484 · Trip stories: trips told as full-screen chapters, during the trip and after (owner 2026-11-26)
+- **What changed:** New feature, plan in [TRIPS_PLAN.md](TRIPS_PLAN.md), API in [API.md](API.md) "Trips". Migration `0069_trips.sql` (`app.trips`, `app.trip_items`, `app.geo_places`).
+  - Pages: `/trips/new`, `/trips/[id]/edit`, `/trips/[id]` (server HTML + `TouristTrip` JSON-LD, noindex unless published and public). Player `components/trips/TripPlayer.tsx`: cover, route, day chapters, photos and clips, and an end screen of every moment as small pictures (owner).
+  - Photos picked in the editor: time and GPS read from EXIF in the browser (`lib/media/exif.ts`) before the photo is made small. City names come from Nominatim, rounded to about 1 km (`lib/trips/geo.ts`).
+  - During a trip the moment composer shows "เพิ่มเข้าทริป" (on by default). The post sends `trip: { id, takenLocal, lat?, lng? }`.
+  - Sub-trips by city (owner 2026-11-26): `legs` on the trip (city, from, to). Photos join a sub-trip by the day they were taken, with or without GPS. Each sub-trip opens with its own frame in the player and has its own link, `?leg=`.
+  - Entry points: My Hub "ทริปของฉัน" starts trips and lists the one going on, the next one and drafts (owner). The profile tab "ทริป" shows told trips only, and the feed row "เรื่องเล่าทริปจากเพื่อนๆ" comes after the sixth post (`TRIPS_SLOT`). The ＋ menu is unchanged.
+  - Shared files: `/api/upload` folder `trips` gets 320 an hour per member, and `lib/media/cleanup.ts` counts `trips` as a member folder.
+- **Checked:** On dev with a sample member: create, upload 6 EXIF photos, Guangzhou → Shenzhen → Hong Kong named in Thai, three sub-trips set (overlap refused), cover, publish, read signed out, a moment posted into the trip. Screenshots taken at 390 px of the page, the player (route, sub-trip and day frames), the editor and My Hub. Test trip and moment deleted afterwards.
+- **What to do about it:** Owner travels 4–13 Dec, so merge and run 0069 on live before then (see LAUNCH_CHECKLIST). Do not change the trip day logic without reading `lib/trips/story.ts`.
+
 ### BE-483 · Home modes keep their place, ＋ creates what the page lists, มายฮับ in the top bar (owner 2026-11-26)
 - **What changed:**
   - Home's modes are สำหรับคุณ · โมเมนต์ · ติดตาม (ค้นพบ renamed; the view id stays `discover`). Each mode keeps its list and its place while switching: back on a mode, the post that was at the top of the screen is there again at the same height, with no new fetch (`pickMode` in `HomeMomentFeed`; หน้าหลัก tapped again still refreshes). The โมเมนต์ grid stays mounted, hidden, once opened.
