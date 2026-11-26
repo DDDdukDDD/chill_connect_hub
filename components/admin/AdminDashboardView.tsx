@@ -40,7 +40,7 @@ interface Safety {
 interface Pulse {
   members: { total: number; today: number; week: number };
   moments: { today: number; week: number; capped: boolean };
-  campaigns: Array<{ id: string; name: string; endDate: string; enrolled: number; drawDate: string | null }>;
+  campaigns: Array<{ id: string; name: string; endDate: string; enrolled: number }>;
   push: { configured: boolean; devices: number; members: number };
 }
 
@@ -277,7 +277,6 @@ export function AdminDashboardView({ onNavigate }: { onNavigate: AdminNavigate }
                     <button type="button" onClick={() => onNavigate('campaigns')} className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2.5 text-left hover:bg-slate-50">
                       <span className="min-w-0 basis-full truncate text-sm font-semibold text-slate-800 sm:basis-auto sm:flex-1">{campaign.name}</span>
                       <span className="text-[11px] text-slate-500">สมัคร {campaign.enrolled} คน · ถึง {shortDay(campaign.endDate)}</span>
-                      {campaign.drawDate && <span className="text-[11px] font-semibold text-slate-700">จับรางวัล {shortDay(campaign.drawDate)}</span>}
                     </button>
                   </li>
                 ))}

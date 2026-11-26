@@ -4,6 +4,7 @@ import { momentRepository } from '../moments';
 import { USE_POSTGRES, sql, type Sql } from '../db/postgres/client';
 import { createJsonStore } from './jsonStore';
 
+// draw_won and draw_result stay only for notices sent before prize draws were removed (2026-11-26)
 export type NotificationType = 'follow' | 'like' | 'comment' | 'reply' | 'comment_like' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result' | 'tee_changed' | 'trip_cancelled' | 'invite' | 'invite_yes' | 'invite_no' | 'friend_going' | 'plan_soon' | 'plan_after' | 'plan_together' | 'follow_along' | 'cheer';
 
 export interface StoredNotification {

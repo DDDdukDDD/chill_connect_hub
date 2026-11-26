@@ -26,16 +26,12 @@ export function MyCampaignsSection({ campaigns, rewards, onOpen }: { campaigns: 
         )}
       </div>
       <ul className="mt-1 divide-y divide-slate-100">
-        {shown.map(({ campaign, win, resultsOut }) => {
+        {shown.map(({ campaign }) => {
           const { prize, short, entered, ready, done, total } = campaignStanding(campaign, rewards);
-          const status = win
-            ? { pending: win.expired ? 'เลยกำหนดยืนยันรับรางวัลแล้ว' : 'ยินดีด้วย คุณคือผู้โชคดี กดยืนยันรับรางวัล', claimed: 'ยืนยันรับรางวัลแล้ว รอทีมงานติดต่อ', confirmed: 'รับรางวัลเรียบร้อยแล้ว', forfeited: 'สิทธิ์รับรางวัลหมดแล้ว' }[win.status]
-            : resultsOut
-              ? 'ประกาศผลแล้ว กดดูผลได้เลย'
-              : entered
-            ? `คุณมีสิทธิ์ลุ้นแล้ว${prize?.drawEntry ? ` · ประกาศผล ${prize.drawEntry.drawLabel}` : ''}`
+          const status = entered
+            ? 'แลกรางวัลแล้ว'
             : ready
-              ? 'XP ครบแล้ว แลกสิทธิ์ลุ้นได้เลย'
+              ? 'XP ครบแล้ว แลกรางวัลได้เลย'
               : !isCampaignLive(campaign)
                 ? `จบแล้ว ${campaignDay(campaign.endDate)}`
                 : `ทำแล้ว ${done}/${total} ชาเลนจ์${prize ? ` · อีก ${short.toLocaleString()} XP` : ''} · ถึง ${campaignDay(campaign.endDate)}`;

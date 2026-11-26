@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, Gift } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
-import { type RewardShopItem, entryRulesOf } from '@/data/rewardsData';
+import type { RewardShopItem } from '@/data/rewardsData';
 import type { useMyRewards } from '@/lib/useMyRewards';
 import { optimizedImage } from '@/lib/optimizedImage';
 
@@ -23,11 +23,10 @@ const CONFETTI = Array.from({ length: 22 }, (_, i) => {
   };
 });
 
-/** A draw entry has the member's own code; a voucher has the partner's code */
-export const rewardCodeOf = (rewards: ReturnType<typeof useMyRewards>, item: RewardShopItem) => rewards.codes[item.id] ?? item.voucherCode;
-const amountOf = (item: RewardShopItem) =>
-  item.drawEntry ? `${item.discountValue} · จับรางวัล ${item.drawEntry.drawLabel}` : `${item.discountValue} · เหลือ ${item.stockCount} สิทธิ์`;
-const untilOf = (item: RewardShopItem) => (item.drawEntry ? `ประกาศผล ${item.drawEntry.drawLabel}` : `ใช้ได้ถึง ${item.validUntil}`);
+/** The partner's code (prize draws with members' own codes were removed 2026-11-26) */
+export const rewardCodeOf = (_rewards: ReturnType<typeof useMyRewards>, item: RewardShopItem) => item.voucherCode;
+const amountOf = (item: RewardShopItem) => `${item.discountValue} · เหลือ ${item.stockCount} สิทธิ์`;
+const untilOf = (item: RewardShopItem) => `ใช้ได้ถึง ${item.validUntil}`;
 
 /**
  * One reward in a popup, on whatever page it was pressed (owner 2026-11-07: pressing a reward on the landing or
@@ -56,11 +55,6 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
   const router = useRouter();
   const userXp = rewards.balance;
   const detailRedeemed = rewards.redeemedRewardIds.includes(item.id);
-  // A draw may allow more entries (BE-391): the code stays in view and the redeem button comes back under it
-  const rules = entryRulesOf(item);
-  const entries = rewards.entryCount[item.id] ?? (detailRedeemed ? 1 : 0);
-  const todayFull = rules.perDay !== null && (rewards.entryToday[item.id] ?? 0) >= rules.perDay;
-  const canAddEntry = entries < rules.max && !todayFull;
   const detailShort = Math.max(0, item.costXp - userXp);
   const codeOf = (reward: RewardShopItem) => rewardCodeOf(rewards, reward);
 
@@ -122,7 +116,7 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
             </p>
 
             <div className="mt-6 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-4">
-              <p className="text-xs font-bold text-slate-500">{item.drawEntry ? 'รหัสสิทธิ์ลุ้นของคุณ · เก็บไว้ดูตอนประกาศผล' : 'รหัสคูปอง · โชว์ให้พนักงานดูก่อนจ่ายเงิน'}</p>
+              <p className="text-xs font-bold text-slate-500">รหัสคูปอง · โชว์ให้พนักงานดูก่อนจ่ายเงิน</p>
               <p className="mt-1 font-mono text-2xl font-bold text-slate-900 tracking-wider">{codeOf(item)}</p>
               <button type="button" onClick={() => handleCopyVoucher(codeOf(item))} className="mt-3 inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold cursor-pointer">
                 {copiedCode === codeOf(item) ? <Check className="w-4 h-4" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
@@ -155,17 +149,15 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
           {item.image && (
             // A phone turned sideways (416 high) gets a short banner, so the details show without scrolling past the photo
             // eslint-disable-next-line @next/next/no-img-element -- sized by the image optimizer link
-            <img src={optimizedImage(item.image, 640)} alt="" className={`mt-4 mb-4 w-full aspect-[16/9] [@media(max-height:560px)]:aspect-[4/1] rounded-2xl bg-amber-50 ${item.drawEntry ? 'object-contain p-3 mix-blend-multiply' : 'object-cover'}`} />
+            <img src={optimizedImage(item.image, 640)} alt="" className={`mt-4 mb-4 w-full aspect-[16/9] [@media(max-height:560px)]:aspect-[4/1] rounded-2xl bg-amber-50 object-cover`} />
           )}
           <p className="text-sm font-medium text-slate-600 leading-relaxed">{item.description}</p>
           <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200 text-sm">
             {[
               ['สิทธิ์', amountOf(item)],
               ['ใช้ที่', item.partnerLocation],
-              [item.drawEntry ? 'แลกได้ถึง' : 'ใช้ได้ถึง', item.validUntil],
-              ['แลกด้วย', `${item.costXp.toLocaleString()} XP${rules.max > 1 ? ' ต่อสิทธิ์' : ''}`],
-              // Several entries allowed (BE-391): said before anyone spends
-              ['สิทธิ์ต่อคน', rules.max > 1 ? `สูงสุด ${rules.max.toLocaleString()} สิทธิ์${rules.perDay ? ` · วันละ ${rules.perDay}` : ''}` : ''],
+              ['ใช้ได้ถึง', item.validUntil],
+              ['แลกด้วย', `${item.costXp.toLocaleString()} XP`],
             ]
               // A reward set up without a place or a last day leaves the row out instead of an empty line
               .filter(([, value]) => value)
@@ -190,7 +182,7 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
             // Already mine: what the code is for comes first, so it is never just a string of letters
             <div className="rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
               <p className="text-xs font-bold text-slate-500">
-                {item.drawEntry ? (entries > 1 ? `คุณมี ${entries.toLocaleString()} สิทธิ์ · รหัสล่าสุด` : 'แลกแล้ว · รหัสสิทธิ์ลุ้นของคุณ') : 'แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน'}
+                แลกแล้ว · โชว์รหัสนี้ให้พนักงานก่อนจ่ายเงิน
               </p>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="font-mono text-lg font-bold text-slate-900 tracking-wider break-all">{codeOf(item)}</span>
@@ -201,12 +193,11 @@ export function RewardDialog({ item, rewards, isLoggedIn, onClose, onNeedLogin, 
               </div>
               <p className="mt-1 text-xs font-medium text-slate-500">
                 {untilOf(item)}
-                {detailRedeemed && rules.max > 1 && !canAddEntry && (todayFull && entries < rules.max ? ' · วันนี้แลกครบแล้ว พรุ่งนี้แลกเพิ่มได้' : ' · ครบจำนวนสิทธิ์แล้ว')}
               </p>
             </div>
           )}
-          {(!detailRedeemed || canAddEntry) && (
-            <div className={`space-y-2 ${detailRedeemed ? 'mt-3' : ''}`}>
+          {!detailRedeemed && (
+            <div className="space-y-2">
               {isConfirming && (
                 <p className="text-sm font-medium text-slate-700 tabular-nums">
                   ใช้ {item.costXp} XP จาก {userXp.toLocaleString()} XP เหลือ {(userXp - item.costXp).toLocaleString()} XP แลกเลยไหม

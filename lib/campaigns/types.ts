@@ -2,7 +2,7 @@ import type { RewardShopItem } from '@/data/rewardsData';
 
 /**
  * A marketing campaign (owner 2026-10-25): the words on the home page strip and the /challenges banner, its dates,
- * the challenges that make it up and the prize behind it. Staff edit campaigns in the admin console (?m=campaigns).
+ * the challenges that make it up and the reward behind it. Staff edit campaigns in the admin console (?m=campaigns).
  * This file has no server-only imports, so the browser may use it too.
  */
 export interface Campaign {
@@ -11,7 +11,7 @@ export interface Campaign {
   name: string;
   /** Small line above the headline, e.g. "กิจกรรมเปิดตัว Chillwaa" */
   eyebrow: string;
-  /** A draw says ลุ้น, never รับ: not every member gets the prize */
+  /** Campaigns give guaranteed rewards only (owner 2026-11-23), so never "ลุ้น" or "จับรางวัล" */
   headline: string;
   /** The longer line on the /challenges banner */
   text: string;
@@ -22,9 +22,9 @@ export interface Campaign {
   /** ISO dates (Bangkok); the campaign shows from the first to the last day */
   startDate: string;
   endDate: string;
-  /** Prize picture: a path under /public or an https URL; empty → the strip draws a phone */
+  /** Prize picture: a path under /public or an https URL; empty → a gift icon */
   prizeImage?: string;
-  /** The rewards catalog item (lib/rewards/catalog.ts) the XP is spent on, usually a draw entry */
+  /** The rewards catalog item (lib/rewards/catalog.ts) the XP is spent on */
   rewardId?: string;
   /** The steps on the banner, in the order a new member meets them */
   questIds: string[];
@@ -41,74 +41,14 @@ export interface Campaign {
 /** A campaign with what its popup lists: the challenges behind the steps */
 export interface CampaignView extends Campaign {
   steps: { id: string; title: string; image?: string; total: number; rewardPoints: number }[];
-  /** The catalog item behind `rewardId`, so a page needs no catalog of its own to show the price and the draw */
+  /** The catalog item behind `rewardId`, so a page needs no catalog of its own to show the price */
   prize?: RewardShopItem;
 }
 
-/** A winner's way: drawn or announced and waiting for them, they pressed claim, staff gave the prize, or it was lost */
-export type WinnerStatus = 'pending' | 'claimed' | 'confirmed' | 'forfeited';
-
-/** How long a winner has to press claim (the terms of a draw prize say the same) */
-export const CLAIM_DAYS = 7;
-/** How long after the results a member who holds an entry still sees the campaign in My Hub */
-export const RESULTS_SHOWN_DAYS = 30;
-export const RESULTS_PATH = '/campaigns/results';
-
-/** A campaign a member joined (My Hub), or whose prize entry they redeemed */
+/** A campaign a member joined (My Hub), or whose reward they redeemed */
 export interface MyCampaign {
   campaign: CampaignView;
   enrolledAt: string;
-  /** The results are public */
-  resultsOut?: boolean;
-  /** This member was drawn, and it was announced */
-  win?: { status: WinnerStatus; code: string; claimBy?: string; expired: boolean };
-}
-
-/** One campaign on the staff draw page */
-export interface DrawCampaign {
-  id: string;
-  name: string;
-  endDate: string;
-  prizeTitle: string;
-  drawLabel: string;
-  prizeCount: number;
-  /** Entries that can be drawn now */
-  entries: number;
-  /** Members behind those entries (one may hold several) */
-  people: number;
-  /** Why it cannot be drawn today */
-  refusal: string | null;
-  winners: {
-    id: string;
-    name: string;
-    email?: string;
-    phone?: string;
-    /**
-     * Staff warning (BE-393): the winner is a sub-account (email and phone above are then its owner's), or another
-     * winner of this draw belongs to the same owner. Rewards count per account; staff decide
-     */
-    familyNote?: string;
-    code: string;
-    status: WinnerStatus;
-    poolSize: number;
-    drawnBy: string;
-    drawnAt: string;
-    announcedAt?: string;
-    claimBy?: string;
-    claimedAt?: string;
-  }[];
-}
-
-/** One announced campaign on the public results page */
-export interface CampaignResult {
-  id: string;
-  headline: string;
-  image?: string;
-  prizeTitle: string;
-  announcedAt: string;
-  entries: number;
-  /** `entries`: how many entries the winner held */
-  winners: { code: string; name: string; entries: number }[];
 }
 
 /** What one campaign brought in, for the admin page */
@@ -123,7 +63,7 @@ export interface CampaignStats {
   invited: number;
   /** Of those, how many went to a ตี้ with the friend who invited them */
   invitedActivated: number;
-  /** Prize entries redeemed */
+  /** Rewards redeemed */
   entries: number;
   quests: { id: string; title: string; joined: number; finished: number; isStep: boolean }[];
 }

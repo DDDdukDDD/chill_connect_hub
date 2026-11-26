@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import type { QuestDetail } from '@/lib/questDisplay';
-import { metaDescription, pageMetadata } from '@/lib/site';
+import { PRIVATE_PAGE, metaDescription, pageMetadata } from '@/lib/site';
 import { buildQuestDetail } from '@/lib/social/questDetail';
 import { breadcrumbJsonLd, jsonLdHtml } from '@/lib/structuredData';
 import ChallengeDetailView from './ChallengeDetailView';
@@ -28,13 +28,15 @@ const getPublicQuest = cache(async (id: string) => {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const quest = await getPublicQuest(decodeURIComponent((await params).id));
   if (!quest) return { title: 'ชาเลนจ์' };
-  return pageMetadata({
+  const meta = pageMetadata({
     title: quest.title,
     description: metaDescription(quest.targetGoal || quest.objective || 'ชาเลนจ์ชวนออกไปใช้ชีวิต'),
     path: `/challenges/${encodeURIComponent(quest.id)}`,
     image: quest.badgeCoverImg || quest.image,
     type: 'article',
   });
+  // A member's own challenge (only me or a friend group) is shared by link only, never in search
+  return quest.visibility === 'private' ? { ...meta, ...PRIVATE_PAGE } : meta;
 }
 
 // The public part (the challenge, where to go, related ones) is built here so it is in the server HTML.

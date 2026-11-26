@@ -2,11 +2,11 @@
 
 import { useId } from 'react';
 import Link from 'next/link';
-import { Check, ChevronRight, PartyPopper } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { DialogShell, dialogButton } from '@/components/auth/DialogShell';
 import { campaignStanding } from '@/components/campaigns/campaignStanding';
 import { useMemberSession } from '@/lib/useMemberSession';
-import { type CampaignView, type MyCampaign, RESULTS_PATH, campaignDay, isCampaignLive } from '@/lib/campaigns/types';
+import { type CampaignView, campaignDay, isCampaignLive } from '@/lib/campaigns/types';
 import { optimizedImage } from '@/lib/optimizedImage';
 import type { useMyRewards } from '@/lib/useMyRewards';
 
@@ -14,69 +14,31 @@ interface CampaignDialogProps {
   campaign: CampaignView;
   isLoggedIn: boolean;
   isEnrolled: boolean;
-  entry?: MyCampaign;
   isEnrolling: boolean;
   rewards: ReturnType<typeof useMyRewards>;
   onClose: () => void;
   onJoin: () => void;
   onLeave: () => void;
-  onClaim: () => void;
-  /** "แลกสิทธิ์ลุ้น": opens the prize's reward popup on this page (owner 2026-11-07: stay where you are) */
+  /** "แลกรางวัล": opens the reward's popup on this page (owner 2026-11-07: stay where you are) */
   onRedeemPrize: () => void;
 }
 
-/** A winner's part of the popup: warm like the rest of the rewards, with the one thing left for them to do */
-function WinnerPanel({ win, isBusy, onClaim, resultsHref }: { win: NonNullable<MyCampaign['win']>; isBusy: boolean; onClaim: () => void; resultsHref: string }) {
-  if (win.status === 'forfeited' || win.expired) {
-    return (
-      <p className="text-sm font-semibold text-slate-600 text-center">
-        สิทธิ์รับรางวัลนี้หมดแล้ว{' '}
-        <Link href={resultsHref} className="underline">ดูผลรางวัล</Link>
-      </p>
-    );
-  }
-  const claimDay = win.claimBy ? new Date(win.claimBy).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' }) : '';
-  return (
-    <div className="rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3.5">
-      <p className="flex items-center gap-2 text-base font-bold text-slate-900">
-        <PartyPopper className="w-5 h-5 shrink-0 text-[#F26430]" aria-hidden="true" />
-        {win.status === 'confirmed' ? 'รับรางวัลเรียบร้อยแล้ว' : 'ยินดีด้วย คุณคือผู้โชคดี!'}
-      </p>
-      <p className="mt-1 text-xs text-slate-600">
-        รหัสสิทธิ์ <span className="font-mono font-bold text-slate-900">{win.code}</span>
-        {win.status === 'pending' && ` · ยืนยันภายใน ${claimDay}`}
-      </p>
-      {win.status === 'claimed' && <p className="mt-2 text-sm font-medium text-slate-700">ยืนยันแล้ว ทีมงานจะติดต่อกลับทางอีเมลหรือเบอร์โทรของบัญชีนี้เพื่อตรวจตัวตนและส่งรางวัล ทีมงานไม่ขอเงินหรือรหัสผ่านจากคุณ</p>}
-      {win.status === 'pending' && (
-        <button type="button" onClick={onClaim} disabled={isBusy} className={`${dialogButton.primary} w-full mt-3`}>
-          {isBusy ? 'กำลังยืนยัน…' : 'ยืนยันรับรางวัล'}
-        </button>
-      )}
-    </div>
-  );
-}
-
 /**
- * One campaign: the prize, what to do, the rules, and the one action always in view at the bottom. Guests are asked to
+ * One campaign: the reward, what to do, the rules, and the one action always in view at the bottom. Guests are asked to
  * sign up, members join here, and a member who joined comes back to see where they stand (owner 2026-11-04).
+ * Guaranteed rewards only (owner 2026-11-23): every member who finishes the steps can redeem it.
  */
-export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnrolling, rewards, onClose, onJoin, onLeave, onClaim, onRedeemPrize }: CampaignDialogProps) {
+export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, isEnrolling, rewards, onClose, onJoin, onLeave, onRedeemPrize }: CampaignDialogProps) {
   const titleId = useId();
-  const { prize, cost, short, entered, entries, maxEntries, todayFull, canAddEntry, ready, percent, done, total } = campaignStanding(campaign, rewards);
-  const perDay = prize?.drawEntry?.perDay;
+  const { prize, cost, short, entered, ready, percent, done, total } = campaignStanding(campaign, rewards);
   // ตี้ and moments count only after these two; joining a campaign does not need them, so it says so here
   const trust = useMemberSession().member?.trust;
   const needsConfirming = Boolean(isLoggedIn && isEnrolled && !entered && trust && (!trust.identityConfirmed || !trust.pledged));
   const image = optimizedImage(campaign.prizeImage, 640);
-  const code = prize ? rewards.codes[prize.id] : undefined;
   const live = isCampaignLive(campaign);
-  const resultsHref = `${RESULTS_PATH}#${encodeURIComponent(campaign.id)}`;
   const facts = [
     ['เปิดถึง', campaignDay(campaign.endDate)],
-    ['ประกาศผล', prize?.drawEntry?.drawLabel],
-    ['แลกสิทธิ์', prize ? `${cost.toLocaleString()} XP${maxEntries > 1 ? ' ต่อสิทธิ์' : ''}` : undefined],
-    // Several entries allowed (BE-391): more entries, more chances, said before anyone spends
-    ['สิทธิ์ต่อคน', maxEntries > 1 ? `สูงสุด ${maxEntries.toLocaleString()} สิทธิ์${perDay ? ` · วันละ ${perDay}` : ''}` : undefined],
+    ['แลกรางวัล', prize ? `${cost.toLocaleString()} XP` : undefined],
   ].filter((fact): fact is [string, string] => Boolean(fact[1]));
 
   // The same width as a reward popup (components/rewards/RewardDialog.tsx), owner 2026-11-07
@@ -110,7 +72,7 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
           </div>
         </div>
 
-        {/* Once it ends the steps are history: the result at the bottom is what matters */}
+        {/* Once it ends the steps are history */}
         {live && campaign.steps.length > 0 && (
           <section className="mt-5" aria-label="ชาเลนจ์ในแคมเปญ">
             <h3 className="text-sm font-bold text-slate-900">ทำตามนี้ให้ครบ</h3>
@@ -148,7 +110,7 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
             </ul>
           </details>
         )}
-        {/* To swap to another campaign; an entry already redeemed stays */}
+        {/* To swap to another campaign; a reward already redeemed stays */}
         {isEnrolled && !entered && live && (
           <button type="button" onClick={onLeave} disabled={isEnrolling} className="mt-1 min-h-9 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
             ออกจากแคมเปญนี้
@@ -163,41 +125,12 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
             <Link href="/profile/settings" className="font-bold underline">ไปตั้งค่า</Link>
           </p>
         )}
-        {entry?.win ? (
-          <WinnerPanel win={entry.win} isBusy={isEnrolling} onClaim={onClaim} resultsHref={resultsHref} />
-        ) : entry?.resultsOut ? (
-          <p className="text-sm font-semibold text-slate-600 text-center">
-            ประกาศผลแล้ว รอบนี้ยังไม่ใช่คุณ ขอบคุณที่ร่วมสนุกนะ{' '}
-            <Link href={resultsHref} className="underline">ดูผลรางวัล</Link>
-          </p>
-        ) : entered ? (
-          <div>
-            <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
-              <span className="min-w-0">
-                <span className="block text-xs font-bold text-slate-500">{entries > 1 ? `คุณมี ${entries.toLocaleString()} สิทธิ์ลุ้นแล้ว` : 'คุณมีสิทธิ์ลุ้นแล้ว'}</span>
-                {code && <span className="block font-mono text-lg font-bold text-slate-900 tracking-wider">{code}</span>}
-              </span>
-              <Link href="/rewards?tab=my_vouchers" className="shrink-0 inline-flex items-center min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold">
-                ดูสิทธิ์ของฉัน
-              </Link>
-            </div>
-            {maxEntries > 1 && live && (
-              ready ? (
-                <button type="button" onClick={onRedeemPrize} className={`${dialogButton.primary} w-full mt-3`}>
-                  แลกเพิ่มอีก 1 สิทธิ์ · {cost.toLocaleString()} XP
-                </button>
-              ) : (
-                <p className="mt-2 text-xs text-slate-500 text-center tabular-nums">
-                  {!canAddEntry && !todayFull
-                    ? `ครบ ${maxEntries.toLocaleString()} สิทธิ์แล้ว ลุ้นได้เต็มที่เลย`
-                    : todayFull
-                      ? 'วันนี้แลกครบแล้ว พรุ่งนี้มาแลกเพิ่มได้อีกนะ'
-                      : short > 0
-                        ? `มีอีก ${short.toLocaleString()} XP ก็แลกเพิ่มได้อีก 1 สิทธิ์`
-                        : `เหลืออีก ${total - done} ชาเลนจ์ ก็แลกเพิ่มได้`}
-                </p>
-              )
-            )}
+        {entered ? (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#FFC83D] bg-amber-50 p-3">
+            <span className="min-w-0 text-sm font-bold text-slate-800">แลกรางวัลแล้ว</span>
+            <Link href="/rewards?tab=my_vouchers" className="shrink-0 inline-flex items-center min-h-10 px-3.5 rounded-full bg-white hover:bg-amber-100 text-slate-800 text-sm font-bold">
+              ดูรางวัลของฉัน
+            </Link>
           </div>
         ) : !live ? (
           <p className="text-sm font-semibold text-slate-600 text-center">แคมเปญนี้ไม่ได้เปิดรับอยู่ตอนนี้</p>
@@ -207,7 +140,7 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
           </button>
         ) : ready ? (
           <button type="button" onClick={onRedeemPrize} className={`${dialogButton.primary} w-full`}>
-            แลกสิทธิ์ลุ้น
+            แลกรางวัล
           </button>
         ) : (
           <div>
@@ -222,7 +155,7 @@ export function CampaignDialog({ campaign, isLoggedIn, isEnrolled, entry, isEnro
             )}
             {prize && (
               <p className="mt-1.5 text-xs text-slate-500 tabular-nums">
-                {[done < total && `เหลืออีก ${total - done} ชาเลนจ์`, short > 0 && `อีก ${short.toLocaleString()} XP`].filter(Boolean).join(' · ')} ก็แลกสิทธิ์ลุ้นได้
+                {[done < total && `เหลืออีก ${total - done} ชาเลนจ์`, short > 0 && `อีก ${short.toLocaleString()} XP`].filter(Boolean).join(' · ')} ก็แลกรางวัลได้
               </p>
             )}
           </div>

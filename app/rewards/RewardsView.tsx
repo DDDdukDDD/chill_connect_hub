@@ -81,9 +81,8 @@ export default function RewardsView({ campaigns, catalog }: { campaigns: Campaig
   const myCampaigns = useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards: myRewards, onLoggedIn: () => handleSetIsLoggedIn(true), onToast: showToast });
   const campaignsToJoin = campaigns.filter((item) => !myCampaigns.mine.some((entry) => entry.campaign.id === item.id));
 
-  /** A draw entry has the member's own code; a voucher has the partner's code */
-  const codeOf = (item: RewardShopItem) => myRewards.codes[item.id] ?? item.voucherCode;
-  const untilOf = (item: RewardShopItem) => (item.drawEntry ? `ประกาศผล ${item.drawEntry.drawLabel}` : `ใช้ได้ถึง ${item.validUntil}`);
+  const codeOf = (item: RewardShopItem) => item.voucherCode;
+  const untilOf = (item: RewardShopItem) => `ใช้ได้ถึง ${item.validUntil}`;
 
   const handleCopyVoucher = (code: string) => {
     if (!navigator.clipboard) return;
@@ -98,14 +97,14 @@ export default function RewardsView({ campaigns, catalog }: { campaigns: Campaig
   const filteredRewards = useMemo(
     () =>
       shopItems.filter(
-        // A draw prize is reached through its campaign in the row above (owner 2026-11-04); ?reward=ID still opens it
-        (item) => !item.campaignOnly && !item.drawEntry && (selectedCategory === 'all' || item.category === selectedCategory) && (!onlyAffordable || userXp >= item.costXp)
+        // A campaign's reward is reached through its campaign in the row above (owner 2026-11-04); ?reward=ID still opens it
+        (item) => !item.campaignOnly && (selectedCategory === 'all' || item.category === selectedCategory) && (!onlyAffordable || userXp >= item.costXp)
       ),
     [shopItems, selectedCategory, onlyAffordable, userXp]
   );
   const myRedeemedItems = useMemo(() => catalog.filter((item) => redeemedRewardIds.includes(item.id)), [catalog, redeemedRewardIds]);
   // What the wallet cheers about: how many I can take now, or how far the next one is
-  const openRewards = shopItems.filter((item) => !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id));
+  const openRewards = shopItems.filter((item) => !item.campaignOnly && !redeemedRewardIds.includes(item.id));
   const affordableCount = openRewards.filter((item) => item.costXp <= userXp).length;
   const nextGoal = openRewards.filter((item) => item.costXp > userXp).sort((a, b) => a.costXp - b.costXp)[0];
 
@@ -294,7 +293,7 @@ export default function RewardsView({ campaigns, catalog }: { campaigns: Campaig
                               <span className="text-[11px] text-slate-500 tabular-nums whitespace-nowrap">ขาด {(item.costXp - userXp).toLocaleString()}</span>
                             </span>
                           ) : (
-                            <span className="mt-0.5 block text-xs text-slate-500 tabular-nums truncate">{item.drawEntry ? item.discountValue : `เหลือ ${item.stockCount} สิทธิ์`}</span>
+                            <span className="mt-0.5 block text-xs text-slate-500 tabular-nums truncate">{`เหลือ ${item.stockCount} สิทธิ์`}</span>
                           )}
                         </button>
                       </li>

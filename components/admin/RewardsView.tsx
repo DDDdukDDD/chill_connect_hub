@@ -22,7 +22,6 @@ interface RedemptionRow {
   memberName: string;
   cost: number;
   createdAt: string;
-  code: string | null;
 }
 
 interface RewardsResponse {
@@ -33,10 +32,9 @@ interface RewardsResponse {
 
 const dateTime = (iso: string) => new Date(iso).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 
-/** The admin form's fields: numbers stay text while typing, so a blank "per day" can mean no limit */
+/** The admin form's fields: numbers stay text while typing */
 interface RewardForm {
   id: string;
-  isDraw: boolean;
   title: string;
   category: RewardShopItem['category'];
   costXp: string;
@@ -52,21 +50,15 @@ interface RewardForm {
   featured: boolean;
   campaignOnly: boolean;
   hidden: boolean;
-  drawDate: string;
-  prizeCount: string;
-  maxPerMember: string;
-  perDay: string;
 }
 
 const EMPTY: RewardForm = {
-  id: '', isDraw: false, title: '', category: 'cafe', costXp: '', discountValue: '', description: '', image: '', partner: '', partnerLocation: '',
+  id: '', title: '', category: 'cafe', costXp: '', discountValue: '', description: '', image: '', partner: '', partnerLocation: '',
   voucherCode: '', stockCount: '', validUntilDate: '', terms: '', featured: false, campaignOnly: false, hidden: false,
-  drawDate: '', prizeCount: '1', maxPerMember: '1', perDay: '',
 };
 
 const formOf = (item: RewardShopItem): RewardForm => ({
   id: item.id,
-  isDraw: Boolean(item.drawEntry),
   title: item.title,
   category: item.category,
   costXp: String(item.costXp),
@@ -82,19 +74,7 @@ const formOf = (item: RewardShopItem): RewardForm => ({
   featured: Boolean(item.featured),
   campaignOnly: Boolean(item.campaignOnly),
   hidden: Boolean(item.hidden),
-  drawDate: item.drawEntry?.drawDate ?? '',
-  prizeCount: String(item.drawEntry?.prizeCount ?? 1),
-  maxPerMember: String(item.drawEntry?.maxPerMember ?? 1),
-  perDay: item.drawEntry?.perDay ? String(item.drawEntry.perDay) : '',
 });
-
-/** "สูงสุด 10 สิทธิ์ · วันละ 1" for a draw that allows several entries; one entry says so */
-const entryLine = (item: RewardShopItem) => {
-  if (!item.drawEntry) return '';
-  const max = item.drawEntry.maxPerMember ?? 1;
-  if (max <= 1) return 'คนละ 1 สิทธิ์';
-  return `สูงสุด ${max.toLocaleString('th-TH')} สิทธิ์ต่อคน${item.drawEntry.perDay ? ` · วันละ ${item.drawEntry.perDay}` : ' · ไม่จำกัดต่อวัน'}`;
-};
 
 function Check({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -105,14 +85,12 @@ function Check({ id, label, checked, onChange }: { id: string; label: string; ch
   );
 }
 
-/** Adds or edits one reward: a partner's voucher, or a prize draw with its date and entry limits (owner 2026-11-08) */
+/** Adds or edits one reward: a partner's voucher every member who pays the XP gets (no prize draws, owner 2026-11-23) */
 function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; onClose: () => void; onSaved: (message: string) => void }) {
   const [form, setForm] = useState<RewardForm>(() => (entry ? formOf(entry.item) : { ...EMPTY }));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof RewardForm>(key: K, value: RewardForm[K]) => setForm((current) => ({ ...current, [key]: value }));
-  // Members hold codes of this kind: a voucher cannot become a draw, nor the other way
-  const kindLocked = Boolean(entry && entry.redeemed > 0);
 
   const save = async () => {
     setIsSaving(true);
@@ -121,7 +99,7 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
       const res = await fetch('/api/admin/rewards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save', reward: { ...form, costXp: Number(form.costXp), stockCount: Number(form.stockCount || 0), prizeCount: Number(form.prizeCount), maxPerMember: Number(form.maxPerMember) } }),
+        body: JSON.stringify({ action: 'save', reward: { ...form, costXp: Number(form.costXp), stockCount: Number(form.stockCount || 0) } }),
       });
       if (handleAdminUnauthorized(res)) return;
       const data = await res.json();
@@ -137,7 +115,7 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
   return (
     <AdminDrawer
       title={entry ? `แก้ไขของรางวัล · ${entry.item.title}` : 'เพิ่มของรางวัล'}
-      subtitle={entry ? <span>id: {entry.item.id} · แลกแล้ว {entry.redeemed} ครั้ง</span> : 'คูปองจากร้านพาร์ตเนอร์ หรือสิทธิ์ลุ้นของรางวัลในแคมเปญ'}
+      subtitle={entry ? <span>id: {entry.item.id} · แลกแล้ว {entry.redeemed} ครั้ง</span> : 'คูปองหรือของรางวัลจากร้านพาร์ตเนอร์ สมาชิกที่แลกได้รับทุกคน'}
       onClose={onClose}
       footer={
         <>
@@ -149,35 +127,14 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
         </>
       }
     >
-      <FormSection title="ประเภท" hint={kindLocked ? 'มีสมาชิกแลกแล้ว จึงเปลี่ยนประเภทไม่ได้' : 'สิทธิ์ลุ้นใช้คู่กับแคมเปญ ต้องใช้คำว่า "ลุ้น" ไม่ใช่ "รับฟรี"'}>
-        <div className="sm:col-span-2 flex flex-wrap gap-2" role="radiogroup" aria-label="ประเภทของรางวัล">
-          {[
-            { value: false, label: 'คูปองจากร้าน' },
-            { value: true, label: 'สิทธิ์ลุ้น (จับรางวัล)' },
-          ].map((kind) => (
-            <button
-              key={kind.label}
-              type="button"
-              role="radio"
-              aria-checked={form.isDraw === kind.value}
-              disabled={kindLocked}
-              onClick={() => set('isDraw', kind.value)}
-              className={`min-h-10 rounded-full border px-4 text-sm font-semibold ${form.isDraw === kind.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white text-slate-700'} disabled:opacity-60`}
-            >
-              {kind.label}
-            </button>
-          ))}
-        </div>
-      </FormSection>
-
       <FormSection title="สิ่งที่สมาชิกเห็น">
-        <Field label="ชื่อของรางวัล:" htmlFor="reward-title" wide hint={form.isDraw ? 'เช่น สิทธิ์ลุ้น AirPods 4 กิจกรรมเปิดเทอม' : 'เช่น คูปองส่วนลด ฿50 Specialty Coffee'}>
+        <Field label="ชื่อของรางวัล:" htmlFor="reward-title" wide hint="เช่น คูปองส่วนลด ฿50 Specialty Coffee">
           <input id="reward-title" value={form.title} onChange={(e) => set('title', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label={form.isDraw ? 'ของรางวัล:' : 'มูลค่า:'} htmlFor="reward-value" hint={form.isDraw ? 'เช่น AirPods 4 1 รางวัล' : 'เช่น ลด ฿50'}>
+        <Field label="มูลค่า:" htmlFor="reward-value" hint="เช่น ลด ฿50">
           <input id="reward-value" value={form.discountValue} onChange={(e) => set('discountValue', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label={form.isDraw ? 'XP ต่อ 1 สิทธิ์:' : 'ราคา XP:'} htmlFor="reward-cost">
+        <Field label="ราคา XP:" htmlFor="reward-cost">
           <input id="reward-cost" type="number" min={1} inputMode="numeric" value={form.costXp} onChange={(e) => set('costXp', e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="หมวด:" htmlFor="reward-category">
@@ -187,13 +144,13 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
             ))}
           </select>
         </Field>
-        <Field label={form.isDraw ? 'วันปิดแลกสิทธิ์:' : 'ใช้ได้ถึง:'} htmlFor="reward-until">
+        <Field label="ใช้ได้ถึง:" htmlFor="reward-until">
           <input id="reward-until" type="date" value={form.validUntilDate} onChange={(e) => set('validUntilDate', e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="รายละเอียด:" htmlFor="reward-description" wide>
           <textarea id="reward-description" rows={2} value={form.description} onChange={(e) => set('description', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label="เงื่อนไข (บรรทัดละข้อ):" htmlFor="reward-terms" wide hint={form.isDraw ? 'ของรางวัลแบรนด์ดัง ใส่บรรทัดว่าแบรนด์ไม่ได้เป็นผู้สนับสนุน' : undefined}>
+        <Field label="เงื่อนไข (บรรทัดละข้อ):" htmlFor="reward-terms" wide>
           <textarea id="reward-terms" rows={4} value={form.terms} onChange={(e) => set('terms', e.target.value)} className={fieldInputClass} />
         </Field>
         <div className="sm:col-span-2">
@@ -202,37 +159,20 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
         </div>
       </FormSection>
 
-      {form.isDraw ? (
-        <FormSection title="การจับรางวัลและจำนวนสิทธิ์" hint="แลกได้หลายสิทธิ์ ยิ่งมีสิทธิ์มากยิ่งมีโอกาสมาก แต่คนหนึ่งได้รางวัลไม่เกิน 1 ชิ้น สูงสุดต่อคน 1 = แลกได้ครั้งเดียว">
-          <Field label="วันจับรางวัล:" htmlFor="reward-draw-date">
-            <input id="reward-draw-date" type="date" value={form.drawDate} onChange={(e) => set('drawDate', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="จำนวนรางวัล:" htmlFor="reward-prize-count">
-            <input id="reward-prize-count" type="number" min={1} inputMode="numeric" value={form.prizeCount} onChange={(e) => set('prizeCount', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="สูงสุดต่อคน (สิทธิ์):" htmlFor="reward-max">
-            <input id="reward-max" type="number" min={1} inputMode="numeric" value={form.maxPerMember} onChange={(e) => set('maxPerMember', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="วันละกี่สิทธิ์:" htmlFor="reward-per-day" hint="เว้นว่าง = ไม่จำกัด">
-            <input id="reward-per-day" type="number" min={1} inputMode="numeric" value={form.perDay} onChange={(e) => set('perDay', e.target.value)} className={fieldInputClass} />
-          </Field>
-        </FormSection>
-      ) : (
-        <FormSection title="ร้านพาร์ตเนอร์">
-          <Field label="ชื่อร้าน:" htmlFor="reward-partner">
-            <input id="reward-partner" value={form.partner} onChange={(e) => set('partner', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="สาขา / ที่ใช้:" htmlFor="reward-location">
-            <input id="reward-location" value={form.partnerLocation} onChange={(e) => set('partnerLocation', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="รหัสคูปองของร้าน:" htmlFor="reward-code">
-            <input id="reward-code" value={form.voucherCode} onChange={(e) => set('voucherCode', e.target.value)} className={fieldInputClass} />
-          </Field>
-          <Field label="จำนวนที่มีให้:" htmlFor="reward-stock">
-            <input id="reward-stock" type="number" min={0} inputMode="numeric" value={form.stockCount} onChange={(e) => set('stockCount', e.target.value)} className={fieldInputClass} />
-          </Field>
-        </FormSection>
-      )}
+      <FormSection title="ร้านพาร์ตเนอร์">
+        <Field label="ชื่อร้าน:" htmlFor="reward-partner">
+          <input id="reward-partner" value={form.partner} onChange={(e) => set('partner', e.target.value)} className={fieldInputClass} />
+        </Field>
+        <Field label="สาขา / ที่ใช้:" htmlFor="reward-location">
+          <input id="reward-location" value={form.partnerLocation} onChange={(e) => set('partnerLocation', e.target.value)} className={fieldInputClass} />
+        </Field>
+        <Field label="รหัสคูปองของร้าน:" htmlFor="reward-code">
+          <input id="reward-code" value={form.voucherCode} onChange={(e) => set('voucherCode', e.target.value)} className={fieldInputClass} />
+        </Field>
+        <Field label="จำนวนที่มีให้:" htmlFor="reward-stock">
+          <input id="reward-stock" type="number" min={0} inputMode="numeric" value={form.stockCount} onChange={(e) => set('stockCount', e.target.value)} className={fieldInputClass} />
+        </Field>
+      </FormSection>
 
       <FormSection title="การแสดงผล">
         <Check id="reward-featured" label="แนะนำ (ขึ้นก่อนในร้าน)" checked={form.featured} onChange={(v) => set('featured', v)} />
@@ -244,8 +184,8 @@ function RewardEditor({ entry, onClose, onSaved }: { entry: RewardRow | null; on
 }
 
 /**
- * The rewards catalog and what members spent their XP on (BE-255, editable since BE-391). The prize draw has its own
- * page. The stock is shown on the site but the server does not stop a redeem past it, so a reward over its stock is
+ * The rewards catalog and what members spent their XP on (BE-255, editable since BE-391). Prize draws were removed
+ * 2026-11-26. The stock is shown on the site but the server does not stop a redeem past it, so a reward over its stock is
  * marked here for staff to settle with the partner.
  */
 export function RewardsView() {
@@ -284,7 +224,7 @@ export function RewardsView() {
       <AdminPageHeader
         icon={Ticket}
         title="ของรางวัล & การแลก"
-        description="ของรางวัลในร้านและสิทธิ์ลุ้นของแคมเปญ ราคา XP วันจับรางวัล และสมาชิกแลกอะไรไปบ้าง"
+        description="ของรางวัลในร้านและของแคมเปญ ราคา XP และสมาชิกแลกอะไรไปบ้าง"
         actions={
           <>
             <button type="button" onClick={load} disabled={isLoading} className={adminButton.secondary}>
@@ -337,23 +277,17 @@ export function RewardsView() {
                 ? [1, 2, 3].map((n) => <tr key={n}><td colSpan={5} className="h-12 animate-pulse bg-slate-50/50" /></tr>)
                 : data?.rewards.map((row) => {
                     const { item } = row;
-                    // A draw entry is a ticket, not a thing in stock: anyone may enter
-                    const over = !item.drawEntry && row.redeemed > item.stockCount;
+                    const over = row.redeemed > item.stockCount;
                     return (
                       <tr key={item.id} className={item.hidden ? 'opacity-60' : ''}>
                         <td className="px-4 py-3">
                           <p className="font-semibold text-slate-800">{item.title}{item.hidden && <span className="ml-2 text-[11px] font-semibold text-slate-500">ซ่อนอยู่</span>}</p>
-                          <p className="text-[11px] text-slate-500">
-                            {item.drawEntry
-                              ? `สิทธิ์ลุ้น · จับรางวัล ${item.drawEntry.drawDate ? item.drawEntry.drawLabel : 'ยังไม่กำหนดวัน'} · ${entryLine(item)}`
-                              : item.partner}
-                          </p>
+                          <p className="text-[11px] text-slate-500">{item.partner}</p>
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-700">{item.costXp.toLocaleString('th-TH')}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <span className="tabular-nums font-semibold text-slate-900">{row.redeemed}</span>
-                          <span className="tabular-nums text-slate-500"> / {item.drawEntry ? 'ไม่จำกัด' : item.stockCount}</span>
-                          {item.drawEntry && row.redeemed > 0 && <p className="mt-0.5 text-[11px] text-slate-500 tabular-nums">จาก {row.members} คน</p>}
+                          <span className="tabular-nums text-slate-500"> / {item.stockCount}</span>
                           {over && <p className="mt-0.5 text-[11px] font-semibold text-rose-700">เกินจำนวน {row.redeemed - item.stockCount} ชิ้น แจ้งพาร์ตเนอร์</p>}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-700">{row.xpSpent.toLocaleString('th-TH')}</td>
@@ -382,7 +316,6 @@ export function RewardsView() {
               <li key={row.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-2.5">
                 <span className="text-sm font-semibold text-slate-800">{row.memberName}</span>
                 <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{titleOf(row.rewardId)}</span>
-                {row.code && <span className="font-mono text-[11px] text-slate-500">{row.code}</span>}
                 <span className="text-[11px] tabular-nums text-slate-500">{row.cost.toLocaleString('th-TH')} XP · {dateTime(row.createdAt)}</span>
               </li>
             ))}

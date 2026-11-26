@@ -107,28 +107,6 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
     }
   }, [refreshRewards]);
 
-  const claim = async (id: string) => {
-    setIsEnrolling(true);
-    try {
-      const data = await fetch('/api/campaigns/mine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignId: id, action: 'claim' }),
-      }).then((res) => res.json());
-      if (!data.success) {
-        onToastRef.current(data.message ?? 'ยืนยันรับรางวัลไม่สำเร็จ กรุณาลองใหม่');
-        return;
-      }
-      setMine(data.campaigns);
-      remember('campaigns', data.campaigns);
-      onToastRef.current('ยืนยันรับรางวัลแล้ว ทีมงานจะติดต่อกลับ');
-    } catch {
-      onToastRef.current('ยืนยันรับรางวัลไม่สำเร็จ กรุณาลองใหม่');
-    } finally {
-      setIsEnrolling(false);
-    }
-  };
-
   const leave = async (id: string) => {
     setIsEnrolling(true);
     try {
@@ -184,8 +162,6 @@ export function useCampaigns({ campaigns, isLoggedIn, isAuthReady, rewards, onLo
         campaign={shown}
         isLoggedIn={isLoggedIn}
         isEnrolled={mine.some((entry) => entry.campaign.id === shown.id)}
-        entry={mine.find((entry) => entry.campaign.id === shown.id)}
-        onClaim={() => void claim(shown.id)}
         isEnrolling={isEnrolling}
         rewards={rewards}
         onClose={close}

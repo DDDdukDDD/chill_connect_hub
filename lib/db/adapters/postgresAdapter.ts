@@ -21,10 +21,10 @@ import { normalizeStoredEvents } from '../../eventNormalization';
 import { rollSampleEventDate } from '../../sampleEventDates';
 import { applyQuestLifecycle } from '../../questLifecycle';
 import type { AdminEventItem } from '../../eventsStore';
-import { unstable_cache } from 'next/cache';
 import { cacheManager } from '../../cache';
 import { sql, type Sql } from '../postgres/client';
 import { tableVersions } from '../postgres/tableVersions';
+import { sharedAcrossServers } from '../postgres/sharedSnapshot';
 import { eventToRow, placeToRow, questToRow, rowToEvent, rowToPlace, rowToQuest } from '../postgres/rows.mjs';
 import { shownEvent, shownEvents, shownQuest } from './jsonAdapter';
 import { referenceCodesChangedAt } from '../postgres/referenceCodes';
@@ -49,18 +49,6 @@ const STALE_MS = 10 * 60 * 1000;
 const SPOT_LIST_PART = 500;
 /** Full place rows average 4.2 KB (2026-11-07), so 250 stay near 1 MB, under the shared cache's limit per entry */
 const FULL_SPOT_PART = 250;
-
-/**
- * Next's data cache is shared by every server and outlives a deployment, so a server that just started takes the list
- * from there instead of downloading it. The version is in the key, so a changed table misses by itself.
- */
-async function sharedAcrossServers<T>(key: string, version: string, read: () => Promise<T>): Promise<T> {
-  try {
-    return await unstable_cache(read, ['pg-list', key, version], { revalidate: 7 * 24 * 60 * 60 })();
-  } catch {
-    return read(); // Outside a request, where the cache is not available
-  }
-}
 
 const TICKET_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function newTicketCode(taken: Set<string>): string {
@@ -163,22 +151,21 @@ export class PostgresAdapter implements IDataRepository {
 
   /**
    * Every field of every place: staff screens, scrapers and a member's place suggestion, which also see drafts.
-   * About 9 MB, so it goes through the shared cache in parts of about 1 MB like the public list: before 2026-11-07
-   * every new server read it whole, the biggest share of the database's egress.
+   * About 9 MB, the biggest share of the database's egress (measured 2026-11-24), so one server reads it per change
+   * and the others take the copy it leaves on R2 (lib/db/postgres/sharedSnapshot.ts).
    */
   private loadSpots(): Promise<LifestyleSpotItem[]> {
     return cacheManager.getOrSet(
       'pg:spots',
-      () => this.readIfChanged('pg:spots', 'places', async (version) => {
+      () => this.readIfChanged('pg:spots', 'places', (version) => sharedAcrossServers('spots-full', version, async () => {
         const spots: LifestyleSpotItem[] = [];
         for (let offset = 0; ; offset += FULL_SPOT_PART) {
-          const part = await sharedAcrossServers(`spots-full-${offset}`, version, async () =>
-            (await sql()`select * from app.places order by sort_key desc, id limit ${FULL_SPOT_PART} offset ${offset}`)
-              .map((row) => rowToPlace(row) as LifestyleSpotItem));
+          const part = (await sql()`select * from app.places order by sort_key desc, id limit ${FULL_SPOT_PART} offset ${offset}`)
+            .map((row) => rowToPlace(row) as LifestyleSpotItem);
           spots.push(...part);
           if (part.length < FULL_SPOT_PART) return spots;
         }
-      }),
+      })),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }
@@ -206,14 +193,14 @@ export class PostgresAdapter implements IDataRepository {
   private loadSpotList(): Promise<LifestyleSpotItem[]> {
     return cacheManager.getOrSet(
       'pg:spots:list',
-      () => this.readIfChanged('pg:spots:list', 'places', async (version) => {
+      () => this.readIfChanged('pg:spots:list', 'places', (version) => sharedAcrossServers('spots-list', version, async () => {
         const spots: LifestyleSpotItem[] = [];
         for (let offset = 0; ; offset += SPOT_LIST_PART) {
-          const part = await sharedAcrossServers(`spots-${offset}`, version, () => this.spotListPart(offset));
+          const part = await this.spotListPart(offset);
           spots.push(...part);
           if (part.length < SPOT_LIST_PART) return spots;
         }
-      }),
+      })),
       { staleMs: STALE_MS, ttlMs: 60 * 1000, tags: ['spots'] },
     );
   }

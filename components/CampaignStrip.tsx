@@ -12,10 +12,8 @@ export interface CampaignMemberState {
   xp: number;
   /** Signed up from the popup, or redeemed the prize */
   enrolled: boolean;
-  /** Redeemed the campaign's prize entry */
+  /** Redeemed the campaign's reward */
   entered: boolean;
-  /** Entries held (a draw may allow several) */
-  entries?: number;
   /** Steps done and XP enough: the entry can be redeemed */
   ready: boolean;
   done: number;
@@ -37,7 +35,7 @@ interface CampaignStripProps {
  */
 export function CampaignStrip({ campaign, member, onOpen, className = '', narrow = false }: CampaignStripProps) {
   const prize = campaign.prize;
-  const held = (member?.entries ?? 0) > 1 ? `คุณมี ${member?.entries} สิทธิ์ลุ้นแล้ว` : 'คุณมีสิทธิ์ลุ้นแล้ว';
+  const held = 'แลกรางวัลแล้ว';
   const cost = prize?.costXp ?? 0;
   const xp = member?.xp ?? 0;
   const image = optimizedImage(campaign.prizeImage, 256);
@@ -54,9 +52,9 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
 
   if (narrow) {
     const line = member?.entered
-      ? `${held}${prize?.drawEntry ? ` · ประกาศผล ${prize.drawEntry.drawLabel}` : ''}`
+      ? held
       : ready
-        ? 'XP ครบแล้ว แลกสิทธิ์ลุ้นได้เลย'
+        ? 'XP ครบแล้ว แลกรางวัลได้เลย'
         : collecting
           ? `เข้าร่วมแล้ว · ทำแล้ว ${member?.done ?? 0}/${member?.total ?? 0}`
           : enrolled
@@ -76,7 +74,7 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
 
   const state = member?.entered ? held : ready ? `XP ของคุณ ${xp.toLocaleString()} ครบแล้ว!` : enrolled ? 'เข้าร่วมแล้ว' : until;
   const detail = member?.entered
-    ? (prize?.drawEntry ? `ประกาศผล ${prize.drawEntry.drawLabel}` : until)
+    ? until
     : collecting
       ? `ทำแล้ว ${member?.done ?? 0}/${member?.total ?? 0} ชาเลนจ์ · ${xp.toLocaleString()} / ${cost.toLocaleString()} XP`
       : enrolled && !ready
@@ -93,7 +91,7 @@ export function CampaignStrip({ campaign, member, onOpen, className = '', narrow
         <span className="block text-[11px] sm:text-xs font-medium text-slate-600 tabular-nums truncate">{state}{detail && ` · ${detail}`}</span>
         <span className="block text-sm sm:text-base lg:text-lg font-bold leading-snug line-clamp-2">{campaign.headline}</span>
         <span className="mt-0.5 sm:mt-1 inline-flex items-center gap-1 text-xs sm:text-sm font-bold">
-          {ready ? 'แลกสิทธิ์ลุ้น' : enrolled ? 'ดูรายละเอียด' : campaign.cta}
+          {ready ? 'แลกรางวัล' : enrolled ? 'ดูรายละเอียด' : campaign.cta}
           <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
         </span>
       </span>
@@ -137,7 +135,7 @@ export function CampaignShelf({ campaigns, memberOf, onOpen, layout = 'strip', c
     const members = ordered.map((campaign) => memberOf?.(campaign));
     const canRedeem = members.filter((member) => member?.enrolled && member.ready && !member.entered).length;
     const joined = members.filter((member) => member?.enrolled).length;
-    const hook = canRedeem > 0 ? `แลกสิทธิ์ลุ้นได้แล้ว ${canRedeem} แคมเปญ` : joined > 0 ? `เข้าร่วมแล้ว ${joined} จาก ${ordered.length} แคมเปญ` : 'ออกไปใช้ชีวิต แล้วลุ้นรางวัล';
+    const hook = canRedeem > 0 ? `แลกรางวัลได้แล้ว ${canRedeem} แคมเปญ` : joined > 0 ? `เข้าร่วมแล้ว ${joined} จาก ${ordered.length} แคมเปญ` : 'ออกไปใช้ชีวิต แล้วรับรางวัล';
     return (
       <section aria-label="แคมเปญ" className={className}>
         <button

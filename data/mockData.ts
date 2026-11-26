@@ -214,6 +214,11 @@ export interface ChallengeQuest {
   /** An id of the community categories (master data `communityCategories`), which challenges share since 2026-10-16 */
   category?: string;
   visibility?: 'public' | 'private';
+  /**
+   * Who a member's own private challenge is for (owner 2026-11-26): `me` only the maker, `friends` anyone the maker
+   * sends the link to. Both are left out of lists and search, give no XP and need no staff review; a public one waits for staff
+   */
+  audience?: 'me' | 'friends';
   creatorName?: string;
   creatorAvatar?: string;
   participantsCount?: number;
@@ -4775,7 +4780,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   // SAMPLE launch campaign (data/launchCampaign.ts): one challenge per pillar, 400 XP together
   {
     id: 'launch-tee',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['community'], count: 1, minEvidence: 'checkin' },
     title: 'ตี้แรกของฉัน: ไปเจอเพื่อนใหม่ 1 ตี้',
     badgeCoverImg: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
@@ -4794,7 +4798,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     rewardPoints: 150,
     isOfficial: true,
     targetGoal: 'ไปตี้ไหนก็ได้ 1 ตี้ แล้วให้คนตั้งตี้เช็กอินให้ที่หน้างาน',
-    objective: 'ก้าวแรกของกิจกรรมเปิดตัว เลือกตี้ที่ชอบ ไปเจอกันตามนัด แล้วรับ XP ไปสะสมลุ้น iPhone Duo',
+    objective: 'ก้าวแรกของกิจกรรมเปิดตัว เลือกตี้ที่ชอบ ไปเจอกันตามนัด แล้วรับ XP ไปสะสม',
     steps: ['เลือกตี้ที่อยากไปแล้วกดขอเข้าร่วม', 'ไปถึงจุดนัดตามเวลา', 'ให้คนตั้งตี้เช็กอินให้ แล้ว XP จะเข้าบัญชีเอง'],
     verificationMethod: 'คนตั้งตี้เช็กอินให้ที่หน้างาน',
     rewardsText: 'เหรียญ "First Tee" + 150 XP',
@@ -4803,7 +4807,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'launch-spots',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 3, minEvidence: 'moment' },
     title: 'เปิดแผนที่: แชร์โมเมนต์จาก 3 ที่เที่ยว',
     badgeCoverImg: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80',
@@ -4822,7 +4825,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     rewardPoints: 150,
     isOfficial: true,
     targetGoal: 'ไปที่เที่ยว 3 ที่ แล้วแชร์โมเมนต์พร้อมรูปจากแต่ละที่',
-    objective: 'คาเฟ่ สวน หรือพิพิธภัณฑ์ก็ได้ ถ่ายรูปที่นั่นแล้วแชร์เป็นโมเมนต์ ครบ 3 ที่รับ XP ไปสะสมลุ้น iPhone Duo',
+    objective: 'คาเฟ่ สวน หรือพิพิธภัณฑ์ก็ได้ ถ่ายรูปที่นั่นแล้วแชร์เป็นโมเมนต์ ครบ 3 ที่รับ XP และเหรียญ',
     steps: ['เปิดหน้าที่เที่ยวที่อยากไป', 'ไปถึงแล้วกด "ร่วมแชร์โมเมนต์" พร้อมรูปจากที่นั่น', 'ครบ 3 ที่ XP จะเข้าบัญชีเอง'],
     verificationMethod: 'โมเมนต์พร้อมรูป แชร์ตอนอยู่ที่นั่น',
     rewardsText: 'เหรียญ "Map Opener" + 150 XP',
@@ -4831,7 +4834,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'launch-fair',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['fair'], count: 1, minEvidence: 'moment' },
     title: 'อีเวนต์แรก: ไปงานกับเพื่อนแล้วแชร์โมเมนต์',
     badgeCoverImg: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=600&q=80',
@@ -4896,7 +4898,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-hidden-cafe',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 1, categories: ['cafe'], minEvidence: 'moment' },
     title: 'โมเมนต์ประจำสัปดาห์ #คาเฟ่ลับ: แชร์คาเฟ่ที่เพื่อนยังไม่รู้จัก',
     badgeCoverImg: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80',
@@ -4924,7 +4925,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-green-park',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 1, categories: ['park'], minEvidence: 'moment' },
     title: 'โมเมนต์ประจำสัปดาห์ #สวนเขียวกลางเมือง: พักใจที่สวนใกล้บ้าน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=600&q=80',
@@ -4952,7 +4952,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-art-day',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 1, categories: ['art', 'museum'], minEvidence: 'moment' },
     title: 'โมเมนต์ประจำสัปดาห์ #วันหยุดสายอาร์ต: เดินแกลเลอรีหรือพิพิธภัณฑ์',
     badgeCoverImg: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80',
@@ -4980,7 +4979,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-market',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 1, categories: ['market'], minEvidence: 'moment' },
     title: 'โมเมนต์ประจำสัปดาห์ #ตลาดสุดสัปดาห์: ตะลุยตลาดกับเพื่อน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=600&q=80',
@@ -5008,7 +5006,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-sunset-view',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot'], count: 1, categories: ['viewpoint'], minEvidence: 'moment' },
     title: 'โมเมนต์ประจำสัปดาห์ #จุดชมวิวยามเย็น: ไล่ตามแสงสุดท้ายของวัน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80',
@@ -5036,7 +5033,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'theme-year-end-tee',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['community'], count: 1, minEvidence: 'checkin' },
     title: 'ธีมเดือนธันวาคม #ตี้ส่งท้ายปี: ไปตี้กับเพื่อนใหม่ก่อนสิ้นปี',
     badgeCoverImg: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=600&q=80',
@@ -5055,7 +5051,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
     rewardPoints: 100,
     isOfficial: true,
     targetGoal: 'ไปตี้ไหนก็ได้ 1 ตี้ในเดือนธันวาคม แล้วให้โฮสต์เช็กอินให้',
-    objective: 'ปิดปีด้วยเพื่อนใหม่ ไปตี้ไหนก็ได้ในเดือนธันวาคม เก็บ XP ช่วงสุดท้ายก่อนจับรางวัล iPhone Duo',
+    objective: 'ปิดปีด้วยเพื่อนใหม่ ไปตี้ไหนก็ได้ในเดือนธันวาคม เก็บ XP ช่วงสุดท้ายของปี',
     steps: ['เลือกตี้ในเดือนธันวาคมแล้วกดขอเข้าร่วม', 'ไปถึงจุดนัดตามเวลา', 'ให้โฮสต์เช็กอินให้ แล้ว XP จะเข้าบัญชีเอง'],
     verificationMethod: 'โฮสต์เช็กอินให้ที่หน้างาน',
     rewardsText: 'เหรียญ "Year-End Tee" + 100 XP',
@@ -5064,7 +5060,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'host-starter',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['community'], count: 1, minEvidence: 'checkin', asHost: 3 },
     title: 'โฮสต์มือใหม่: เปิดตี้แรก มีเพื่อนมาครบ 3 คน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
@@ -5092,7 +5087,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'friend-ticket',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['community'], count: 1, minEvidence: 'checkin', withFriends: 1, friendsVia: 'invite' },
     title: 'ตั๋วเพื่อนซี้: ชวนเพื่อนมาสมัคร แล้วไปตี้ด้วยกัน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
@@ -5120,7 +5114,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'squad-tee',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['community'], count: 1, minEvidence: 'checkin', withFriends: 2, friendsVia: 'any' },
     title: 'ยกแก๊งไปตี้: ไปตี้เดียวกับเพื่อนอย่างน้อย 2 คน',
     badgeCoverImg: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=600&q=80',
@@ -5148,7 +5141,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'weekend-passport-nov',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot', 'community', 'fair'], count: 4, minEvidence: 'moment', perWeekend: true },
     title: 'พาสปอร์ตสุดสัปดาห์ พฤศจิกายน: ออกไปใช้ชีวิตครบ 4 สุดสัปดาห์',
     badgeCoverImg: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80',
@@ -5176,7 +5168,6 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
   },
   {
     id: 'weekend-passport-dec',
-    brandReward: { type: 'hub_central', title: 'XP สะสมลุ้น iPhone Duo กิจกรรมเปิดตัว', shortTitle: 'สะสม XP ลุ้น iPhone Duo', partnerName: 'Chillwaa' },
     rule: { targetTypes: ['spot', 'community', 'fair'], count: 4, minEvidence: 'moment', perWeekend: true },
     title: 'พาสปอร์ตสุดสัปดาห์ ธันวาคม: ออกไปใช้ชีวิตครบ 4 สุดสัปดาห์',
     badgeCoverImg: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=600&q=80',
@@ -5261,7 +5252,7 @@ export const MOCK_CHALLENGES: ChallengeQuest[] = [
       'กดซิงค์ความคืบหน้ารายวันผ่านแอป'
     ],
     verificationMethod: '📱 ซิงค์ข้อมูลก้าวเดินจากสมาร์ตโฟน หรือแคปภาพหน้าจอแอปนับก้าว',
-    rewardsText: '🏅 ตราเหรียญ "Active Walker" สีทอง + ⚡ 450 XP + 🎁 สิทธิ์ลุ้นรับอุปกรณ์ออกกำลังกายรายเดือน',
+    rewardsText: '🏅 ตราเหรียญ "Active Walker" สีทอง + ⚡ 450 XP',
     participantsCount: 520,
     rewardPoints: 450,
     isOfficial: true,

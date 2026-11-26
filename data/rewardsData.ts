@@ -22,11 +22,6 @@ export interface RewardShopItem {
   /** The photo on the reward's tile: the partner's own picture once they send one (SAMPLE photos from Unsplash for now) */
   image?: string;
   featured?: boolean;
-  /**
-   * A prize draw entry instead of a voucher: each entry gets its own code, and no stock runs out. A member may hold
-   * up to `maxPerMember` entries (absent = 1), at most `perDay` a day (absent = no daily limit); more entries, more chances
-   */
-  drawEntry?: { drawLabel: string; prizeCount: number; drawDate?: string; perDay?: number; maxPerMember?: number };
   /** Reached only through its campaign's popup, not listed in the shop */
   campaignOnly?: boolean;
   /** The last day as an ISO date, for the admin form; `validUntil` is how it reads */
@@ -34,12 +29,6 @@ export interface RewardShopItem {
   /** Staff took it out of the shop; members who redeemed it still see theirs */
   hidden?: boolean;
 }
-
-/** How many entries of a draw a member may hold, and a day; a voucher is always one each */
-export const entryRulesOf = (item: Pick<RewardShopItem, 'drawEntry'>): { max: number; perDay: number | null } =>
-  item.drawEntry
-    ? { max: Math.max(1, item.drawEntry.maxPerMember ?? 1), perDay: item.drawEntry.perDay && item.drawEntry.perDay > 0 ? item.drawEntry.perDay : null }
-    : { max: 1, perDay: null };
 
 export const REWARD_CATEGORIES = [
   { id: 'all', label: 'ทั้งหมด' },
@@ -50,63 +39,7 @@ export const REWARD_CATEGORIES = [
   { id: 'merch', label: 'ของที่ระลึกพิเศษ', icon: '🎽' },
 ] as const;
 
-const sampleFlight = (id: string, image: string, place: string, costXp: number): RewardShopItem => ({
-  id,
-  image,
-  title: `สิทธิ์ลุ้นตั๋วเครื่องบินไป${place}`,
-  category: 'merch',
-  categoryLabel: 'ของรางวัลพิเศษ',
-  costXp,
-  iconName: 'Gift',
-  emoji: '✈️',
-  description: `ใช้ ${costXp} XP แลกสิทธิ์ลุ้นตั๋วเครื่องบินไปกลับ${place} 1 ที่นั่ง สะสม XP ได้จากชาเลนจ์ในแคมเปญ`,
-  partner: 'Chillwaa',
-  partnerLocation: 'ประกาศผลบนเว็บไซต์และแจ้งเตือนในแอป',
-  voucherCode: 'FLIGHT-DRAW',
-  stockCount: 1,
-  discountValue: `ตั๋วเครื่องบินไปกลับ${place} 1 ที่นั่ง`,
-  validUntil: '31 ธ.ค. 2569',
-  terms: [
-    'แลกสิทธิ์ได้ 1 ครั้งต่อบัญชี ภายใน 31 ธ.ค. 2569',
-    'จับรางวัล 15 ม.ค. 2570 จากรหัสสิทธิ์ของสมาชิกทุกคนที่แลกไว้',
-    'ผู้โชคดีต้องยืนยันตัวตนกับทีมงานภายใน 7 วัน ไม่เช่นนั้นจะจับรางวัลใหม่',
-    'ของรางวัลเปลี่ยนเป็นเงินสดหรือโอนสิทธิ์ให้ผู้อื่นไม่ได้',
-  ],
-  drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1, drawDate: '2027-01-15' },
-  campaignOnly: true,
-});
-
 export const REWARD_SHOP_ITEMS: RewardShopItem[] = [
-  {
-    // SAMPLE launch prize (data/launchCampaign.ts); remove or replace before launch
-    id: 'reward-launch-iphone',
-    image: '/campaign/iphone-duo.png',
-    title: 'สิทธิ์ลุ้น iPhone Duo ฟรี กิจกรรมเปิดตัว',
-    category: 'merch',
-    categoryLabel: 'ของรางวัลพิเศษ',
-    costXp: 500,
-    iconName: 'Gift',
-    emoji: '🎁',
-    description: 'ฉลองเปิดตัว Chillwaa ใช้ 500 XP แลกสิทธิ์ลุ้น iPhone Duo 1 เครื่อง สะสม XP ได้จากชาเลนจ์เปิดตัวทั้งสาม ไปตี้ แชร์โมเมนต์ และไปอีเวนต์',
-    partner: 'Chillwaa',
-    partnerLocation: 'ประกาศผลบนเว็บไซต์และแจ้งเตือนในแอป',
-    voucherCode: 'LAUNCH-DRAW',
-    stockCount: 1,
-    discountValue: 'iPhone Duo 1 รางวัล',
-    validUntil: '31 ธ.ค. 2569',
-    terms: [
-      'แลกสิทธิ์ได้ 1 ครั้งต่อบัญชี ภายใน 31 ธ.ค. 2569',
-      'จับรางวัล 15 ม.ค. 2570 จากรหัสสิทธิ์ของสมาชิกทุกคนที่แลกไว้',
-      'ผู้โชคดีต้องยืนยันตัวตนกับทีมงานภายใน 7 วัน ไม่เช่นนั้นจะจับรางวัลใหม่',
-      'ของรางวัลเปลี่ยนเป็นเงินสดหรือโอนสิทธิ์ให้ผู้อื่นไม่ได้',
-    ],
-    featured: true,
-    drawEntry: { drawLabel: '15 ม.ค. 2570', prizeCount: 1, drawDate: '2027-01-15' },
-  },
-  // SAMPLE flight prizes, for the sample campaigns in db/seed-sample-campaigns.mjs (development database only); remove before launch
-  sampleFlight('reward-flight-phuket', '/campaign/flight-phuket.png', 'ภูเก็ต', 500),
-  sampleFlight('reward-flight-japan', '/campaign/flight-japan.png', 'ญี่ปุ่น', 800),
-  sampleFlight('reward-flight-china', '/campaign/flight-china.png', 'จีน', 850),
   {
     id: 'reward-1',
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',

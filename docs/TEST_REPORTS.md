@@ -139,8 +139,9 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Expected:** `scripts/smoke.mjs` กรองเฉพาะชาเลนจ์เริ่มต้นที่จบได้ด้วยโพสต์สถานที่ 1 ครั้งโดยไม่ต้องแท็กจากหน้าชาเลนจ์ (`!q.rule.posts.tagged` และจำนวนโพสต์ 1 ครั้ง) เพื่อให้ smoke test ผ่านครบทั้ง 28 ข้อ
 - **Actual:** บรรทัด 86 ใช้ `const starters = quests.filter((q) => q.rule?.posts);` ทำให้เหมารวมชาเลนจ์วิ่ง ATMBKK ที่ตั้ง `posts.tagged: true` (BE-438) และชาเลนจ์ที่ต้องโพสต์มากกว่า 1 ครั้ง เข้าไปด้วย (รวม 10 ชาเลนจ์) ส่งผลให้ไม่ผ่าน 2 ข้อ: `one post at a place finishes every starter challenge taken (5/10)` และ `starter XP counts (fromQuests 310 of 1560)`
 - **Evidence:** `scripts/smoke.mjs` (บรรทัด 86, 102–105) — ผลรัน `npm run smoke` บน `a970630`: `26 passed, 2 failed`
+  - **Re-test (2026-11-24 on `9c40f7e` หลัง `BE-456` + `BE-463`):** 2 ข้อเดิม (`one post at a place finishes every starter challenge taken` และ `starter XP counts`) ผ่านแล้ว แต่หลังลงชุด 35 ชาเลนจ์ (`BE-463`) ที่ใส่ `posts.tagged: true` ให้ 3 ใน 5 ชาเลนจ์เริ่มต้น ทำให้ `scripts/smoke.mjs` บรรทัด 87 (`five starter challenges exist`, เช็ก `starters.length >= 5`) ไม่ผ่านแทน (`2 found; run node db/seed-starter-quests.mjs`) — ผลรวม `26 passed, 1 failed`
 - **Status:** Ready to re-test
-- **Fix:** `scripts/smoke.mjs` counts as starters only challenges with `rule.posts`, no `posts.tagged` and `count` 1 (BE-456)
+- **Fix:** `scripts/smoke.mjs` counts as starters only challenges with `rule.posts`, no `posts.tagged` and `count` 1 (BE-456). The re-test ran an older copy: the current check needs at least 1 untagged starter (`starter challenges a post finishes exist`), and a tagged starter is taken too and must stay open after an ordinary post. Re-test on the current `origin/claude`.
 
 ### TR-036 · `SongBadge` (`SongSheet`): กด "ฟังเพลง" แล้วหยุดหรือปิดหน้าต่างระหว่างโหลด เพลงจะเริ่มเล่นค้างในพื้นหลัง และไม่เรียก `unlock()` ในจังหวะแตะ
 - **Severity:** Medium
@@ -152,8 +153,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
   3. (บน iPhone/Safari) กด `ฟังเพลง` ครั้งแรกบนหน้าที่ยังไม่เคยปลดล็อก `AudioContext`
 - **Expected:** เรียก `own.unlock()` ทันทีในจังหวะแตะก่อนรอโหลด, ถ้าผู้ใช้กดหยุดหรือปิดหน้าต่างก่อนโหลดเสร็จต้องไม่เริ่มเล่นเพลง, และถ้าโหลดเพลงล้มเหลวต้องคืนปุ่มกลับเป็น `ฟังเพลง` (`setListening(false)`)
 - **Actual:** `SongSheet.listen()` ใน `components/moments/SongBadge.tsx` รอ `loadSong(track.src)` ให้เสร็จก่อนค่อยเรียก `own.play(...)` โดยไม่ได้เรียก `own.unlock()` ในจังหวะคลิก และไม่ได้ตรวจว่าผู้ใช้กดหยุดหรือปิดหน้าต่างไปแล้ว (`own.stop()` ถูกเรียกก่อน `.then()` จะเรียก `own.play(...)` ซึ่งเพิ่ม `this.turn` ใหม่และเริ่มเล่นเสียงค้างในพื้นหลัง) รวมถึง `.catch(() => undefined)` ไม่ได้รีเซ็ต `setListening(false)`
-- **Evidence:** `components/moments/SongBadge.tsx` (บรรทัด 114–130) เทียบกับ `lib/media/songPlayer.ts` (บรรทัด 121–145)
-- **Status:** Ready to re-test
+- **Evidence:** `components/moments/SongBadge.tsx` (บรรทัด 114–130) เทียบกับ `lib/media/songPlayer.ts` (บรรทัด 121–145) (Re-test 2026-11-24 on `9c40f7e`: ตรวจโค้ด `components/moments/SongBadge.tsx` บรรทัด 91–145 — เรียก `own.unlock()` ในจังหวะคลิกก่อนรอโหลด, ใช้ `listenTurn` ref กันเล่นค้างเมื่อหยุดหรือปิดหน้าต่างระหว่างโหลด, และ `.catch` คืน `setListening(false)` ครบถ้วน)
+- **Status:** Confirmed fixed
 - **Fix:** `SongSheet.listen()` calls `unlock()` inside the tap, a turn counter moved on by stop and close keeps a late-loading song quiet, a failed load resets the button (BE-456)
 
 ---
