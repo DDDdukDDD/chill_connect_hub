@@ -41,6 +41,10 @@ export interface TripView {
   startsOn: string;
   endsOn: string;
   visibility: TripVisibility;
+  /** The author's choice: a trip for everyone shows only to followers until its last day has passed */
+  followersUntilBack: boolean;
+  /** That choice is holding it right now (followers only) */
+  heldUntilBack?: boolean;
   status: TripStatus;
   author: TripPerson;
   withPeople: TripPerson[];
@@ -107,6 +111,9 @@ export const TRIP_DAY_HOUR = 18;
 export const TRIP_ENDED_HOUR = 10;
 /** The "tell the story" nudge only for trips that ended this many days ago or less */
 export const TRIP_ENDED_NUDGE_DAYS = 7;
+/** "วันนี้ไป 3 ที่ เล่าเป็นเรื่องไหม" (lib/trips/suggest.ts): places on one day or one weekend, looked for in the last days */
+export const SUGGEST_MIN_PLACES = 3;
+export const SUGGEST_WINDOW_DAYS = 7;
 
 export interface TripStop {
   name: string;

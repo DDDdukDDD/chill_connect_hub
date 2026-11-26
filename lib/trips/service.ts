@@ -82,14 +82,20 @@ function requireDatabase() {
 const person = (member: Member | undefined, id: string): TripPerson => ({ id, name: member?.displayName ?? 'สมาชิก', ...(member?.avatarUrl ? { avatar: member.avatarUrl } : {}) });
 
 /** Whether the viewer may see a trip that is not theirs */
-function mayView(row: { status: string; visibility: string; author: string }, viewer: Member | null, author: Member | undefined): boolean {
+function mayView(row: { status: string; visibility: string; author: string; ends?: string; followers_until_back?: boolean }, viewer: Member | null, author: Member | undefined): boolean {
   if (viewer?.id === row.author) return row.status !== 'removed';
   if (row.status !== 'published' || !author || author.status === 'banned') return false;
   if (viewer?.blockedIds?.includes(row.author) || author.blockedIds?.includes(viewer?.id ?? '')) return false;
-  if (row.visibility === 'public') return true;
+  // "เห็นเฉพาะผู้ติดตามจนกลับ": followers only while the trip is going on
+  if (row.visibility === 'public' && !isHeld(row)) return true;
+  if (row.visibility === 'public') return Boolean(viewer?.followingIds?.includes(row.author));
   if (row.visibility === 'followers') return Boolean(viewer?.followingIds?.includes(row.author));
   return false;
 }
+
+/** A trip for everyone that the author holds for followers until the day after its last day (Bangkok days) */
+const isHeld = (row: { ends?: string; followers_until_back?: boolean }) => Boolean(row.followers_until_back && row.ends && row.ends >= bangkokToday());
+const bangkokToday = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 
 const selectTrips = (db: Sql) => db`
   select t.*, t.starts_on::text as starts, t.ends_on::text as ends, a.legacy_id as author,
@@ -156,6 +162,8 @@ export async function getTrip(id: string, viewer: Member | null): Promise<TripVi
     startsOn: row.starts as string,
     endsOn: row.ends as string,
     visibility: row.visibility as TripVisibility,
+    followersUntilBack: Boolean(row.followers_until_back),
+    ...(isHeld(row as { ends?: string; followers_until_back?: boolean }) && row.visibility === 'public' ? { heldUntilBack: true } : {}),
     status: row.status as TripStatus,
     author: person(author, row.author as string),
     withPeople: tagged.filter((tid) => people.get(tid)?.status !== 'banned').map((tid) => person(people.get(tid), tid)),
@@ -215,6 +223,7 @@ export async function createTrip(member: Member, input: Record<string, unknown>)
   if (title.length < 2) throw new TripError('ตั้งชื่อทริปสักหน่อยนะ');
   const { startsOn, endsOn } = cleanDates(input.startsOn, input.endsOn);
   const visibility = VISIBILITIES.has(input.visibility as TripVisibility) ? (input.visibility as TripVisibility) : 'public';
+  const followersUntilBack = input.followersUntilBack === true;
   const tagged = await cleanTagged(member, input.taggedIds);
   const db = sql();
   const [{ count }] = await db<{ count: number }[]>`select count(*)::int as count from app.trips where author_id = ${memberRow(db, member.id)}`;
@@ -222,8 +231,8 @@ export async function createTrip(member: Member, input: Record<string, unknown>)
   const now = new Date().toISOString();
   const id = uuidV7(now);
   await db`
-    insert into app.trips (id, author_id, title, intro, starts_on, ends_on, visibility, tagged_ids, created_at, updated_at)
-    values (${id}, ${memberRow(db, member.id)}, ${title}, ${text(input.intro, MAX_TRIP_INTRO)}, ${startsOn}, ${endsOn}, ${visibility},
+    insert into app.trips (id, author_id, title, intro, starts_on, ends_on, visibility, followers_until_back, tagged_ids, created_at, updated_at)
+    values (${id}, ${memberRow(db, member.id)}, ${title}, ${text(input.intro, MAX_TRIP_INTRO)}, ${startsOn}, ${endsOn}, ${visibility}, ${followersUntilBack},
       (select coalesce(array_agg(id), '{}') from app.members where legacy_id = any(${tagged})), ${now}, ${now})`;
   return id;
 }
@@ -244,6 +253,7 @@ export async function updateTrip(member: Member, id: string, input: Record<strin
     if (!VISIBILITIES.has(input.visibility as TripVisibility)) throw new TripError('เลือกว่าใครเห็นทริปนี้ได้');
     set.visibility = input.visibility;
   }
+  if ('followersUntilBack' in input) set.followers_until_back = input.followersUntilBack === true;
   if ('musicId' in input) {
     if (input.musicId !== null && !findTrack(input.musicId as string)) throw new TripError('ไม่พบเพลงนี้');
     set.music_id = input.musicId;
