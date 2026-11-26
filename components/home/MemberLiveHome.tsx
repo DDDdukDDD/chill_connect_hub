@@ -1,5 +1,6 @@
 'use client';
 
+import { TripsShelf } from '@/components/trips/TripsShelf';
 import { SHARE_ASK_DAYS } from '@/lib/social/socialRules';
 import { HOME_MODE_KEY } from '@/lib/homeAgain';
 import React, { useEffect, useState } from 'react';
@@ -404,6 +405,8 @@ const LATER_EVERY = 6;
 const LATER_UNTIL = 70;
 const PHONE_CAMPAIGN_SLOT = FIRST_SLOTS[1];
 const PEOPLE_SLOT = 2;
+/** Trip stories from friends (docs/TRIPS_PLAN.md), after the sixth post; the row hides itself while there are none */
+const TRIPS_SLOT = 5;
 // How many items one card shows, and the fewest worth a card
 const TAKE: Record<FeedCardKind, number> = { meetup: 1, challenge: 3, fair: 4, spot: 5 };
 const FEWEST: Record<FeedCardKind, number> = { meetup: 1, challenge: 2, fair: 2, spot: 2 };
@@ -459,6 +462,12 @@ function feedCards(props: MemberLiveHomeProps, showPicks: boolean): Record<numbe
     <>
       {cards[PEOPLE_SLOT]}
       <PeopleToFollow />
+    </>
+  );
+  cards[TRIPS_SLOT] = (
+    <>
+      {cards[TRIPS_SLOT]}
+      <TripsShelf />
     </>
   );
   // Phones have no side column: the campaign comes between the posts, after the first cards, never on top. Joined
