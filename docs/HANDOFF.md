@@ -20,6 +20,36 @@ Item template:
 
 ---
 
+### BE-487 · Trip stories round 2: photos first, live uploads, music, story card, hearts and comments, reminders (owner 2026-11-27)
+- **What changed:**
+  - **Editor** (`TripEditor.tsx`):
+    - Photos come first. The details entered on the create screen fold into one line ("4–7 ธ.ค. 2569 · ทุกคนเห็น · ร่าง · แก้รายละเอียด").
+    - Each picked photo shows at once with a spinner. Photos join the trip in batches of 4, so they appear while the rest upload.
+    - Leaving mid-upload asks first. Failed photos stay with "ลองอีกครั้ง".
+    - The first upload sets sub-trips from the photos' cities when there are 2 or more and the author set none. Sub-trip rows save themselves: a city or a line when its box is left, dates and removals at once. "บันทึกทริปย่อย" is gone.
+    - Each sub-trip has an optional one-line `note` (≤80), shown on its opening frame and on the trip page.
+    - "เล่าทีละรูป" writes captions one photo at a time.
+    - "ใส่เพลงประกอบเรื่อง" reuses the clip `MusicPicker`. The player plays the song in a loop, quieter under a clip with sound, and shows the song on the cover.
+  - **Publishing:**
+    - The draft preview's end screen has "เผยแพร่เลย".
+    - After publishing, `/trips/[id]?published=1` opens `TripPublishedDialog` with: รูปลงสตอรี่ IG, ส่งทาง LINE, แชร์ผ่านแอปอื่น and คัดลอกลิงก์.
+  - **Story card** (`components/trips/storyCard.ts`): a 9:16 JPEG drawn in the browser, with cover, title, days, route, numbers and the Chillwaa name. The cover comes through `GET /api/trips/[id]/cover` because a canvas cannot read another address. When Safari refuses to share after drawing, the next tap shares.
+  - **Readers:**
+    - A heart and comments on published trips (`lib/trips/social.ts`, `trip_like` / `trip_comment` notices).
+    - "อยากไปแบบนี้บ้าง" after the story: ไปตามรอย; for cities in Thailand also ที่เที่ยวใน{city} (`/spots?q=`) and ชวนเพื่อนตั้งตี้ (`/community?create=1`).
+  - **Followed trips:** while a draft, the editor shows the source trip's plan city by city with photos, plus "ชวนเพื่อนไปด้วยทาง LINE".
+  - **Reminders** (`lib/trips/reminders.ts`, hourly job):
+    - During a trip: once a day after 18:00 Bangkok time when nothing joined it that day (`trip_day`).
+    - After a trip: the day after it ends, after 10:00, when it is still a draft and ended within 7 days (`trip_ended`).
+    - Both are on /admin วิธีคิดของระบบ (new topic "เรื่องเล่าทริป").
+  - **Feed:** the trip row moved from after the 6th post to after the 4th (`TRIPS_SLOT = 3`). Trips by people the viewer follows come first.
+  - **Copy:** the create screen and My Hub say a Saturday out is a trip too, after Gemini's point about trips being rare.
+  - **Notifications:** `NotificationMatch` has `path`, so a trip notice is matched by its page.
+- **What to do about it:**
+  - Live needs **0069 and 0070** before merging. Without 0070 the trip page fails, because `getTrip` reads the new tables. 0070 is already on dev.
+  - Not built: a full "ไปกัน" group plan for a trip. A trip is not an invite target, and its page has no invite answer. Followed trips invite through LINE with the source link for now.
+  - Walked on dev at 390 px (screenshots checked): create → upload → auto sub-trips → note → song → เล่าทีละรูป → preview → เผยแพร่เลย → dialog → story card → reader heart + comment → owner notices. Reminders were run against dev with throwaway trips: each sent once, nothing repeated on a second run, test data removed.
+
 ### BE-486 · Owner's round: challenge chooser, bigger reel buttons, friend plans tidy-up, My Hub spacing (owner 2026-11-26)
 - **What changed:**
   - **Challenge ＋:** a member's challenge first asks who it is for: ส่วนตัว, ทำกับเพื่อน or สาธารณะ (`audiencePicked` in `CreateEventModal`). The form then starts with that choice, which can still be changed there. This applies to the phone bar ＋ and the /challenges button alike; admin skips it.
