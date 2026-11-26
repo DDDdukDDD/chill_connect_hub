@@ -10,7 +10,7 @@ import { MusicPicker } from '@/components/moments/MusicPicker';
 import { openLineShare } from '@/components/moments/lineInvite';
 import { DEFAULT_MUSIC_VOLUME, findTrack, type MusicTrack } from '@/lib/media/musicLibrary';
 import { TripPlayer } from '@/components/trips/TripPlayer';
-import { inputClass, VISIBILITY_OPTIONS, VisibilitySwitch } from '@/components/trips/TripCreate';
+import { HoldUntilBack, inputClass, VISIBILITY_OPTIONS, VisibilitySwitch } from '@/components/trips/TripCreate';
 import { compressImage } from '@/lib/media/compressor';
 import { photoUploadForm } from '@/lib/media/uploadPhoto';
 import { readPhotoFacts } from '@/lib/media/exif';
@@ -80,7 +80,7 @@ async function upload(file: File): Promise<{ url: string; ratio?: number }> {
   throw new Error(lastError);
 }
 
-export function TripEditor({ initialTrip }: { initialTrip: TripView }) {
+export function TripEditor({ initialTrip, autoPreview = false }: { initialTrip: TripView; autoPreview?: boolean }) {
   const router = useRouter();
   const [trip, setTrip] = useState(initialTrip);
   const [uploading, setUploading] = useState<UploadState>(null);
@@ -88,7 +88,7 @@ export function TripEditor({ initialTrip }: { initialTrip: TripView }) {
   const [naming, setNaming] = useState(false);
   const [busy, setBusy] = useState('');
   const [openItem, setOpenItem] = useState<TripItemView | null>(null);
-  const [previewing, setPreviewing] = useState(false);
+  const [previewing, setPreviewing] = useState(autoPreview);
   const [editingDetails, setEditingDetails] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [telling, setTelling] = useState(false);
@@ -312,7 +312,7 @@ export function TripEditor({ initialTrip }: { initialTrip: TripView }) {
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
             <span>{thaiDateRange(trip.startsOn, trip.endsOn)}</span>
             <span aria-hidden>·</span>
-            <span>{visibilityLabel}เห็น</span>
+            <span>{trip.visibility === 'public' && trip.followersUntilBack ? 'ทุกคนเห็นหลังกลับ' : `${visibilityLabel}เห็น`}</span>
             <span aria-hidden>·</span>
             <span>{draft ? 'ร่าง' : 'เผยแพร่แล้ว'}</span>
             <button
@@ -367,7 +367,10 @@ export function TripEditor({ initialTrip }: { initialTrip: TripView }) {
                   />
                 </label>
               </div>
-              <VisibilitySwitch value={trip.visibility} onChange={(visibility) => patch({ visibility }, showToast)} />
+              <div>
+                <VisibilitySwitch value={trip.visibility} onChange={(visibility) => patch({ visibility }, showToast)} />
+                {trip.visibility === 'public' && <HoldUntilBack checked={trip.followersUntilBack} onChange={(followersUntilBack) => patch({ followersUntilBack }, showToast, followersUntilBack ? 'ระหว่างทริปเห็นเฉพาะผู้ติดตามแล้ว' : 'ทุกคนเห็นได้แล้ว')} />}
+              </div>
             </section>
           )}
 
@@ -625,7 +628,11 @@ export function TripEditor({ initialTrip }: { initialTrip: TripView }) {
           {previewing && (
             <TripPlayer
               trip={{ ...trip, items: trip.items.filter((i) => !i.hidden) }}
-              onClose={() => setPreviewing(false)}
+              onClose={() => {
+                setPreviewing(false);
+                // Opened from a suggestion (?play=1): a reload should not open it again
+                if (window.location.search) window.history.replaceState(window.history.state, '', window.location.pathname);
+              }}
               actions={
                 draft && !uploading
                   ? {

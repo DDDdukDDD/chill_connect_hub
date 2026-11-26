@@ -35,6 +35,22 @@ export function VisibilitySwitch({ value, onChange }: { value: TripVisibility; o
   );
 }
 
+/**
+ * The author's choice for a trip for everyone (owner 2026-11-27: the author decides, we only offer it): while the trip
+ * is going on only followers see it, so strangers cannot tell the author is away; everyone sees it after the last day.
+ */
+export function HoldUntilBack({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="mt-3 flex cursor-pointer items-start gap-3">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 size-5 shrink-0 cursor-pointer accent-[#2563EB]" />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-slate-900">ระหว่างทริป ให้เห็นเฉพาะผู้ติดตาม</span>
+        <span className="block text-xs text-slate-500">คนแปลกหน้าจะไม่รู้ว่าคุณไม่อยู่บ้าน ทุกคนเห็นได้หลังวันกลับ</span>
+      </span>
+    </label>
+  );
+}
+
 export const inputClass = 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]';
 
 /** /trips/new: a name and the days, nothing else; photos come in the editor */
@@ -45,6 +61,7 @@ export function TripCreate() {
   const [startsOn, setStartsOn] = useState(today);
   const [endsOn, setEndsOn] = useState(today);
   const [visibility, setVisibility] = useState<TripVisibility>('public');
+  const [holdUntilBack, setHoldUntilBack] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,7 +72,7 @@ export function TripCreate() {
     const res = await fetch('/api/trips', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, startsOn, endsOn: endsOn < startsOn ? startsOn : endsOn, visibility }),
+      body: JSON.stringify({ title, startsOn, endsOn: endsOn < startsOn ? startsOn : endsOn, visibility, followersUntilBack: visibility === 'public' && holdUntilBack }),
     }).catch(() => null);
     const json = await res?.json().catch(() => null);
     if (!json?.success) {
@@ -102,6 +119,7 @@ export function TripCreate() {
               <span className="text-sm font-semibold text-slate-900">ใครเห็นทริปนี้</span>
               <div className="mt-2">
                 <VisibilitySwitch value={visibility} onChange={setVisibility} />
+                {visibility === 'public' && <HoldUntilBack checked={holdUntilBack} onChange={setHoldUntilBack} />}
               </div>
             </div>
 

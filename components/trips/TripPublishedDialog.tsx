@@ -38,7 +38,9 @@ export function TripPublishedDialog({ trip, onPlay, onToast, onClose }: { trip: 
           {trip.title} · {thaiDateRange(trip.startsOn, trip.endsOn)}
         </p>
         <p className="mt-2 text-sm text-slate-600">
-          {trip.visibility === 'private'
+          {trip.heldUntilBack
+            ? 'ตอนนี้เห็นเฉพาะผู้ติดตาม ทุกคนเห็นได้หลังวันกลับ ส่งให้เพื่อนที่ติดตามคุณได้เลย'
+            : trip.visibility === 'private'
             ? 'ทริปนี้เห็นเฉพาะคุณ เปลี่ยนเป็นทุกคนได้ที่หน้าแก้ไขทริป'
             : trip.visibility === 'followers'
               ? 'คนที่ติดตามคุณเห็นแล้ว ส่งให้เพื่อนที่ติดตามคุณได้เลย'

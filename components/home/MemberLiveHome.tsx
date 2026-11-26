@@ -1,6 +1,7 @@
 'use client';
 
 import { TripsShelf } from '@/components/trips/TripsShelf';
+import { SuggestedTripCard } from '@/components/trips/SuggestedTripCard';
 import { SHARE_ASK_DAYS } from '@/lib/social/socialRules';
 import { HOME_MODE_KEY } from '@/lib/homeAgain';
 import React, { useEffect, useState } from 'react';
@@ -128,6 +129,8 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           <div className="lg:hidden">
             <Greeting {...props} layout="row" />
           </div>
+          {/* A day or weekend of moments offered as a story (lib/trips/suggest.ts); nothing when there is none */}
+          <SuggestedTripCard className="mb-4" />
           <HomeMomentFeed
             view={feedView}
             onViewChange={setFeedView}

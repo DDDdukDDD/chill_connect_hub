@@ -69,7 +69,7 @@ export function TripPage({ trip: fullTrip, autoplay, legId, justPublished = fals
             <div className={`mb-6 flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${draft ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-700'}`}>
               {draft ? <Lock className="size-4 shrink-0" aria-hidden /> : <Users className="size-4 shrink-0" aria-hidden />}
               <p className="min-w-0 flex-1">
-                {trip.status === 'hidden' ? 'ทีมงานซ่อนทริปนี้ไว้ มีแต่คุณที่เห็น' : draft ? 'ร่างไว้ ยังไม่มีใครเห็น' : trip.visibility === 'public' ? 'ทุกคนเห็นทริปนี้' : trip.visibility === 'followers' ? 'ผู้ติดตามเห็นทริปนี้' : 'มีแต่คุณที่เห็น'}
+                {trip.status === 'hidden' ? 'ทีมงานซ่อนทริปนี้ไว้ มีแต่คุณที่เห็น' : draft ? 'ร่างไว้ ยังไม่มีใครเห็น' : trip.visibility === 'public' && trip.heldUntilBack ? `ตอนนี้เห็นเฉพาะผู้ติดตาม ทุกคนเห็นได้หลัง ${thaiShortDate(trip.endsOn)}` : trip.visibility === 'public' ? 'ทุกคนเห็นทริปนี้' : trip.visibility === 'followers' ? 'ผู้ติดตามเห็นทริปนี้' : 'มีแต่คุณที่เห็น'}
               </p>
               <Link href={`/trips/${trip.id}/edit`} className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-4 py-2 font-medium text-slate-700 transition hover:bg-slate-200">
                 <Pencil className="size-4" aria-hidden /> แก้ไขทริป

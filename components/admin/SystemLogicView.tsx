@@ -9,7 +9,7 @@ import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { WEEKLY_SCRAPE_GAP_DAYS } from '@/lib/eventImportRules';
 import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS , PLACE_CLOSED_HIDE_AT } from '@/lib/social/socialRules';
 import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
-import { MAX_TRIP_COMMENT, MAX_TRIP_ITEMS, MAX_TRIP_LEGS, TRIP_DAY_HOUR, TRIP_ENDED_HOUR, TRIP_ENDED_NUDGE_DAYS } from '@/lib/trips/story';
+import { MAX_TRIP_COMMENT, MAX_TRIP_ITEMS, MAX_TRIP_LEGS, SUGGEST_MIN_PLACES, SUGGEST_WINDOW_DAYS, TRIP_DAY_HOUR, TRIP_ENDED_HOUR, TRIP_ENDED_NUDGE_DAYS } from '@/lib/trips/story';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -481,14 +481,16 @@ const TOPICS: Topic[] = [
     id: 'trip-stories',
     title: 'เรื่องเล่าทริป',
     summary: 'ทริปเล่าเป็นเรื่องเต็มจอตามวันและเมือง สร้างจากมายฮับ รูปมาจากโมเมนต์ระหว่างทริปหรือเลือกทีหลัง คนดูตอบกลับได้ และระบบเตือนให้เล่า',
-    updated: 'BE-487',
-    files: ['lib/trips/story.ts', 'lib/trips/service.ts', 'lib/trips/social.ts', 'lib/trips/reminders.ts', 'components/trips/TripEditor.tsx', 'components/trips/storyCard.ts'],
+    updated: 'BE-488',
+    files: ['lib/trips/story.ts', 'lib/trips/service.ts', 'lib/trips/social.ts', 'lib/trips/reminders.ts', 'lib/trips/suggest.ts', 'components/trips/TripEditor.tsx', 'components/trips/storyCard.ts'],
     body: (
       <List
         items={[
           `ทริปหนึ่งมีได้ ${MAX_TRIP_ITEMS} รูป แบ่งทริปย่อยตามเมืองได้ ${MAX_TRIP_LEGS} ช่วง วันไม่ซ้อนกัน อัปโหลดครั้งแรก ระบบแบ่งทริปย่อยตามเมืองในรูปให้เองเมื่อพบตั้งแต่ 2 เมือง และเจ้าของยังไม่ได้ตั้ง แก้แล้วบันทึกเอง`,
           'พิกัดในรูปถูกปัดเหลือระดับเมือง (ทศนิยม 2 ตำแหน่ง ราว 1 กม.) ไม่เก็บจุดที่ถ่ายจริง ชื่อเมืองมาจาก OpenStreetMap เจ้าของแก้ชื่อในทริปย่อยได้',
           `คนดูส่งหัวใจและคอมเมนต์ได้เฉพาะทริปที่เผยแพร่แล้ว คอมเมนต์ยาวไม่เกิน ${MAX_TRIP_COMMENT} ตัวอักษร ผ่านกฎเดียวกับคอมเมนต์โมเมนต์ (บัญชีใหม่ใส่ลิงก์หรือเบอร์ไม่ได้) คนเขียนหรือเจ้าของทริปลบได้ เจ้าของได้แจ้งเตือนทุกครั้ง`,
+          `ระบบเสนอเล่าเรื่องเอง: โพสต์โมเมนต์ที่ ${SUGGEST_MIN_PLACES} ที่ขึ้นไปในวันเดียว หรือวันเสาร์กับอาทิตย์เดียวกัน ภายใน ${SUGGEST_WINDOW_DAYS} วันที่ผ่านมา (นับวันตามเวลาไทยที่โพสต์ ที่เดียวกันนับครั้งเดียว) โมเมนต์ชุดนั้นยังไม่อยู่ในทริปไหน และวันนั้นไม่มีทริปของเจ้าตัวอยู่ หน้าแรกและมายฮับขึ้นการ์ด "วันนี้ไป 3 ที่ เล่าเป็นเรื่องไหม" กดแล้วได้ร่างพร้อมเปิดเรื่องทันที`,
+          'ทริปที่ให้ทุกคนเห็น เจ้าของเลือกได้ว่า "ระหว่างทริปเห็นเฉพาะผู้ติดตาม" (ไม่ได้เปิดเป็นค่าเริ่มต้น) คนที่ไม่ได้ติดตามเปิดไม่ได้และไม่ขึ้นในการค้นหา จนพ้นวันกลับ (เวลาไทย)',
           `เตือนระหว่างทริป: วันละครั้งหลัง ${TRIP_DAY_HOUR}:00 น. (เวลาไทย) ถ้าวันนั้นยังไม่มีรูปเข้าทริป ให้เก็บโมเมนต์ไว้`,
           `เตือนหลังทริป: วันหลังวันกลับ หลัง ${TRIP_ENDED_HOUR}:00 น. ถ้ายังเป็นร่าง ให้เลือกรูปเล่าเรื่อง ครั้งเดียวต่อทริป เฉพาะทริปที่จบไม่เกิน ${TRIP_ENDED_NUDGE_DAYS} วัน`,
           'เพลงประกอบเลือกจากคลังเพลงเดียวกับคลิป (เพลง CC0 ที่ให้ทุกคนใช้ได้) รูปลงสตอรี่ 9:16 วาดในเบราว์เซอร์จากรูปปก ชื่อทริป วัน เมือง และจำนวนโมเมนต์',
