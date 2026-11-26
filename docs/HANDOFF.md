@@ -20,6 +20,22 @@ Item template:
 
 ---
 
+### BE-482 · Challenge ideas, and challenges for me, a friend group or everyone (owner 2026-11-26)
+- **What changed:** the challenge form opens with a row of ideas (`data/challengeIdeas.ts`, 8 ideas, like the ตี้ ideas) that fill title, category, goal, steps, count, badge and dates. Step 3 asks who sees it: ส่วนตัว (only me), กลุ่มเพื่อน (anyone with the link), สาธารณะ (everyone, staff review as before). Only me and a friend group start at once: `visibility: 'private'` + `audience` in `details` (no migration), random id `my-…`, no XP, counted by posts made from the challenge page, maker joined, out of lists, search, sitemap and others' Circles, page `noindex`. Only the maker may join a `me` one. Ten private ones at a time. Details in `docs/API.md` (`POST /api/quests`).
+- **Not walked in a browser yet** (the form needs a signed-in member); the server path was tested on dev for all three choices.
+
+### BE-481 · Big lists shared through R2 instead of the database (owner 2026-11-26, egress)
+- **What changed:** the full place list (`select * from app.places`, the biggest egress), the public place list, events and challenges are read from the database once per change and kept as one gzip file per list on R2 (`lib/db/postgres/sharedSnapshot.ts`). Other servers read that file (R2 downloads are free). The file name is a keyed hash of `AUTH_SECRET`, as the bucket is public and the full list holds drafts. Measured on dev: place list 3.1 MB JSON → 0.71 MB gzip; a fresh server read it in 1.3 s instead of 3.5 s. Without R2 the old Next data cache is used. `r2Fetch` now passes the timeout signal on.
+- **What to do about it:** after deploy, compare Supabase > Usage > Egress over a few days. A local `npm run dev` keeps its database adapter across reloads (`globalThis`), so restart it to use this.
+
+### BE-480 · Prize draws removed, launch campaign rewritten, 35 challenge covers (owner 2026-11-26)
+- **What changed:** owner chose to remove every "ลุ้น" text (guaranteed rewards only since 2026-11-23). Gone: the staff draw page and API, `/campaigns/results`, claim, draw rewards (`drawEntry`, multi-entry), the iPhone and flight samples and their pictures, the winner email and notices (old notices read "ข่าวจากแคมเปญ"). Campaign and reward saves refuse ลุ้น, จับรางวัล, ชิงรางวัล, ผู้โชคดี. Campaign screens say แลกรางวัล. A campaign reward now always needs a confirmed identity and finished steps. On Postgres an empty campaign table no longer shows the seed.
+- **Launch campaign:** `launch-2569` no longer points at ended challenges: steps ลงชื่อเข้าร่วมตี้แรก, แชร์โมเมนต์ 3 ที่เที่ยว, ไปงานอีเวนต์ 2 งานในเดือนธันวาคม (found by `coverSlug`), no reward linked, ends 2026-12-31. Its published switch is kept (off on live).
+- **Covers:** Gemini's 35 WebP covers (`public/images/challenges/`, merged from `origin/tester`, reviewed) are set by `db/apply-challenge-covers.mjs`.
+- **Done on dev.** **Live (owner, in this order):** `node db/apply-challenge-covers.mjs --apply`, `node db/apply-launch-campaign.mjs --apply`, `node db/remove-prize-draws.mjs --apply` (each lists first without `--apply`; the last writes a backup to `data/.backups/`).
+
+---
+
 ### BE-479 · Source run history and auto-publish kept in the database (owner 2026-11-26)
 - **What changed:** the admin source list (on/off, last run, run history) is stored in `app.app_settings` key `data_sources` instead of `chill_database.json` (`lib/sourcesStore.ts`). Writes use a locked transaction, so parallel scrape results never drop each other. The first read starts from the bundled JSON copy.
 - **Why:** on Vercel the JSON store is per server, so after a scan on live every card still said "ยังไม่เคยสแกน" and ประวัติ was empty (owner pressed สแกน on BACC and River City). The imported events themselves already went to Postgres.

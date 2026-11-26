@@ -140,8 +140,8 @@ Problems found by the tester (Antigravity) and their fixes by Claude Code. See "
 - **Actual:** บรรทัด 86 ใช้ `const starters = quests.filter((q) => q.rule?.posts);` ทำให้เหมารวมชาเลนจ์วิ่ง ATMBKK ที่ตั้ง `posts.tagged: true` (BE-438) และชาเลนจ์ที่ต้องโพสต์มากกว่า 1 ครั้ง เข้าไปด้วย (รวม 10 ชาเลนจ์) ส่งผลให้ไม่ผ่าน 2 ข้อ: `one post at a place finishes every starter challenge taken (5/10)` และ `starter XP counts (fromQuests 310 of 1560)`
 - **Evidence:** `scripts/smoke.mjs` (บรรทัด 86, 102–105) — ผลรัน `npm run smoke` บน `a970630`: `26 passed, 2 failed`
   - **Re-test (2026-11-24 on `9c40f7e` หลัง `BE-456` + `BE-463`):** 2 ข้อเดิม (`one post at a place finishes every starter challenge taken` และ `starter XP counts`) ผ่านแล้ว แต่หลังลงชุด 35 ชาเลนจ์ (`BE-463`) ที่ใส่ `posts.tagged: true` ให้ 3 ใน 5 ชาเลนจ์เริ่มต้น ทำให้ `scripts/smoke.mjs` บรรทัด 87 (`five starter challenges exist`, เช็ก `starters.length >= 5`) ไม่ผ่านแทน (`2 found; run node db/seed-starter-quests.mjs`) — ผลรวม `26 passed, 1 failed`
-- **Status:** Open
-- **Fix:** `scripts/smoke.mjs` counts as starters only challenges with `rule.posts`, no `posts.tagged` and `count` 1 (BE-456)
+- **Status:** Ready to re-test
+- **Fix:** `scripts/smoke.mjs` counts as starters only challenges with `rule.posts`, no `posts.tagged` and `count` 1 (BE-456). The re-test ran an older copy: the current check needs at least 1 untagged starter (`starter challenges a post finishes exist`), and a tagged starter is taken too and must stay open after an ordinary post. Re-test on the current `origin/claude`.
 
 ### TR-036 · `SongBadge` (`SongSheet`): กด "ฟังเพลง" แล้วหยุดหรือปิดหน้าต่างระหว่างโหลด เพลงจะเริ่มเล่นค้างในพื้นหลัง และไม่เรียก `unlock()` ในจังหวะแตะ
 - **Severity:** Medium

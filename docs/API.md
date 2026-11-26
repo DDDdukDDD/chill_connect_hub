@@ -653,6 +653,8 @@ Response `201`: `{ success, spot, message }`.
 Body: `{ title, category: 'heal'|'move'|'chill'|'learn', objective, steps: string[], total: 1-100, badgeLabel, startDate, endDate (YYYY-MM-DD), verificationMethod?, image? }`.
 Saved as `status: 'draft'`, `isOfficial: false`, `rewardPoints: 0`, with `createdByMemberId`. Staff set points and rewards and publish it from the admin challenge manager. Same error codes as above (`429` at five waiting).
 
+_2026-11-26 (BE-482):_ optional `audience: 'me' | 'friends'` (absent = public, as above). Those start at once with no staff review: `status: 'active'`, `visibility: 'private'` (left out of lists, search, the sitemap and others' Circles; the page is `noindex`), `audience` kept, `rewardPoints: 0`, `rule: { targetTypes: [], count: total, posts: { tagged: true } }` (posts made from the challenge's page), a random id `my-…` (shared by link only) and the maker joined. Needs only `guardCreator` (confirmed email), not the organizer phone check. 429 at ten private ones not ended. `POST /api/quests/join` answers 403 to anyone but the maker on `audience: 'me'`. The answer's `message` is "สร้างชาเลนจ์แล้ว" ("ส่งให้ทีมงานตรวจแล้ว" for public). Ideas that fill the form: `data/challengeIdeas.ts`.
+
 ### `GET /api/quests?mine=1` — challenges the signed-in member proposed (any state)
 
 ---
@@ -796,20 +798,12 @@ Deleting an account removes the member's marks. `GET /api/auth/member/account` (
 ## Campaigns for members (added 2026-11-04, BE-247)
 
 ### `GET /api/campaigns/mine`
-`{ success, campaigns: MyCampaign[] }`, newest first; a guest gets an empty list. `MyCampaign` = `{ campaign: CampaignView, enrolledAt }` (`lib/campaigns/types.ts`); `CampaignView` is a `Campaign` plus `steps: [{ id, title, image?, total, rewardPoints }]`. Lists what the member joined while it runs, and after the end only one whose prize they redeemed, until `drawEntry.drawDate`. Redeeming a campaign's prize counts as joining.
+`{ success, campaigns: MyCampaign[] }`, newest first; a guest gets an empty list. `MyCampaign` = `{ campaign: CampaignView, enrolledAt }` (`lib/campaigns/types.ts`); `CampaignView` is a `Campaign` plus `steps: [{ id, title, image?, total, rewardPoints }]`. Lists what the member joined while it runs. Redeeming a campaign's reward counts as joining.
 
-### `POST /api/campaigns/mine` — `{ campaignId, action?: 'leave' | 'claim' }`
+### `POST /api/campaigns/mine` — `{ campaignId, action?: 'leave' }`
 Signed-in, active member, same origin; 30 per hour. Joining also joins its step challenges (one that has ended is skipped) and twice changes nothing; 404 unknown, 409 not running. Leaving keeps the challenges; 409 once its prize is redeemed. Answers with the same list.
 
-`claim` (BE-250): the member's announced win moves to `claimed`; 404 no win, 409 past `claimBy`, and a second time changes nothing. `MyCampaign` also carries `resultsOut?: boolean` and `win?: { status: 'pending' | 'claimed' | 'confirmed' | 'forfeited', code, claimBy? }`, the latter only once announced. An entry holder's campaign stays listed until 30 days after the results; a winner's while `pending` or `claimed`.
-
-### `GET /api/admin/campaigns/draws` (`members.manage`)
-`{ success, campaigns: DrawCampaign[] }` (`lib/campaigns/types.ts`): every campaign whose prize is a draw, with entries that can be drawn, `refusal` (why not today) and winners with contact details.
-
-### `POST /api/admin/campaigns/draws` (`members.manage` and `content.edit`)
-`{ action: 'draw', campaignId }` draws until the prize count stands; 409 with the reason when it may not. `{ action: 'announce', campaignId }` publishes and notifies; 409 with nobody waiting. `{ action: 'confirm' | 'forfeit', winnerId, campaignId }` settles a winner: `confirm` only from `claimed`, `forfeit` from `pending` or `claimed`; 409 otherwise.
-
-The public result is the page `/campaigns/results` (server HTML, in the sitemap): entry code and masked name only.
+_2026-11-26 (BE-480):_ prize draws are gone (owner 2026-11-23: guaranteed rewards only, Gambling Act). Removed: `claim`, `MyCampaign.resultsOut`/`win`, `/api/admin/campaigns/draws`, the page `/campaigns/results` (404) and `RewardShopItem.drawEntry`. Saving a campaign or reward whose words say ลุ้น, จับรางวัล, ชิงรางวัล or ผู้โชคดี answers 400. `app.campaign_winners` rows stay for data export and account deletion only (`lib/campaigns/winners.ts`).
 
 Any page opens the popup with `?campaign=ID`. Home and `/challenges` read `homeCampaigns()` on the server: live, `showOnHome`, latest start first, at most 10.
 
@@ -818,15 +812,15 @@ Any page opens the popup with `?campaign=ID`. Home and `/challenges` read `homeC
 A member's points are no longer kept in the browser. The balance is what the member earned from visits and finished challenges (see "Visits") minus what they spent on rewards. Only the spending is stored (`data/redemptions.json`, gitignored). Code: `lib/social/rewardsLedger.ts`. Client hook: `useMyRewards(isLoggedIn)` in `lib/useMyRewards.ts`.
 
 ### `GET /api/rewards/catalog` — the catalog (added 2026-11-16, BE-391)
-`{ success, rewards: RewardShopItem[] }`, the same for everyone, CDN-cached 60 s. Staff edit it in the admin console (`lib/rewards/catalog.ts`, `app.rewards`); `data/rewardsData.ts` is only the no-database catalog: on Postgres an empty table means no rewards (since BE-462, 2026-11-24). Hidden rewards are in the list with `hidden: true` so a member's redeemed one still reads; shop lists leave them out. Client hook: `useRewardCatalog(initial?)`. `CampaignView.prize` carries a campaign's reward, so campaign UI needs no catalog. A draw's `drawEntry` is `{ drawLabel, prizeCount, drawDate?, maxPerMember?, perDay? }` (absent `maxPerMember` = 1; absent `perDay` = no daily limit); `entryRulesOf(item)` in `data/rewardsData.ts` reads it.
+`{ success, rewards: RewardShopItem[] }`, the same for everyone, CDN-cached 60 s. Staff edit it in the admin console (`lib/rewards/catalog.ts`, `app.rewards`); `data/rewardsData.ts` is only the no-database catalog: on Postgres an empty table means no rewards (since BE-462, 2026-11-24). Hidden rewards are in the list with `hidden: true` so a member's redeemed one still reads; shop lists leave them out. Client hook: `useRewardCatalog(initial?)`. `CampaignView.prize` carries a campaign's reward, so campaign UI needs no catalog.
 
 ### `GET /api/rewards` — the signed-in member
 `{ success, points: { earned, fromVisits, fromQuests, spent, balance }, quests: [{ questId, title, current, total, completed, joined, rewardPoints }], joinedQuestIds, redeemedRewardIds, redemptions: [{ rewardId, cost, createdAt }] }`. Signed out: `requiresLogin: true`, zeros and empty lists. A new member starts at 0.
 
 ### `POST /api/rewards` — `{ rewardId }`
-Refused before the balance check when the reward belongs to a campaign: 409 no campaign with it is running; 403 a draw entry without a confirmed identity (email or social sign-in); 409 a draw entry whose running campaign still has unfinished steps; 404 a `campaignOnly` reward with no campaign. Rewards outside a campaign are unchanged.
+Refused before the balance check when the reward belongs to a campaign: 409 no campaign with it is running; 403 without a confirmed identity (email or social sign-in); 409 while its running campaign still has unfinished steps; 404 a `campaignOnly` reward with no campaign. Rewards outside a campaign are unchanged.
 
-Redeems a reward of the catalog (`lib/rewards/catalog.ts`). A voucher once per member. _2026-11-16 (BE-391):_ a draw up to `drawEntry.maxPerMember` entries per member and `drawEntry.perDay` a Bangkok day, each paid in full; `redemptions[]` lists every entry (newest first) while `redeemedRewardIds` lists each reward once. Extra 409s: "คุณแลกครบ N สิทธิ์แล้ว", "วันนี้แลกครบ N สิทธิ์แล้ว…". The draw picks among all entries (more entries, more chances) but one member wins at most one prize; `GET /campaigns/results` winners carry `entries`. A hidden reward answers 404. _2026-10-25 (BE-132):_ a catalog item with `drawEntry: { drawLabel, prizeCount }` is a prize-draw entry: `redemptions[]` carries `code` (`CC-XXXXXX`, the member's own entry code; `null` for vouchers, which use the catalog `voucherCode`). `/rewards?reward=ID` opens a reward. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
+Redeems a reward of the catalog (`lib/rewards/catalog.ts`). Each reward once per member (draws with several entries and their own codes were removed 2026-11-26, BE-480); the code to show is the catalog `voucherCode`. A hidden reward answers 404. `/rewards?reward=ID` opens a reward. The answer has the same fields as the GET. Errors: 400 not enough points (the message says how many more), 404 unknown reward, 409 already redeemed, 401 signed out, 429 more than 20 an hour.
 
 ### Joining a challenge — `POST /api/quests/join` (added 2026-10-13, BE-043)
 XP from visits: a host check-in 50, a moment that passed 30; "มาที่นี่แล้ว" and a moment still waiting for staff earn 0 (BE-249).
