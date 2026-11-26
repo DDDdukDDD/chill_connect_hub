@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
 import { DayOfWeek, EventItem } from '@/data/mockData';
 // From masterHub, not spotsData: importing spotsData ships its ~400 KB of sample places to the browser
@@ -21,6 +22,7 @@ import { SUBMISSION_SENT_EVENT } from './MySubmissions';
 import { CreateStepGuide } from './CreateStepGuide';
 import { CoverPreview } from './CoverPreview';
 import type { TeeIdea } from '@/data/teeIdeas';
+import { CHALLENGE_IDEAS, type ChallengeIdea } from '@/data/challengeIdeas';
 import { CategoryIconComponent, fairCategoryIcon, meetupCategoryIcon, placeTypeIcon } from './icons/CategoryIcons';
 import { RichTextEditor, renderDescriptionContent, stripHtmlToPlainText } from './RichTextEditor';
 
@@ -178,6 +180,8 @@ const initialForm = (type: CreationEntityType, seed: Seed) => ({
   badgeLabel: '',
   rewardPoints: 100,
   questRuleMode: 'posts_with_place' as 'posts_with_place' | 'posts_any' | 'visits',
+  // Who a member's challenge is for (owner 2026-11-26): only me and a friend group start at once, public waits for staff
+  audience: 'friends' as 'me' | 'friends' | 'public',
 });
 type Form = ReturnType<typeof initialForm>;
 type Errors = Partial<Record<keyof Form, string>>;
@@ -544,6 +548,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const [type, setType] = useState<CreationEntityType | null>(startType);
   const [step, setStep] = useState(0);
+  const router = useRouter();
   const [form, setForm] = useState<Form>(() => initialForm(startType ?? 'community', seed));
   const [errors, setErrors] = useState<Errors>({});
   const [restored, setRestored] = useState(false);
@@ -826,7 +831,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
         : type === 'spot'
           ? { url: '/api/spots', body: spotBody }
           : type === 'challenge'
-            ? { url: '/api/quests', body: { title: form.title, category: form.category, image: form.image, objective: form.objective, steps: questSteps, total: form.total, verificationMethod: form.verificationMethod, startDate: form.startDate, endDate: form.endDate, badgeLabel: form.badgeLabel } }
+            ? { url: '/api/quests', body: { title: form.title, category: form.category, image: form.image, objective: form.objective, steps: questSteps, total: form.total, verificationMethod: form.verificationMethod, startDate: form.startDate, endDate: form.endDate, badgeLabel: form.badgeLabel, audience: form.audience } }
             : { url: '/api/events', body: { eventData: eventPayload() } };
       const res = await fetch(request.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body) });
       const data = await res.json().catch(() => null);
@@ -842,6 +847,13 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
       if (adminMode) {
         onAdminCreated?.(type === 'challenge' ? `สร้างแบบร่าง "${form.title.trim()}" แล้ว` : `สร้าง "${form.title.trim()}" และเผยแพร่แล้ว`);
         onClose();
+        return;
+      }
+      // A challenge for me or a friend group starts at once: go to its page, where it is shared and posted from
+      if (type === 'challenge' && data.quest && data.quest.status !== 'draft') {
+        window.dispatchEvent(new Event(SUBMISSION_SENT_EVENT));
+        onClose();
+        router.push(`/challenges/${encodeURIComponent(data.quest.id)}`);
         return;
       }
       // Waiting for staff: its page is not public yet, so the form says so instead of handing the page a link that 404s
@@ -1047,6 +1059,68 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
     </Field>
   );
 
+  /** Fills the challenge form from an idea; the member still picks who sees it and can change everything */
+  const pickChallengeIdea = (idea: ChallengeIdea) => {
+    setForm((prev) => ({
+      ...prev,
+      title: idea.title,
+      category: idea.category as Category,
+      objective: idea.objective,
+      steps: [...idea.steps],
+      total: idea.total,
+      badgeLabel: idea.badgeLabel,
+      startDate: isoDay(0),
+      endDate: isoDay(idea.days),
+    }));
+    setErrors({});
+  };
+  const challengeIdeaRow = (
+    <section aria-labelledby={id('challenge-ideas')}>
+      <h3 id={id('challenge-ideas')} className="text-sm font-bold text-slate-900">ไม่รู้จะตั้งชาเลนจ์อะไร เริ่มจากไอเดียนี้ได้เลย</h3>
+      <p className="mt-0.5 text-xs text-slate-600">กดไอเดียที่ชอบ ฟอร์มจะกรอกไว้ให้ แก้ได้ทุกช่อง</p>
+      <ul className="mt-2 flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+        {CHALLENGE_IDEAS.map((idea) => (
+          <li key={idea.id} className="shrink-0 w-[168px]">
+            <button
+              type="button"
+              onClick={() => pickChallengeIdea(idea)}
+              aria-pressed={form.title === idea.title}
+              className={`w-full h-full text-left rounded-2xl p-3 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${form.title === idea.title ? 'bg-[#FFE9DC] ring-1 ring-[#F26430]' : 'bg-[#FFF4EE] hover:bg-[#FFE9DC]'}`}
+            >
+              <span className="block text-sm font-bold leading-snug text-slate-900 line-clamp-2">{idea.title}</span>
+              <span className="mt-1 block text-xs text-slate-600 tabular-nums">{idea.hint}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+  const AUDIENCES: { id: Form['audience']; label: string; note: string }[] = [
+    { id: 'me', label: 'ส่วนตัว', note: 'เห็นเฉพาะคุณ เริ่มได้ทันที' },
+    { id: 'friends', label: 'กลุ่มเพื่อน', note: 'ชวนเพื่อนด้วยลิงก์ เริ่มได้ทันที' },
+    { id: 'public', label: 'สาธารณะ', note: 'ทุกคนเห็น ทีมงานตรวจก่อนขึ้น' },
+  ];
+  const audienceField = (
+    <Field label="ใครเห็นชาเลนจ์นี้" htmlFor={id('audience-friends')}>
+      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="ใครเห็นชาเลนจ์นี้">
+        {AUDIENCES.map((option) => (
+          <button
+            key={option.id}
+            id={id(`audience-${option.id}`)}
+            type="button"
+            role="radio"
+            aria-checked={form.audience === option.id}
+            onClick={() => set('audience', option.id)}
+            className={`min-h-16 rounded-2xl border p-2.5 text-left cursor-pointer transition-colors ${form.audience === option.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
+          >
+            <span className="block text-sm font-bold text-slate-900">{option.label}</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-slate-600">{option.note}</span>
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+
   /* ---------- the steps of each type ---------- */
   const renderStep = () => {
     if (!type) return null;
@@ -1056,6 +1130,7 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
           {type === 'community' && titleField('ชื่อตี้', 'เช่น วิ่งเช้าสวนเบญจกิติ')}
           {type === 'fair' && titleField('ชื่องาน', 'เช่น สัปดาห์หนังสือแห่งชาติ ครั้งที่ 54')}
           {type === 'spot' && titleField('ชื่อสถานที่', 'เช่น ไร่ชาลุงเดช')}
+          {type === 'challenge' && !adminMode && challengeIdeaRow}
           {type === 'challenge' && titleField('ชื่อชาเลนจ์', 'เช่น ตะลุย 3 คาเฟ่ย่านอารีย์')}
           {imageField}
           {type === 'community' && categoryField}
@@ -1352,9 +1427,14 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
               </Field>
             </div>
           ) : (
-            <p className="text-xs font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
-              คะแนนและรางวัลของชาเลนจ์ ทีมงานเป็นผู้กำหนดตอนตรวจ เพื่อให้ทุกชาเลนจ์ใช้เกณฑ์เดียวกัน
-            </p>
+            <>
+              {audienceField}
+              <p className="text-xs font-medium text-slate-600 leading-relaxed p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                {form.audience === 'public'
+                  ? 'คะแนนและรางวัลของชาเลนจ์ ทีมงานเป็นผู้กำหนดตอนตรวจ เพื่อให้ทุกชาเลนจ์ใช้เกณฑ์เดียวกัน'
+                  : 'ชาเลนจ์ส่วนตัวและกลุ่มเพื่อนไม่มี XP ไม่ขึ้นในรายการหรือการค้นหา นับเมื่อโพสต์จากหน้าชาเลนจ์นี้ ทำครบได้เหรียญของชาเลนจ์'}
+              </p>
+            </>
           )}
         </>
       );

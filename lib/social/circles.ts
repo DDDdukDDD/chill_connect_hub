@@ -98,16 +98,16 @@ export const forgetCircles = () => cacheManager.invalidateTag('achievements');
 
 /** Finishes and challenge-line posts into Circles, dropping challenges that are drafts or gone */
 async function toRaw(finishes: { memberId: string; questId: string; finishedAt: string }[], steps: Awaited<ReturnType<typeof momentRepository.recentAchievements>>): Promise<Raw[]> {
-  // A post's line counts only while its challenge can be seen (not a draft), under the challenge's own id
+  // A post's line counts only while its challenge can be seen (not a draft, not kept to its maker), under the challenge's own id
   const live = new Map<string, { id: string; title: string; image?: string }>();
   for (const id of new Set(steps.map((s) => s.achievement.questId))) {
     const quest = await findQuest(id);
-    if (quest && quest.status !== 'draft') live.set(id, { id: quest.id, title: quest.title, image: questPicture(quest) });
+    if (quest && quest.status !== 'draft' && quest.audience !== 'me') live.set(id, { id: quest.id, title: quest.title, image: questPicture(quest) });
   }
   const titles = new Map<string, { id: string; title: string; image?: string }>();
   for (const id of new Set(finishes.map((f) => f.questId))) {
     const quest = await db.findQuestById(id);
-    if (quest && quest.status !== 'draft') titles.set(id, { id, title: quest.title, image: questPicture(quest) });
+    if (quest && quest.status !== 'draft' && quest.audience !== 'me') titles.set(id, { id, title: quest.title, image: questPicture(quest) });
   }
   return [
     ...finishes.flatMap((f): Raw[] =>
@@ -188,8 +188,8 @@ async function hotChallenges(readerId: string, skipPerson: (id: string) => boole
   for (const [questId, people] of ranked) {
     if (hot.length >= CIRCLES_HOT_MAX) break;
     const quest = await db.findQuestById(questId);
-    // Only one the reader can still join
-    if (!quest || quest.status === 'ended' || quest.status === 'draft') continue;
+    // Only one the reader can still find and join (a member's own private challenge is shared by link only)
+    if (!quest || quest.status === 'ended' || quest.status === 'draft' || quest.visibility === 'private') continue;
     const joined = await questMemberStore.joins({ questId }).catch(() => []);
     hot.push({ questId, total: Math.max((quest.participantsCount ?? 0) + joined.length, people.size), people: [...people.values()].sort((a, b) => b.at.localeCompare(a.at)) });
   }

@@ -40,6 +40,8 @@ export const joinCounts = (): Promise<Map<string, number>> => questMemberStore.j
 export async function joinQuest(memberId: string, questId: string): Promise<void> {
   const quest = await db.findQuestById(questId);
   if (!quest || quest.status === 'draft') throw new QuestJoinError('ไม่พบชาเลนจ์นี้', 404);
+  // A challenge someone keeps for themselves is joined only by its maker
+  if (quest.audience === 'me' && quest.createdByMemberId !== memberId) throw new QuestJoinError('ชาเลนจ์นี้เป็นชาเลนจ์ส่วนตัว', 403);
   if (quest.status === 'ended') throw new QuestJoinError('ชาเลนจ์นี้จบไปแล้ว ลองดูชาเลนจ์อื่นที่ยังเปิดอยู่นะ', 409);
   await questMemberStore.join(memberId, questId);
 }

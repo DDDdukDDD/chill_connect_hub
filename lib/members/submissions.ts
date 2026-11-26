@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import type { ChallengeQuest } from '@/data/mockData';
 import { questCategoryId } from '@/data/masterHub';
 import { getMasterData } from '../masterDataStore';
@@ -10,6 +11,7 @@ import { isGoogleMapsUrl, resolveMapCoordinates } from '../mapLinks';
 import { coordinatesMapUrl, defaultSpotCategoryLabel, SPOT_CATEGORY_OPTIONS } from '../spotCategories';
 import { guardMemberText } from '../social/textRules';
 import { MemberAuthError } from './accounts';
+import { joinQuest } from '../social/questJoins';
 import { organizerNeeds, trustLevel, verifyFirstMessage } from './trust';
 import type { Member } from './types';
 
@@ -123,8 +125,18 @@ export async function suggestSpot(member: Member, input: Record<string, unknown>
   });
 }
 
+/** How many private challenges (only me or a friend group) one member may run at once */
+const MAX_PRIVATE_RUNNING = 10;
+
+/**
+ * A member's challenge (owner 2026-11-26): `audience` public goes to staff review as before (staff set XP and the
+ * counting rule); `me` and `friends` start at once, unlisted and without XP, and count posts made from the
+ * challenge's own page. Those can be shared only by link, so the id is random instead of a time.
+ */
 export async function proposeQuest(member: Member, input: Record<string, unknown>): Promise<ChallengeQuest> {
-  guardOrganizer(member);
+  const audience = input.audience === 'me' || input.audience === 'friends' ? input.audience : null;
+  if (audience) guardCreator(member);
+  else guardOrganizer(member);
   const title = text(input.title, 100);
   const objective = text(input.objective, 600);
   const badgeLabel = text(input.badgeLabel, 40);
@@ -143,6 +155,41 @@ export async function proposeQuest(member: Member, input: Record<string, unknown
   const dateError = getQuestDateError(startIso, endIso);
   if (dateError) throw new MemberAuthError(dateError, 400);
   await guardMemberText(member, `${title} ${objective} ${steps.join(' ')}`, 'เสนอชาเลนจ์');
+
+  if (audience) {
+    const running = (await questsProposedBy(member.id)).filter((quest) => quest.visibility === 'private' && quest.status !== 'ended');
+    if (running.length >= MAX_PRIVATE_RUNNING) throw new MemberAuthError(`มีชาเลนจ์ส่วนตัวที่ยังไม่จบ ${MAX_PRIVATE_RUNNING} รายการแล้ว รอให้จบก่อนแล้วค่อยสร้างเพิ่มนะ`, 429);
+    const quest = await db.createQuest({
+      id: `my-${randomBytes(9).toString('base64url')}`,
+      title,
+      category: category as ChallengeQuest['category'],
+      iconName: 'Zap',
+      badgeLabel,
+      targetGoal: objective,
+      objective,
+      steps,
+      total: String(total),
+      current: '0',
+      progressPercent: 0,
+      completedCountInfo: `0/${total}`,
+      visibility: 'private',
+      audience,
+      status: 'active',
+      rule: { targetTypes: [], count: total, posts: { tagged: true } },
+      creatorName: member.displayName,
+      creatorAvatar: member.avatarUrl,
+      participantsCount: 0,
+      rewardPoints: 0,
+      isOfficial: false,
+      startDate: formatThaiDateBE(startIso),
+      endDate: formatThaiDateBE(endIso),
+      image: image(input.image) || undefined,
+      createdByMemberId: member.id,
+    });
+    // The maker takes part in their own challenge from the start
+    await joinQuest(member.id, quest.id).catch(() => undefined);
+    return quest;
+  }
 
   const mine = await questsProposedBy(member.id);
   if (mine.filter((quest) => quest.status === 'draft' && !quest.reviewRejectedAt).length >= MAX_WAITING) {

@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     const body: unknown = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') return NextResponse.json({ success: false, message: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
     const quest = await proposeQuest(member, body as Record<string, unknown>);
-    return NextResponse.json({ success: true, quest, message: 'ส่งให้ทีมงานตรวจแล้ว' }, { status: 201 });
+    return NextResponse.json({ success: true, quest, message: quest.status === 'draft' ? 'ส่งให้ทีมงานตรวจแล้ว' : 'สร้างชาเลนจ์แล้ว' }, { status: 201 });
   } catch (error) {
     if (error instanceof MemberAuthError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
     console.error('Error in member submission POST:', error);
