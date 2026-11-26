@@ -405,8 +405,8 @@ const LATER_EVERY = 6;
 const LATER_UNTIL = 70;
 const PHONE_CAMPAIGN_SLOT = FIRST_SLOTS[1];
 const PEOPLE_SLOT = 2;
-/** Trip stories from friends (docs/TRIPS_PLAN.md), after the sixth post; the row hides itself while there are none */
-const TRIPS_SLOT = 5;
+/** Trip stories, people one follows first (docs/TRIPS_PLAN.md), after the fourth post (owner 2026-11-27, was the sixth); the row hides itself while there are none */
+const TRIPS_SLOT = 3;
 // How many items one card shows, and the fewest worth a card
 const TAKE: Record<FeedCardKind, number> = { meetup: 1, challenge: 3, fair: 4, spot: 5 };
 const FEWEST: Record<FeedCardKind, number> = { meetup: 1, challenge: 2, fair: 2, spot: 2 };
