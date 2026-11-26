@@ -176,6 +176,8 @@ function MyHubContent() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   // "แชร์โมเมนต์" on an attended event opens the share form here, tied to that event
   const [shareInitial, setShareInitial] = useState<MomentComposerInitial | null>(null);
+  // The phone bar's ＋ here: which ended activity the moment is from
+  const [isMomentPickOpen, setIsMomentPickOpen] = useState(false);
   const [countedQuest, setCountedQuest] = useState<CountedQuest | null>(null);
 
   // Travel Scrapbook state & quick filters
@@ -538,6 +540,23 @@ function MyHubContent() {
     if (missedEventIds.includes(ev.id)) return 'missed';
     return 'attended';
   };
+
+  // The share form tied to an event the member went to ("แชร์โมเมนต์" on a past row, and the phone bar's ＋)
+  const momentFromEvent = (ev: EventItem): MomentComposerInitial => ({
+    target: { type: ev.eventType === 'public_venue' ? 'fair' : 'community', id: ev.id, title: ev.title, location: ev.location },
+    location: ev.location,
+    caption: ev.eventType === 'public_venue' ? `ไปมาแล้ว "${ev.title}"\n` : `แชร์ความประทับใจจากตี้ "${ev.title}"\n`,
+  });
+  // ＋ on My Hub (owner 2026-11-26): the activities that ended, newest first, the ones gone to and the ones run
+  const MOMENT_PICKS = 8;
+  const endedToShare = () =>
+    [
+      ...guestEvents.filter((ev) => !isQuestEntry(ev) && getEventAttendanceStatus(ev) === 'attended'),
+      ...activity.hosted.filter((ev) => isEventEnded(ev) && !cancelledEventIds.includes(ev.id)),
+    ]
+      .filter((ev, i, all) => all.findIndex((other) => other.id === ev.id) === i)
+      .sort((a, b) => parseEventEndDateToTimestamp(b.date) - parseEventEndDateToTimestamp(a.date))
+      .slice(0, MOMENT_PICKS);
 
   // The box at the top is for events still to run, nearest first; a finished one lives in the past list
   const hostedUpcoming = useMemo(
@@ -1763,13 +1782,7 @@ function MyHubContent() {
                           {isQuest || isCancelled || isMissed ? null : isAttended ? (
                             <button
                               type="button"
-                              onClick={() =>
-                                setShareInitial({
-                                  target: { type: ev.eventType === 'public_venue' ? 'fair' : 'community', id: ev.id, title: ev.title, location: ev.location },
-                                  location: ev.location,
-                                  caption: ev.eventType === 'public_venue' ? `ไปมาแล้ว "${ev.title}"\n` : `แชร์ความประทับใจจากตี้ "${ev.title}"\n`,
-                                })
-                              }
+                              onClick={() => setShareInitial(momentFromEvent(ev))}
                               className={`${rowBtn} cursor-pointer`}
                             >
                               <Camera className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2023,6 +2036,16 @@ function MyHubContent() {
           }}
         />
 
+        {isMomentPickOpen && (
+          <MomentFromEndedDialog
+            events={endedToShare()}
+            onPick={(ev) => {
+              setIsMomentPickOpen(false);
+              setShareInitial(ev ? momentFromEvent(ev) : {});
+            }}
+            onClose={() => setIsMomentPickOpen(false)}
+          />
+        )}
         {shareInitial && (
           <MomentComposer
             initial={shareInitial}
@@ -2486,6 +2509,7 @@ function MyHubContent() {
       <MobileNav
         activeTab={activeNavTab}
         setActiveTab={setActiveNavTab}
+        compose={{ label: 'แชร์โมเมนต์จากกิจกรรมที่ไปมา', onOpen: () => setIsMomentPickOpen(true) }}
       />
 
       {/* ============================================================= */}
@@ -2731,6 +2755,41 @@ function HubLoading() {
       </div>
       <ScheduleLoading />
     </div>
+  );
+}
+
+/**
+ * The phone bar's ＋ on My Hub (owner 2026-11-26): pick the ended activity the moment is from, so the post is tied to
+ * it (and counts where a challenge asks for it). A moment from somewhere else stays one tap away.
+ */
+function MomentFromEndedDialog({ events, onPick, onClose }: { events: EventItem[]; onPick: (ev: EventItem | null) => void; onClose: () => void }) {
+  return (
+    <DialogShell onClose={onClose} title="แชร์โมเมนต์" subtitle="เลือกกิจกรรมที่ไปมา แล้วเล่าให้เพื่อนๆ ฟัง" size="sm" focusField={false}>
+      {events.length === 0 ? (
+        <p className="bg-slate-50/80 rounded-2xl p-4 border border-dashed border-slate-200 text-center text-sm text-slate-600">ยังไม่มีกิจกรรมที่จบไปแล้ว</p>
+      ) : (
+        <ul className="-mx-2">
+          {events.map((ev) => (
+            <li key={ev.id}>
+              <button type="button" onClick={() => onPick(ev)} className="w-full flex items-center gap-3 rounded-2xl px-2 py-2 text-left hover:bg-slate-50 cursor-pointer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ev.image || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80'} alt="" className="w-12 h-12 shrink-0 rounded-xl object-cover bg-slate-100" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-slate-900 truncate">{ev.title}</span>
+                  <span className="block text-xs text-slate-500 truncate">{[ev.eventType === 'public_venue' ? 'อีเวนต์' : 'ตี้', thaiShortDate(ev.date)].filter(Boolean).join(' · ')}</span>
+                </span>
+                <Camera className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-5 flex justify-center">
+        <button type="button" onClick={() => onPick(null)} className={dialogButton.quiet}>
+          โพสต์โมเมนต์อื่น
+        </button>
+      </div>
+    </DialogShell>
   );
 }
 

@@ -53,15 +53,24 @@ const TARGETS = MOMENT_TARGETS;
  * Four tabs (owner 2026-11-13: ยอดฮิต out, ล่าสุด and ของฉัน in from the ⋯), plus saved posts behind the bookmark
  * next to them (FEED_PLAN step 1: สำหรับคุณ comes first)
  */
-// Three modes since 2026-11-26 (owner): สำหรับคุณ · ค้นพบ · ติดตาม. ค้นพบ is the /moments photo grid inside Home; ล่าสุด
-// left (ติดตาม is newest first), ของฉัน and saved posts moved to the profile's tabs. 'all', 'saved' and 'mine' stay as
-// views the API knows, for links and code that still name them
+// Three modes since 2026-11-26 (owner): สำหรับคุณ · โมเมนต์ · ติดตาม. โมเมนต์ (was ค้นพบ, renamed by the owner the same
+// day; the view id stays 'discover') is the /moments photo grid inside Home; ล่าสุด left (ติดตาม is newest first),
+// ของฉัน and saved posts moved to the profile's tabs. 'all', 'saved' and 'mine' stay as views the API knows, for links
+// and code that still name them
 export type FeedView = 'foryou' | 'discover' | 'all' | 'following' | 'saved' | 'mine';
 const TABS: [FeedView, string][] = [
   ['foryou', 'สำหรับคุณ'],
-  ['discover', 'ค้นพบ'],
+  ['discover', 'โมเมนต์'],
   ['following', 'ติดตาม'],
 ];
+
+/** Where a mode was left (owner 2026-11-26): its list, and the post at the top of the screen with its distance from the top */
+interface ModeSpot {
+  list?: { moments: FeedItem[]; page: number; cursor?: string; hasMore: boolean };
+  scrollY: number;
+  anchorId?: string;
+  anchorTop?: number;
+}
 /** The grid mode: its own list (HomeDiscoverGrid), not the feed's */
 const isGrid = (view: FeedView) => view === 'discover';
 const PERSONAL: Partial<Record<FeedView, string>> = { saved: 'โมเมนต์ที่บันทึก' };
@@ -653,15 +662,27 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
   const [circlesVersion, setCirclesVersion] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
   const modesAnchor = useRef<HTMLDivElement>(null);
-  // Picked while the row is stuck far down: the page goes back to where the row belongs, so the new list starts at its top
-  const pickMode = (view: FeedView) => {
-    setSort(view);
-    const anchor = modesAnchor.current;
-    if (!anchor) return;
-    const top = anchor.getBoundingClientRect().top;
-    // 72 px: about the height of the top bar, which comes back on the way up
-    if (top < 0) window.scrollTo({ top: Math.max(0, top + window.scrollY - 72), behavior: 'instant' });
-  };
+  const modesRow = useRef<HTMLDivElement>(null);
+  // Each mode keeps its list and its place while the member switches between them (owner 2026-11-26): back on a mode,
+  // the post that was at the top of the screen is there again, at the same height
+  // State, not a ref: the lists go back into state when a mode is picked again (React Compiler keeps the feed optimised)
+  const [modeSpots, setModeSpots] = useState<Partial<Record<FeedView, ModeSpot>>>({});
+  const pendingSpot = useRef<ModeSpot | null>(null);
+  // The โมเมนต์ grid stays mounted (hidden) once opened, so its cards and their order are still there on the way back
+  const [gridOpened, setGridOpened] = useState(isGrid(sort));
+  const showGrid = gridOpened || isGrid(sort);
+  useEffect(() => {
+    if (isGrid(sort)) setGridOpened(true);
+  }, [sort]);
+  // After the mode's list is on screen: its top post back where it was, else the same scroll height
+  useLayoutEffect(() => {
+    const spot = pendingSpot.current;
+    if (!spot) return;
+    pendingSpot.current = null;
+    const post = spot.anchorId ? [...(topRef.current?.querySelectorAll<HTMLElement>('[data-seen-id]') ?? [])].find((el) => el.dataset.seenId === spot.anchorId && el.getBoundingClientRect().height > 0) : undefined;
+    const top = post && spot.anchorTop !== undefined ? post.getBoundingClientRect().top + window.scrollY - spot.anchorTop : spot.scrollY;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+  }, [sort]);
   // What was looked at goes out when the feed leaves the page (another page in the app is not a page close)
   useEffect(() => flushSeen, []);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -782,6 +803,45 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       .finally(() => setIsLoadingMore(false));
   }, [isLoadingMore, hasMore, fetchPage, sort, page, cursor]);
 
+  /** The first post whose bottom shows below the stuck modes row, and how far from the top of the screen it starts */
+  const readSpot = (): ModeSpot => {
+    const below = modesRow.current?.getBoundingClientRect().bottom ?? 0;
+    const posts = topRef.current?.querySelectorAll<HTMLElement>('[data-seen-id]') ?? [];
+    for (const post of posts) {
+      const box = post.getBoundingClientRect();
+      // A hidden mode's posts measure 0 × 0
+      if (box.height > 0 && box.bottom > below) return { scrollY: window.scrollY, anchorId: post.dataset.seenId, anchorTop: box.top };
+    }
+    return { scrollY: window.scrollY };
+  };
+  const pickMode = (view: FeedView) => {
+    if (view === sort) return;
+    const leaving: ModeSpot = { ...readSpot(), list: !isGrid(sort) && loadedView === sort ? { moments, page, cursor, hasMore } : undefined };
+    setModeSpots((spots) => ({ ...spots, [sort]: leaving }));
+    const back = modeSpots[view];
+    if (back?.list) {
+      // Its list as it was left, with no fetch; หน้าหลัก tapped again refreshes it
+      fetchedView.current = view;
+      setMoments(back.list.moments);
+      setPage(back.list.page);
+      setCursor(back.list.cursor);
+      setHasMore(back.list.hasMore);
+      setNewCount(0);
+      setLoadedView(view);
+    }
+    setSort(view);
+    if (back && (back.list || isGrid(view))) {
+      pendingSpot.current = back;
+      return;
+    }
+    // A mode not opened yet: picked while the row is stuck far down, the page goes back to where the row belongs, so
+    // the new list starts at its top
+    const anchor = modesAnchor.current;
+    if (!anchor) return;
+    const top = anchor.getBoundingClientRect().top;
+    // 72 px: about the height of the top bar, which comes back on the way up
+    if (top < 0) window.scrollTo({ top: Math.max(0, top + window.scrollY - 72), behavior: 'instant' });
+  };
   // The next page loads about three posts before the end, so a quick thumb never meets the bottom of the list (or the footer jumping away under it)
   useEffect(() => {
     const target = sentinelRef.current;
@@ -1057,7 +1117,7 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
       <div ref={modesAnchor} aria-hidden="true" />
       {/* The modes stay in reach while reading down (owner 2026-11-26): stuck under the top bar, and in its place while it
           is away (html[data-header-tucked], Navbar). White edge to edge on phones, where the photos run full width */}
-      <div className="sticky z-30 -mx-4 px-4 sm:mx-0 sm:px-0 bg-white transition-[top] duration-300 top-[calc(env(safe-area-inset-top)+4rem)] sm:top-[calc(env(safe-area-inset-top)+4.25rem)] max-xl:[html[data-header-tucked]_&]:top-[env(safe-area-inset-top)] flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div ref={modesRow} className="sticky z-30 -mx-4 px-4 sm:mx-0 sm:px-0 bg-white transition-[top] duration-300 top-[calc(env(safe-area-inset-top)+4rem)] sm:top-[calc(env(safe-area-inset-top)+4.25rem)] max-xl:[html[data-header-tucked]_&]:top-[env(safe-area-inset-top)] flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="sr-only shrink-0 whitespace-nowrap text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">โมเมนต์จากเพื่อนๆ</h2>
         {PERSONAL[sort] ? (
           <button
@@ -1132,9 +1192,12 @@ export function HomeMomentFeed({ avatar, name, top, view: sort, onViewChange: se
         </div>
       )}
 
-      {isGrid(sort) ? (
-        <HomeDiscoverGrid onToast={showToast} />
-      ) : loadedView !== sort ? (
+      {showGrid && (
+        <div hidden={!isGrid(sort)}>
+          <HomeDiscoverGrid onToast={showToast} />
+        </div>
+      )}
+      {isGrid(sort) ? null : loadedView !== sort ? (
         <div className="space-y-6 pt-5" aria-hidden="true">
           {[0, 1].map((i) => (
             <div key={i} className="space-y-3">
