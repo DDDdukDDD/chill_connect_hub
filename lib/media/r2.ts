@@ -27,7 +27,7 @@ export async function r2Fetch(config: R2Config, url: string, init: RequestInit =
   // Signed first, then sent with the body itself: aws4fetch's own fetch passes a Request, whose body Next.js sends as
   // a stream without Content-Length, and R2 answers 411 Length Required
   const signed = await r2Client(config).sign(url, init);
-  return fetch(signed.url, { method: signed.method, headers: signed.headers, body: init.body, cache: 'no-store' });
+  return fetch(signed.url, { method: signed.method, headers: signed.headers, body: init.body, cache: 'no-store', signal: init.signal });
 }
 
 /**
