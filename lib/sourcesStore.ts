@@ -1,4 +1,5 @@
 import { readDatabase, updateDatabase } from './db/databaseFile';
+import { sql, USE_POSTGRES } from './db/postgres/client';
 
 export type SourceTargetType = 'events' | 'spots';
 export type SourceRunStatus = 'success' | 'partial' | 'failed';
@@ -242,13 +243,42 @@ export const DEFAULT_DATA_SOURCES: EventDataSource[] = [
 // In-memory cache for sources
 let SOURCES_CACHE: EventDataSource[] | null = null;
 
+/**
+ * The source list (on/off, last run, run history) lives in app.app_settings when there is a database (BE-479):
+ * the JSON store is per server on Vercel, so a scan's result vanished and every card said "ยังไม่เคยสแกน".
+ * The first read starts from the bundled JSON copy, so history from before the move carries over.
+ */
+const SOURCES_SETTING_KEY = 'data_sources';
+
+async function readStoredSources(): Promise<EventDataSource[] | undefined> {
+  if (!USE_POSTGRES) return (await readDatabase()).sources;
+  const [row] = await sql()`select value from app.app_settings where key = ${SOURCES_SETTING_KEY}`;
+  return row ? (row.value as EventDataSource[]) : (await readDatabase()).sources;
+}
+
+/** Locked read-change-write, so parallel scrape results never drop each other's run */
+async function updateStoredSources(change: (sources: EventDataSource[] | undefined) => EventDataSource[]): Promise<EventDataSource[]> {
+  if (!USE_POSTGRES) {
+    const saved = await updateDatabase((data) => { data.sources = change(data.sources); });
+    return saved.sources || [];
+  }
+  const seed = (await readDatabase()).sources ?? DEFAULT_DATA_SOURCES;
+  return sql().begin(async (tx) => {
+    await tx`insert into app.app_settings (key, value) values (${SOURCES_SETTING_KEY}, ${sql().json(seed as never)}) on conflict (key) do nothing`;
+    const [row] = await tx`select value from app.app_settings where key = ${SOURCES_SETTING_KEY} for update`;
+    const next = change(row?.value as EventDataSource[] | undefined);
+    await tx`update app.app_settings set value = ${sql().json(next as never)}, updated_at = now() where key = ${SOURCES_SETTING_KEY}`;
+    return next;
+  });
+}
+
 export async function getAllDataSources(): Promise<EventDataSource[]> {
-  const db = await readDatabase();
+  const stored = await readStoredSources();
   let hasChanges = false;
 
   let merged: EventDataSource[] = [];
-  if (db.sources && db.sources.length > 0) {
-    merged = db.sources.map((storedSrc) => {
+  if (stored && stored.length > 0) {
+    merged = stored.map((storedSrc) => {
       const def = DEFAULT_DATA_SOURCES.find((d) => d.id === storedSrc.id);
       const normalized = {
         ...storedSrc,
@@ -294,9 +324,7 @@ export async function getAllDataSources(): Promise<EventDataSource[]> {
 
   SOURCES_CACHE = merged;
   if (hasChanges) {
-    await updateDatabase((data) => {
-      data.sources = merged;
-    });
+    await updateStoredSources(() => merged);
   }
 
   return SOURCES_CACHE;
@@ -308,10 +336,7 @@ export async function getAllDataSources(): Promise<EventDataSource[]> {
  */
 async function mutateSources(change: (sources: EventDataSource[]) => EventDataSource[]): Promise<EventDataSource[]> {
   await getAllDataSources(); // make sure defaults are merged and stored first
-  const saved = await updateDatabase((data) => {
-    data.sources = change(data.sources && data.sources.length > 0 ? data.sources : DEFAULT_DATA_SOURCES);
-  });
-  SOURCES_CACHE = saved.sources || [];
+  SOURCES_CACHE = await updateStoredSources((sources) => change(sources && sources.length > 0 ? sources : DEFAULT_DATA_SOURCES));
   return SOURCES_CACHE;
 }
 
