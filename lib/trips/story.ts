@@ -47,6 +47,10 @@ export interface TripView {
   coverItemId?: string;
   /** Sub-trips by city the author set, in order */
   legs: TripLeg[];
+  /** The trip this one was planned from ("ไปตามรอย"), while it can still be seen */
+  follows?: { id: string; title: string; authorName: string };
+  /** Members who planned a trip after this one */
+  followedCount: number;
   items: TripItemView[];
   publishedAt?: string;
   createdAt: string;
@@ -311,4 +315,23 @@ export function cleanLocalTime(value: unknown): string | null {
 export function cleanDay(value: unknown): string | null {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   return Number.isNaN(Date.parse(`${value}T00:00:00Z`)) ? null : value;
+}
+
+/**
+ * "ไปตามรอยทริปนี้": the source trip's sub-trips moved to start on `startsOn` (the author's own, else the cities its
+ * photos were grouped into), for a new trip of the same length
+ */
+export function followedLegs(source: TripView, startsOn: string): { endsOn: string; legs: Omit<TripLeg, 'id'>[] } {
+  const shift = (day: string, by: number) => {
+    const date = new Date(`${day}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + by);
+    return date.toISOString().slice(0, 10);
+  };
+  const offset = daysBetween(source.startsOn, startsOn);
+  const endsOn = shift(source.endsOn, offset);
+  const from = source.legs.length ? source.legs : tripParts(source).filter((p) => p.city).map(({ city, from: f, to }) => ({ id: '', city, from: f, to }));
+  const legs = from
+    .map((leg) => ({ city: leg.city, from: shift(leg.from, offset), to: shift(leg.to, offset) }))
+    .filter((leg) => leg.from >= startsOn && leg.to <= endsOn);
+  return { endsOn, legs };
 }

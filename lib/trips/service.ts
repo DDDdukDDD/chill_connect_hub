@@ -9,6 +9,8 @@ import { roundCoord } from './geo';
 import {
   cleanDay,
   cleanLegs,
+  followedLegs,
+  subTrip,
   cleanLocalTime,
   daysBetween,
   MAX_ITEM_CAPTION,
@@ -134,6 +136,14 @@ export async function getTrip(id: string, viewer: Member | null): Promise<TripVi
     from app.trip_items i left join app.moments mo on mo.id = i.moment_id
     where i.trip_id = ${id} ${owner ? db`` : db`and not i.hidden`}
     order by i.taken_local, i.created_at`;
+  // "ไปตามรอย": who planned a trip after this one (each member once), and the trip this one came from if it can be seen
+  const [{ followed }] = await db<{ followed: number }[]>`
+    select count(distinct author_id)::int as followed from app.trips where follows_trip_id = ${id} and status <> 'removed'`;
+  const source = row.follows_trip_id ? await tripRow(row.follows_trip_id as string) : null;
+  const sourceAuthor = source ? (await memberRepository.findByIds([source.author as string])).get(source.author as string) : undefined;
+  const follows = source && mayView(source as { status: string; visibility: string; author: string }, viewer, sourceAuthor)
+    ? { id: source.id as string, title: source.title as string, authorName: sourceAuthor?.displayName ?? 'สมาชิก' }
+    : undefined;
   return {
     id: row.id as string,
     title: row.title as string,
@@ -146,6 +156,8 @@ export async function getTrip(id: string, viewer: Member | null): Promise<TripVi
     withPeople: tagged.filter((tid) => people.get(tid)?.status !== 'banned').map((tid) => person(people.get(tid), tid)),
     ...(row.cover_item_id ? { coverItemId: row.cover_item_id as string } : {}),
     legs: (row.legs as TripView['legs']) ?? [],
+    ...(follows ? { follows } : {}),
+    followedCount: followed,
     items: items.map((r) => toItem(r, owner)),
     ...(row.published_at ? { publishedAt: iso(row.published_at) } : {}),
     createdAt: iso(row.created_at)!,
@@ -436,4 +448,33 @@ export async function setTripModeration(id: string, status: 'hidden' | 'publishe
   if (!UUID.test(id)) throw new TripError('ไม่พบทริปนี้', 404);
   const db = sql();
   await db`update app.trips set status = ${status}, updated_at = now() where id = ${id}`;
+}
+
+/**
+ * "ไปตามรอยทริปนี้" (owner 2026-11-26): a new draft trip for the member, the same length and sub-trips as the source,
+ * starting on `startsOn` (their own calendar). Planning the same trip again opens the one already made.
+ */
+export async function followTrip(member: Member, sourceId: string, startsOn: unknown, legId?: unknown): Promise<{ id: string; existing: boolean }> {
+  requireDatabase();
+  const source = await getTrip(sourceId, member);
+  if (!source || source.status !== 'published') throw new TripError('ไม่พบทริปนี้', 404);
+  if (source.isOwner) throw new TripError('นี่คือทริปของคุณเอง');
+  // One sub-trip only (its own link, "เล่นเฉพาะ…"): its days and city become the new trip
+  const plan = typeof legId === 'string' && legId ? subTrip(source, legId) : source;
+  if (!plan) throw new TripError('ไม่พบทริปย่อยนี้', 404);
+  const title = `ตามรอย ${plan.title}`.slice(0, MAX_TRIP_TITLE);
+  const start = cleanDay(startsOn);
+  if (!start) throw new TripError('เลือกวันที่จะเริ่มเดินทาง');
+  const db = sql();
+  const [mine] = await db<{ id: string }[]>`
+    select id from app.trips where follows_trip_id = ${sourceId} and author_id = ${memberRow(db, member.id)} and title = ${title} and status <> 'removed'
+    order by created_at desc limit 1`;
+  if (mine) return { id: mine.id, existing: true };
+  const { endsOn, legs } = followedLegs(plan, start);
+  const id = await createTrip(member, { title, startsOn: start, endsOn, visibility: 'public' });
+  const cleaned = cleanLegs(legs, start, endsOn);
+  await db`
+    update app.trips set follows_trip_id = ${sourceId}, legs = ${db.json((typeof cleaned === 'string' ? [] : cleaned) as unknown as postgres.JSONValue)}
+    where id = ${id}`;
+  return { id, existing: false };
 }

@@ -3,9 +3,10 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Lock, Pencil, Play, Share2, Users } from 'lucide-react';
+import { Footprints, Lock, Pencil, Play, Share2, Users } from 'lucide-react';
 import { MomentsChrome } from '@/components/moments/MomentsChrome';
 import { TripPlayer } from '@/components/trips/TripPlayer';
+import { FollowTripDialog } from '@/components/trips/FollowTripDialog';
 import { optimizedImage } from '@/lib/optimizedImage';
 import { daysBetween, itemPicture, subTrip, thaiDateRange, thaiShortDate, timeOf, tripCover, tripParts, tripPlaces, tripTag, visibleItems, type TripChapter, type TripView } from '@/lib/trips/story';
 
@@ -29,6 +30,10 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
   const close = useCallback(() => setPlaying(null), []);
   const parts = tripParts(trip);
   const playTrip = (playing?.partId && subTrip(fullTrip, playing.partId)) || trip;
+  // "ไปตามรอย": the whole trip, or one sub-trip (from its own link or after playing it)
+  const [following, setFollowing] = useState<{ legId?: string } | null>(null);
+  const canFollow = !fullTrip.isOwner && fullTrip.status === 'published';
+  const followPlan = following?.legId ? subTrip(fullTrip, following.legId) : fullTrip;
   const cover = tripCover(trip);
   const { cities } = tripPlaces(trip);
   const count = visibleItems(trip).length;
@@ -36,7 +41,13 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
 
   return (
     <MomentsChrome>
-      {({ showToast }) => (
+      {({ showToast, isLoggedIn, requireLogin }) => {
+        const startFollow = (legIdToFollow?: string) => {
+          setPlaying(null);
+          if (!isLoggedIn) requireLogin('ไปตามรอยทริปนี้');
+          else setFollowing({ legId: legIdToFollow });
+        };
+        return (
         <main className="mx-auto max-w-3xl px-4 pb-32 pt-6 sm:pt-10">
           {leg && (
             <p className="mb-4 text-sm text-slate-500">
@@ -84,6 +95,23 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
           </p>
           {cities.length > 0 && <p className="mt-1 text-sm text-slate-700">{cities.join(' → ')}</p>}
           {trip.intro && <p className="mt-4 max-w-prose text-sm leading-relaxed text-slate-700">{trip.intro}</p>}
+          {fullTrip.follows && (
+            <p className="mt-3 text-sm text-slate-500">
+              ตามรอยทริป{' '}
+              <Link href={`/trips/${fullTrip.follows.id}`} className="font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+                {fullTrip.follows.title}
+              </Link>{' '}
+              ของ {fullTrip.follows.authorName}
+            </p>
+          )}
+          {fullTrip.followedCount > 0 && (
+            <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+              <Footprints className="size-4 shrink-0 text-[#4A7C59]" aria-hidden />
+              <span>
+                <span className="font-semibold tabular-nums text-slate-900">{fullTrip.followedCount} คน</span> ไปตามรอยทริปนี้แล้ว
+              </span>
+            </p>
+          )}
 
           <div className="mt-5 flex items-center gap-3">
             <Link href={`/profile?id=${encodeURIComponent(trip.author.id)}`} className="flex min-w-0 items-center gap-2.5">
@@ -97,7 +125,7 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
             )}
           </div>
 
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             {count > 0 && (
               <button
                 type="button"
@@ -107,13 +135,23 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
                 <Play className="size-4 fill-current" aria-hidden /> เล่นเรื่อง
               </button>
             )}
+            {canFollow && (
+              <button
+                type="button"
+                onClick={() => startFollow(legId)}
+                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 active:scale-[0.98]"
+              >
+                <Footprints className="size-4" aria-hidden /> ไปตามรอย
+              </button>
+            )}
             {!draft && (
               <button
                 type="button"
-                onClick={() => shareTrip(trip, showToast)}
-                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full bg-slate-100 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                onClick={() => shareTrip(fullTrip, showToast, legId)}
+                aria-label="แชร์ทริปนี้"
+                className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
               >
-                <Share2 className="size-4" aria-hidden /> แชร์
+                <Share2 className="size-4" aria-hidden />
               </button>
             )}
           </div>
@@ -145,10 +183,14 @@ export function TripPage({ trip: fullTrip, autoplay, legId }: { trip: TripView; 
               ))}
 
           {playing && count > 0 && (
-            <TripPlayer trip={playTrip} startItemId={playing.startItemId} onClose={close} actions={draft ? {} : { onShare: () => shareTrip(fullTrip, showToast, playing.partId ?? legId) }} />
+            <TripPlayer trip={playTrip} startItemId={playing.startItemId} onClose={close} actions={draft ? {} : { onShare: () => shareTrip(fullTrip, showToast, playing.partId ?? legId), ...(canFollow ? { onFollow: () => startFollow(playing.partId ?? legId) } : {}) }} />
+          )}
+          {following && followPlan && (
+            <FollowTripDialog trip={fullTrip} plan={followPlan} legId={following.legId} onClose={() => setFollowing(null)} onToast={showToast} />
           )}
         </main>
-      )}
+        );
+      }}
     </MomentsChrome>
   );
 }
