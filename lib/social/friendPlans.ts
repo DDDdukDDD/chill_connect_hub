@@ -41,6 +41,8 @@ const MAX_DAYS_AHEAD = 365;
 const FOLLOW_UP_DAYS = 7;
 /** A plan with no day that nobody touches for this long closes by itself (owner 2026-11-12) */
 export const PLAN_QUIET_DAYS = 30;
+/** A plan whose day passed this many days ago closes by itself (owner 2026-11-26: old rooms must not pile up in My Hub) */
+export const PLAN_PAST_KEEP_DAYS = 14;
 /** "วันไหนว่าง": days ahead one can mark, and at most how many */
 export const FREE_DAYS_AHEAD = 30;
 const MAX_FREE_DAYS = 14;
@@ -741,7 +743,10 @@ export async function runPlanReminders(): Promise<{ reminded: number; followedUp
   // Plans with no day that nobody has touched for a month close by themselves, so My Hub does not fill with them
   const quiet = await friendPlanStore.quietUndated(new Date(Date.now() - PLAN_QUIET_DAYS * 86_400_000).toISOString());
   for (const plan of quiet) await friendPlanStore.update(plan.id, { status: 'cancelled', closedIdle: true });
-  return { reminded, followedUp, closedQuiet: quiet.length };
+  // Plans whose day is well past close too; who went stays recorded (went_at), so closeness and "ไปมาแล้ว" keep counting
+  const old = await friendPlanStore.pastDated(addDays(today, -PLAN_PAST_KEEP_DAYS));
+  for (const plan of old) await friendPlanStore.update(plan.id, { status: 'cancelled' });
+  return { reminded, followedUp, closedQuiet: quiet.length + old.length };
 }
 
 export const removePlansBy = (memberId: string) => friendPlanStore.removeBy(memberId);

@@ -62,6 +62,8 @@ interface FriendPlanStore {
   update(id: string, change: PlanChange): Promise<void>;
   /** Plans with a date from `from` to `to` (Thai dates), for the reminders */
   dated(from: string, to: string): Promise<FriendPlan[]>;
+  /** Plans with a day before `before` (Thai date), for closing old ones (at most 200) */
+  pastDated(before: string): Promise<FriendPlan[]>;
   /** Open plans with no day, unchanged since `before` (ISO time) */
   quietUndated(before: string): Promise<FriendPlan[]>;
   /** Replaces the days this member is free */
@@ -138,6 +140,9 @@ function jsonPlans(): FriendPlanStore {
     },
     async quietUndated(before) {
       return store.read().filter((p) => p.status === 'planning' && !p.date && (p.updatedAt ?? p.createdAt) < before);
+    },
+    async pastDated(before) {
+      return store.read().filter((p) => p.status === 'set' && p.date && p.date < before).slice(0, 200);
     },
     async setFreeDays(planId, memberId, days) {
       await store.update((items) => items.map((p) => (p.id === planId ? { ...p, freeDays: { ...(p.freeDays ?? {}), [memberId]: [...days].sort() } } : p)));
@@ -264,6 +269,11 @@ function pgPlans(): FriendPlanStore {
     async quietUndated(before) {
       const db = sql();
       const rows = await db`${select(db)} where p.status = 'planning' and p.plan_date is null and p.updated_at < ${before} limit 200`;
+      return rows.map(toPlan);
+    },
+    async pastDated(before) {
+      const db = sql();
+      const rows = await db`${select(db)} where p.status = 'set' and p.plan_date < ${before}::date limit 200`;
       return rows.map(toPlan);
     },
     async setFreeDays(planId, memberId, days) {

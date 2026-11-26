@@ -26,6 +26,8 @@ import { useMemberSession } from '@/lib/useMemberSession';
  */
 
 // Button levels (DESIGN_SYSTEM.md §4) with a visible focus ring; one PRIMARY per sheet
+/** Plans My Hub lists before "ดูทั้งหมด" */
+const PLANS_SHOWN = 5;
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2';
 const BUTTON = `rounded-full inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${FOCUS}`;
 const PRIMARY = `${BUTTON} bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold shadow-sm`;
@@ -325,7 +327,7 @@ function PlanMenu({ plan, onLeave }: { plan: PlanView; onLeave: () => void }) {
               }}
               className={`w-full px-4 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-50 cursor-pointer ${FOCUS}`}
             >
-              {plan.isHost ? 'ยกเลิกแผน' : 'ออกจากแผน'}
+              {plan.isHost ? (plan.isPast ? 'ปิดแผนนี้' : 'ยกเลิกแผน') : 'ออกจากแผน'}
             </button>
           </div>
         </>
@@ -486,7 +488,7 @@ function PlanCard({ plan, onChanged, onGone, onOpenChat, onInvite, unread = 0, o
             </button>
             <button type="button" onClick={leave} disabled={isBusy} className={`${BUTTON} h-11 bg-rose-600 hover:bg-rose-700 text-sm font-bold text-white`}>
               {isBusy && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-              {plan.isHost ? 'ยกเลิกแผน' : 'ออกจากแผน'}
+              {plan.isHost ? (plan.isPast ? 'ปิดแผนนี้' : 'ยกเลิกแผน') : 'ออกจากแผน'}
             </button>
           </div>
         </div>
@@ -576,6 +578,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   const [chatId, setChatId] = useState<string | null>(null);
   const [inviteId, setInviteId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [showAll, setShowAll] = useState(false);
   // Held in a ref: the page passes a new function each render, which must not reload the plans
   const countRef = useRef(onCount);
   useEffect(() => {
@@ -663,17 +666,35 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
   };
 
   if (plans.length === 0) return null;
+  // Answers waiting first, then what is coming, then plans with no day, past ones last; a long list folds (owner 2026-11-26)
+  const rank = (p: PlanView) => (p.isInvited ? 0 : p.isPast ? 3 : p.date ? 1 : 2);
+  const ordered = [...plans].sort((a, b) => rank(a) - rank(b));
+  const shown = showAll ? ordered : ordered.slice(0, PLANS_SHOWN);
+  const openSheet = (id: string) => {
+    setOpenId(id);
+    showInAddress(id);
+  };
   return (
     <section aria-labelledby="friend-plans-title" className="space-y-2">
-      <h2 id="friend-plans-title" className="text-base font-bold text-slate-900">แผนไปกันกับเพื่อน</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="friend-plans-title" className="text-base font-bold text-slate-900">แผนไปกันกับเพื่อน</h2>
+        {ordered.length > PLANS_SHOWN && (
+          <button type="button" onClick={() => setShowAll((v) => !v)} className="-my-2 cursor-pointer whitespace-nowrap py-2 text-xs font-bold tabular-nums text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+            {showAll ? 'ย่อ' : `ดูทั้งหมด ${ordered.length}`}
+          </button>
+        )}
+      </div>
       <ul className="divide-y divide-slate-100">
-        {plans.map((plan) => (
+        {shown.map((plan) => (
           <li key={plan.id} className="flex items-center gap-3 py-2.5">
-            <People plan={plan} max={3} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900 truncate">{verb(plan)}</p>
-              <p className={`text-[13px] truncate ${plan.isInvited ? 'font-semibold text-[#2563EB]' : 'text-slate-600'}`}>{statusLine(plan)}</p>
-            </div>
+            {/* The whole row opens the plan: its chat, the day, and leaving or calling it off, past plans too */}
+            <button type="button" onClick={() => openSheet(plan.id)} className={`min-w-0 flex-1 flex items-center gap-3 text-left cursor-pointer rounded-xl ${FOCUS}`} aria-label={`เปิดแผน ${verb(plan)}`}>
+              <People plan={plan} max={3} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-slate-900 truncate">{verb(plan)}</span>
+                <span className={`block text-[13px] truncate ${plan.isInvited ? 'font-semibold text-[#2563EB]' : 'text-slate-600'}`}>{statusLine(plan)}</span>
+              </span>
+            </button>
             {plan.isPast && !plan.wentByMe && plan.kind !== 'quest' && !plan.isInvited ? (
               <Link href={plan.postHref} className="shrink-0 h-9 px-3.5 inline-flex items-center rounded-full bg-slate-900 hover:bg-slate-800 text-[13px] font-bold text-white">
                 โพสต์โมเมนต์
@@ -681,10 +702,7 @@ export function FriendPlans({ onCount }: { onCount?: (count: number) => void }) 
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  setOpenId(plan.id);
-                  showInAddress(plan.id);
-                }}
+                onClick={() => openSheet(plan.id)}
                 className="shrink-0 h-9 px-3.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-800 cursor-pointer"
                 aria-label={unreadOf(plan) > 0 ? `${plan.isInvited ? 'ตอบคำชวน' : plan.date ? 'ดูแผน' : 'นัดวันกัน'} มีข้อความใหม่ ${unreadOf(plan)} ข้อความ` : undefined}
               >
