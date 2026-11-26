@@ -20,6 +20,17 @@ Item template:
 
 ---
 
+### BE-488 · Trips from everyday life, and "followers only during the trip" (owner 2026-11-27)
+- **What changed:**
+  - **"วันนี้ไป 3 ที่ เล่าเป็นเรื่องไหม"** (`lib/trips/suggest.ts`, `SuggestedTripCard`): a card above the home feed and in My Hub "ทริปของฉัน". It appears when a member posted moments at 3 or more places (place, event or typed location; one place counts once) on one Bangkok day, or over one Saturday and Sunday, within the last 7 days. None of those moments may already be in a trip, and no trip of theirs may cover those days.
+    - One tap makes a draft from them, titled "{first place} และอีก N ที่". Cities come from the places' provinces. It then opens `/trips/[id]/edit?play=1`, whose end screen has "เผยแพร่เลย".
+    - "ไว้ก่อน" hides that offer on the device.
+  - **"ระหว่างทริป ให้เห็นเฉพาะผู้ติดตาม"** (owner: the author decides, we only offer it; off by default): a switch under "ทุกคน" on the create screen and in the editor's details. Until the day after the last day (Bangkok), only followers see the trip and it stays out of search (`isHeld` in `mayView`, migration 0071). The owner's banner says when everyone can see it.
+  - Both rules are on /admin วิธีคิดของระบบ under "เรื่องเล่าทริป".
+- **What to do about it:**
+  - Live needs **0069, 0070 and 0071**. 0071 is on dev.
+  - Walked on dev at 390 px with 3 throwaway moments: the card shows on home and in My Hub → tap → the story opens → เผยแพร่เลย → turning the switch on gives the other account 404. Moments split across two weekdays get no card (as meant). Test moments and trips removed.
+
 ### BE-487 · Trip stories round 2: photos first, live uploads, music, story card, hearts and comments, reminders (owner 2026-11-27)
 - **What changed:**
   - **Editor** (`TripEditor.tsx`):
