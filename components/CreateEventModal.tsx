@@ -2,7 +2,7 @@
 
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building, Calendar, Check, ChevronRight, Globe, Loader2, Lock, MapPin, Plus, Target, Trash2, Upload, Users } from 'lucide-react';
 import { DayOfWeek, EventItem } from '@/data/mockData';
 // From masterHub, not spotsData: importing spotsData ships its ~400 KB of sample places to the browser
 import { MASTER_77_PROVINCES as ALL_THAI_PROVINCES } from '@/data/masterHub';
@@ -548,6 +548,8 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
 
   const [type, setType] = useState<CreationEntityType | null>(startType);
   const [step, setStep] = useState(0);
+  // Challenges from the public site ask who they are for before the form (owner 2026-11-26)
+  const [audiencePicked, setAudiencePicked] = useState(adminMode);
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => initialForm(startType ?? 'community', seed));
   const [errors, setErrors] = useState<Errors>({});
@@ -1617,6 +1619,43 @@ function CreateDialog({ onClose, initialType, initialCategory, initialLocation, 
             </p>
           )}
         </div>
+      </DialogShell>
+    );
+  }
+
+  // A member's challenge starts with who it is for (owner 2026-11-26): ส่วนตัว, ทำกับเพื่อน or สาธารณะ, then the form
+  if (type === 'challenge' && !adminMode && !audiencePicked) {
+    const choices: { id: Form['audience']; label: string; note: string; Icon: typeof Lock }[] = [
+      { id: 'me', label: 'ส่วนตัว', note: 'ทำคนเดียว เห็นเฉพาะคุณ เริ่มได้ทันที', Icon: Lock },
+      { id: 'friends', label: 'ทำกับเพื่อน', note: 'ชวนเพื่อนด้วยลิงก์ เริ่มได้ทันที', Icon: Users },
+      { id: 'public', label: 'สาธารณะ', note: 'ทุกคนเห็นและร่วมได้ ทีมงานตรวจก่อนขึ้น', Icon: Globe },
+    ];
+    return (
+      <DialogShell onClose={onClose} title="สร้างชาเลนจ์แบบไหน" size="sm" focusField={false}>
+        <p className="-mt-2 text-sm text-slate-500">เลือกก่อนว่าใครทำด้วย แล้วค่อยกรอกรายละเอียด เปลี่ยนทีหลังได้ในฟอร์ม</p>
+        <ul className="mt-4 space-y-2.5">
+          {choices.map(({ id: choice, label, note, Icon }) => (
+            <li key={choice}>
+              <button
+                type="button"
+                onClick={() => {
+                  set('audience', choice);
+                  setAudiencePicked(true);
+                }}
+                className="w-full flex items-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 text-left cursor-pointer transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#F3EEFF] text-[#7C3AED]">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-bold text-slate-900">{label}</span>
+                  <span className="mt-0.5 block text-sm text-slate-500">{note}</span>
+                </span>
+                <ArrowRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
       </DialogShell>
     );
   }
