@@ -1002,7 +1002,7 @@ function MyHubContent() {
     // Without a challenge under way there is nothing here: the XP and the way to the challenges are under the page title
     if (doingChallenges.length === 0) return null;
     return (
-      <section aria-label="กำลังทำอยู่" className={hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
+      <section aria-label="กำลังทำอยู่" className={hasMyCampaigns || isLoggedIn ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-bold text-slate-900">กำลังทำอยู่</h2>
           {/* The way into all of the member's challenges, whenever there is one (was only past two) */}
@@ -2195,7 +2195,7 @@ function MyHubContent() {
                       const when = new Date(scheduleTs(nextEvent));
                       const isFair = nextEvent.eventType === 'public_venue';
                       return (
-                        <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 || hasMyCampaigns ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
+                        <section aria-label="ถัดไปของคุณ" className={doingChallenges.length > 0 || hasMyCampaigns || isLoggedIn ? 'border-t border-slate-200/70 pt-5 mt-5' : 'border-t border-slate-200/70 pt-5 lg:border-t-0 lg:pt-0'}>
                           <h2 className="text-base font-bold text-slate-900">ถัดไปของคุณ</h2>
                           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2.5">
                             <Link href={`${isFair ? '/events' : '/community'}/${encodeURIComponent(nextEvent.id)}`} className="group flex flex-1 basis-60 min-w-0 items-center gap-3">

@@ -9,6 +9,7 @@ import { HOME_FEED_PAGE_SIZE } from '@/lib/moments/types';
 import { WEEKLY_SCRAPE_GAP_DAYS } from '@/lib/eventImportRules';
 import { ACHIEVEMENTS_ROW_MAX, ACHIEVEMENTS_WINDOW_DAYS, CIRCLES_FOLLOWING_MAX, CIRCLES_FRESH_POINTS, CIRCLES_GROUP_MIN, CIRCLES_HOT_MAX, CIRCLES_LIST_MAX, CIRCLES_OWN_MAX, CIRCLES_SUGGEST_BELOW, CIRCLE_EVENTS_KEEP_DAYS, CLOSENESS_POINTS, CLOSENESS_WINDOW_DAYS, SHARE_ASK_DAYS, FRIENDS_GOING_MAX, GROUP_CIRCLES_MAX, GROUP_CIRCLE_MIN_PEOPLE, GROUP_CIRCLE_WINDOW_DAYS, HOME_FEED_LOAD_AHEAD_PX, INVITE_MAX_FRIENDS, INVITE_SENDS_PER_HOUR, PLAN_TOGETHER_POINTS , PLACE_CLOSED_HIDE_AT } from '@/lib/social/socialRules';
 import { NEW_ACCOUNT_DAYS } from '@/lib/members/trust';
+import { MAX_TRIP_COMMENT, MAX_TRIP_ITEMS, MAX_TRIP_LEGS, TRIP_DAY_HOUR, TRIP_ENDED_HOUR, TRIP_ENDED_NUDGE_DAYS } from '@/lib/trips/story';
 import { MAX_OPEN_SPOT_TRIPS, SPOT_TRIP_EARLIEST, SPOT_TRIP_LATEST, SPOT_TRIP_MAX_PEOPLE, SPOT_TRIP_MIN_PEOPLE, SPOT_TRIP_TRANSPORT, TRIP_CANCEL_BEFORE_MS } from '@/lib/spotTripRules';
 
 /**
@@ -398,7 +399,7 @@ const TOPICS: Topic[] = [
             'คนที่ตอบผ่านลิงก์ LINE (ไม่ได้ถูกชวนในแอป) ติดตามคนชวนให้อัตโนมัติ',
             'ลิงก์ใน LINE เป็นลิงก์สั้น chillwaa.com/i/รหัส การ์ดตัวอย่างบอกว่าใครชวนไปไหน พร้อมรูปของที่นั้น รูปส่งผ่านโดเมนของเราเองที่กว้าง 1080 px เพราะบางเว็บ (เช่น Wikimedia) ไม่ให้บอทของ LINE ดึงรูป ถ้าไม่ผ่านโดเมนเรา การ์ดจะขึ้นโลโก้แทน',
             'ลิงก์จาก LINE เปิดในเบราว์เซอร์ของ LINE ซึ่ง Google ไม่ให้ล็อกอิน: ในเบราว์เซอร์ของ LINE, Facebook และ Instagram ปุ่ม Google จึงซ่อน เหลือ LINE เป็นปุ่มหลัก และบอกว่าจะใช้ Google ต้องเปิดใน Safari หรือ Chrome (ใน LINE มีลิงก์เปิดนอกแอปให้)',
-            'เพื่อนตอบ "ไม่สะดวก" ได้ คนชวนเห็นในกระดิ่ง (ไม่เด้งเตือนในมือถือ) แผนที่ยังไม่มีวันนัดและไม่มีใครแตะ 30 วัน ปิดเอง',
+            'เพื่อนตอบ "ไม่สะดวก" ได้ คนชวนเห็นในกระดิ่ง (ไม่เด้งเตือนในมือถือ) แผนที่ยังไม่มีวันนัดและไม่มีใครแตะ 30 วัน ปิดเอง แผนที่วันนัดผ่านมาแล้ว 14 วันก็ปิดเอง (ใครไปมาแล้วยังนับอยู่)',
             'ก่อนนัดวัน ทุกคนในแผนติ๊กวันที่ว่างได้ (ล่วงหน้า 30 วัน ไม่เกิน 14 วัน) แผนโชว์วันที่ว่างตรงกันมากที่สุด กดนัดได้ในครั้งเดียว',
             'ยังไม่มีบัญชีแล้วกด "ไปกัน": ขึ้นหน้าสมัครที่บอกว่าใครรอคำตอบ สมัครด้วย LINE ได้ในครั้งเดียว คำชวนติดไปกับการสมัคร สมาชิกใหม่รับแค่คำมั่นความปลอดภัย แล้วระบบตอบ "ไปกัน" ให้และเปิดแชตของแผน คำถามแนะนำตัวที่เหลือชวนตอบแบบเบาๆ ในมายฮับ ไม่บังคับ',
             'ตี้ไม่มีแผนแยก เพราะมีวัน ที่นั่ง และแชตของตี้อยู่แล้ว คำชวนบอกแค่ว่าใครชวน แล้วพาไปลงทะเบียนตี้ตามปกติ',
@@ -472,6 +473,26 @@ const TOPICS: Topic[] = [
           `เจอกันที่สถานที่เท่านั้น: ${SPOT_TRIP_TRANSPORT} ไม่มีการติดรถกัน ไม่มีช่องทางติดต่อส่วนตัว`,
           `เปิดทริปที่ยังไม่จบได้พร้อมกันไม่เกิน ${MAX_OPEN_SPOT_TRIPS} ทริปต่อคน`,
           `ถ้าคนยังไม่ครบ ${SPOT_TRIP_MIN_PEOPLE} คนก่อนเวลานัด ${TRIP_CANCEL_BEFORE_MS / 3_600_000} ชั่วโมง ทริปยกเลิกเอง และทุกคนได้แจ้งเตือน`,
+        ]}
+      />
+    ),
+  },
+  {
+    id: 'trip-stories',
+    title: 'เรื่องเล่าทริป',
+    summary: 'ทริปเล่าเป็นเรื่องเต็มจอตามวันและเมือง สร้างจากมายฮับ รูปมาจากโมเมนต์ระหว่างทริปหรือเลือกทีหลัง คนดูตอบกลับได้ และระบบเตือนให้เล่า',
+    updated: 'BE-487',
+    files: ['lib/trips/story.ts', 'lib/trips/service.ts', 'lib/trips/social.ts', 'lib/trips/reminders.ts', 'components/trips/TripEditor.tsx', 'components/trips/storyCard.ts'],
+    body: (
+      <List
+        items={[
+          `ทริปหนึ่งมีได้ ${MAX_TRIP_ITEMS} รูป แบ่งทริปย่อยตามเมืองได้ ${MAX_TRIP_LEGS} ช่วง วันไม่ซ้อนกัน อัปโหลดครั้งแรก ระบบแบ่งทริปย่อยตามเมืองในรูปให้เองเมื่อพบตั้งแต่ 2 เมือง และเจ้าของยังไม่ได้ตั้ง แก้แล้วบันทึกเอง`,
+          'พิกัดในรูปถูกปัดเหลือระดับเมือง (ทศนิยม 2 ตำแหน่ง ราว 1 กม.) ไม่เก็บจุดที่ถ่ายจริง ชื่อเมืองมาจาก OpenStreetMap เจ้าของแก้ชื่อในทริปย่อยได้',
+          `คนดูส่งหัวใจและคอมเมนต์ได้เฉพาะทริปที่เผยแพร่แล้ว คอมเมนต์ยาวไม่เกิน ${MAX_TRIP_COMMENT} ตัวอักษร ผ่านกฎเดียวกับคอมเมนต์โมเมนต์ (บัญชีใหม่ใส่ลิงก์หรือเบอร์ไม่ได้) คนเขียนหรือเจ้าของทริปลบได้ เจ้าของได้แจ้งเตือนทุกครั้ง`,
+          `เตือนระหว่างทริป: วันละครั้งหลัง ${TRIP_DAY_HOUR}:00 น. (เวลาไทย) ถ้าวันนั้นยังไม่มีรูปเข้าทริป ให้เก็บโมเมนต์ไว้`,
+          `เตือนหลังทริป: วันหลังวันกลับ หลัง ${TRIP_ENDED_HOUR}:00 น. ถ้ายังเป็นร่าง ให้เลือกรูปเล่าเรื่อง ครั้งเดียวต่อทริป เฉพาะทริปที่จบไม่เกิน ${TRIP_ENDED_NUDGE_DAYS} วัน`,
+          'เพลงประกอบเลือกจากคลังเพลงเดียวกับคลิป (เพลง CC0 ที่ให้ทุกคนใช้ได้) รูปลงสตอรี่ 9:16 วาดในเบราว์เซอร์จากรูปปก ชื่อทริป วัน เมือง และจำนวนโมเมนต์',
+          'ในฟีด แถวเรื่องเล่าทริปอยู่หลังโพสต์ที่ 4 ทริปของคนที่ติดตามขึ้นก่อน แล้วตามด้วยทริปล่าสุดของทุกคน (เผยแพร่ภายใน 60 วัน)',
         ]}
       />
     ),

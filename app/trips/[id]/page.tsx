@@ -8,7 +8,7 @@ import { absoluteUrl, metaDescription, pageMetadata, SITE_NAME } from '@/lib/sit
 import { breadcrumbJsonLd, jsonLdHtml } from '@/lib/structuredData';
 import { TripPage } from '@/components/trips/TripPage';
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ play?: string; leg?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ play?: string; leg?: string; published?: string }> };
 
 const loadTrip = cache(async (id: string) => getTrip(id, await getPageMember()));
 
@@ -73,7 +73,7 @@ export default async function TripStoryPage({ params, searchParams }: Props) {
           />
         </>
       )}
-      <TripPage trip={trip} autoplay={query.play === '1'} legId={query.leg} />
+      <TripPage trip={trip} autoplay={query.play === '1'} legId={query.leg} justPublished={query.published === '1'} />
     </>
   );
 }

@@ -71,7 +71,7 @@ export function TripCreate() {
       {() => (
         <main className="mx-auto max-w-lg px-4 pb-32 pt-8 sm:pt-12">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">เล่าทริปใหม่</h1>
-          <p className="mt-2 text-sm text-slate-500">ทริปใหญ่หรือบ่ายวันอาทิตย์ก็เล่าได้ ไปหลายเมืองแบ่งเป็นทริปย่อยได้ในขั้นถัดไป ระหว่างทริป โมเมนต์ที่โพสต์จะเข้าทริปให้เอง</p>
+          <p className="mt-2 text-sm text-slate-500">ไม่ต้องเป็นทริปใหญ่ แค่วันเสาร์ไปกิน เดินเล่น 3 ที่ ก็เล่าเป็นเรื่องได้ ไปหลายเมืองระบบแบ่งทริปย่อยให้เอง ระหว่างทริป โมเมนต์ที่โพสต์จะเข้าทริปให้เอง</p>
 
           <form onSubmit={submit} className="mt-8 space-y-6">
             <label className="block">
@@ -80,7 +80,7 @@ export function TripCreate() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={MAX_TRIP_TITLE}
-                placeholder="เช่น จีน–ฮ่องกง 10 วันกับแก๊งเดิม"
+                placeholder="เช่น เสาร์นี้ตะลุยเยาวราช หรือ จีน–ฮ่องกง 10 วัน"
                 className={`${inputClass} mt-2`}
                 autoFocus
                 required

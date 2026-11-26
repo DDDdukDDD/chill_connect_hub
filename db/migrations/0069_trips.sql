@@ -20,12 +20,15 @@ create table app.trips (
   -- Sub-trips by city (owner 2026-11-26): [{ id, city, from: 'YYYY-MM-DD', to: 'YYYY-MM-DD' }], in order, not
   -- overlapping. The author sets them; every photo belongs to the one its day falls in (lib/trips/story.ts)
   legs            jsonb not null default '[]',
+  -- "ไปตามรอยทริปนี้" (owner 2026-11-26): the trip this one was planned from; its count is how many went after it
+  follows_trip_id uuid references app.trips (id) on delete set null,
   published_at    timestamptz,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
   check (ends_on >= starts_on and ends_on - starts_on <= 60)
 );
 create index trips_author_idx on app.trips (author_id, starts_on desc);
+create index trips_follows_idx on app.trips (follows_trip_id) where follows_trip_id is not null;
 create index trips_published_idx on app.trips (published_at desc) where status = 'published';
 
 create table app.trip_items (

@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-img-element -- member photos load their phone-made small copy through optimizedImage, not the paid image optimizer */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Footprints, RotateCcw, Share2, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Footprints, Music, RotateCcw, Share2, Volume2, VolumeX, X } from 'lucide-react';
+import { DEFAULT_MUSIC_VOLUME, findTrack } from '@/lib/media/musicLibrary';
 import { optimizedImage, safeImageSrc } from '@/lib/optimizedImage';
 import {
   itemPicture,
@@ -95,6 +96,8 @@ export interface TripPlayerActions {
   /** "ไปตามรอยทริปนี้"; missing = the button is not shown */
   onFollow?: () => void;
   onShare?: () => void;
+  /** The owner's draft preview: publish from the end screen, where the choice is made */
+  onPublish?: () => void;
 }
 
 export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip: TripView; onClose: () => void; actions?: TripPlayerActions; /** Open at this photo instead of the cover */ startItemId?: string }) {
@@ -110,6 +113,10 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
   const [held, setHeld] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [muted, setMuted] = useState(true);
+  // The trip's song (owner 2026-11-27): on from the tap that opened the story; off when the browser refuses or the reader turns it off
+  const track = findTrack(trip.musicId);
+  const [musicOn, setMusicOn] = useState(true);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const holdTimer = useRef<number | null>(null);
@@ -118,7 +125,8 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
 
   const frame = frames[index];
   const isClip = frame.kind === 'item' && frame.item.kind === 'video';
-  const duration = isClip ? (clipMs ?? MAX_CLIP_MS) : DURATION[frame.kind];
+  // A sub-trip with the author's line stays longer, so the line can be read
+  const duration = isClip ? (clipMs ?? MAX_CLIP_MS) : frame.kind === 'part' && frame.part.note ? 5000 : DURATION[frame.kind];
   const paused = held || hidden || duration === 0;
   const chapterOf = frame.kind === 'item' || frame.kind === 'chapter' ? frame.chapter : null;
   const partOf = frame.kind === 'part' ? frame.part : null;
@@ -159,6 +167,15 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
     if (paused) video.pause();
     else video.play().catch(() => undefined);
   }, [paused, index]);
+
+  // The song plays under everything, quieter while a clip plays with its own sound
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = isClip && !muted ? 0.15 : DEFAULT_MUSIC_VOLUME;
+    if (held || hidden || !musicOn) audio.pause();
+    else audio.play().catch(() => setMusicOn(false));
+  }, [held, hidden, musicOn, isClip, muted]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -222,6 +239,7 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
 
   return (
     <div role="dialog" aria-modal="true" aria-label={`เรื่องเล่า: ${trip.title}`} className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
+      {track && <audio ref={audioRef} src={track.src} loop preload="auto" />}
       <style>{`
         @keyframes trip-zoom { from { transform: scale(1) } to { transform: scale(1.08) } }
         @keyframes trip-rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
@@ -285,6 +303,18 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
               <span className="text-white/75"> · {chapterOf ? `${chapterOf.label}${chapterOf.title ? ` ${chapterOf.title}` : ''}` : partOf ? partOf.city : tripTag(trip)}</span>
             </p>
             {held && <span className="text-xs text-white/75">หยุดไว้</span>}
+            {track && !isClip && (
+              <button
+                type="button"
+                onClick={() => setMusicOn((on) => !on)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                aria-label={musicOn ? 'ปิดเพลง' : 'เปิดเพลง'}
+                className="pointer-events-auto flex size-11 cursor-pointer items-center justify-center rounded-full text-white transition hover:bg-white/15"
+              >
+                {musicOn ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+              </button>
+            )}
             {isClip && (
               <button
                 type="button"
@@ -452,6 +482,12 @@ function FrameView({
           </span>
           <h2 className="trip-motion mt-3 text-3xl font-bold leading-tight tracking-tight" style={rise(80)}>{trip.title}</h2>
           <p className="trip-motion mt-2 text-sm text-white/80" style={rise(160)}>{thaiDateRange(trip.startsOn, trip.endsOn)}</p>
+          {findTrack(trip.musicId) && (
+            <p className="trip-motion mt-2 flex items-center gap-1.5 text-xs text-white/75" style={rise(180)}>
+              <Music className="size-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{findTrack(trip.musicId)!.title} · {findTrack(trip.musicId)!.artist}</span>
+            </p>
+          )}
           {trip.intro && <p className="trip-motion mt-3 max-w-prose text-sm leading-relaxed text-white/90" style={rise(200)}>{trip.intro}</p>}
           {trip.withPeople.length > 0 && (
             <div className="trip-motion mt-5 flex items-center gap-3" style={rise(240)}>
@@ -473,6 +509,7 @@ function FrameView({
           <p className="trip-motion mt-2 text-sm tabular-nums text-white/75" style={rise(160)}>
             {daysBetween(frame.part.from, frame.part.to) + 1} วัน · {frame.part.from === frame.part.to ? thaiShortDate(frame.part.from) : `${thaiShortDate(frame.part.from)} – ${thaiShortDate(frame.part.to)}`}
           </p>
+          {frame.part.note && <p className="trip-motion mt-5 max-w-sm text-lg leading-relaxed text-white" style={rise(260)}>{frame.part.note}</p>}
         </div>
       )}
 
@@ -554,6 +591,16 @@ function EndActions({ trip, actions, onReplay, onJump }: { trip: TripView; actio
         </p>
       )}
 
+      {actions.onPublish && (
+        <button
+          type="button"
+          onClick={actions.onPublish}
+          className="trip-motion mt-5 w-full cursor-pointer whitespace-nowrap rounded-full bg-[#2563EB] py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#1D4ED8] active:scale-[0.98]"
+          style={anim(440)}
+        >
+          เผยแพร่เลย
+        </button>
+      )}
       {actions.onFollow && (
         <button
           type="button"
@@ -563,7 +610,7 @@ function EndActions({ trip, actions, onReplay, onJump }: { trip: TripView; actio
           {days > 1 ? 'ไปตามรอยทริปนี้' : 'ชวนเพื่อนไปแบบนี้บ้าง'}
         </button>
       )}
-      <div className={`grid gap-3 ${actions.onShare ? 'grid-cols-2' : 'grid-cols-1'} ${actions.onFollow ? 'mt-3' : 'mt-5'}`}>
+      <div className={`grid gap-3 ${actions.onShare ? 'grid-cols-2' : 'grid-cols-1'} ${actions.onFollow || actions.onPublish ? 'mt-3' : 'mt-5'}`}>
         {actions.onShare && (
           <button type="button" onClick={actions.onShare} className="flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-white/15 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white/25">
             <Share2 className="size-4" aria-hidden /> แชร์เรื่องนี้

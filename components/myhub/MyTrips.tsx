@@ -61,8 +61,8 @@ export function MyTrips() {
             <Route className="size-5" aria-hidden />
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-slate-900 group-hover:underline">จะไปเที่ยวที่ไหน เล่าเป็นเรื่องได้</span>
-            <span className="block text-xs text-slate-500">สร้างทริปไว้ก่อนไป ระหว่างทางโพสต์โมเมนต์ แล้วรูปจะเข้าทริปเอง</span>
+            <span className="block text-sm font-semibold text-slate-900 group-hover:underline">ทริปใหญ่หรือแค่เสาร์อาทิตย์ ก็เล่าเป็นเรื่องได้</span>
+            <span className="block text-xs text-slate-500">ไปกินเดินเล่น 3 ที่ก็พอ สร้างไว้ก่อนไป หรือเลือกรูปทีหลังก็ได้</span>
           </span>
         </Link>
       ) : (

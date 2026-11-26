@@ -5,7 +5,7 @@ import { USE_POSTGRES, sql, type Sql } from '../db/postgres/client';
 import { createJsonStore } from './jsonStore';
 
 // draw_won and draw_result stay only for notices sent before prize draws were removed (2026-11-26)
-export type NotificationType = 'follow' | 'like' | 'comment' | 'reply' | 'comment_like' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result' | 'tee_changed' | 'trip_cancelled' | 'invite' | 'invite_yes' | 'invite_no' | 'friend_going' | 'plan_soon' | 'plan_after' | 'plan_together' | 'follow_along' | 'cheer';
+export type NotificationType = 'follow' | 'like' | 'comment' | 'reply' | 'comment_like' | 'tagged' | 'challenge' | 'evidence' | 'match' | 'seat' | 'question' | 'answer' | 'approved' | 'rejected' | 'joined' | 'draw_won' | 'draw_result' | 'tee_changed' | 'trip_cancelled' | 'invite' | 'invite_yes' | 'invite_no' | 'friend_going' | 'plan_soon' | 'plan_after' | 'plan_together' | 'follow_along' | 'cheer' | 'trip_like' | 'trip_comment' | 'trip_day' | 'trip_ended';
 
 export interface StoredNotification {
   id: string;
@@ -41,6 +41,8 @@ export interface NotificationMatch {
   commentId?: string;
   eventId?: string;
   questId?: string;
+  /** A trip notice's page (/trips/…), which names the trip */
+  path?: string;
 }
 
 // How long notices stay (owner 2026-11-02). A notice past these is no longer listed, and goes at the member's next new notice
@@ -75,7 +77,8 @@ const matches = (n: StoredNotification, m: NotificationMatch) =>
   (!m.momentId || n.momentId === m.momentId) &&
   (!m.commentId || n.commentId === m.commentId) &&
   (!m.eventId || n.eventId === m.eventId) &&
-  (!m.questId || n.questId === m.questId);
+  (!m.questId || n.questId === m.questId) &&
+  (!m.path || n.path === m.path);
 
 const isCurrent = (n: StoredNotification, now: number) =>
   n.read ? now - new Date(n.readAt ?? n.createdAt).getTime() < READ_KEEP_DAYS * DAY_MS : now - new Date(n.createdAt).getTime() < UNREAD_KEEP_DAYS * DAY_MS;
@@ -138,6 +141,7 @@ function matchSql(tx: Sql, m: NotificationMatch): Fragment {
   if (m.commentId) parts.push(tx`n.comment_ref = ${m.commentId}` as unknown as Fragment);
   if (m.eventId) parts.push(tx`n.event_id = (select id from app.events where slug = ${m.eventId})` as unknown as Fragment);
   if (m.questId) parts.push(tx`n.quest_id = (select id from app.quests where slug = ${m.questId})` as unknown as Fragment);
+  if (m.path) parts.push(tx`n.path = ${m.path}` as unknown as Fragment);
   return parts.reduce((all, part) => tx`${all} and ${part}` as unknown as Fragment, tx`true` as unknown as Fragment);
 }
 
