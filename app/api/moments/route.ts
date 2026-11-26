@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { addMomentToTrip } from '@/lib/trips/service';
 import { captionMentions, createMoment, withoutMentions, listMoments, loadPeople, MomentError, toFeedItem } from '@/lib/moments/service';
 import { MemberAuthError } from '@/lib/members/accounts';
 import { guardPosting } from '@/lib/members/safety';
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
   });
   return NextResponse.json({ success: true, moments, ...(requiresLogin && { requiresLogin }), pagination }, { headers: { 'Cache-Control': 'no-store' } });
 }
-// Create a moment: { caption?, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle?, questId? (the challenge the form was opened for) }
+// Create a moment: { caption?, images: string[] (from /api/upload), location?, category?, targetType?, targetId?, targetTitle?, questId? (the challenge the form was opened for), trip?: { id, takenLocal, lat?, lng? } (the trip it joins) }
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
     // The challenge line is worked out once, here (FEED_PLAN step 3.5)
     const moment = await recordAchievement(member.id, await createMoment(member, input), typeof input?.questId === 'string' ? input.questId.slice(0, 100) : undefined);
     await Promise.all((moment.taggedIds ?? []).map((id) => notify(id, member, 'tagged', moment.id)));
+    // Posted during a trip: the photos join it with the phone's time and place (docs/TRIPS_PLAN.md)
+    const trip = input?.trip as { id?: unknown; takenLocal?: unknown; lat?: unknown; lng?: unknown } | undefined;
+    if (trip && typeof trip.id === 'string') {
+      await addMomentToTrip(member, trip.id, moment, trip).catch((error) => console.error('[moments] trip add failed', error));
+    }
     // Posting at the place of a "ไปกัน" plan marks the member as having been (lib/social/friendPlans.ts)
     await notePlanVisit(member, moment).catch((error) => console.error('[moments] plan visit failed', error));
     // A post at a place, ตี้ or อีเวนต์ is a visit: credited to whoever brought the member there (docs/TRACEABILITY.md)
