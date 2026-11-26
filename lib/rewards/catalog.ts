@@ -4,10 +4,9 @@ import { cacheManager } from '../cache';
 import { campaignDay } from '../campaigns/types';
 import { USE_POSTGRES, sql } from '../db/postgres/client';
 import { createJsonStore } from '../social/jsonStore';
-import { redemptionStore } from '../social/stores';
 
 /**
- * The rewards catalog (owner 2026-11-08: staff add rewards and set the draw date in the admin console, not in code):
+ * The rewards catalog (owner 2026-11-08: staff add rewards in the admin console, not in code; guaranteed rewards only since 2026-11-23, no prize draws):
  * app.rewards, or data/rewards.json for a clone without a database. An empty store reads as the seed rows in
  * data/rewardsData.ts, so a fresh clone shows the shop without setup.
  */
@@ -42,15 +41,12 @@ function jsonCatalog(): CatalogStore {
   };
 }
 
-type DrawEntry = NonNullable<RewardShopItem['drawEntry']>;
-
 function pgCatalog(): CatalogStore {
   return {
     async all() {
       // to_jsonb: reads before and after migration 0058 (image, emoji, campaign_only), so a deploy does not wait on it
       const rows = await sql()`select to_jsonb(w) as r from app.rewards w order by w.sort_order, w.created_at`;
       return rows.map(({ r }) => {
-        const draw = r.draw_entry as DrawEntry | null;
         return {
           id: r.slug,
           title: r.title,
@@ -70,7 +66,6 @@ function pgCatalog(): CatalogStore {
           terms: r.terms ?? [],
           image: r.image ?? undefined,
           featured: r.featured,
-          drawEntry: draw ? { ...draw, drawLabel: draw.drawDate ? campaignDay(draw.drawDate) : draw.drawLabel } : undefined,
           campaignOnly: r.campaign_only,
           hidden: !r.active,
         } satisfies RewardShopItem;
@@ -91,9 +86,9 @@ function pgCatalog(): CatalogStore {
         valid_until: item.validUntilDate ?? null,
         terms: item.terms,
         featured: Boolean(item.featured),
-        draw_entry: item.drawEntry ? sql().json(item.drawEntry) : null,
+        draw_entry: null,
         active: !item.hidden,
-        partner_code: item.drawEntry ? null : item.voucherCode || null,
+        partner_code: item.voucherCode || null,
         image: item.image ?? null,
         emoji: item.emoji,
         campaign_only: Boolean(item.campaignOnly),
@@ -117,10 +112,6 @@ export async function listRewards(): Promise<RewardShopItem[]> {
 
 export const findReward = async (id: string | undefined): Promise<RewardShopItem | null> => (id ? ((await listRewards()).find((item) => item.id === id) ?? null) : null);
 
-/** A draw entry gets its own code from the redemption id; a voucher keeps the partner's code (null here) */
-export const entryCodeOf = (redemptionId: string, reward: Pick<RewardShopItem, 'drawEntry'> | null | undefined): string | null =>
-  reward?.drawEntry ? `CC-${redemptionId.replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase()}` : null;
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const whole = (value: unknown, min: number, max: number): number | null => {
@@ -140,60 +131,41 @@ export async function saveReward(input: Record<string, unknown>): Promise<Reward
   const costXp = whole(input.costXp, 1, 100_000);
   if (costXp === null) throw new RewardCatalogError('ราคา XP ต้องเป็นจำนวนเต็ม 1 ขึ้นไป');
   const discountValue = text(input.discountValue, 80);
-  if (!discountValue) throw new RewardCatalogError('ระบุว่าได้อะไร เช่น "ลด ฿50" หรือ "AirPods 1 รางวัล"');
+  if (!discountValue) throw new RewardCatalogError('ระบุว่าได้อะไร เช่น "ลด ฿50" หรือ "เครื่องดื่ม 1 แก้ว"');
   const image = text(input.image, 500);
   if (image && !/^(\/[\w\-./]+|https:\/\/\S+)$/.test(image)) throw new RewardCatalogError('รูปต้องเป็นลิงก์ https หรือไฟล์ใน /public');
   const validUntilDate = text(input.validUntilDate, 10);
   if (validUntilDate && !ISO_DATE.test(validUntilDate)) throw new RewardCatalogError('วันหมดอายุไม่ถูกต้อง');
+  // Guaranteed rewards only (owner 2026-11-23): a prize draw needs a permit under the Gambling Act
+  if (/ลุ้น|จับรางวัล|ชิงรางวัล|ผู้โชคดี/.test(`${title} ${text(input.description, 600)} ${discountValue}`)) throw new RewardCatalogError('ของรางวัลต้องแลกได้แน่นอน ห้ามใช้คำว่า "ลุ้น" หรือ "จับรางวัล"');
   const terms = (Array.isArray(input.terms) ? input.terms : typeof input.terms === 'string' ? input.terms.split('\n') : [])
     .map((line) => text(line, 200))
     .filter(Boolean)
     .slice(0, 12);
 
-  let drawEntry: DrawEntry | undefined;
-  if (input.isDraw === true) {
-    const drawDate = text(input.drawDate, 10);
-    if (!ISO_DATE.test(drawDate)) throw new RewardCatalogError('ระบุวันจับรางวัล');
-    if (validUntilDate && drawDate < validUntilDate) throw new RewardCatalogError('วันจับรางวัลต้องไม่ก่อนวันปิดแลกสิทธิ์');
-    if (/รับฟรี/.test(title)) throw new RewardCatalogError('ของรางวัลจับรางวัลต้องใช้คำว่า "ลุ้น" ไม่ใช่ "รับฟรี"');
-    const prizeCount = whole(input.prizeCount, 1, 1000);
-    if (prizeCount === null) throw new RewardCatalogError('จำนวนรางวัลต้องเป็น 1 ขึ้นไป');
-    const maxPerMember = whole(input.maxPerMember, 1, 1000);
-    if (maxPerMember === null) throw new RewardCatalogError('สิทธิ์สูงสุดต่อคนต้องเป็น 1 ขึ้นไป (1 = แลกได้ครั้งเดียว)');
-    // Blank = no daily limit (owner 2026-11-08: heavy users are the ones we want)
-    const perDay = input.perDay === '' || input.perDay === null || input.perDay === undefined ? null : whole(input.perDay, 1, 1000);
-    if (perDay === null && !(input.perDay === '' || input.perDay === null || input.perDay === undefined)) throw new RewardCatalogError('วันละกี่สิทธิ์ต้องเป็น 1 ขึ้นไป หรือเว้นว่างไว้ = ไม่จำกัด');
-    drawEntry = { drawLabel: campaignDay(drawDate), prizeCount, drawDate, maxPerMember, ...(perDay ? { perDay } : {}) };
-  }
-  // A draw's price per entry fixes the codes and the pool: once members hold entries the kind cannot flip
-  if (existing && Boolean(existing.drawEntry) !== Boolean(drawEntry) && (await redemptionStore.countOf(existing.id)) > 0) {
-    throw new RewardCatalogError('มีสมาชิกแลกของรางวัลนี้แล้ว เปลี่ยนระหว่างคูปองกับจับรางวัลไม่ได้');
-  }
-
   const item: RewardShopItem = {
     id: existing?.id ?? `reward-${randomUUID().slice(0, 8)}`,
     title,
     category: category.id,
-    categoryLabel: drawEntry ? 'ของรางวัลพิเศษ' : category.label,
+    categoryLabel: category.label,
     costXp,
     iconName: existing?.iconName ?? 'Gift',
     emoji: existing?.emoji ?? '',
     description: text(input.description, 600),
     partner: text(input.partner, 80) || 'Chillwaa',
     partnerLocation: text(input.partnerLocation, 120),
-    voucherCode: drawEntry ? '' : text(input.voucherCode, 40),
-    stockCount: drawEntry ? (drawEntry.prizeCount ?? 1) : (whole(input.stockCount, 0, 1_000_000) ?? 0),
+    voucherCode: text(input.voucherCode, 40),
+    stockCount: whole(input.stockCount, 0, 1_000_000) ?? 0,
     discountValue,
     validUntil: validUntilDate ? campaignDay(validUntilDate) : '',
     validUntilDate: validUntilDate || undefined,
     terms,
     image: image || undefined,
     featured: input.featured === true,
-    drawEntry,
     campaignOnly: input.campaignOnly === true,
     hidden: input.hidden === true,
   };
-  if (!drawEntry && !item.voucherCode) throw new RewardCatalogError('คูปองต้องมีรหัสของร้าน');
+  if (!item.voucherCode) throw new RewardCatalogError('คูปองต้องมีรหัสของร้าน');
   const index = current.findIndex((r) => r.id === item.id);
   await store.save(item, index >= 0 ? index : current.length);
   cacheManager.invalidateTags([CACHE_KEY]);

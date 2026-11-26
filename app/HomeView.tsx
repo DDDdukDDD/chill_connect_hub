@@ -474,7 +474,6 @@ function JourneyContent({ initialEvents, initialQuests, campaigns = [], signedIn
                       xp: myRewards.balance,
                       enrolled: myCampaigns.mine.some((entry) => entry.campaign.id === item.id),
                       entered: standing.entered,
-                      entries: standing.entries,
                       ready: standing.ready,
                       done: standing.done,
                       total: standing.total,

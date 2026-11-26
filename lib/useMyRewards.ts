@@ -40,17 +40,11 @@ interface RewardsState {
   joinedQuestIds: string[];
   finished: FinishedQuest[];
   redeemedRewardIds: string[];
-  /** Own codes by reward id (draw entries); other rewards use the catalog code */
-  codes: Record<string, string>;
   /** When each reward was redeemed, by reward id */
   redeemedAt: Record<string, string>;
-  /** Entries held, by reward id: a draw may be redeemed more than once (BE-391) */
-  entryCount: Record<string, number>;
-  /** Of those, redeemed today (Bangkok), for the daily limit */
-  entryToday: Record<string, number>;
 }
 
-const EMPTY: RewardsState = { isLoaded: false, balance: 0, earned: 0, spent: 0, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [], codes: {}, redeemedAt: {}, entryCount: {}, entryToday: {} };
+const EMPTY: RewardsState = { isLoaded: false, balance: 0, earned: 0, spent: 0, quests: [], joinedQuestIds: [], finished: [], redeemedRewardIds: [], redeemedAt: {} };
 
 interface RewardsAnswer {
   success: boolean;
@@ -60,16 +54,8 @@ interface RewardsAnswer {
   joinedQuestIds?: string[];
   finished?: FinishedQuest[];
   redeemedRewardIds: string[];
-  redemptions?: Array<{ rewardId: string; code?: string | null; createdAt?: string }>;
+  redemptions?: Array<{ rewardId: string; createdAt?: string }>;
 }
-
-/** Counts redemptions per reward; `since` keeps only those from that ISO time on */
-const countBy = (rows: Array<{ rewardId: string; createdAt?: string }>, since?: string) =>
-  rows.reduce<Record<string, number>>((counts, r) => {
-    if (since === undefined || (r.createdAt ?? '') >= since) counts[r.rewardId] = (counts[r.rewardId] ?? 0) + 1;
-    return counts;
-  }, {});
-const bangkokDayStart = () => new Date(`${new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10)}T00:00:00+07:00`).toISOString();
 
 const toState = (data: RewardsAnswer): RewardsState => ({
   isLoaded: true,
@@ -80,11 +66,7 @@ const toState = (data: RewardsAnswer): RewardsState => ({
   joinedQuestIds: data.joinedQuestIds ?? [],
   finished: data.finished ?? [],
   redeemedRewardIds: data.redeemedRewardIds,
-  // Newest first from the server; the newest code of each reward wins
-  codes: Object.fromEntries((data.redemptions ?? []).filter((r) => r.code).reverse().map((r) => [r.rewardId, r.code as string])),
   redeemedAt: Object.fromEntries((data.redemptions ?? []).filter((r) => r.createdAt).map((r) => [r.rewardId, r.createdAt as string])),
-  entryCount: countBy(data.redemptions ?? []),
-  entryToday: countBy(data.redemptions ?? [], bangkokDayStart()),
 });
 
 export function useMyRewards(isLoggedIn: boolean) {

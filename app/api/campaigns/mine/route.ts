@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSessionMember, isSameOrigin } from '@/lib/members/session';
 import { isRateLimited } from '@/lib/rateLimit';
-import { claimPrize } from '@/lib/campaigns/draw';
 import { CampaignError, campaignsOfMember, enrollInCampaign, leaveCampaign } from '@/lib/campaigns/store';
 
 const headers = { 'Cache-Control': 'private, no-store' };
@@ -17,7 +16,7 @@ export async function GET(request: Request) {
   }
 }
 
-// { campaignId, action?: 'leave' | 'claim' } → signs the member up and starts its step challenges, leaves, or claims a prize they won; answers with their list after the change
+// { campaignId, action?: 'leave' } → signs the member up and starts its step challenges, or leaves; answers with their list after the change
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
   const member = await getSessionMember(request);
@@ -30,8 +29,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const campaignId = typeof body.campaignId === 'string' ? body.campaignId.trim().slice(0, 60) : '';
     if (!campaignId) return NextResponse.json({ success: false, message: 'ข้อมูลไม่ถูกต้อง' }, { status: 400 });
-    if (body.action === 'claim') await claimPrize(member.id, campaignId);
-    else if (body.action === 'leave') await leaveCampaign(member.id, campaignId);
+    if (body.action === 'leave') await leaveCampaign(member.id, campaignId);
     else await enrollInCampaign(member.id, campaignId);
     return NextResponse.json({ success: true, campaigns: await campaignsOfMember(member.id) }, { headers });
   } catch (error) {

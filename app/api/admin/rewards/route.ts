@@ -3,7 +3,7 @@ import { getAdminActor, requireAdminApiAccess } from '@/lib/adminApiAuth';
 import { recordAudit } from '@/lib/auditLog';
 import { tidyDisplayName } from '@/lib/displayName';
 import { memberRepository } from '@/lib/members';
-import { RewardCatalogError, entryCodeOf, listRewards, saveReward } from '@/lib/rewards/catalog';
+import { RewardCatalogError, listRewards, saveReward } from '@/lib/rewards/catalog';
 import { redemptionStore } from '@/lib/social/stores';
 
 const RECENT_LIMIT = 100;
@@ -26,7 +26,6 @@ export async function GET(request: Request) {
       rewards: perReward.map(({ item, redemptions }) => ({
         item,
         redeemed: redemptions.length,
-        // A draw may give one member several entries (BE-391)
         members: new Set(redemptions.map((r) => r.memberId)).size,
         xpSpent: redemptions.reduce((sum, r) => sum + r.cost, 0),
       })),
@@ -40,7 +39,6 @@ export async function GET(request: Request) {
           memberName: member ? tidyDisplayName(member.displayName).trim() || member.displayName : 'บัญชีที่ลบแล้ว',
           cost: r.cost,
           createdAt: r.createdAt,
-          code: entryCodeOf(r.id, catalog.find((item) => item.id === r.rewardId)),
         };
       }),
     },

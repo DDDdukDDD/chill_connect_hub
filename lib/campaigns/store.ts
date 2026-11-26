@@ -15,8 +15,7 @@ import { wentTogether } from '../social/friends';
 import { QuestJoinError, joinQuest } from '../social/questJoins';
 import { redemptionStore } from '../social/stores';
 import { campaignMemberStore } from './members';
-import { type Campaign, type CampaignStats, type CampaignView, type MyCampaign, RESULTS_SHOWN_DAYS, bangkokToday, homeCampaignsOf, isCampaignLive } from './types';
-import { winnerStore } from './winners';
+import { type Campaign, type CampaignStats, type CampaignView, type MyCampaign, bangkokToday, homeCampaignsOf, isCampaignLive } from './types';
 
 /**
  * Campaigns: app.campaigns, or data/campaigns.json for a clone without a database. An empty store starts from the
@@ -103,7 +102,8 @@ const store: CampaignStore = USE_POSTGRES ? pgCampaigns() : jsonCampaigns();
 
 async function campaigns(): Promise<Campaign[]> {
   const items = await cacheManager.getOrSet(CACHE_KEY, () => store.all(), { ttlMs: CACHE_MS, tags: [CACHE_KEY] });
-  if (items.length) return items;
+  // On a database an empty table means no campaigns (staff removed them); only a clone without one starts from the seed
+  if (items.length || USE_POSTGRES) return items;
   const now = new Date().toISOString();
   return [{ ...LAUNCH_CAMPAIGN, createdAt: now, updatedAt: now }];
 }
@@ -140,28 +140,19 @@ export class CampaignError extends Error {
 }
 
 /**
- * The campaigns My Hub lists: joined ones while they run, and after the end only for a member holding a draw entry,
- * until the results have been out for a while (owner 2026-11-04). A winner keeps theirs until the prize is settled.
- * Redeeming the prize counts as joining: the shop has no sign-up step.
+ * The campaigns My Hub lists: joined ones while they run. Redeeming the reward counts as joining: the shop has no
+ * sign-up step. Campaigns give guaranteed rewards only (owner 2026-11-23: no prize draws).
  */
 export async function campaignsOfMember(memberId: string): Promise<MyCampaign[]> {
   const today = bangkokToday();
   const entries = await campaignMemberStore.ofMember(memberId);
   const redemptions = await redemptionStore.ofMember(memberId);
-  const announced = (await winnerStore.all()).filter((w) => w.announcedAt);
   return (await campaignViews())
     .flatMap((campaign): MyCampaign[] => {
       const redeemedAt = redemptions.find((r) => r.rewardId === campaign.rewardId)?.createdAt;
       const enrolledAt = entries.find((e) => e.campaignId === campaign.id)?.enrolledAt ?? redeemedAt;
-      if (!enrolledAt || !campaign.published) return [];
-      const rows = announced.filter((w) => w.campaignId === campaign.id);
-      const mine = rows.find((w) => w.memberId === memberId);
-      const firstOut = rows.map((w) => Date.parse(w.announcedAt as string)).sort((a, b) => a - b)[0];
-      const isDraw = Boolean(campaign.prize?.drawEntry);
-      const stillShown = firstOut === undefined || Date.now() - firstOut < RESULTS_SHOWN_DAYS * DAY;
-      const shown = isCampaignLive(campaign, today) || (redeemedAt && isDraw && stillShown) || mine?.status === 'pending' || mine?.status === 'claimed';
-      if (!shown) return [];
-      return [{ campaign, enrolledAt, resultsOut: firstOut !== undefined, win: mine && { status: mine.status, code: mine.code, claimBy: mine.claimBy, expired: mine.status === 'pending' && Boolean(mine.claimBy) && Date.parse(mine.claimBy as string) < Date.now() } }];
+      if (!enrolledAt || !campaign.published || !isCampaignLive(campaign, today)) return [];
+      return [{ campaign, enrolledAt }];
     })
     .sort((a, b) => b.enrolledAt.localeCompare(a.enrolledAt));
 }
@@ -183,6 +174,8 @@ export async function enrollInCampaign(memberId: string, campaignId: string): Pr
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** Words that promise a chance, not a reward; refused in campaign and reward texts */
+export const DRAW_WORDS = /ลุ้น|จับรางวัล|ชิงรางวัล|ผู้โชคดี/;
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const ids = (value: unknown) => (Array.isArray(value) ? [...new Set(value.filter((v): v is string => typeof v === 'string' && v.trim() !== '').map((v) => v.trim()))].slice(0, 30) : []);
 
@@ -194,7 +187,9 @@ export async function saveCampaign(input: Record<string, unknown>): Promise<Camp
   const endDate = text(input.endDate, 10);
   if (name.length < 3) throw new CampaignError('ตั้งชื่อแคมเปญอย่างน้อย 3 ตัวอักษร');
   if (headline.length < 5) throw new CampaignError('พาดหัวต้องมีอย่างน้อย 5 ตัวอักษร');
-  if (/รับ[^ ]*\s*(iphone|ไอโฟน)/i.test(headline) || /รับฟรี/.test(headline)) throw new CampaignError('แคมเปญจับรางวัลต้องใช้คำว่า "ลุ้น" ไม่ใช่ "รับฟรี"');
+  // Guaranteed rewards only (owner 2026-11-23): a prize draw or contest needs a permit under the Gambling Act
+  const words = [name, headline, input.text, input.stripText, input.cta, input.eyebrow].filter((w) => typeof w === 'string').join(' ');
+  if (DRAW_WORDS.test(words)) throw new CampaignError('แคมเปญแจกรางวัลแบบแลกได้แน่นอนเท่านั้น ห้ามใช้คำว่า "ลุ้น" หรือ "จับรางวัล"');
   if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new CampaignError('ระบุวันเริ่มและวันจบ');
   if (endDate < startDate) throw new CampaignError('วันจบต้องไม่ก่อนวันเริ่ม');
   const prizeImage = text(input.prizeImage, 500);
@@ -236,7 +231,6 @@ export async function saveCampaign(input: Record<string, unknown>): Promise<Camp
 
 export async function deleteCampaign(id: string): Promise<void> {
   if (!(await findCampaign(id))) throw new CampaignError('ไม่พบแคมเปญนี้');
-  if ((await winnerStore.all()).some((w) => w.campaignId === id)) throw new CampaignError('แคมเปญนี้จับรางวัลแล้ว เก็บไว้เป็นหลักฐาน ลบไม่ได้ ซ่อนแถบแทนได้');
   await store.remove(id, await campaigns());
   cacheManager.invalidateTags([CACHE_KEY]);
 }
@@ -245,23 +239,22 @@ export async function deleteCampaign(id: string): Promise<void> {
 export async function leaveCampaign(memberId: string, campaignId: string): Promise<void> {
   const campaign = await findCampaign(campaignId);
   if (!campaign) throw new CampaignError('ไม่พบแคมเปญนี้', 404);
-  if ((await redemptionStore.ofMember(memberId)).some((r) => r.rewardId === campaign.rewardId)) throw new CampaignError('คุณแลกสิทธิ์ลุ้นแคมเปญนี้แล้ว จึงออกไม่ได้', 409);
+  if ((await redemptionStore.ofMember(memberId)).some((r) => r.rewardId === campaign.rewardId)) throw new CampaignError('คุณแลกรางวัลของแคมเปญนี้แล้ว จึงออกไม่ได้', 409);
   await campaignMemberStore.remove(memberId, campaignId);
 }
 
-/** Why this member cannot redeem this reward now, or null. A draw needs a real person, and a campaign's prize closes with the campaign */
+/** Why this member cannot redeem this reward now, or null. A campaign's reward needs a real person who finished its steps, and closes with the campaign */
 export async function redeemRefusal(member: Member, rewardId: string): Promise<{ message: string; status: number } | null> {
   const reward = await findReward(rewardId);
   if (!reward) return null;
   const owners = (await campaigns()).filter((c) => c.rewardId === rewardId && c.published);
   if (owners.length === 0) return reward.campaignOnly ? { message: 'ไม่พบของรางวัลนี้', status: 404 } : null;
-  if (!owners.some((c) => isCampaignLive(c))) return { message: 'แคมเปญนี้ปิดแลกสิทธิ์แล้ว', status: 409 };
-  if (!reward.drawEntry) return null;
-  if (!hasConfirmedIdentity(member)) return { message: 'ยืนยันตัวตนก่อนนะ แล้วค่อยแลกสิทธิ์ลุ้น', status: 403 };
+  if (!owners.some((c) => isCampaignLive(c))) return { message: 'แคมเปญนี้ปิดแลกรางวัลแล้ว', status: 409 };
+  if (!hasConfirmedIdentity(member)) return { message: 'ยืนยันตัวตนก่อนนะ แล้วค่อยแลกรางวัล', status: 403 };
   // XP alone is not going out: marking places earns it with nothing checked (E2E 2026-11-04)
   const { quests } = await progressOf(member.id);
   const done = owners.some((c) => isCampaignLive(c) && c.questIds.every((id) => quests.some((q) => q.questId === id && q.completed && q.joined)));
-  return done ? null : { message: 'ทำชาเลนจ์ในแคมเปญให้ครบก่อน แล้วค่อยแลกสิทธิ์ลุ้นนะ', status: 409 };
+  return done ? null : { message: 'ทำชาเลนจ์ในแคมเปญให้ครบก่อน แล้วค่อยแลกรางวัลนะ', status: 409 };
 }
 
 /** What the campaign brought in; worked out from the stores on each read */

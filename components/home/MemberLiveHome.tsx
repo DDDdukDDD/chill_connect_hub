@@ -285,21 +285,14 @@ function joinedCampaigns(campaigns: Campaign[], memberOf: (campaign: Campaign) =
     .sort((a, b) => rank(a.member) - rank(b.member));
 }
 
-/** The words under a campaign circle: headlines start alike ("ออกไปใช้ชีวิต ลุ้น…"), so the prize after ลุ้น tells them apart */
-function prizeWords(headline: string): string {
-  const at = headline.lastIndexOf('ลุ้น');
-  const prize = at >= 0 ? headline.slice(at + 'ลุ้น'.length).trim() : '';
-  return prize || headline;
-}
-
 function CampaignCircles({ campaigns, campaignMemberOf, onOpenCampaign }: MemberLiveHomeProps) {
   if (!campaigns || !campaignMemberOf || !onOpenCampaign) return null;
   const joined = joinedCampaigns(campaigns, campaignMemberOf).slice(0, MAX_CAMPAIGN_CIRCLES);
   return (
     <>
       {joined.map(({ campaign, member }) => {
-        const badge = member.entered ? 'รอลุ้น' : member.ready ? 'แลกได้' : `${member.done}/${member.total}`;
-        const state = member.entered ? 'แลกสิทธิ์แล้ว รอประกาศผล' : member.ready ? 'ครบแล้ว แลกสิทธิ์ลุ้นได้' : `ทำแล้ว ${member.done} จาก ${member.total} ขั้น`;
+        const badge = member.entered ? 'แลกแล้ว' : member.ready ? 'แลกได้' : `${member.done}/${member.total}`;
+        const state = member.entered ? 'แลกรางวัลแล้ว' : member.ready ? 'ครบแล้ว แลกรางวัลได้' : `ทำแล้ว ${member.done} จาก ${member.total} ขั้น`;
         return (
           <Circle
             key={campaign.id}
@@ -311,8 +304,8 @@ function CampaignCircles({ campaigns, campaignMemberOf, onOpenCampaign }: Member
             ring={RING_MINE}
             badge={badge}
             badgeClass={BADGE_MINE}
-            // One campaign: just "แคมเปญ" (option A: prize words were cut off); two: the prize tells them apart
-            name={joined.length > 1 ? prizeWords(campaign.headline) : 'แคมเปญ'}
+            // One campaign: just "แคมเปญ" (option A: longer words were cut off); two: the headline tells them apart
+            name={joined.length > 1 ? campaign.headline : 'แคมเปญ'}
             mine
             className="lg:hidden"
           />

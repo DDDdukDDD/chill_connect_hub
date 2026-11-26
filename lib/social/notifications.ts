@@ -114,20 +114,6 @@ export async function notifyTripCancelled(memberId: string, eventId: string, tit
   await quietly(() => saveAndPush({ id: newId(), memberId, type: 'trip_cancelled', actorId: memberId, eventId, preview: title.slice(0, 160), createdAt: now() }, { memberId, eventId, types: ['trip_cancelled'] }));
 }
 
-/** The member was drawn in a campaign's prize draw; `path` opens the campaign's popup, where they claim */
-export async function notifyDrawWon(memberId: string, path: string, headline: string): Promise<void> {
-  await quietly(() => saveAndPush({ id: newId(), memberId, type: 'draw_won', actorId: memberId, path, preview: headline.slice(0, 80), createdAt: now() }));
-}
-
-/** Everyone else who held an entry: the results are out. One write, as there can be thousands */
-export async function notifyDrawResult(memberIds: string[], path: string, headline: string): Promise<void> {
-  await quietly(async () => {
-    const notice = { type: 'draw_result' as const, path, preview: headline.slice(0, 80) };
-    await notificationStore.addToMany(memberIds, notice);
-    if (pushConfigured) afterResponse(() => pushToAll(memberIds, notice));
-  });
-}
-
 /** Sent by the site itself, not by a person */
 /** The face of notifications from Chillwaa itself (the same icon push notifications show) */
 const CHILLWAA_AVATAR = '/icons/icon-192.png';
@@ -221,7 +207,7 @@ export async function notifyPlan(type: 'plan_soon' | 'plan_after' | 'plan_togeth
 }
 
 
-const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ยินดีด้วย คุณคือผู้โชคดี! กดยืนยันรับรางวัลภายใน 7 วัน', draw_result: 'ประกาศผลรางวัลแล้ว กดดูผลได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', invite: 'ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?', friend_going: 'จะไปตี้นี้ ไปด้วยกันไหม?', follow_along: 'เห็นคุณทำชาเลนจ์นี้ครบ เลยเริ่มทำตามแล้ว', cheer: 'ชื่นชมที่คุณลุยชาเลนจ์นี้ เก่งมาก!', invite_yes: 'ตอบว่าไปกัน! เปิดแชตนัดวันกันเลย', invite_no: 'รอบนี้ไม่สะดวก ไว้ชวนกันใหม่นะ', plan_soon: 'พรุ่งนี้ไปกันนะ เช็กเวลานัดในแชตอีกที', plan_after: 'ไปมาแล้วเป็นไงบ้าง? โพสต์โมเมนต์ที่นี่แล้วแท็กกันได้เลย', plan_together: 'ไปด้วยกันครบแล้ว! ได้โบนัสไปกับเพื่อน', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
+const MESSAGES: Record<NotificationType, string> = { approved: 'ทีมงานอนุมัติแล้ว กดดูได้เลย', rejected: 'ทีมงานยังอนุมัติรายการนี้ไม่ได้ กดดูได้เลย', joined: 'เข้าร่วมตี้ของคุณแล้ว',seat: 'มีที่ว่างในตี้ที่คุณต่อคิวไว้ กันที่ไว้ให้ 2 ชั่วโมง', question: 'ถามคำถามในตี้ของคุณ', answer: 'ตอบคำถามของคุณแล้ว', match: 'อยากเจอคุณอีกเหมือนกัน คุยต่อกันได้แล้ว', evidence: 'ทีมงานตรวจรูปแล้ว โมเมนต์นี้ยังไม่นับในชาเลนจ์', tagged: 'แท็กคุณในโมเมนต์', follow: 'เริ่มติดตามคุณ', like: 'ส่งหัวใจให้โมเมนต์ของคุณ', comment: 'แสดงความคิดเห็นในโมเมนต์ของคุณ', reply: 'ตอบกลับความคิดเห็นของคุณ', comment_like: 'ส่งหัวใจให้ความคิดเห็นของคุณ', challenge: 'คุณทำชาเลนจ์ครบแล้ว กดดูรางวัลได้เลย', draw_won: 'ข่าวจากแคมเปญ กดดูได้เลย', draw_result: 'ข่าวจากแคมเปญ กดดูได้เลย', tee_changed: 'เปลี่ยนวัน เวลา หรือสถานที่ของตี้ที่คุณสมัครไว้ เช็กอีกทีว่ายังไปได้ไหม', invite: 'ชวนคุณไปที่นี่ด้วยกัน ไปกันไหม?', friend_going: 'จะไปตี้นี้ ไปด้วยกันไหม?', follow_along: 'เห็นคุณทำชาเลนจ์นี้ครบ เลยเริ่มทำตามแล้ว', cheer: 'ชื่นชมที่คุณลุยชาเลนจ์นี้ เก่งมาก!', invite_yes: 'ตอบว่าไปกัน! เปิดแชตนัดวันกันเลย', invite_no: 'รอบนี้ไม่สะดวก ไว้ชวนกันใหม่นะ', plan_soon: 'พรุ่งนี้ไปกันนะ เช็กเวลานัดในแชตอีกที', plan_after: 'ไปมาแล้วเป็นไงบ้าง? โพสต์โมเมนต์ที่นี่แล้วแท็กกันได้เลย', plan_together: 'ไปด้วยกันครบแล้ว! ได้โบนัสไปกับเพื่อน', trip_cancelled: 'ทริปนี้ยกเลิกแล้ว เพราะคนยังไม่ครบ 3 คนก่อนเวลานัด 2 ชั่วโมง ไว้ชวนกันใหม่นะ' };
 // A mention in a comment travels as 'tagged' with the comment, but reads as what it is
 // "ชวนไป" reads the same verb as the page it opens (2026-11-16): ไปกัน for places, อีเวนต์ and posts, ทำด้วยกัน for a
 // challenge, ลงทะเบียนไปด้วย for a ตี้
@@ -266,16 +252,6 @@ async function pushNotice(n: StoredNotification): Promise<void> {
   if (recipient?.status !== 'active') return;
   if (!SYSTEM_TYPES.has(n.type) && (actor?.status !== 'active' || recipient.blockedIds?.includes(n.actorId))) return;
   await sendPush(devices, () => pushMessage(n, actor));
-}
-
-async function pushToAll(memberIds: string[], notice: Pick<StoredNotification, 'type' | 'preview' | 'path'>): Promise<void> {
-  const devices = await pushStore.listFor(memberIds);
-  if (devices.length === 0) return;
-  const people = await memberRepository.findByIds([...new Set(devices.map((d) => d.memberId))]);
-  await sendPush(
-    devices.filter((d) => people.get(d.memberId)?.status === 'active'),
-    (d) => pushMessage({ ...notice, id: '', memberId: d.memberId, actorId: d.memberId, createdAt: '', read: false })
-  );
 }
 
 async function saveAndPush(notice: Omit<StoredNotification, 'read' | 'readAt'>, replace?: NotificationMatch): Promise<void> {

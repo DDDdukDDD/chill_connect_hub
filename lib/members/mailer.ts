@@ -113,17 +113,3 @@ export function passwordResetEmail(name: string, url: string, minutes: number) {
     }),
   };
 }
-
-export function drawWinnerMessage(name: string, prize: string, code: string, url: string, days: number) {
-  const hello = greeting(name);
-  return {
-    subject: 'ยินดีด้วย คุณคือผู้โชคดี · Chillwaa',
-    text: `${hello}\n\nรหัสสิทธิ์ ${code} ของคุณได้รับรางวัล ${prize}\nกดยืนยันรับรางวัลภายใน ${days} วัน ไม่เช่นนั้นจะจับรางวัลใหม่:\n${url}${FOOTER_TEXT}`,
-    html: layout({
-      title: 'ยินดีด้วย คุณคือผู้โชคดี',
-      lines: [escapeHtml(hello), `รหัสสิทธิ์ <b>${escapeHtml(code)}</b> ของคุณได้รับรางวัล <b>${escapeHtml(prize)}</b>`, `กดยืนยันรับรางวัลภายใน ${days} วัน ไม่เช่นนั้นจะจับรางวัลใหม่`],
-      button: { label: 'ยืนยันรับรางวัล', url },
-      note: 'รับรางวัลได้ที่หน้าเว็บ Chillwaa เท่านั้น',
-    }),
-  };
-}

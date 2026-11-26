@@ -96,7 +96,7 @@ export function PromoBoard({ campaigns, onOpen, onOpenReward, redeemedRewardIds 
   const catalog = useRewardCatalog();
   const canRedeem = (item: RewardShopItem) => balance !== undefined && balance >= item.costXp;
   const rewards = withRewards
-    ? catalog.filter((item) => !item.hidden && !item.campaignOnly && !item.drawEntry && !redeemedRewardIds.includes(item.id))
+    ? catalog.filter((item) => !item.hidden && !item.campaignOnly && !redeemedRewardIds.includes(item.id))
         .sort((a, b) => Number(canRedeem(b)) - Number(canRedeem(a)) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
         .slice(0, REWARDS_SHOWN)
     : [];

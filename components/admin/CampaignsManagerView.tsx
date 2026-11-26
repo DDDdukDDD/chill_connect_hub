@@ -102,7 +102,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
         </>
       }
     >
-      <FormSection title="ข้อความ" hint='แคมเปญจับรางวัลต้องใช้คำว่า "ลุ้น" เสมอ ห้ามเขียน "รับฟรี"'>
+      <FormSection title="ข้อความ" hint='แจกรางวัลแบบแลกได้แน่นอนเท่านั้น ห้ามใช้คำว่า "ลุ้น" หรือ "จับรางวัล" (พ.ร.บ.การพนัน)'>
         <Field label="ชื่อแคมเปญ (ทีมงานเห็น):" htmlFor="campaign-name" wide>
           <input id="campaign-name" value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldInputClass} />
         </Field>
@@ -112,7 +112,7 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
         <Field label="คำบนปุ่ม:" htmlFor="campaign-cta">
           <input id="campaign-cta" value={form.cta} onChange={(e) => set('cta', e.target.value)} className={fieldInputClass} />
         </Field>
-        <Field label="พาดหัว:" htmlFor="campaign-headline" wide hint="เช่น แค่ออกไปใช้ชีวิต ก็ลุ้น iPhone Duo ฟรี">
+        <Field label="พาดหัว:" htmlFor="campaign-headline" wide hint="เช่น ไปตี้ครบ 3 ครั้ง รับเครื่องดื่มฟรี 1 แก้ว">
           <input id="campaign-headline" value={form.headline} onChange={(e) => set('headline', e.target.value)} className={fieldInputClass} />
         </Field>
         <Field label="บรรทัดรองบนหน้าหลัก:" htmlFor="campaign-strip" wide>
@@ -150,17 +150,10 @@ function CampaignEditor({ entry, quests, rewards, homeNow, onClose, onSaved }: {
           <select id="campaign-reward" value={form.rewardId} onChange={(e) => set('rewardId', e.target.value)} className={fieldInputClass}>
             <option value="">ไม่มี</option>
             {rewards.map((r) => (
-              <option key={r.id} value={r.id}>{r.title} · {r.costXp.toLocaleString()} XP{r.drawEntry ? ` · จับรางวัล ${r.drawEntry.drawLabel}` : ''}</option>
+              <option key={r.id} value={r.id}>{r.title} · {r.costXp.toLocaleString()} XP</option>
             ))}
           </select>
         </Field>
-        {/* The draw date and entry limits belong to the reward (one pool per reward), so they are set there */}
-        {prize?.drawEntry && (
-          <p className="sm:col-span-2 text-xs text-slate-600">
-            {prize.costXp.toLocaleString()} XP ต่อสิทธิ์ · จับรางวัล {prize.drawEntry.drawLabel} · {(prize.drawEntry.maxPerMember ?? 1) > 1 ? `สูงสุด ${prize.drawEntry.maxPerMember} สิทธิ์ต่อคน${prize.drawEntry.perDay ? ` · วันละ ${prize.drawEntry.perDay}` : ' · ไม่จำกัดต่อวัน'}` : 'คนละ 1 สิทธิ์'}
-            {' · '}<a href="/admin?m=rewards" className="font-semibold text-blue-700 underline">แก้ที่หน้าของรางวัล</a>
-          </p>
-        )}
         <div className="sm:col-span-2">
           <ImageField id="campaign-image" value={form.prizeImage ?? ''} onChange={(url) => set('prizeImage', url)} folder="campaign" />
         </div>
@@ -305,7 +298,7 @@ export function CampaignsManagerView() {
                 <Kpi label="สมัครใหม่ช่วงแคมเปญ" value={s.signups.toLocaleString()} />
                 <Kpi label="ไปตี้แรกภายใน 14 วัน" value={percent(s.firstTeeWithin14Days, s.signups)} note={`${s.firstTeeWithin14Days} จาก ${s.signups} คน`} />
                 <Kpi label="สมัครผ่านลิงก์ชวนเพื่อน" value={s.invited.toLocaleString()} note={`ไปตี้กับคนชวนแล้ว ${s.invitedActivated} คน`} />
-                <Kpi label="แลกสิทธิ์ลุ้นรางวัล" value={s.entries.toLocaleString()} />
+                <Kpi label="แลกรางวัล" value={s.entries.toLocaleString()} />
               </div>
 
               {s.quests.length > 0 && (
