@@ -20,6 +20,13 @@ Item template:
 
 ---
 
+### BE-483 · Home modes keep their place, ＋ creates what the page lists, มายฮับ in the top bar (owner 2026-11-26)
+- **What changed:**
+  - Home's modes are สำหรับคุณ · โมเมนต์ · ติดตาม (ค้นพบ renamed; the view id stays `discover`). Each mode keeps its list and its place while switching: back on a mode, the post that was at the top of the screen is there again at the same height, with no new fetch (`pickMode` in `HomeMomentFeed`; หน้าหลัก tapped again still refreshes). The โมเมนต์ grid stays mounted, hidden, once opened.
+  - The phone bar's ＋ creates what the list page shows (`CREATE_ON` in `components/MobileNav.tsx`): `/this-week` the chooser, `/community` ตี้, `/events` อีเวนต์ (the chooser for members who may not add one), `/spots` แนะนำสถานที่, `/challenges` ชาเลนจ์. On `/myhub` it lists the activities that ended (gone to or run, newest first, 8) to post a moment from, or another moment (`compose` prop, `MomentFromEndedDialog`). Detail pages and the rest still post a moment.
+  - The computer top bar has มายฮับ for members, in โมเมนต์'s place (it stays in the profile menu too).
+- **Checked in a browser** (headless Edge, phone and 1440 px, no-database mode, a new test member): back on สำหรับคุณ the same post sat at the same height, the grid at the same scroll; ＋ opened the right form on each list page, the picker on My Hub, the moment form on a place page; the top bar shows มายฮับ. Not tried: the picker with real ended activities, and posting itself (the test member had no confirmed email).
+
 ### BE-482 · Challenge ideas, and challenges for me, a friend group or everyone (owner 2026-11-26)
 - **What changed:** the challenge form opens with a row of ideas (`data/challengeIdeas.ts`, 8 ideas, like the ตี้ ideas) that fill title, category, goal, steps, count, badge and dates. Step 3 asks who sees it: ส่วนตัว (only me), กลุ่มเพื่อน (anyone with the link), สาธารณะ (everyone, staff review as before). Only me and a friend group start at once: `visibility: 'private'` + `audience` in `details` (no migration), random id `my-…`, no XP, counted by posts made from the challenge page, maker joined, out of lists, search, sitemap and others' Circles, page `noindex`. Only the maker may join a `me` one. Ten private ones at a time. Details in `docs/API.md` (`POST /api/quests`).
 - **Not walked in a browser yet** (the form needs a signed-in member); the server path was tested on dev for all three choices.

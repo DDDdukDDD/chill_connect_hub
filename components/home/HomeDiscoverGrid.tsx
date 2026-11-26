@@ -8,7 +8,7 @@ import { call } from '@/components/home/HomeMomentFeed';
 const PAGE_SIZE = 24;
 
 /**
- * Home's ค้นพบ mode (owner 2026-11-26): the /moments photo grid inside Home, so members browse new places and moments
+ * Home's โมเมนต์ mode (owner 2026-11-26, was ค้นพบ): the /moments photo grid inside Home, so members browse new places and moments
  * without leaving it. Same list as /moments ทั้งหมด (popular mixed with new). /moments stays the public page for
  * visitors and search engines.
  */
