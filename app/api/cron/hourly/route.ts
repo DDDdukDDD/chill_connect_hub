@@ -7,6 +7,7 @@ import { moveAllQueues } from '@/lib/social/waitlist';
 import { cleanMomentOrphans } from '@/lib/media/orphanCleanup';
 import { runPlanReminders } from '@/lib/social/friendPlans';
 import { rebuildCreatorDaily } from '@/lib/social/creatorDaily';
+import { runTripReminders } from '@/lib/trips/reminders';
 
 /**
  * Work that must happen at a time, not when someone opens a page. Called every hour at :07 by Vercel Cron (vercel.json,
@@ -38,6 +39,8 @@ export async function GET(request: Request) {
   await run('waitlists', () => moveAllQueues());
   // "ไปกัน" plans: the day-before reminder and the day-after question
   await run('friendPlans', () => runPlanReminders());
+  // Trip stories: "keep today's moments" during a trip, "tell the story" after it (lib/trips/reminders.ts)
+  await run('tripReminders', () => runTripReminders());
   // Once a day: moment files no post points to
   await run('momentOrphans', () => cleanMomentOrphans());
   // Admin creator numbers: today and yesterday from the action log and post views (docs/TRACEABILITY.md)

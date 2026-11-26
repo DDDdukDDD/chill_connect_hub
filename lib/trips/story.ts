@@ -51,6 +51,12 @@ export interface TripView {
   follows?: { id: string; title: string; authorName: string };
   /** Members who planned a trip after this one */
   followedCount: number;
+  /** Hearts and comments from readers (published trips) */
+  likeCount: number;
+  liked: boolean;
+  commentCount: number;
+  /** A song from lib/media/musicLibrary.ts under the story */
+  musicId?: string;
   items: TripItemView[];
   publishedAt?: string;
   createdAt: string;
@@ -65,6 +71,8 @@ export interface TripLeg {
   /** "YYYY-MM-DD", both days included */
   from: string;
   to: string;
+  /** One line about this city, shown on its opening frame ("เมืองที่เดินจนขาลาก") */
+  note?: string;
 }
 
 export interface TripChapter {
@@ -86,10 +94,19 @@ export interface TripPart {
   to: string;
   /** 1, 2, 3 … in the order of the trip */
   number: number;
+  /** The author's line about it (TripLeg.note) */
+  note?: string;
   chapters: TripChapter[];
 }
 
 export const MAX_TRIP_LEGS = 20;
+export const MAX_LEG_NOTE = 80;
+export const MAX_TRIP_COMMENT = 500;
+/** Reminders (lib/trips/reminders.ts), Bangkok hours: "keep today's moments" during a trip, "tell the story" the day after it */
+export const TRIP_DAY_HOUR = 18;
+export const TRIP_ENDED_HOUR = 10;
+/** The "tell the story" nudge only for trips that ended this many days ago or less */
+export const TRIP_ENDED_NUDGE_DAYS = 7;
 
 export interface TripStop {
   name: string;
@@ -171,7 +188,7 @@ export function tripParts(trip: Pick<TripView, 'items' | 'startsOn' | 'legs'>): 
     if (last && (leg ? last.id === leg.id : last.id.startsWith('auto-') && last.city === chapter.title)) {
       last.chapters.push(chapter);
       last.to = chapter.day;
-    } else parts.push({ id, city: leg?.city ?? chapter.title, from: leg?.from ?? chapter.day, to: leg?.to ?? chapter.day, chapters: [chapter] });
+    } else parts.push({ id, city: leg?.city ?? chapter.title, from: leg?.from ?? chapter.day, to: leg?.to ?? chapter.day, ...(leg?.note ? { note: leg.note } : {}), chapters: [chapter] });
   }
   return parts.map((part, i) => ({ ...part, number: i + 1 }));
 }
@@ -239,7 +256,7 @@ export function subTrip(trip: TripView, partId: string): TripView | null {
     intro: '',
     startsOn: part.from,
     endsOn: part.to,
-    legs: [{ id: part.id, city: part.city, from: part.from, to: part.to }],
+    legs: [{ id: part.id, city: part.city, from: part.from, to: part.to, ...(part.note ? { note: part.note } : {}) }],
     items: trip.items.filter((i) => ids.has(i.id)),
     coverItemId: trip.coverItemId && ids.has(trip.coverItemId) ? trip.coverItemId : undefined,
   };
@@ -259,7 +276,8 @@ export function cleanLegs(value: unknown, startsOn: string, endsOn: string): Tri
     if (!from || !to || to < from) return `วันของ ${city} ไม่ถูกต้อง`;
     if (from < startsOn || to > endsOn) return `วันของ ${city} ต้องอยู่ในช่วงทริป`;
     const id = typeof r.id === 'string' && /^[a-z0-9]{6,12}$/.test(r.id) ? r.id : Math.random().toString(36).slice(2, 10).padEnd(8, '0');
-    legs.push({ id, city, from, to });
+    const note = typeof r.note === 'string' ? r.note.replace(/\s+/g, ' ').trim().slice(0, MAX_LEG_NOTE) : '';
+    legs.push({ id, city, from, to, ...(note ? { note } : {}) });
   }
   legs.sort((a, b) => a.from.localeCompare(b.from));
   for (let i = 1; i < legs.length; i++) if (legs[i].from <= legs[i - 1].to) return `${legs[i - 1].city} กับ ${legs[i].city} วันซ้อนกัน`;

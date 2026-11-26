@@ -5,6 +5,7 @@ import { memberRepository } from '../members';
 import type { Member } from '../members/types';
 import { ownUploadFolder } from '../media/ownMedia';
 import { deleteMemberUploads } from '../media/cleanup';
+import { findTrack } from '../media/musicLibrary';
 import { roundCoord } from './geo';
 import {
   cleanDay,
@@ -139,6 +140,10 @@ export async function getTrip(id: string, viewer: Member | null): Promise<TripVi
   // "ไปตามรอย": who planned a trip after this one (each member once), and the trip this one came from if it can be seen
   const [{ followed }] = await db<{ followed: number }[]>`
     select count(distinct author_id)::int as followed from app.trips where follows_trip_id = ${id} and status <> 'removed'`;
+  const [social] = await db<{ likes: number; comments: number; liked: boolean }[]>`
+    select (select count(*)::int from app.trip_likes where trip_id = ${id}) as likes,
+      (select count(*)::int from app.trip_comments where trip_id = ${id}) as comments,
+      ${viewer ? db`exists (select 1 from app.trip_likes where trip_id = ${id} and member_id = ${memberRow(db, viewer.id)})` : db`false`} as liked`;
   const source = row.follows_trip_id ? await tripRow(row.follows_trip_id as string) : null;
   const sourceAuthor = source ? (await memberRepository.findByIds([source.author as string])).get(source.author as string) : undefined;
   const follows = source && mayView(source as { status: string; visibility: string; author: string }, viewer, sourceAuthor)
@@ -158,11 +163,26 @@ export async function getTrip(id: string, viewer: Member | null): Promise<TripVi
     legs: (row.legs as TripView['legs']) ?? [],
     ...(follows ? { follows } : {}),
     followedCount: followed,
+    likeCount: social.likes,
+    liked: social.liked,
+    commentCount: social.comments,
+    ...(findTrack(row.music_id as string | null) ? { musicId: row.music_id as string } : {}),
     items: items.map((r) => toItem(r, owner)),
     ...(row.published_at ? { publishedAt: iso(row.published_at) } : {}),
     createdAt: iso(row.created_at)!,
     isOwner: owner,
   };
+}
+
+/** A published trip the viewer may see, for hearts and comments (lib/trips/social.ts); null otherwise */
+export async function publishedTripFor(id: string, viewer: Member | null): Promise<{ id: string; title: string; authorId: string; authorBlocked: Set<string> } | null> {
+  if (!TRIPS_ENABLED) return null;
+  const row = await tripRow(id);
+  if (!row || row.status !== 'published') return null;
+  const author = (await memberRepository.findByIds([row.author as string])).get(row.author as string);
+  if (!mayView(row as { status: string; visibility: string; author: string }, viewer, author)) return null;
+  // The author's blocks hide those people's comments for every reader
+  return { id: row.id as string, title: row.title as string, authorId: row.author as string, authorBlocked: new Set(author?.blockedIds ?? []) };
 }
 
 async function ownTrip(member: Member, id: string): Promise<Record<string, unknown>> {
@@ -223,6 +243,10 @@ export async function updateTrip(member: Member, id: string, input: Record<strin
   if ('visibility' in input) {
     if (!VISIBILITIES.has(input.visibility as TripVisibility)) throw new TripError('เลือกว่าใครเห็นทริปนี้ได้');
     set.visibility = input.visibility;
+  }
+  if ('musicId' in input) {
+    if (input.musicId !== null && !findTrack(input.musicId as string)) throw new TripError('ไม่พบเพลงนี้');
+    set.music_id = input.musicId;
   }
   if ('coverItemId' in input) {
     const cover = typeof input.coverItemId === 'string' && UUID.test(input.coverItemId) ? input.coverItemId : null;
@@ -429,7 +453,7 @@ export async function tripsOf(authorId: string, viewer: Member | null): Promise<
   return summaries(rows, viewer);
 }
 
-/** Newest published trips the viewer may see, for the feed (people they follow first is the feed's job) */
+/** Newest published trips the viewer may see, for the feed */
 export async function recentTrips(viewer: Member | null, limit = 10): Promise<TripSummary[]> {
   if (!TRIPS_ENABLED) return [];
   const db = sql();
@@ -438,8 +462,11 @@ export async function recentTrips(viewer: Member | null, limit = 10): Promise<Tr
       coalesce((select array_agg(m.legacy_id) from app.members m where m.id = any(t.tagged_ids)), '{}') as tagged, ${summaryColumns(db)}
     from app.trips t join app.members a on a.id = t.author_id
     where t.status = 'published' and t.visibility <> 'private' and t.published_at > now() - interval '60 days'
-    order by t.published_at desc limit ${Math.min(30, limit * 2)}`;
-  return (await summaries(rows, viewer)).slice(0, limit);
+    order by t.published_at desc limit ${Math.min(45, limit * 3)}`;
+  // People the viewer follows first, then everyone, each newest first (owner 2026-11-27)
+  const following = new Set(viewer?.followingIds ?? []);
+  const list = await summaries(rows, viewer);
+  return [...list.filter((t) => following.has(t.author.id)), ...list.filter((t) => !following.has(t.author.id))].slice(0, limit);
 }
 
 /** Staff: hide or bring back a trip */
