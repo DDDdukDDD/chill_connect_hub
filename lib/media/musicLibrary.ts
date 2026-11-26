@@ -3,7 +3,7 @@
  *
  * Only songs we may hand to every member to post: never popular songs, which TikTok and Instagram can offer only
  * through paid label deals. Each entry says where it came from and under what terms, so a song can be pulled if a
- * question comes up. 34 are CC0 songs (public domain, no credit needed, though the artist is shown on every clip); three
+ * question comes up. 45 are CC0 songs (11 travel songs since 2026-11-27, listed first) (public domain, no credit needed, though the artist is shown on every clip); three
  * are samples made by scripts/make-sample-music.mjs. More come from the owner (docs/LAUNCH_CHECKLIST.md). The files live
  * in public/music/.
  */
