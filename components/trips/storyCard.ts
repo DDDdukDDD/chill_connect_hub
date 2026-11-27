@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { daysBetween, thaiDateRange, tripParts, visibleItems, type TripView } from '@/lib/trips/story';
+import { daysBetween, thaiDateRange, tripParts, tripStops, visibleItems, type TripStop, type TripView } from '@/lib/trips/story';
 
 /**
  * The trip as a 9:16 picture for IG Story, LINE and other apps (owner 2026-11-27): the cover, the title, the days, the
- * route and the numbers, with Chillwaa's name, so whoever sees the story knows where to look for the rest.
+ * route and the numbers, with Chillwaa's name, so whoever sees the story knows where to look for the rest. A trip with
+ * two or more cities also gets its route drawn as a thin dotted line with numbered stops (owner 2026-11-27), the same
+ * arcs as the player's route frame, so the card is known as Chillwaa's at a glance.
  * Drawn in the browser, where Thai renders correctly (the server's image renderer drops stacked tone marks).
  */
 
@@ -38,6 +40,54 @@ function lines(ctx: CanvasRenderingContext2D, text: string, width: number, max: 
   if (out.length < max && line.trim()) out.push(line.trim());
   if (out.length === max && pieces.join('').length > out.join('').length + 1) out[max - 1] = `${out[max - 1].replace(/.$/u, '')}…`;
   return out;
+}
+
+/** The player's route (TripPlayer routePath): one gentle arc per leg, inside a square box on the card */
+function drawRoute(ctx: CanvasRenderingContext2D, stops: TripStop[], box: { x: number; y: number; size: number }, font: string) {
+  const at = (p: TripStop) => [box.x + (p.x / 100) * box.size, box.y + (p.y / 100) * box.size] as const;
+  const trace = () => {
+    ctx.beginPath();
+    const [x0, y0] = at(stops[0]);
+    ctx.moveTo(x0, y0);
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [ax, ay] = at(stops[i]);
+      const [bx, by] = at(stops[i + 1]);
+      const bend = 0.18;
+      ctx.quadraticCurveTo((ax + bx) / 2 - (by - ay) * bend, (ay + by) / 2 + (bx - ax) * bend, bx, by);
+    }
+  };
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([2, 18]);
+  trace();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = `700 30px ${font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  stops.forEach((p, i) => {
+    const [x, y] = at(p);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x, y, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0F172A';
+    ctx.fillText(String(i + 1), x, y + 1);
+    ctx.shadowBlur = 12;
+    // The city under its dot, clear of the line, kept inside the card
+    ctx.font = `700 36px ${font}`;
+    ctx.fillStyle = '#fff';
+    const name = p.name.slice(0, 18);
+    const half = ctx.measureText(name).width / 2;
+    ctx.fillText(name, Math.min(W - 60 - half, Math.max(60 + half, x)), y + 62);
+    ctx.font = `700 30px ${font}`;
+  });
+  ctx.restore();
 }
 
 export async function drawTripCard(trip: TripView): Promise<Blob | null> {
@@ -136,6 +186,12 @@ export async function drawTripCard(trip: TripView): Promise<Blob | null> {
     y -= 118;
     ctx.fillText(line, 80, y);
   }
+
+  // The route between the brand and the title, when there is room for it
+  const stops = tripStops(trip);
+  const room = { top: 300, bottom: y - 150 };
+  const size = Math.min(W - 160, room.bottom - room.top);
+  if (stops.length >= 2 && size >= 360) drawRoute(ctx, stops, { x: (W - size) / 2, y: room.top + (room.bottom - room.top - size) / 2, size }, font);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9));
 }

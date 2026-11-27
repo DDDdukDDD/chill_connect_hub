@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- member photos load their phone-made small copy through optimizedImage, not the paid image optimizer */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Footprints, Music, RotateCcw, Share2, Volume2, VolumeX, X } from 'lucide-react';
 import { DEFAULT_MUSIC_VOLUME, findTrack } from '@/lib/media/musicLibrary';
 import { optimizedImage, safeImageSrc } from '@/lib/optimizedImage';
@@ -42,6 +42,21 @@ const DURATION = { cover: 4000, route: 5000, part: 3200, chapter: 2600, item: 50
 const MAX_CLIP_MS = 30_000;
 const HOLD_MS = 180;
 const STAGE_SIZES = 1080;
+/** One frame melts into the next (owner 2026-11-27) instead of a hard cut */
+const FADE_MS = 400;
+
+/**
+ * How long a photo stays (owner 2026-11-27): a bare photo moves on in 3.5 s, a caption adds time to read it, up to 6.5 s
+ * for a long one, so nobody has to hold the screen to finish a line
+ */
+export function photoMs(caption: string): number {
+  const length = caption.trim().length;
+  if (!length) return 3500;
+  return Math.min(6500, Math.max(4500, 3500 + length * 25));
+}
+
+/** Wider than tall: shown whole on its own blurred copy, not cropped to the tall screen */
+const isWide = (ratio: number | undefined) => typeof ratio === 'number' && ratio > 1.05;
 
 /**
  * cover → route → each sub-trip's opening (when there are several) → each day's opening (when its sub-trip, or the
@@ -126,7 +141,13 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
   const frame = frames[index];
   const isClip = frame.kind === 'item' && frame.item.kind === 'video';
   // A sub-trip with the author's line stays longer, so the line can be read
-  const duration = isClip ? (clipMs ?? MAX_CLIP_MS) : frame.kind === 'part' && frame.part.note ? 5000 : DURATION[frame.kind];
+  const duration = isClip
+    ? (clipMs ?? MAX_CLIP_MS)
+    : frame.kind === 'part' && frame.part.note
+      ? 5000
+      : frame.kind === 'item'
+        ? photoMs(frame.item.caption)
+        : DURATION[frame.kind];
   const paused = held || hidden || duration === 0;
   const chapterOf = frame.kind === 'item' || frame.kind === 'chapter' ? frame.chapter : null;
   const partOf = frame.kind === 'part' ? frame.part : null;
@@ -234,6 +255,26 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
   };
   const picture = pictureOf(frame);
   const nextPicture = pictureOf(frames[index + 1]);
+  // Photos saved without a size are measured when they load
+  const [measured, setMeasured] = useState<Record<string, number>>({});
+  const ratioOf = (f: Frame | undefined, src: string) => (f?.kind === 'item' ? (f.item.ratio ?? measured[src]) : undefined);
+  const wide = isWide(ratioOf(frame, picture));
+
+  // Crossfade: the frame that was showing stays underneath while the new one fades in over it
+  // Only a plain photo is left underneath: a title frame's dark veil would flash bright for a moment
+  const plain = (frame.kind === 'item' && !isClip) || frame.kind === 'cover';
+  const shownRef = useRef({ src: picture, wide, plain });
+  const [under, setUnder] = useState<{ src: string; wide: boolean } | null>(null);
+  useLayoutEffect(() => {
+    const before = shownRef.current;
+    shownRef.current = { src: picture, wide, plain };
+    if (!before.src || !before.plain || before.src === picture) return;
+    setUnder({ src: before.src, wide: before.wide });
+    const timer = window.setTimeout(() => setUnder(null), FADE_MS + 50);
+    return () => window.clearTimeout(timer);
+    // only when the frame changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
   const playState = { animationPlayState: paused ? 'paused' : 'running' } as const;
   const progress = duration ? Math.min(100, (elapsed / duration) * 100) : 100;
 
@@ -266,11 +307,18 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
 
       <div className="relative h-dvh w-full overflow-hidden bg-slate-900 sm:aspect-[9/16] sm:h-[min(calc(100dvh-48px),860px)] sm:w-auto sm:rounded-3xl">
         <div className="absolute inset-0 select-none" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerLeave={onPointerLeave} onContextMenu={(e) => e.preventDefault()}>
+          {under && (
+            <div className="absolute inset-0" aria-hidden>
+              <Picture src={under.src} wide={under.wide} />
+            </div>
+          )}
+          <div key={index} className="trip-motion absolute inset-0" style={{ animation: `trip-fade ${FADE_MS}ms ease-out both` }}>
           <FrameView
-            key={index}
             trip={trip}
             frame={frame}
             picture={picture}
+            wide={wide}
+            onMeasure={(ratio) => picture && !(picture in measured) && setMeasured((m) => ({ ...m, [picture]: ratio }))}
             stops={stops}
             playState={playState}
             duration={duration}
@@ -283,6 +331,7 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
             }}
             onClipEnd={() => go(1)}
           />
+          </div>
         </div>
         {nextPicture && nextPicture !== picture && (
           <img src={optimizedImage(nextPicture, STAGE_SIZES)} alt="" aria-hidden className="pointer-events-none absolute size-px opacity-0" />
@@ -372,10 +421,40 @@ export function TripPlayer({ trip, onClose, actions = {}, startItemId }: { trip:
   );
 }
 
+/** A photo filling the screen, or a wide one shown whole on its own blurred copy */
+function Picture({ src, wide, alt = '', onMeasure, motion }: { src: string; wide: boolean; alt?: string; onMeasure?: (ratio: number) => void; motion?: React.CSSProperties }) {
+  const measure = onMeasure
+    ? (e: React.SyntheticEvent<HTMLImageElement>) => {
+        const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+        if (w && h) onMeasure(w / h);
+      }
+    : undefined;
+  if (!wide) {
+    return (
+      <div className={motion ? 'trip-motion absolute inset-0' : 'absolute inset-0'} style={motion}>
+        <img src={optimizedImage(src, STAGE_SIZES)} alt={alt} onLoad={measure} className="size-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <>
+      <img src={optimizedImage(src, 640)} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl" />
+      <div className="absolute inset-0 bg-black/35" />
+      <div className={motion ? 'trip-motion absolute inset-x-0 top-[44%] -translate-y-1/2' : 'absolute inset-x-0 top-[44%] -translate-y-1/2'}>
+        <div style={motion}>
+          <img src={optimizedImage(src, STAGE_SIZES)} alt={alt} onLoad={measure} className="w-full shadow-2xl" />
+        </div>
+      </div>
+    </>
+  );
+}
+
 function FrameView({
   trip,
   frame,
   picture,
+  wide,
+  onMeasure,
   stops,
   playState,
   duration,
@@ -387,6 +466,8 @@ function FrameView({
   trip: TripView;
   frame: Frame;
   picture: string;
+  wide: boolean;
+  onMeasure: (ratio: number) => void;
   stops: TripStop[];
   playState: React.CSSProperties;
   duration: number;
@@ -467,11 +548,7 @@ function FrameView({
           onError={onClipEnd}
         />
       ) : (
-        picture && (
-          <div className="trip-motion absolute inset-0" style={zoom}>
-            <img src={optimizedImage(picture, STAGE_SIZES)} alt={item?.caption || trip.title} className="size-full object-cover" />
-          </div>
-        )
+        picture && <Picture src={picture} wide={wide} alt={item?.caption || trip.title} onMeasure={item ? onMeasure : undefined} motion={zoom} />
       )}
 
       {frame.kind === 'cover' && (
