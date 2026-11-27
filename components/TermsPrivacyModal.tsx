@@ -91,6 +91,17 @@ const TERMS: Section[] = [
       'ถ้าพบการโกง เช่น ใช้รูปที่ไม่ได้ไปจริง หรือเช็กอินโดยไม่ได้มา ทีมงานอาจยกเลิก XP เหรียญ และของรางวัลที่ได้จากส่วนนั้น',
     ],
   },
+  {
+    // Google Play child safety standards declaration (social apps): the published standards and contact point
+    title: '8. มาตรฐานความปลอดภัยของเด็ก (Child safety standards)',
+    items: [
+      'Chillwaa ห้ามการล่วงละเมิดและแสวงประโยชน์ทางเพศจากเด็ก (CSAE) ทุกรูปแบบ ทั้งสื่อการล่วงละเมิดทางเพศเด็ก (CSAM) การล่อลวงเด็ก (grooming) และการพูดคุยหรือนัดพบในเชิงเพศกับผู้ที่อายุต่ำกว่า 18 ปี',
+      'Chillwaa สำหรับผู้ที่อายุ 18 ปีขึ้นไปเท่านั้น บัญชีที่พบว่าเป็นของผู้ที่อายุต่ำกว่า 18 ปีจะถูกปิด',
+      'รายงานได้จากปุ่มรายงานบนโพสต์ คอมเมนต์ โปรไฟล์ และข้อความในแชต หรือส่งอีเมลมาที่ privacy@chillwaa.com ซึ่งเป็นช่องทางติดต่อเรื่องความปลอดภัยของเด็ก',
+      'เมื่อพบเนื้อหาหรือพฤติกรรมเช่นนี้ ทีมงานจะลบเนื้อหา ปิดบัญชีที่เกี่ยวข้องอย่างถาวร และแจ้งหน่วยงานที่มีอำนาจตามกฎหมาย เช่น ศูนย์ TICAC ของสำนักงานตำรวจแห่งชาติ',
+      'Chillwaa prohibits child sexual abuse and exploitation (CSAE), including child sexual abuse material (CSAM). Report it in the app or at privacy@chillwaa.com. We remove the content, permanently close the accounts involved and report to the relevant authorities.',
+    ],
+  },
 ];
 
 const PRIVACY: Section[] = [
@@ -150,6 +161,8 @@ const PRIVACY: Section[] = [
     title: '5. สิทธิของคุณ',
     items: [
       'ขอดู ดาวน์โหลด และแก้ไขข้อมูลของคุณ',
+      // Google Play Data safety: a way to delete some data without deleting the account
+      'ลบข้อมูลบางส่วนโดยไม่ต้องลบบัญชี: ลบโมเมนต์หรือคอมเมนต์ของคุณได้จากโพสต์หรือคอมเมนต์นั้น แก้หรือลบข้อมูลโปรไฟล์ในหน้าแก้ไขโปรไฟล์ ยกเลิกการเข้าร่วมตี้หรือเลิกทำชาเลนจ์ได้จากหน้านั้น หรือส่งอีเมลมาที่ privacy@chillwaa.com ว่าต้องการให้ลบข้อมูลส่วนไหน',
       'ลบบัญชี ซึ่งจะลบโมเมนต์ คอมเมนต์ ไลก์ รีวิว ข้อความในแชต การเข้าร่วมตี้ ตี้ที่คุณจัด ความคืบหน้าชาเลนจ์ และของรางวัลของคุณทั้งหมด และกู้คืนไม่ได้',
       'ถอนความยินยอม โดยการลบบัญชีหรือติดต่อเรา',
     ],
