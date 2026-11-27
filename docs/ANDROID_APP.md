@@ -50,7 +50,7 @@ For a new store version: raise `appVersionCode` and `appVersionName` in `twa-man
 
 1. Get the fingerprints:
    - the upload key: `apksigner verify --print-certs app-release-signed.apk` (no password needed) → the SHA-256 line. Made 2026-11-27: `B7:66:27:B3:A2:78:77:D4:FB:D3:D6:89:65:E0:EA:8C:BC:20:27:D0:6A:28:DD:1A:39:CF:5A:0F:E4:81:E5:D4` (a fingerprint is public, not a secret; the 2026-11-16 key `30:9F:…:3B:CA` is retired)
-   - after the first upload to Play: Play Console → the app → Test and release → App integrity → App signing key certificate → SHA-256
+   - after the first upload to Play: Play Console → the app → **Protected with Play** (App integrity moved there in 2026) → App signing key → "Copy all certificate fingerprints". Since 2026-11-27 Play gives a quantum-ready key, so there are three: `D3:84:1A:DC:…:D8:06:BE:F5`, `BE:92:50:0F:…:C3:DC:84:D0`, `E5:57:34:6C:…:9E:38:6D:02` (classical, post-quantum and the first key; full values in Vercel). List all of them
 2. On Vercel (Production): `ANDROID_CERT_SHA256` = both fingerprints, comma separated. Redeploy.
 3. Check: `https://www.chillwaa.com/.well-known/assetlinks.json` lists them. Then open the app: no URL bar at the top means the link works.
 
