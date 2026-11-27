@@ -29,7 +29,7 @@ Play does not allow emoji runs, "อันดับ 1"/"ดีที่สุด
 | :--- | :--- | :--- |
 | App icon | 512 × 512 PNG, square (Play rounds the corners) | `android/store_icon.png` |
 | Feature graphic | 1024 × 500 PNG | `android/store/feature-graphic.png` |
-| Phone screenshots | 2 to 8, 9:16, e.g. 1080 × 1920 | not made yet, see below |
+| Phone screenshots | 2 to 8, 9:16, e.g. 1080 × 1920 | `android/store/screenshots/1-…6-*.png` (first set, 2026-11-27, see below) |
 
 The feature graphic is made from `android/store/feature-graphic.html`: the brand on the left over a soft peach background (owner 2026-11-21: softer than full orange), and on the right
 the three scenes of `public/hero-bg-lifestyle.jpg` (AI-generated for Chillwaa, owner 2026-11-21: cafe, run, board game night) as fanned moment cards with bits of the
@@ -43,8 +43,11 @@ changing it, from the repo root in PowerShell:
 & "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files --force-device-scale-factor=1 --virtual-time-budget=10000 --window-size=1024,500 "--screenshot=$PWD\android\store\feature-graphic.png" "$PWD\android\store\feature-graphic.html"
 ```
 
-**Screenshots:** the same six scenes and captions as the App Store list, at 1080 × 1920, from live once its content
-is real (no "[ตัวอย่าง]" data) and with a member that has a full profile. Tablet screenshots are optional; without
+**Screenshots:** the first set (2026-11-27) is six signed-out pages of live at 1080 × 1920 without captions, taken
+with puppeteer-core and the installed Edge in phone emulation (360 × 640 at 3×; plain `msedge --screenshot` ignores
+the phone viewport and cuts the page off on the right): home, ตี้ list, a challenge, อีเวนต์, ที่เที่ยว, challenge
+list. Replace it later with the six scenes and captions of the App Store list, signed in as a member with a full
+profile, once live has more ตี้ and moments. Tablet screenshots are optional; without
 them the app still installs on tablets, Play just does not feature it there.
 
 **Category and contact** (Store settings): category **Social**, tags up to 5 from Play's list (e.g. Social
@@ -55,9 +58,12 @@ working first, docs/EMAIL.md step 1). Website: `https://www.chillwaa.com`.
 
 **Privacy policy:** `https://www.chillwaa.com/legal?tab=privacy`
 
-**App access:** "All or some functionality is restricted". Give the same demo account as for App Review (email
-account on live, finished onboarding, in a ตี้ and a challenge, kept out of campaigns) with the instruction:
-`Open the app > เข้าสู่ระบบ > อีเมล > enter the email and password.`
+**App access** (now "Sign in details"): "Yes, restricted". Demo account made 2026-11-27 on live:
+`chillwaa.official+playreview@gmail.com`, display name "Play Reviewer" (password with the owner, not in git; mail
+reaches the team Gmail). Email confirmed, onboarded, pledge accepted, in the challenge "โมเมนต์ดีที่สุดของปี 2026",
+in no ตี้ (the open ones are real) and no campaign. Use it for App Review too. Instruction:
+`Open the app > เข้าสู่ระบบ (top right) > อีเมล > enter the email and password above. The account has finished onboarding; no code or second step is needed.`
+After each review, check the account for posts or comments the reviewers left.
 
 **Ads:** No. There is no ad SDK and the site shows no ads.
 
@@ -127,10 +133,44 @@ closed test must start by about 15 December (14 days, plus review time for the t
 3. After 14 days: Dashboard → "Apply for production", answer the questions about the test, then send the production
    release for review.
 
+### ข้อความชวนผู้ทดสอบ
+
+Tester group (made 2026-11-27): `chillwaa-testers@googlegroups.com`, join page
+`https://groups.google.com/g/chillwaa-testers` (anyone can join, members visible to managers only, only managers
+post). Add it under Play Console → Closed testing → Testers → Google Groups.
+
+For LINE or chat, sent by the owner. `<group link>` is the join page above; replace `<opt-in link>` with Play
+Console → Closed testing → Testers → "Join on the web" once the first closed-test release is in. Testers need an Android phone signed in with the same
+Gmail they use to join the group.
+
+```
+ขอแรงช่วยทดสอบแอป Chillwaa บน Android หน่อย 🙏
+
+Chillwaa คือแอปของเราเอง เอาไว้หาตี้ไปเที่ยว ไปวิ่ง ไปคาเฟ่ หาอีเวนต์ และสถานที่ชิลๆ
+ตอนนี้กำลังจะขึ้น Play Store แต่ Google ให้มีคนทดสอบอย่างน้อย 12 คน ติดกัน 14 วันก่อน
+
+ทำแค่ 3 ขั้น (ใช้ Gmail เดียวกับที่ล็อกอินในมือถือ Android):
+1. กดเข้ากลุ่มผู้ทดสอบ: <group link>
+2. กดรับเป็นผู้ทดสอบ: <opt-in link>
+3. กด "ดาวน์โหลดใน Google Play" แล้วติดตั้งแอป
+
+ขอแค่ 2 อย่าง:
+• อย่าออกจากกลุ่มและอย่าลบแอปจนครบ 14 วัน (ถึงวันที่ __ ธ.ค.)
+• เปิดแอปเล่นบ้าง สัปดาห์ละ 2–3 ครั้งก็พอ
+
+เจออะไรแปลกๆ แคปหน้าจอส่งมาได้เลย ขอบคุณมากๆ นะ
+```
+
+Day 7 nudge:
+
+```
+ผ่านไปครึ่งทางแล้ว ขอบคุณที่ช่วยกันนะ 🙌 อีก 7 วันจะครบ ฝากอย่าเพิ่งลบแอป และแวะเปิดเล่นสักรอบสองรอบ
+มีอะไรติดขัดหรืออยากให้ปรับ บอกได้เลย
+```
+
 ## Still missing before the first upload
 
 - [ ] Signed `.aab` with the new icon, built on the main computer (the upload key lives there): ANDROID_APP.md "Every release"
 - [ ] Phone screenshots (Claude can capture them once live content is real)
-- [ ] Demo account on live
 - [ ] @chillwaa.com mail working (contact email, privacy@ for deletion requests)
 - [ ] App signing key SHA-256 from Play added to `ANDROID_CERT_SHA256` after the first upload (ANDROID_APP.md)

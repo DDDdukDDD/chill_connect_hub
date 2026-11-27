@@ -20,6 +20,16 @@ Item template:
 
 ---
 
+### BE-493 · Android: Play Console set up, new upload key, closed test group; privacy policy says how to delete some data (owner 2026-11-27)
+- **What changed:**
+  - Play Console account verified and the app created (`com.chillwaa.app`, free). First `.aab` (1 / 1.0.0) uploaded to Closed testing - Alpha as a draft; tester group `chillwaa-testers@googlegroups.com`.
+  - **New upload key**, made on the office notebook before the first upload; it replaces the 2026-11-16 key on the main computer, which is no longer used. Releases are built in `C:\dev\chillwaa-android` (outside OneDrive). Fingerprint and build notes in `docs/ANDROID_APP.md`.
+  - `.gitattributes` keeps `android/twa-manifest.json` LF, so Bubblewrap's checksum matches on Windows checkouts.
+  - Privacy policy section 5 (`components/TermsPrivacyModal.tsx`) gains one line: how to delete some data without deleting the account (Play Data safety asks for it). The legal version note is unchanged.
+  - Terms gain section 8, child safety standards (CSAE ban, 18+ only, how to report, what staff do, contact privacy@). Play requires a published standards URL for social apps: `https://www.chillwaa.com/legal?tab=terms`. **Merge and deploy before Google reviews the app.**
+  - First phone screenshots in `android/store/screenshots/`.
+- **What to do about it:** on Vercel, `ANDROID_CERT_SHA256` must list the new upload key and, after the first Play upload, the app signing key; the old `30:9F:…` value goes (`docs/LAUNCH_CHECKLIST.md` Android C).
+
 ### BE-492 · Trip player crossfade, whole landscape photos, caption timing; route on the story card (owner 2026-11-27)
 - **What changed:**
   - `TripPlayer.tsx`: frames fade into each other over 400 ms (a photo stays underneath while the next fades in; title frames do not, so their dark veil never flashes).

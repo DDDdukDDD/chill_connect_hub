@@ -1,0 +1,3 @@
+# Bubblewrap checks android/manifest-checksum.txt against the bytes of twa-manifest.json.
+# With CRLF on Windows checkouts the check fails and `bubblewrap build` regenerates the project.
+android/twa-manifest.json text eol=lf
