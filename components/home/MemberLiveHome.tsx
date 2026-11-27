@@ -87,6 +87,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
   // The mode picked last time comes back on this device (owner 2026-11-26): someone who browses ค้นพบ is not sent to
   // สำหรับคุณ every visit. Read after the first paint, since the server's first page is สำหรับคุณ
   const [feedView, setFeedViewState] = useState<FeedView>('foryou');
+  const gridMode = feedView === 'discover';
   const setFeedView = (view: FeedView) => {
     setFeedViewState(view);
     try {
@@ -122,8 +123,10 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
           already suggest what to do next on every screen. From xl a third track as wide as the left keeps the feed in the
           middle; it holds people to follow (PeopleRail) */}
       {/* Phones: one track that can shrink to the screen (minmax 0), so a wide row in the feed never widens the page */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px] 2xl:grid-cols-[300px_minmax(0,1fr)_300px] lg:gap-14 xl:gap-10 2xl:gap-14">
-        <main id="home-feed" className="min-w-0 w-full max-w-[600px] mx-auto scroll-mt-24">
+      {/* โมเมนต์ mode is a photo grid (owner 2026-11-27): it takes the whole width beside the left column, without the
+          600px feed cap or the people column, so the sides are not left empty */}
+      <div className={`grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14 ${gridMode ? 'xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-10' : 'xl:grid-cols-[280px_minmax(0,1fr)_280px] 2xl:grid-cols-[300px_minmax(0,1fr)_300px] xl:gap-10 2xl:gap-14'}`}>
+        <main id="home-feed" className={`min-w-0 w-full mx-auto scroll-mt-24 ${gridMode ? 'max-w-[600px] lg:max-w-none' : 'max-w-[600px]'}`}>
           {/* The top of home (owner 2026-10-30): no band, only what nothing else on the page says. Phones: hello, then
               one slim line when there is something to do next. Laptops have both beside the feed */}
           <div className="lg:hidden">
@@ -166,7 +169,7 @@ export function MemberLiveHome(props: MemberLiveHomeProps) {
         </aside>
 
         {/* Wide screens: people to follow and the site links in the third track (owner 2026-11-14) */}
-        <aside className="hidden xl:block sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar pb-4">
+        <aside className={`hidden ${gridMode ? '' : 'xl:block'} sticky top-24 self-start max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain no-scrollbar pb-4`}>
           <PeopleRail />
         </aside>
       </div>
