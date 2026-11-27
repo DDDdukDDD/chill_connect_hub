@@ -20,6 +20,31 @@ Item template:
 
 ---
 
+### BE-492 · Trip player crossfade, whole landscape photos, caption timing; route on the story card (owner 2026-11-27)
+- **What changed:**
+  - `TripPlayer.tsx`: frames fade into each other over 400 ms (a photo stays underneath while the next fades in; title frames do not, so their dark veil never flashes).
+    - A photo wider than tall (`ratio` > 1.05, or measured on load when it has none) is shown whole on its own blurred copy instead of being cropped.
+    - A photo stays 3.5 s with no caption, and 4.5 to 6.5 s by caption length (`photoMs`).
+  - `storyCard.ts`: a trip with 2 or more cities gets the player's route drawn on the 9:16 card: a dotted white arc, numbered stops, city names under the dots. It is left out when the title leaves too little room.
+- **What to do about it:** not tried on a real phone yet.
+
+### BE-491 · ATMBKK ตี้ of ทีม Chillwaa back on live (owner 2026-11-27)
+- **What changed:** the launch clean-up (2026-11-24) removed the three ATMBKK practice ตี้, because a ตี้ without a host member can only be stored as sample (`events_check3`, and `writeEvents` marks such a ตี้ sample).
+  - `db/restore-atmbkk-tee.mjs` (content in `db/content/atmbkk-tee-2026.json`) put them back as ended ตี้, with the one member who had joined.
+  - It also added one ตี้ for each race day: Sat 28 after the half marathon, Sun 29 for the 10K and Family Run.
+  - All five are real rows hosted by **Admin_Official** (owner's choice). The page still names ทีม Chillwaa.
+  - **Already run on live and on dev.**
+- **What to do about it:** staff ตี้ made in /admin without a host still become sample. Open idea: the admin form fills in Admin_Official as host.
+
+### BE-490 · โมเมนต์ mode on home uses the width (owner 2026-11-27)
+- **What changed:**
+  - **Computers:** the โมเมนต์ grid drops the 600 px feed cap and the people column, and shows 3 / 4 (xl) / 5 (2xl) columns.
+  - **Phones:** the grid sits 4 px from the screen edge, with 4 px between tiles.
+  - สำหรับคุณ and ติดตาม are unchanged.
+
+### BE-489 · "ปิดการแชร์" hides share for the author too (owner 2026-11-27)
+- **What changed:** with sharing off, the แชร์ and ชวนไป buttons are gone for everyone, the author included. The author still has คัดลอกลิงก์ in the ··· menu. Covers the feed and the moment page.
+
 ### BE-488 · Trips from everyday life, and "followers only during the trip" (owner 2026-11-27)
 - **What changed:**
   - **"วันนี้ไป 3 ที่ เล่าเป็นเรื่องไหม"** (`lib/trips/suggest.ts`, `SuggestedTripCard`): a card above the home feed and in My Hub "ทริปของฉัน". It appears when a member posted moments at 3 or more places (place, event or typed location; one place counts once) on one Bangkok day, or over one Saturday and Sunday, within the last 7 days. None of those moments may already be in a trip, and no trip of theirs may cover those days.

@@ -66,7 +66,7 @@ export function HomeDiscoverGrid({ onToast }: { onToast: (message: string) => vo
 
   if (page === 0) {
     return (
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-4" aria-hidden="true">
+      <div className="mt-4 -mx-3 sm:mx-0 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-1 sm:gap-x-2 gap-y-4" aria-hidden="true">
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="aspect-[4/5] rounded-2xl bg-slate-100" />
         ))}
@@ -75,11 +75,12 @@ export function HomeDiscoverGrid({ onToast }: { onToast: (message: string) => vo
   }
 
   return (
-    <div className="mt-4">
+    // Phones: 4px from the screen edge and 4px between tiles (owner 2026-11-27), so the photos get the width
+    <div className="mt-4 -mx-3 sm:mx-0">
       {moments.length === 0 ? (
         <p className="py-10 text-center text-sm font-medium text-slate-500">ยังไม่มีโมเมนต์ ออกไปเที่ยวแล้วมาเล่าให้เพื่อนๆ ฟังกัน</p>
       ) : (
-        <MomentGrid items={moments} onLike={toggleLike} className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-4 sm:gap-x-3 sm:gap-y-5" />
+        <MomentGrid items={moments} onLike={toggleLike} className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-1 gap-y-4 sm:gap-x-3 sm:gap-y-5" />
       )}
       {hasMore && <div ref={sentinelRef} aria-hidden="true" />}
       {isLoading && (
