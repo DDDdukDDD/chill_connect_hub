@@ -265,8 +265,8 @@ function DetailBody({ initialMoment, openFullScreen = false, reel, isLoggedIn, r
 
   const url = `/api/moments/${encodeURIComponent(moment.id)}`;
   const title = momentTitle(moment.caption);
-  // A closed post keeps its link for the author only
-  const mayShare = !moment.sharesOff || moment.isMine;
+  // Share off hides แชร์ and ชวนไป for everyone, the author too (owner 2026-11-27)
+  const mayShare = !moment.sharesOff;
   const rest = moment.caption.slice(moment.caption.indexOf(title) + title.length).trim();
   const target = isMomentTarget(moment.targetType) ? MOMENT_TARGETS[moment.targetType] : null;
   const targetHref = momentTargetHref(moment.targetType, moment.targetId);

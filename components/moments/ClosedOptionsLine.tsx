@@ -1,8 +1,8 @@
 import { Lock } from 'lucide-react';
 
 /**
- * Tells the author what they turned off on their own post (owner 2026-11-26): others no longer see those buttons, but
- * the author still sees their own share button, so without this line the setting looked as if it had not taken.
+ * Tells the author what they turned off on their own post (owner 2026-11-26): the buttons are gone for everyone (share
+ * too since 2026-11-27), so this line says why, and that only the author sees it.
  * Only on the author's own post; nothing when everything is on.
  */
 export function ClosedOptionsLine({ moment, className = '' }: { moment: { isMine?: boolean; commentsOff?: boolean; likesOff?: boolean; sharesOff?: boolean }; className?: string }) {

@@ -181,8 +181,8 @@ function MomentPost({ moment, handlers, myAvatar, myName }: { moment: FeedItem; 
     setIsSending(false);
   };
 
-  // A closed post keeps its link for the author only
-  const mayShare = !moment.sharesOff || moment.isMine;
+  // Share off hides แชร์ and ชวนไป for everyone, the author too (owner 2026-11-27); the author keeps คัดลอกลิงก์ in the ... menu
+  const mayShare = !moment.sharesOff;
   const menuItems = moment.isMine
     ? ([
         ['edit', 'แก้ไขโพสต์', Pencil],
